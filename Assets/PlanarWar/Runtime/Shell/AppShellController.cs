@@ -32,6 +32,12 @@ namespace PlanarWar.Client.UI
         private readonly Label lastUpdatedValue;
         private readonly Label liveClockValue;
 
+        private readonly VisualElement authLoginFields;
+        private readonly VisualElement loginButtonRow;
+        private readonly VisualElement authActionRow;
+        private readonly Button loginButton;
+        private readonly Button logoutButton;
+
         public AppShellController(VisualElement root, SessionState sessionState, SummaryState summaryState, ShellNavigationState navigationState)
         {
             this.sessionState = sessionState;
@@ -55,19 +61,36 @@ namespace PlanarWar.Client.UI
             actionHintValue = root.Q<Label>("action-hint-value");
             lastUpdatedValue = root.Q<Label>("last-updated-value");
             liveClockValue = root.Q<Label>("live-clock-value");
+
+            authLoginFields = root.Q<VisualElement>("auth-login-fields");
+            loginButtonRow = root.Q<VisualElement>("login-button-row");
+            authActionRow = root.Q<VisualElement>("auth-action-row");
+            loginButton = root.Q<Button>("login-button");
+            logoutButton = root.Q<Button>("logout-button");
         }
 
         public void Render()
         {
+            var isAuthenticated = sessionState.IsAuthenticated;
             connectionValue.text = sessionState.IsConnected ? "Connected" : "Disconnected";
-            shardValue.text = sessionState.ShardId;
-            roomValue.text = sessionState.RoomId;
-            summaryStatusValue.text = summaryState.IsLoaded ? "Summary loaded" : summaryState.LastError;
+            shardValue.text = string.IsNullOrWhiteSpace(sessionState.ShardId) || sessionState.ShardId == "-" ? "—" : sessionState.ShardId;
+            roomValue.text = string.IsNullOrWhiteSpace(sessionState.RoomId) || sessionState.RoomId == "-" ? "—" : sessionState.RoomId;
+            summaryStatusValue.text = summaryState.IsLoaded
+                ? "Summary loaded"
+                : string.IsNullOrWhiteSpace(summaryState.LastError) || summaryState.LastError == "-"
+                    ? "Summary pending"
+                    : summaryState.LastError;
             authStatusValue.text = sessionState.LoginStatus;
-            accountValue.text = sessionState.DisplayName;
+            accountValue.text = isAuthenticated ? sessionState.DisplayName : "Guest";
             actionHintValue.text = summaryState.Snapshot.HasCity ? "Use City / Black Market tabs for lane-specific read-only surfaces." : "Founder mode: no city snapshot yet.";
             lastUpdatedValue.text = summaryState.IsLoaded ? $"Updated {summaryState.LastUpdatedUtc:HH:mm:ss} UTC" : "No summary fetch yet.";
             liveClockValue.text = $"Now {DateTime.UtcNow:HH:mm:ss} UTC";
+
+            if (authLoginFields != null) authLoginFields.style.display = isAuthenticated ? DisplayStyle.None : DisplayStyle.Flex;
+            if (loginButtonRow != null) loginButtonRow.style.display = isAuthenticated ? DisplayStyle.None : DisplayStyle.Flex;
+            if (authActionRow != null) authActionRow.style.display = isAuthenticated ? DisplayStyle.Flex : DisplayStyle.None;
+            loginButton?.SetEnabled(!isAuthenticated);
+            logoutButton?.SetEnabled(isAuthenticated);
 
             summaryScreen.Render(summaryState.Snapshot, summaryState.IsLoaded);
             cityScreen.Render(summaryState.Snapshot);
