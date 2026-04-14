@@ -81,7 +81,7 @@
                 <ui:VisualElement class="metric-card metric-card--wide">
                     <ui:Label text="Connection" class="eyebrow" />
                     <ui:Label name="connection-value" text="Disconnected" class="metric-value" />
-                    <ui:Label name="summary-status-value" text="Demo summary" class="metric-subvalue" />
+                    <ui:Label name="summary-status-value" text="Summary pending" class="metric-subvalue" />
                 </ui:VisualElement>
 
                 <ui:VisualElement class="metric-card">
@@ -101,21 +101,21 @@
                 </ui:VisualElement>
 
                 <ui:VisualElement class="metric-card auth-card">
-                    <ui:Label name="auth-card-title" text="Client login" class="eyebrow" />
+                    <ui:Label name="auth-card-title" text="Account" class="eyebrow" />
                     <ui:Label name="account-value" text="Guest" class="metric-value" />
-                    <ui:Label name="auth-status-value" text="Demo mode active." class="metric-subvalue metric-subvalue--wrap" />
+                    <ui:Label name="auth-status-value" text="Not signed in." class="metric-subvalue metric-subvalue--wrap" />
 
                     <ui:VisualElement name="auth-login-fields" class="auth-inputs">
-                        <ui:TextField name="login-name-field" label="Name / Email" />
+                        <ui:TextField name="login-name-field" label="Email or handle" />
                         <ui:TextField name="password-field" label="Password" is-password-field="true" />
                     </ui:VisualElement>
 
                     <ui:VisualElement name="login-button-row" class="button-row button-row--tight">
-                        <ui:Button name="login-button" text="Login" class="action-button action-button--primary" />
+                        <ui:Button name="login-button" text="Sign in" class="action-button action-button--primary" />
                     </ui:VisualElement>
 
                     <ui:VisualElement name="auth-action-row" class="button-row button-row--tight">
-                        <ui:Button name="logout-button" text="Logout" class="action-button" />
+                        <ui:Button name="logout-button" text="Sign out" class="action-button" />
                     </ui:VisualElement>
                 </ui:VisualElement>
             </ui:VisualElement>

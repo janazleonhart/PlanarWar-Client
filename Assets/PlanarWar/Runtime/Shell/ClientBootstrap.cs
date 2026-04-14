@@ -41,6 +41,8 @@ namespace PlanarWar.Client.UI
             router ??= FindFirstObjectByType<PlanarWarMessageRouter>();
             uiDocument ??= FindFirstObjectByType<UIDocument>();
 
+            EnsureFallbackCamera();
+
             sessionState = new SessionState();
             summaryState = new SummaryState();
             navigationState = new ShellNavigationState();
@@ -95,10 +97,36 @@ namespace PlanarWar.Client.UI
             Render();
         }
 
+
+        private static void EnsureFallbackCamera()
+        {
+            if (Camera.allCamerasCount > 0)
+            {
+                return;
+            }
+
+            var cameraObject = new GameObject("FallbackUICamera");
+            var camera = cameraObject.AddComponent<Camera>();
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = new Color(0.03f, 0.05f, 0.1f, 1f);
+            camera.orthographic = true;
+            camera.nearClipPlane = 0.1f;
+            camera.farClipPlane = 100f;
+            camera.depth = -100f;
+            cameraObject.AddComponent<AudioListener>();
+            cameraObject.tag = "MainCamera";
+            DontDestroyOnLoad(cameraObject);
+        }
+
         private void BindUi(VisualElement root)
         {
             loginNameField = root.Q<TextField>("login-name-field");
             passwordField = root.Q<TextField>("password-field");
+
+            if (passwordField != null)
+            {
+                passwordField.isPasswordField = true;
+            }
 
             root.Q<Button>("login-button")?.RegisterCallback<ClickEvent>(_ => Login());
             root.Q<Button>("logout-button")?.RegisterCallback<ClickEvent>(_ => Logout());
