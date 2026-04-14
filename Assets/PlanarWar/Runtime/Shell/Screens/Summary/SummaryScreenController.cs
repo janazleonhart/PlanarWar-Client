@@ -20,6 +20,11 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private readonly Label workshopTimer;
         private readonly Label missionTimer;
         private readonly Label resourceTick;
+        private readonly Label timerDiagNow;
+        private readonly Label timerDiagHeartbeat;
+        private readonly Label timerDiagRaw;
+        private readonly Label timerDiagComputed;
+        private int heartbeat;
 
         public SummaryScreenController(VisualElement root)
         {
@@ -35,10 +40,17 @@ namespace PlanarWar.Client.UI.Screens.Summary
             workshopTimer = root.Q<Label>("workshop-timer-value");
             missionTimer = root.Q<Label>("mission-timer-value");
             resourceTick = root.Q<Label>("resource-tick-value");
+            timerDiagNow = root.Q<Label>("timer-diag-now-value");
+            timerDiagHeartbeat = root.Q<Label>("timer-diag-heartbeat-value");
+            timerDiagRaw = root.Q<Label>("timer-diag-raw-value");
+            timerDiagComputed = root.Q<Label>("timer-diag-computed-value");
         }
 
-        public void Render(ShellSummarySnapshot s)
+        public void Render(ShellSummarySnapshot s, bool isSummaryLoaded)
         {
+            heartbeat++;
+            var nowUtc = DateTime.UtcNow;
+
             statusHeadline.text = s.HasCity ? $"{s.City.Name} • {s.City.SettlementLaneLabel}" : (s.FounderMode ? "Founder mode active." : "No settlement loaded.");
             resources.text = FormatResource(s.Resources, "No resources loaded.");
             production.text = FormatResource(s.ProductionPerTick, s.HasCity ? "No production snapshot." : "Found a city to unlock production.", "/tick");
@@ -47,10 +59,14 @@ namespace PlanarWar.Client.UI.Screens.Summary
             readyOps.text = s.OpeningOperations.Count == 0 ? "No opening operations surfaced." : $"{s.OpeningOperations.Count(o => string.Equals(o.Readiness, "ready_now", StringComparison.OrdinalIgnoreCase))} ready now";
             heroes.text = s.Heroes.Count == 0 ? (s.HasCity ? "No officer corps visible." : "Found a city to unlock officers.") : $"{s.Heroes.Count(h => h.Status == "idle")}/{s.Heroes.Count} idle • {s.Heroes.Count(h => h.AttachmentCount > 0)} geared";
             armies.text = s.Armies.Count == 0 ? (s.HasCity ? "No formations visible." : "Found a city to unlock formations.") : $"{s.Armies.Count(a => (a.Readiness ?? 0) >= 70)}/{s.Armies.Count} ready";
-            researchTimer.text = s.ActiveResearch?.StartedAtUtc == null ? "No active research timer." : $"Running {FormatRemaining(DateTime.UtcNow - s.ActiveResearch.StartedAtUtc.Value)}";
+            researchTimer.text = s.ActiveResearch?.StartedAtUtc == null ? "No active research timer." : $"Running {FormatRemaining(nowUtc - s.ActiveResearch.StartedAtUtc.Value)}";
             workshopTimer.text = FormatWorkshop(s.WorkshopJobs);
             missionTimer.text = FormatMission(s.ActiveMissions);
             resourceTick.text = FormatTick(s.ResourceTickTiming);
+            timerDiagNow.text = $"Live UI clock {nowUtc:HH:mm:ss} UTC";
+            timerDiagHeartbeat.text = $"Heartbeat #{heartbeat}";
+            timerDiagRaw.text = FormatTimerRaw(s.ResourceTickTiming, isSummaryLoaded);
+            timerDiagComputed.text = $"diag: {FormatTick(s.ResourceTickTiming)}";
         }
 
         private static string FormatResource(ResourceSnapshot r, string fallback, string suffix = "")
@@ -89,6 +105,23 @@ namespace PlanarWar.Client.UI.Screens.Summary
             var cadence = TimeSpan.FromMilliseconds(timing.TickMs.Value);
             var remaining = timing.NextTickAtUtc.HasValue ? FormatRemaining(timing.NextTickAtUtc.Value - DateTime.UtcNow) : FormatRemaining(cadence);
             return $"{remaining} • every {FormatRemaining(cadence)}";
+        }
+
+        private static string FormatTimerRaw(TimerSnapshot timing, bool isSummaryLoaded)
+        {
+            if (!isSummaryLoaded)
+            {
+                return "raw: waiting for summary payload";
+            }
+
+            if (!timing.TickMs.HasValue || timing.TickMs <= 0)
+            {
+                return "raw: summary loaded; no resource tick timing in payload";
+            }
+
+            var last = timing.LastTickAtUtc.HasValue ? timing.LastTickAtUtc.Value.ToString("HH:mm:ss") + " UTC" : "n/a";
+            var next = timing.NextTickAtUtc.HasValue ? timing.NextTickAtUtc.Value.ToString("HH:mm:ss") + " UTC" : "n/a";
+            return $"raw: tickMs={timing.TickMs:0.#}, last={last}, next={next}";
         }
     }
 }

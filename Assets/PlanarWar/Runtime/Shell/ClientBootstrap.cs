@@ -30,6 +30,7 @@ namespace PlanarWar.Client.UI
         private WsSessionController wsController;
         private ShellNavigationState navigationState;
         private AppShellController appShellController;
+        private float nextClockRenderAt;
 
         private TextField loginNameField;
         private TextField passwordField;
@@ -81,6 +82,17 @@ namespace PlanarWar.Client.UI
             sessionState.Changed -= Render;
             summaryState.Changed -= Render;
             navigationState.Changed -= Render;
+        }
+
+        private void Update()
+        {
+            if (Time.unscaledTime < nextClockRenderAt)
+            {
+                return;
+            }
+
+            nextClockRenderAt = Time.unscaledTime + 1f;
+            Render();
         }
 
         private void BindUi(VisualElement root)
