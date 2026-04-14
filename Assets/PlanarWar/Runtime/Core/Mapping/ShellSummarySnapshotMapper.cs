@@ -2,6 +2,7 @@ using Newtonsoft.Json.Linq;
 using PlanarWar.Client.Core.Contracts;
 using PlanarWar.Client.Network;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace PlanarWar.Client.Core.Mapping
@@ -29,6 +30,19 @@ namespace PlanarWar.Client.Core.Mapping
                 summary["missions"]?["active_missions"],
                 city?["activeMissions"],
                 city?["active_missions"]);
+            var availableTechs = FirstArray(
+                summary["availableTechs"],
+                summary["available_techs"],
+                city?["availableTechs"],
+                city?["available_techs"]);
+            var cityTimers = FirstArray(
+                summary["cityTimers"],
+                summary["city_timers"],
+                summary["timers"],
+                city?["cityTimers"],
+                city?["city_timers"],
+                city?["timers"]);
+
             return new ShellSummarySnapshot
             {
                 Username = summary["username"]?.Read<string>() ?? "Anon",
@@ -45,6 +59,8 @@ namespace PlanarWar.Client.Core.Mapping
                 ProductionPerTick = MapResource(city?["production"] as JObject, true),
                 ResourceTickTiming = MapTimer(resourceTickTiming),
                 ActiveResearch = MapResearch(summary["activeResearch"] as JObject),
+                AvailableTechs = availableTechs?.OfType<JObject>().Select(MapTech).Where(t => t != null).ToList() ?? new List<TechOptionSnapshot>(),
+                CityTimers = cityTimers?.OfType<JObject>().Select(MapCityTimer).Where(t => t != null).ToList() ?? new List<CityTimerEntrySnapshot>(),
                 ThreatWarnings = (summary["threatWarnings"] as JArray)?.OfType<JObject>().Select(w => new ThreatWarningSnapshot { Headline = w["headline"]?.Read<string>() ?? w["title"]?.Read<string>() ?? w["summary"]?.Read<string>() ?? "Warning" }).ToList() ?? new(),
                 OpeningOperations = (city?["settlementOpeningOperations"] as JArray)?.OfType<JObject>().Select(op => new OperationSnapshot { Title = op["title"]?.Read<string>() ?? "Operation", Readiness = op["readiness"]?.Read<string>() ?? "-" }).ToList() ?? new(),
                 ActiveMissions = activeMissions?.OfType<JObject>().Select(m => new MissionSnapshot
@@ -86,7 +102,9 @@ namespace PlanarWar.Client.Core.Mapping
                     Completed = j["completed"]?.Read<bool>() ?? false,
                     FinishesAtUtc = ParseUtc(j["finishesAt"])
                 }).ToList() ?? new(),
-                WarfrontSignals = (summary["warfront"] as JObject)?.Properties().Select(p => new WarfrontSignalSnapshot { Label = p.Name, Value = p.Value?.ToString() ?? "-" }).ToList() ?? new()
+                WarfrontSignals = (summary["warfrontStatus"] as JObject)?.Properties().Select(p => new WarfrontSignalSnapshot { Label = p.Name, Value = p.Value?.ToString() ?? "-" }).ToList()
+                    ?? (summary["warfront"] as JObject)?.Properties().Select(p => new WarfrontSignalSnapshot { Label = p.Name, Value = p.Value?.ToString() ?? "-" }).ToList()
+                    ?? new()
             };
         }
 
@@ -120,6 +138,42 @@ namespace PlanarWar.Client.Core.Mapping
             };
         }
 
+        private static TechOptionSnapshot MapTech(JObject obj)
+        {
+            if (obj == null) return null;
+            return new TechOptionSnapshot
+            {
+                Id = obj["id"]?.Read<string>() ?? "tech",
+                Name = obj["name"]?.Read<string>() ?? obj["id"]?.Read<string>() ?? "Tech",
+                Description = obj["description"]?.Read<string>() ?? string.Empty,
+                Category = obj["category"]?.Read<string>() ?? "-",
+                Cost = obj["cost"]?.Read<double?>(),
+                LaneIdentity = obj["laneIdentity"]?.Read<string>() ?? obj["lane_identity"]?.Read<string>() ?? "neutral",
+                IdentityFamily = obj["identityFamily"]?.Read<string>() ?? obj["identity_family"]?.Read<string>() ?? string.Empty,
+                IdentitySummary = obj["identitySummary"]?.Read<string>() ?? obj["identity_summary"]?.Read<string>() ?? string.Empty,
+                OperatorNote = obj["operatorNote"]?.Read<string>() ?? obj["operator_note"]?.Read<string>() ?? string.Empty,
+                UnlockPreview = (obj["unlockPreview"] as JArray)?.Values<string>().Where(v => !string.IsNullOrWhiteSpace(v)).ToList()
+                    ?? (obj["unlock_preview"] as JArray)?.Values<string>().Where(v => !string.IsNullOrWhiteSpace(v)).ToList()
+                    ?? new List<string>()
+            };
+        }
+
+        private static CityTimerEntrySnapshot MapCityTimer(JObject obj)
+        {
+            if (obj == null) return null;
+            return new CityTimerEntrySnapshot
+            {
+                Id = obj["id"]?.Read<string>() ?? "timer",
+                Lane = obj["lane"]?.Read<string>() ?? "city",
+                Category = obj["category"]?.Read<string>() ?? "-",
+                Label = obj["label"]?.Read<string>() ?? obj["id"]?.Read<string>() ?? "Timer",
+                Status = obj["status"]?.Read<string>() ?? "active",
+                StartedAtUtc = ParseUtc(obj["startedAt"] ?? obj["started_at"]),
+                FinishesAtUtc = ParseUtc(obj["finishesAt"] ?? obj["finishes_at"]),
+                Detail = obj["detail"]?.Read<string>() ?? string.Empty
+            };
+        }
+
         private static JObject FirstObject(params JToken[] tokens) => tokens?.OfType<JObject>().FirstOrDefault();
         private static JArray FirstArray(params JToken[] tokens) => tokens?.OfType<JArray>().FirstOrDefault();
 
@@ -137,44 +191,29 @@ namespace PlanarWar.Client.Core.Mapping
         }
 
         private static DateTime? ParseUtc(JToken token)
-		{
-			if (token == null || token.Type == JTokenType.Null || token.Type == JTokenType.Undefined)
-			{
-				return null;
-			}
+        {
+            if (token == null || token.Type == JTokenType.Null || token.Type == JTokenType.Undefined)
+            {
+                return null;
+            }
 
-			if (token.Type == JTokenType.Date && token is JValue dateValue)
-			{
-				if (dateValue.Value is DateTimeOffset dto)
-				{
-					return dto.UtcDateTime;
-				}
+            if (token.Type == JTokenType.Date && token is JValue dateValue)
+            {
+                if (dateValue.Value is DateTimeOffset dto)
+                {
+                    return dto.UtcDateTime;
+                }
 
-				if (dateValue.Value is DateTime dt)
-				{
-					return dt.Kind == DateTimeKind.Utc ? dt : dt.ToUniversalTime();
-				}
-			}
+                if (dateValue.Value is DateTime dt)
+                {
+                    return dt.Kind == DateTimeKind.Utc ? dt : dt.ToUniversalTime();
+                }
+            }
 
-			var text = token.Type == JTokenType.String
-				? token.Value<string>()
-				: token.ToString();
-
-			if (string.IsNullOrWhiteSpace(text))
-			{
-				return null;
-			}
-
-			if (!DateTimeOffset.TryParse(
-					text,
-					null,
-					System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal,
-					out var parsed))
-			{
-				return null;
-			}
-
-			return parsed.UtcDateTime;
-		}
+            var text = token.Type == JTokenType.String ? token.Value<string>() : token.ToString();
+            if (string.IsNullOrWhiteSpace(text)) return null;
+            if (!DateTimeOffset.TryParse(text, null, System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal, out var parsed)) return null;
+            return parsed.UtcDateTime;
+        }
     }
 }
