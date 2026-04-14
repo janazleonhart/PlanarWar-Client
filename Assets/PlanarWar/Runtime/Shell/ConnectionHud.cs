@@ -120,29 +120,29 @@ namespace PlanarWar.Client.UI
 
         private void OnAnyMessage(JObject msg)
         {
-            _lastOp = msg?["op"]?.Value<string>() ?? "-";
+            _lastOp = msg?["op"]?.Read<string>() ?? "-";
         }
 
         private void OnHelloAck(JObject payload)
         {
-            _lastShard = payload?["shardId"]?.Value<string>() ?? _lastShard;
+            _lastShard = payload?["shardId"]?.Read<string>() ?? _lastShard;
         }
 
         private void OnWelcome(JObject payload)
         {
-            _lastShard = payload?["shardId"]?.Value<string>() ?? _lastShard;
+            _lastShard = payload?["shardId"]?.Read<string>() ?? _lastShard;
         }
 
         private void OnWhereAmIResult(JObject payload)
         {
-            _lastRoom = payload?["roomId"]?.Value<string>() ?? _lastRoom;
-            _lastShard = payload?["shardId"]?.Value<string>() ?? _lastShard;
+            _lastRoom = payload?["roomId"]?.Read<string>() ?? _lastRoom;
+            _lastShard = payload?["shardId"]?.Read<string>() ?? _lastShard;
         }
 
         private void OnChat(JObject payload)
         {
-            var channel = payload?["channel"]?.Value<string>() ?? "chat";
-            var text = payload?["text"]?.Value<string>() ?? "(empty)";
+            var channel = payload?["channel"]?.Read<string>() ?? "chat";
+            var text = payload?["text"]?.Read<string>() ?? "(empty)";
             _lastChat = $"{channel}: {text}";
         }
     }

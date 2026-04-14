@@ -22,8 +22,8 @@ namespace PlanarWar.Client.Core.Application
         public async Task LoginAsync(string emailOrName, string password)
         {
             var result = await apiClient.LoginAsync(emailOrName, password);
-            var token = result["token"]?.Value<string>() ?? result["accessToken"]?.Value<string>() ?? string.Empty;
-            var displayName = result["displayName"]?.Value<string>() ?? result["username"]?.Value<string>() ?? emailOrName;
+            var token = result["token"]?.Read<string>() ?? result["accessToken"]?.Read<string>() ?? string.Empty;
+            var displayName = result["displayName"]?.Read<string>() ?? result["username"]?.Read<string>() ?? emailOrName;
 
             sessionState.ApplyLogin(token, displayName, string.IsNullOrWhiteSpace(token) ? "Login response missing token." : $"Authenticated as {displayName}.");
             wsClient?.SetAuthToken(token);

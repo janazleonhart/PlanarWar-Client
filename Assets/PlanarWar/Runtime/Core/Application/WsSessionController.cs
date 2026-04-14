@@ -71,20 +71,20 @@ namespace PlanarWar.Client.Core.Application
         }
 
         private void OnDisconnected() => sessionState.SetConnectionState(false);
-        private void OnAnyMessage(JObject msg) => sessionState.SetLastInboundOp(msg?["op"]?.Value<string>() ?? "-");
+        private void OnAnyMessage(JObject msg) => sessionState.SetLastInboundOp(msg?["op"]?.Read<string>() ?? "-");
 
         private void OnWelcome(JObject payload)
-            => sessionState.ApplyWelcome(payload?["sessionId"]?.Value<string>(), payload?["displayName"]?.Value<string>(), payload?["shardId"]?.Value<string>());
+            => sessionState.ApplyWelcome(payload?["sessionId"]?.Read<string>(), payload?["displayName"]?.Read<string>(), payload?["shardId"]?.Read<string>());
 
-        private void OnHelloAck(JObject payload) => sessionState.ApplyHelloAck(payload?["shardId"]?.Value<string>());
+        private void OnHelloAck(JObject payload) => sessionState.ApplyHelloAck(payload?["shardId"]?.Read<string>());
 
-        private void OnWhereAmI(JObject payload) => sessionState.ApplyWhereAmI(payload?["shardId"]?.Value<string>(), payload?["roomId"]?.Value<string>());
+        private void OnWhereAmI(JObject payload) => sessionState.ApplyWhereAmI(payload?["shardId"]?.Read<string>(), payload?["roomId"]?.Read<string>());
 
-        private void OnRoomJoined(JObject payload) => sessionState.ApplyRoomJoined(payload?["roomId"]?.Value<string>());
+        private void OnRoomJoined(JObject payload) => sessionState.ApplyRoomJoined(payload?["roomId"]?.Read<string>());
 
-        private void OnError(JObject payload) => sessionState.ApplyWsError(payload?["code"]?.Value<string>(), payload?["detail"]?.Value<string>());
+        private void OnError(JObject payload) => sessionState.ApplyWsError(payload?["code"]?.Read<string>(), payload?["detail"]?.Read<string>());
 
         private void OnChat(JObject payload)
-            => sessionState.ApplyChat(payload?["channelId"]?.Value<string>(), payload?["channelLabel"]?.Value<string>(), payload?["from"]?.Value<string>(), payload?["text"]?.Value<string>());
+            => sessionState.ApplyChat(payload?["channelId"]?.Read<string>(), payload?["channelLabel"]?.Read<string>(), payload?["from"]?.Read<string>(), payload?["text"]?.Read<string>());
     }
 }

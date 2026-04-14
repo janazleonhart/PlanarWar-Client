@@ -48,7 +48,7 @@ namespace PlanarWar.Client.Network
                 return;
             }
 
-            var op = msg["op"]?.Value<string>();
+            var op = msg["op"]?.Read<string>();
             if (string.IsNullOrWhiteSpace(op))
             {
                 Debug.LogWarning($"[PlanarWarMessageRouter] Invalid message, no op: {msg}");
