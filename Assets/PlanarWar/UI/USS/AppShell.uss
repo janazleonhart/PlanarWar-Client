@@ -767,11 +767,58 @@
     white-space: normal;
 }
 
-.auth-inputs .unity-base-field__label {
-    min-width: 96px;
-    color: rgb(191, 206, 245);
+
+.auth-login-stack {
+    margin-top: 8px;
+    gap: 8px;
 }
 
-.auth-inputs .unity-base-field__input {
-    background-color: rgba(8, 14, 30, 0.85);
+.auth-field {
+    min-height: 34px;
+}
+
+.auth-field .unity-base-field__label {
+    min-width: 112px;
+    color: rgb(214, 226, 255);
+    font-size: 12px;
+    -unity-font-style: bold;
+    margin-right: 10px;
+}
+
+.auth-field .unity-base-field__input {
+    min-height: 34px;
+    padding-left: 10px;
+    padding-right: 10px;
+    background-color: rgba(8, 14, 30, 0.95);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgba(95, 126, 210, 0.55);
+    border-right-color: rgba(95, 126, 210, 0.55);
+    border-top-color: rgba(95, 126, 210, 0.55);
+    border-bottom-color: rgba(95, 126, 210, 0.55);
+}
+
+.auth-field .unity-text-input,
+.auth-field .unity-base-field__input > .unity-text-input {
+    color: rgb(242, 246, 255);
+    -unity-text-align: middle-left;
+}
+
+.auth-field--password .unity-text-input {
+    letter-spacing: 1px;
+}
+
+.auth-button-row {
+    margin-top: 8px;
+    justify-content: flex-end;
+}
+
+.auth-button-row .action-button {
+    min-width: 96px;
 }

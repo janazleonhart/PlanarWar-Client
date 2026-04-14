@@ -77,10 +77,14 @@ namespace PlanarWar.Client.UI
             roomValue.text = string.IsNullOrWhiteSpace(sessionState.RoomId) || sessionState.RoomId == "-" ? "—" : sessionState.RoomId;
             summaryStatusValue.text = summaryState.IsLoaded
                 ? "Summary loaded"
-                : string.IsNullOrWhiteSpace(summaryState.LastError) || summaryState.LastError == "-"
-                    ? "Summary pending"
-                    : summaryState.LastError;
-            authStatusValue.text = sessionState.LoginStatus;
+                : isAuthenticated
+                    ? (string.IsNullOrWhiteSpace(summaryState.LastError) || summaryState.LastError == "-"
+                        ? "Summary pending"
+                        : summaryState.LastError)
+                    : "Sign in to load summary";
+            authStatusValue.text = isAuthenticated
+                ? sessionState.LoginStatus
+                : "Awaiting sign in.";
             accountValue.text = isAuthenticated ? sessionState.DisplayName : "Guest";
             actionHintValue.text = summaryState.Snapshot.HasCity ? "Use City / Black Market tabs for lane-specific read-only surfaces." : "Founder mode: no city snapshot yet.";
             lastUpdatedValue.text = summaryState.IsLoaded ? $"Updated {summaryState.LastUpdatedUtc:HH:mm:ss} UTC" : "No summary fetch yet.";
