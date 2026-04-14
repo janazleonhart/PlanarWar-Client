@@ -137,11 +137,44 @@ namespace PlanarWar.Client.Core.Mapping
         }
 
         private static DateTime? ParseUtc(JToken token)
-        {
-            var s = token?.Read<string>();
-            if (string.IsNullOrWhiteSpace(s)) return null;
-            if (!DateTimeOffset.TryParse(s, out var dto)) return null;
-            return dto.UtcDateTime;
-        }
+		{
+			if (token == null || token.Type == JTokenType.Null || token.Type == JTokenType.Undefined)
+			{
+				return null;
+			}
+
+			if (token.Type == JTokenType.Date && token is JValue dateValue)
+			{
+				if (dateValue.Value is DateTimeOffset dto)
+				{
+					return dto.UtcDateTime;
+				}
+
+				if (dateValue.Value is DateTime dt)
+				{
+					return dt.Kind == DateTimeKind.Utc ? dt : dt.ToUniversalTime();
+				}
+			}
+
+			var text = token.Type == JTokenType.String
+				? token.Value<string>()
+				: token.ToString();
+
+			if (string.IsNullOrWhiteSpace(text))
+			{
+				return null;
+			}
+
+			if (!DateTimeOffset.TryParse(
+					text,
+					null,
+					System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal,
+					out var parsed))
+			{
+				return null;
+			}
+
+			return parsed.UtcDateTime;
+		}
     }
 }
