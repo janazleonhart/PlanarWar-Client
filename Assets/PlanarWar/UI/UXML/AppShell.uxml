@@ -1,0 +1,447 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:Style src="../USS/AppShell.uss" />
+    <ui:VisualElement name="root-shell" class="shell-root">
+        <ui:VisualElement name="left-rail" class="panel rail-panel">
+            <ui:Label text="PLANAR WAR" class="eyebrow" />
+            <ui:Label text="Command shell" class="rail-title" />
+            <ui:Label text="Client-first play shell. Pick a chapter, glance the empire, then act." class="rail-copy" />
+
+            <ui:VisualElement class="rail-active-card">
+                <ui:VisualElement class="rail-active-card__head">
+                    <ui:Label text="Active chapter" class="eyebrow" />
+                    <ui:Label name="current-chapter-meta" text="Live now" class="rail-active-card__meta" />
+                </ui:VisualElement>
+                <ui:Label name="current-chapter-title" text="Summary" class="rail-note-title" />
+                <ui:Label name="current-chapter-kicker" text="Command floor" class="rail-active-card__kicker" />
+                <ui:Label name="current-chapter-copy" text="This rail stays menu-owned. Use Home to scan the empire, then jump into a desk when something needs action." class="rail-copy" />
+            </ui:VisualElement>
+
+            <ui:VisualElement class="rail-section-head">
+                <ui:Label text="Chapter menu" class="eyebrow" />
+                <ui:Label text="4 lanes" class="rail-section-head__meta" />
+            </ui:VisualElement>
+
+            <ui:VisualElement class="rail-menu rail-menu--cards">
+                <ui:Button name="nav-home-button" class="chapter-row rail-button rail-button--active">
+                    <ui:Label text="01" class="chapter-row__index" />
+                    <ui:VisualElement class="chapter-row__body">
+                        <ui:VisualElement class="chapter-row__top">
+                            <ui:Label text="Primary" class="chapter-row__kicker" />
+                            <ui:Label text="Live now" name="nav-home-badge" class="chapter-row__badge" />
+                        </ui:VisualElement>
+                        <ui:Label text="Home" class="chapter-row__title" />
+                        <ui:Label text="Empire summary, timers, and quick orders start here." class="chapter-row__copy" />
+                    </ui:VisualElement>
+                    <ui:Label text="Open" class="chapter-row__action" />
+                </ui:Button>
+
+                <ui:Button name="nav-development-button" class="chapter-row rail-button">
+                    <ui:Label text="02" class="chapter-row__index" />
+                    <ui:VisualElement class="chapter-row__body">
+                        <ui:VisualElement class="chapter-row__top">
+                            <ui:Label text="Growth" class="chapter-row__kicker" />
+                            <ui:Label text="Desk" class="chapter-row__badge" />
+                        </ui:VisualElement>
+                        <ui:Label text="Development" class="chapter-row__title" />
+                        <ui:Label text="Research, workshop, and growth cadence live here." class="chapter-row__copy" />
+                    </ui:VisualElement>
+                    <ui:Label text="Open" class="chapter-row__action" />
+                </ui:Button>
+
+                <ui:Button name="nav-warfront-button" class="chapter-row rail-button">
+                    <ui:Label text="03" class="chapter-row__index" />
+                    <ui:VisualElement class="chapter-row__body">
+                        <ui:VisualElement class="chapter-row__top">
+                            <ui:Label text="Field" class="chapter-row__kicker" />
+                            <ui:Label text="Queued" class="chapter-row__badge" />
+                        </ui:VisualElement>
+                        <ui:Label text="Warfront" class="chapter-row__title" />
+                        <ui:Label text="Future doctrine, field review, and TOMS surface." class="chapter-row__copy" />
+                    </ui:VisualElement>
+                    <ui:Label text="Route" class="chapter-row__action" />
+                </ui:Button>
+
+                <ui:Button name="nav-social-button" class="chapter-row rail-button">
+                    <ui:Label text="04" class="chapter-row__index" />
+                    <ui:VisualElement class="chapter-row__body">
+                        <ui:VisualElement class="chapter-row__top">
+                            <ui:Label text="Shared" class="chapter-row__kicker" />
+                            <ui:Label text="Comms" class="chapter-row__badge" />
+                        </ui:VisualElement>
+                        <ui:Label text="Social" class="chapter-row__title" />
+                        <ui:Label text="Bottom comms, room state, and filters anchor this lane." class="chapter-row__copy" />
+                    </ui:VisualElement>
+                    <ui:Label text="Route" class="chapter-row__action" />
+                </ui:Button>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <ui:VisualElement name="right-column" class="column">
+            <ui:VisualElement name="top-strip" class="panel top-strip">
+                <ui:VisualElement class="metric-card metric-card--wide">
+                    <ui:Label text="Connection" class="eyebrow" />
+                    <ui:Label name="connection-value" text="Disconnected" class="metric-value" />
+                    <ui:Label name="summary-status-value" text="Demo summary" class="metric-subvalue" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="metric-card">
+                    <ui:Label text="Shard" class="eyebrow" />
+                    <ui:Label name="shard-value" text="-" class="metric-value" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="metric-card">
+                    <ui:Label text="Room" class="eyebrow" />
+                    <ui:Label name="room-value" text="-" class="metric-value" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="metric-card metric-card--wide">
+                    <ui:Label text="Summary status" class="eyebrow" />
+                    <ui:Label name="last-updated-value" text="No summary fetch yet." class="metric-subvalue metric-subvalue--wrap" />
+                    <ui:Label name="live-clock-value" text="Now --:--:-- UTC" class="metric-subvalue metric-subvalue--wrap" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="metric-card auth-card">
+                    <ui:Label name="auth-card-title" text="Client login" class="eyebrow" />
+                    <ui:Label name="account-value" text="Guest" class="metric-value" />
+                    <ui:Label name="auth-status-value" text="Demo mode active." class="metric-subvalue metric-subvalue--wrap" />
+
+                    <ui:VisualElement name="auth-login-fields" class="auth-inputs">
+                        <ui:TextField name="login-name-field" label="Name / Email" />
+                        <ui:TextField name="password-field" label="Password" is-password-field="true" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement name="login-button-row" class="button-row button-row--tight">
+                        <ui:Button name="login-button" text="Login" class="action-button action-button--primary" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement name="auth-action-row" class="button-row button-row--tight">
+                        <ui:Button name="logout-button" text="Logout" class="action-button" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <ui:VisualElement name="center-pane" class="panel center-pane">
+                <ui:ScrollView name="summary-screen" class="screen-panel screen-scroll" mode="Vertical">
+                    <ui:VisualElement class="screen-scroll-content summary-screen-content">
+                <ui:VisualElement class="summary-hero">
+                    <ui:Label text="Empire summary" class="eyebrow" />
+                    <ui:Label name="status-headline-value" text="Summary not loaded yet." class="headline" />
+                    <ui:Label name="action-hint-value" text="Waiting for summary data." class="headline-subtext" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="summary-card summary-card--full summary-card--ticker">
+                    <ui:Label text="Empire at a glance" class="eyebrow" />
+                    <ui:Label name="resources-value" text="No resources loaded yet." class="ticker-value" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="summary-card summary-card--full summary-card--action">
+                    <ui:Label text="Quick orders" class="eyebrow" />
+                    <ui:VisualElement class="button-row">
+                        <ui:Button name="refresh-button" text="Refresh summary" class="action-button action-button--primary" />
+                        <ui:Button name="start-research-button" text="Start suggested research" class="action-button" />
+                        <ui:Button name="whereami-button" text="Where am I" class="action-button" />
+                        <ui:Button name="ping-button" text="Ping" class="action-button" />
+                        <ui:Button name="toggle-timer-diagnostics-button" text="Show timer debug" class="action-button" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement class="summary-grid summary-grid--timers">
+                    <ui:VisualElement class="summary-card timer-card">
+                        <ui:Label text="Research timer" class="eyebrow" />
+                        <ui:Label name="research-timer-value" text="No active research timer." class="summary-value summary-value--glance" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="summary-card timer-card">
+                        <ui:Label text="Workshop queue" class="eyebrow" />
+                        <ui:Label name="workshop-timer-value" text="No active workshop queue." class="summary-value summary-value--glance" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="summary-card timer-card">
+                        <ui:Label text="Active mission" class="eyebrow" />
+                        <ui:Label name="mission-timer-value" text="No active mission clock." class="summary-value summary-value--glance" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="summary-card timer-card">
+                        <ui:Label text="Next resource tick" class="eyebrow" />
+                        <ui:Label name="resource-tick-value" text="Tick timing unavailable." class="summary-value summary-value--glance" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement name="timer-diagnostic-card" class="summary-card timer-card">
+                        <ui:Label text="Timer diagnostic" class="eyebrow" />
+                        <ui:Label name="timer-diag-now-value" text="Live UI clock unavailable." class="summary-value summary-value--glance" />
+                        <ui:Label name="timer-diag-heartbeat-value" text="Heartbeat #0" class="metric-subvalue metric-subvalue--wrap" />
+                        <ui:Label name="timer-diag-raw-value" text="raw: waiting for summary payload" class="metric-subvalue metric-subvalue--wrap" />
+                        <ui:Label name="timer-diag-computed-value" text="diag: waiting for countdown computation" class="metric-subvalue metric-subvalue--wrap" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement class="summary-grid summary-grid--glance">
+                    <ui:VisualElement class="summary-card glance-card">
+                        <ui:Label text="Production snapshot" class="eyebrow" />
+                        <ui:Label name="production-value" text="No production snapshot." class="summary-value summary-value--glance" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="summary-card glance-card">
+                        <ui:Label text="Active research" class="eyebrow" />
+                        <ui:Label name="research-value" text="No active research." class="summary-value summary-value--glance" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="summary-card glance-card">
+                        <ui:Label text="Warning pressure" class="eyebrow" />
+                        <ui:Label name="warnings-value" text="No active threat warnings." class="summary-value summary-value--glance" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="summary-card glance-card">
+                        <ui:Label text="Ready now" class="eyebrow" />
+                        <ui:Label name="ready-ops-value" text="No opening operations surfaced." class="summary-value summary-value--glance" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="summary-card glance-card">
+                        <ui:Label text="Hero corps" class="eyebrow" />
+                        <ui:Label name="hero-status-value" text="No officer corps visible." class="summary-value summary-value--glance" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="summary-card glance-card">
+                        <ui:Label text="Forces readiness" class="eyebrow" />
+                        <ui:Label name="army-status-value" text="No formations visible." class="summary-value summary-value--glance" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            
+                    </ui:VisualElement>
+                </ui:ScrollView>
+
+                <ui:ScrollView name="development-screen" class="screen-panel screen-scroll" mode="Vertical">
+                    <ui:VisualElement class="screen-scroll-content development-screen-content">
+                    <ui:VisualElement class="summary-hero development-hero">
+                        <ui:Label text="Development desk" class="eyebrow" />
+                        <ui:Label name="development-headline-value" text="Development desk not loaded yet." class="headline" />
+                        <ui:Label name="development-copy-value" text="Use this desk to manage research, queues, and growth posture." class="headline-subtext" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="summary-card summary-card--full summary-card--action development-lane-shell">
+                        <ui:VisualElement class="development-lane-shell__head">
+                            <ui:Label text="Desk lanes" class="eyebrow" />
+                            <ui:Label text="Local chapter view" class="chapter-row__badge" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="button-row button-row--tight development-lane-shell__buttons">
+                            <ui:Button name="dev-research-lane-button" text="Research" class="action-button action-button--primary development-lane-button" />
+                            <ui:Button name="dev-workshop-lane-button" text="Workshop" class="action-button development-lane-button" />
+                            <ui:Button name="dev-growth-lane-button" text="Growth" class="action-button development-lane-button" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="development-lane-shell__copy">
+                            <ui:Label name="dev-lane-title-value" text="Research lane" class="rail-note-title" />
+                            <ui:Label name="dev-lane-copy-value" text="Research keeps focus, next unlock, and commit posture together so the player can judge the next order without dropping back to the summary floor." class="summary-value summary-value--glance" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="summary-grid summary-grid--desk-lanes">
+                        <ui:VisualElement class="summary-card glance-card development-lane-card">
+                            <ui:Label name="dev-lane-card-1-title" text="Research focus" class="eyebrow" />
+                            <ui:Label name="dev-lane-card-1-value" text="No research lane loaded." class="summary-value summary-value--glance" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card glance-card development-lane-card">
+                            <ui:Label name="dev-lane-card-2-title" text="Next unlock" class="eyebrow" />
+                            <ui:Label name="dev-lane-card-2-value" text="No suggested unlock surfaced." class="summary-value summary-value--glance" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card glance-card development-lane-card">
+                            <ui:Label name="dev-lane-card-3-title" text="Commit posture" class="eyebrow" />
+                            <ui:Label name="dev-lane-card-3-value" text="No clean next research order is surfaced right now." class="summary-value summary-value--glance" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+
+                    <ui:VisualElement name="dev-research-cards-section" class="summary-card summary-card--full summary-card--action development-research-cards-section">
+                        <ui:VisualElement class="development-actions-head">
+                            <ui:Label text="Visible research cards" class="eyebrow" />
+                            <ui:Label name="dev-research-cards-copy-value" text="Visible research cards load here." class="metric-subvalue metric-subvalue--wrap" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="summary-grid development-research-cards-grid">
+                            <ui:VisualElement name="dev-research-card-1" class="summary-card glance-card development-research-card">
+                                <ui:Label name="dev-research-card-1-family-value" text="Civic Works" class="eyebrow" />
+                                <ui:Label name="dev-research-card-1-title-value" text="Tech card" class="rail-note-title" />
+                                <ui:Label name="dev-research-card-1-lore-value" text="Lore line." class="summary-value summary-value--glance" />
+                                <ui:Label name="dev-research-card-1-note-value" text="Operator note." class="metric-subvalue metric-subvalue--wrap" />
+                                <ui:Button name="dev-research-card-1-button" text="Start tech" class="action-button action-button--primary" />
+                            </ui:VisualElement>
+
+                            <ui:VisualElement name="dev-research-card-2" class="summary-card glance-card development-research-card">
+                                <ui:Label name="dev-research-card-2-family-value" text="Civic Works" class="eyebrow" />
+                                <ui:Label name="dev-research-card-2-title-value" text="Tech card" class="rail-note-title" />
+                                <ui:Label name="dev-research-card-2-lore-value" text="Lore line." class="summary-value summary-value--glance" />
+                                <ui:Label name="dev-research-card-2-note-value" text="Operator note." class="metric-subvalue metric-subvalue--wrap" />
+                                <ui:Button name="dev-research-card-2-button" text="Start tech" class="action-button action-button--primary" />
+                            </ui:VisualElement>
+
+                            <ui:VisualElement name="dev-research-card-3" class="summary-card glance-card development-research-card">
+                                <ui:Label name="dev-research-card-3-family-value" text="Civic Works" class="eyebrow" />
+                                <ui:Label name="dev-research-card-3-title-value" text="Tech card" class="rail-note-title" />
+                                <ui:Label name="dev-research-card-3-lore-value" text="Lore line." class="summary-value summary-value--glance" />
+                                <ui:Label name="dev-research-card-3-note-value" text="Operator note." class="metric-subvalue metric-subvalue--wrap" />
+                                <ui:Button name="dev-research-card-3-button" text="Start tech" class="action-button action-button--primary" />
+                            </ui:VisualElement>
+
+                            <ui:VisualElement name="dev-research-card-4" class="summary-card glance-card development-research-card">
+                                <ui:Label name="dev-research-card-4-family-value" text="Civic Works" class="eyebrow" />
+                                <ui:Label name="dev-research-card-4-title-value" text="Tech card" class="rail-note-title" />
+                                <ui:Label name="dev-research-card-4-lore-value" text="Lore line." class="summary-value summary-value--glance" />
+                                <ui:Label name="dev-research-card-4-note-value" text="Operator note." class="metric-subvalue metric-subvalue--wrap" />
+                                <ui:Button name="dev-research-card-4-button" text="Start tech" class="action-button action-button--primary" />
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+
+
+                    <ui:VisualElement name="dev-workshop-cards-section" class="summary-card summary-card--full summary-card--action development-info-cards-section">
+                        <ui:VisualElement class="development-actions-head">
+                            <ui:Label text="Visible workshop cards" class="eyebrow" />
+                            <ui:Label name="dev-workshop-cards-copy-value" text="Visible workshop cards load here." class="metric-subvalue metric-subvalue--wrap" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="summary-grid development-info-cards-grid">
+                            <ui:VisualElement name="dev-workshop-card-1" class="summary-card glance-card development-info-card">
+                                <ui:Label name="dev-workshop-card-1-family-value" text="Workshop Queue" class="eyebrow" />
+                                <ui:Label name="dev-workshop-card-1-title-value" text="Workshop card" class="rail-note-title" />
+                                <ui:Label name="dev-workshop-card-1-lore-value" text="Lore line." class="summary-value summary-value--glance" />
+                                <ui:Label name="dev-workshop-card-1-note-value" text="Operator note." class="metric-subvalue metric-subvalue--wrap" />
+                            </ui:VisualElement>
+
+                            <ui:VisualElement name="dev-workshop-card-2" class="summary-card glance-card development-info-card">
+                                <ui:Label name="dev-workshop-card-2-family-value" text="Workshop Queue" class="eyebrow" />
+                                <ui:Label name="dev-workshop-card-2-title-value" text="Workshop card" class="rail-note-title" />
+                                <ui:Label name="dev-workshop-card-2-lore-value" text="Lore line." class="summary-value summary-value--glance" />
+                                <ui:Label name="dev-workshop-card-2-note-value" text="Operator note." class="metric-subvalue metric-subvalue--wrap" />
+                            </ui:VisualElement>
+
+                            <ui:VisualElement name="dev-workshop-card-3" class="summary-card glance-card development-info-card">
+                                <ui:Label name="dev-workshop-card-3-family-value" text="Workshop Queue" class="eyebrow" />
+                                <ui:Label name="dev-workshop-card-3-title-value" text="Workshop card" class="rail-note-title" />
+                                <ui:Label name="dev-workshop-card-3-lore-value" text="Lore line." class="summary-value summary-value--glance" />
+                                <ui:Label name="dev-workshop-card-3-note-value" text="Operator note." class="metric-subvalue metric-subvalue--wrap" />
+                            </ui:VisualElement>
+
+                            <ui:VisualElement name="dev-workshop-card-4" class="summary-card glance-card development-info-card">
+                                <ui:Label name="dev-workshop-card-4-family-value" text="Workshop Queue" class="eyebrow" />
+                                <ui:Label name="dev-workshop-card-4-title-value" text="Workshop card" class="rail-note-title" />
+                                <ui:Label name="dev-workshop-card-4-lore-value" text="Lore line." class="summary-value summary-value--glance" />
+                                <ui:Label name="dev-workshop-card-4-note-value" text="Operator note." class="metric-subvalue metric-subvalue--wrap" />
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+
+                    <ui:VisualElement name="dev-growth-cards-section" class="summary-card summary-card--full summary-card--action development-info-cards-section">
+                        <ui:VisualElement class="development-actions-head">
+                            <ui:Label text="Visible growth cards" class="eyebrow" />
+                            <ui:Label name="dev-growth-cards-copy-value" text="Visible growth cards load here." class="metric-subvalue metric-subvalue--wrap" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="summary-grid development-info-cards-grid">
+                            <ui:VisualElement name="dev-growth-card-1" class="summary-card glance-card development-info-card">
+                                <ui:Label name="dev-growth-card-1-family-value" text="Growth lane" class="eyebrow" />
+                                <ui:Label name="dev-growth-card-1-title-value" text="Growth card" class="rail-note-title" />
+                                <ui:Label name="dev-growth-card-1-lore-value" text="Lore line." class="summary-value summary-value--glance" />
+                                <ui:Label name="dev-growth-card-1-note-value" text="Operator note." class="metric-subvalue metric-subvalue--wrap" />
+                            </ui:VisualElement>
+
+                            <ui:VisualElement name="dev-growth-card-2" class="summary-card glance-card development-info-card">
+                                <ui:Label name="dev-growth-card-2-family-value" text="Growth lane" class="eyebrow" />
+                                <ui:Label name="dev-growth-card-2-title-value" text="Growth card" class="rail-note-title" />
+                                <ui:Label name="dev-growth-card-2-lore-value" text="Lore line." class="summary-value summary-value--glance" />
+                                <ui:Label name="dev-growth-card-2-note-value" text="Operator note." class="metric-subvalue metric-subvalue--wrap" />
+                            </ui:VisualElement>
+
+                            <ui:VisualElement name="dev-growth-card-3" class="summary-card glance-card development-info-card">
+                                <ui:Label name="dev-growth-card-3-family-value" text="Growth lane" class="eyebrow" />
+                                <ui:Label name="dev-growth-card-3-title-value" text="Growth card" class="rail-note-title" />
+                                <ui:Label name="dev-growth-card-3-lore-value" text="Lore line." class="summary-value summary-value--glance" />
+                                <ui:Label name="dev-growth-card-3-note-value" text="Operator note." class="metric-subvalue metric-subvalue--wrap" />
+                            </ui:VisualElement>
+
+                            <ui:VisualElement name="dev-growth-card-4" class="summary-card glance-card development-info-card">
+                                <ui:Label name="dev-growth-card-4-family-value" text="Growth lane" class="eyebrow" />
+                                <ui:Label name="dev-growth-card-4-title-value" text="Growth card" class="rail-note-title" />
+                                <ui:Label name="dev-growth-card-4-lore-value" text="Lore line." class="summary-value summary-value--glance" />
+                                <ui:Label name="dev-growth-card-4-note-value" text="Operator note." class="metric-subvalue metric-subvalue--wrap" />
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="summary-grid summary-grid--desk-support">
+                        <ui:VisualElement class="summary-card glance-card">
+                            <ui:Label text="Research focus" class="eyebrow" />
+                            <ui:Label name="dev-research-focus-value" text="No research lane loaded." class="summary-value summary-value--glance" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card glance-card">
+                            <ui:Label text="Next unlock" class="eyebrow" />
+                            <ui:Label name="dev-next-tech-value" text="No suggested unlock surfaced." class="summary-value summary-value--glance" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card glance-card">
+                            <ui:Label text="Workshop queue" class="eyebrow" />
+                            <ui:Label name="dev-workshop-value" text="No workshop queue visible." class="summary-value summary-value--glance" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card glance-card">
+                            <ui:Label text="Growth cadence" class="eyebrow" />
+                            <ui:Label name="dev-growth-value" text="Growth cadence unavailable." class="summary-value summary-value--glance" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card glance-card">
+                            <ui:Label text="Support posture" class="eyebrow" />
+                            <ui:Label name="dev-support-value" text="Support posture unavailable." class="summary-value summary-value--glance" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card glance-card">
+                            <ui:Label text="Desk note" class="eyebrow" />
+                            <ui:Label name="dev-note-value" text="Development Desk v1 is a command overview, not the final tree editor." class="summary-value summary-value--glance" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="summary-card summary-card--full summary-card--action">
+                        <ui:Label text="Desk actions" class="eyebrow" />
+                        <ui:VisualElement class="button-row">
+                            <ui:Button name="dev-refresh-button" text="Refresh desk" class="action-button action-button--primary" />
+                            <ui:Button name="dev-start-research-button" text="Start suggested research" class="action-button" />
+                            <ui:Button name="dev-back-home-button" text="Back to home" class="action-button" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                                    </ui:VisualElement>
+                </ui:ScrollView>
+
+                <ui:VisualElement name="placeholder-screen" class="screen-panel">
+                    <ui:VisualElement class="summary-hero">
+                        <ui:Label text="Chapter preview" class="eyebrow" />
+                        <ui:Label name="placeholder-headline-value" text="Section not built yet." class="headline" />
+                        <ui:Label name="placeholder-copy-value" text="This chapter is queued for a later bounded slice." class="headline-subtext" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="summary-card summary-card--full">
+                        <ui:Label text="Why this is here" class="eyebrow" />
+                        <ui:Label name="placeholder-note-value" text="The shell can route into later chapters without pretending the desk already exists." class="summary-value summary-value--glance" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+</ui:VisualElement>
+
+            <ui:VisualElement name="bottom-comms" class="panel comms-panel">
+                <ui:VisualElement class="comms-header-row">
+                    <ui:VisualElement>
+                        <ui:Label text="Comms" class="eyebrow" />
+                        <ui:Label name="comms-status-value" text="No chat yet." class="comms-value" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="button-row button-row--tight chat-chip-row">
+                        <ui:Button name="chat-all-button" text="All" class="action-button chat-chip action-button--primary" />
+                        <ui:Button name="chat-room-button" text="Room" class="action-button chat-chip" />
+                        <ui:Button name="chat-system-button" text="System" class="action-button chat-chip" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:ScrollView name="chat-log-scroll" class="chat-log-scroll" mode="Vertical" />
+
+                <ui:VisualElement class="chat-compose-row">
+                    <ui:TextField name="chat-input-field" class="chat-input-field" label="Say" />
+                    <ui:Button name="send-chat-button" text="Send" class="action-button action-button--primary chat-send-button" />
+                </ui:VisualElement>
+
+                <ui:Label name="comms-hint-value" text="This band now shows recent lines, simple filters, and a basic send box." class="comms-copy" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
