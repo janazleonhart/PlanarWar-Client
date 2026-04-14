@@ -13,6 +13,10 @@ namespace PlanarWar.Client.Core.Mapping
             if (summary == null) return ShellSummarySnapshot.Empty;
 
             var city = summary["city"] as JObject;
+            var resourceTickTiming = (summary["resourceTickTiming"] as JObject)
+                                     ?? (summary["resource_tick_timing"] as JObject)
+                                     ?? (city?["resourceTickTiming"] as JObject)
+                                     ?? (city?["resource_tick_timing"] as JObject);
             return new ShellSummarySnapshot
             {
                 Username = summary["username"]?.Read<string>() ?? "Anon",
@@ -27,7 +31,7 @@ namespace PlanarWar.Client.Core.Mapping
                 },
                 Resources = MapResource(summary["resources"] as JObject),
                 ProductionPerTick = MapResource(city?["production"] as JObject, true),
-                ResourceTickTiming = MapTimer(summary["resourceTickTiming"] as JObject),
+                ResourceTickTiming = MapTimer(resourceTickTiming),
                 ActiveResearch = MapResearch(summary["activeResearch"] as JObject),
                 ThreatWarnings = (summary["threatWarnings"] as JArray)?.OfType<JObject>().Select(w => new ThreatWarningSnapshot { Headline = w["headline"]?.Read<string>() ?? w["title"]?.Read<string>() ?? w["summary"]?.Read<string>() ?? "Warning" }).ToList() ?? new(),
                 OpeningOperations = (city?["settlementOpeningOperations"] as JArray)?.OfType<JObject>().Select(op => new OperationSnapshot { Title = op["title"]?.Read<string>() ?? "Operation", Readiness = op["readiness"]?.Read<string>() ?? "-" }).ToList() ?? new(),
@@ -79,7 +83,12 @@ namespace PlanarWar.Client.Core.Mapping
             if (obj == null) return new TimerSnapshot();
             return new TimerSnapshot
             {
-                TickMs = obj["tickMs"]?.Read<double?>() ?? obj["tick_ms"]?.Read<double?>(),
+                TickMs = obj["tickMs"]?.Read<double?>()
+                         ?? obj["tick_ms"]?.Read<double?>()
+                         ?? obj["cadenceMs"]?.Read<double?>()
+                         ?? obj["cadence_ms"]?.Read<double?>()
+                         ?? obj["intervalMs"]?.Read<double?>()
+                         ?? obj["interval_ms"]?.Read<double?>(),
                 LastTickAtUtc = ParseUtc(obj["lastTickAt"] ?? obj["last_tick_at"]),
                 NextTickAtUtc = ParseUtc(obj["nextTickAt"] ?? obj["next_tick_at"])
             };

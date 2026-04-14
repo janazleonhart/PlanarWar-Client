@@ -101,10 +101,19 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
         private static string FormatTick(TimerSnapshot timing)
         {
-            if (!timing.TickMs.HasValue || timing.TickMs <= 0) return "Tick timing unavailable.";
-            var cadence = TimeSpan.FromMilliseconds(timing.TickMs.Value);
-            var remaining = timing.NextTickAtUtc.HasValue ? FormatRemaining(timing.NextTickAtUtc.Value - DateTime.UtcNow) : FormatRemaining(cadence);
-            return $"{remaining} • every {FormatRemaining(cadence)}";
+            var cadence = GetCadence(timing);
+            var nextTickAtUtc = ResolveNextTickAtUtc(timing, cadence);
+
+            if (!nextTickAtUtc.HasValue && !cadence.HasValue)
+            {
+                return "Tick timing unavailable.";
+            }
+
+            var remaining = nextTickAtUtc.HasValue
+                ? FormatRemaining(nextTickAtUtc.Value - DateTime.UtcNow)
+                : "next tick unknown";
+            var cadenceText = cadence.HasValue ? FormatRemaining(cadence.Value) : "cadence unknown";
+            return $"{remaining} • every {cadenceText}";
         }
 
         private static string FormatTimerRaw(TimerSnapshot timing, bool isSummaryLoaded)
@@ -114,14 +123,38 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 return "raw: waiting for summary payload";
             }
 
-            if (!timing.TickMs.HasValue || timing.TickMs <= 0)
+            var cadence = GetCadence(timing);
+            var nextTickAtUtc = ResolveNextTickAtUtc(timing, cadence);
+            if (!cadence.HasValue && !nextTickAtUtc.HasValue)
             {
                 return "raw: summary loaded; no resource tick timing in payload";
             }
 
             var last = timing.LastTickAtUtc.HasValue ? timing.LastTickAtUtc.Value.ToString("HH:mm:ss") + " UTC" : "n/a";
-            var next = timing.NextTickAtUtc.HasValue ? timing.NextTickAtUtc.Value.ToString("HH:mm:ss") + " UTC" : "n/a";
-            return $"raw: tickMs={timing.TickMs:0.#}, last={last}, next={next}";
+            var next = nextTickAtUtc.HasValue ? nextTickAtUtc.Value.ToString("HH:mm:ss") + " UTC" : "n/a";
+            var tickMsText = cadence.HasValue ? $"{cadence.Value.TotalMilliseconds:0.#}" : "n/a";
+            return $"raw: tickMs={tickMsText}, last={last}, next={next}";
+        }
+
+        private static TimeSpan? GetCadence(TimerSnapshot timing)
+        {
+            if (!timing.TickMs.HasValue || timing.TickMs <= 0) return null;
+            return TimeSpan.FromMilliseconds(timing.TickMs.Value);
+        }
+
+        private static DateTime? ResolveNextTickAtUtc(TimerSnapshot timing, TimeSpan? cadence)
+        {
+            if (timing.NextTickAtUtc.HasValue)
+            {
+                return timing.NextTickAtUtc.Value;
+            }
+
+            if (!timing.LastTickAtUtc.HasValue || !cadence.HasValue)
+            {
+                return null;
+            }
+
+            return timing.LastTickAtUtc.Value + cadence.Value;
         }
     }
 }
