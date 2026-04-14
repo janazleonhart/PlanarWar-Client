@@ -55,7 +55,7 @@ namespace PlanarWar.Client.Network
             {
                 try
                 {
-                    LastInboundOp = msg["op"]?.Value<string>() ?? "-";
+                    LastInboundOp = msg["op"]?.Read<string>() ?? "-";
                     MessageReceived?.Invoke(msg);
                 }
                 catch (Exception ex)

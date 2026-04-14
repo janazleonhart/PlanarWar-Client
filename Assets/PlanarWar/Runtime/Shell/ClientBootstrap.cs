@@ -1,10 +1,11 @@
+using PlanarWar.Client.Core;
 using PlanarWar.Client.Core.Application;
 using PlanarWar.Client.Network;
 using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace PlanarWar.Client.Core
+namespace PlanarWar.Client.UI
 {
     public sealed class ClientBootstrap : MonoBehaviour
     {
@@ -28,21 +29,7 @@ namespace PlanarWar.Client.Core
         private SummaryRefreshController summaryController;
         private WsSessionController wsController;
         private ShellNavigationState navigationState;
-        private PlanarWar.Client.Core.Presentation.SummaryScreenPresenter summaryPresenter;
-        private PlanarWar.Client.Core.Presentation.CityScreenPresenter cityPresenter;
-        private PlanarWar.Client.Core.Presentation.BlackMarketScreenPresenter blackMarketPresenter;
-
-        private VisualElement summaryScreen;
-        private VisualElement cityScreen;
-        private VisualElement blackMarketScreen;
-        private Label connectionValue;
-        private Label shardValue;
-        private Label roomValue;
-        private Label summaryStatusValue;
-        private Label authStatusValue;
-        private Label accountValue;
-        private Label actionHintValue;
-        private Label lastUpdatedValue;
+        private AppShellController appShellController;
 
         private TextField loginNameField;
         private TextField passwordField;
@@ -67,22 +54,9 @@ namespace PlanarWar.Client.Core
 
             if (uiDocument != null)
             {
-                BindUi(uiDocument.rootVisualElement);
-                summaryPresenter = new PlanarWar.Client.Core.Presentation.SummaryScreenPresenter(uiDocument.rootVisualElement);
-                cityPresenter = new PlanarWar.Client.Core.Presentation.CityScreenPresenter(uiDocument.rootVisualElement);
-                blackMarketPresenter = new PlanarWar.Client.Core.Presentation.BlackMarketScreenPresenter(uiDocument.rootVisualElement);
-
-                summaryScreen = uiDocument.rootVisualElement.Q<VisualElement>("summary-screen");
-                cityScreen = uiDocument.rootVisualElement.Q<VisualElement>("development-screen");
-                blackMarketScreen = uiDocument.rootVisualElement.Q<VisualElement>("placeholder-screen");
-                connectionValue = uiDocument.rootVisualElement.Q<Label>("connection-value");
-                shardValue = uiDocument.rootVisualElement.Q<Label>("shard-value");
-                roomValue = uiDocument.rootVisualElement.Q<Label>("room-value");
-                summaryStatusValue = uiDocument.rootVisualElement.Q<Label>("summary-status-value");
-                authStatusValue = uiDocument.rootVisualElement.Q<Label>("auth-status-value");
-                accountValue = uiDocument.rootVisualElement.Q<Label>("account-value");
-                actionHintValue = uiDocument.rootVisualElement.Q<Label>("action-hint-value");
-                lastUpdatedValue = uiDocument.rootVisualElement.Q<Label>("last-updated-value");
+                var root = uiDocument.rootVisualElement;
+                BindUi(root);
+                appShellController = new AppShellController(root, sessionState, summaryState, navigationState);
             }
 
             sessionState.Changed += Render;
@@ -157,25 +131,7 @@ namespace PlanarWar.Client.Core
 
         private void Logout() => authController.Logout();
 
-        private void Render()
-        {
-            if (connectionValue != null) connectionValue.text = sessionState.IsConnected ? "Connected" : "Disconnected";
-            if (shardValue != null) shardValue.text = sessionState.ShardId;
-            if (roomValue != null) roomValue.text = sessionState.RoomId;
-            if (summaryStatusValue != null) summaryStatusValue.text = summaryState.IsLoaded ? "Summary loaded" : summaryState.LastError;
-            if (authStatusValue != null) authStatusValue.text = sessionState.LoginStatus;
-            if (accountValue != null) accountValue.text = sessionState.DisplayName;
-            if (actionHintValue != null) actionHintValue.text = summaryState.Snapshot.HasCity ? "Use City / Black Market tabs for lane-specific read-only surfaces." : "Founder mode: no city snapshot yet.";
-            if (lastUpdatedValue != null) lastUpdatedValue.text = summaryState.IsLoaded ? $"Updated {summaryState.LastUpdatedUtc:HH:mm:ss} UTC" : "No summary fetch yet.";
-
-            summaryPresenter?.Render(summaryState.Snapshot);
-            cityPresenter?.Render(summaryState.Snapshot);
-            blackMarketPresenter?.Render(summaryState.Snapshot);
-
-            if (summaryScreen != null) summaryScreen.style.display = navigationState.ActiveScreen == ShellScreen.Summary ? DisplayStyle.Flex : DisplayStyle.None;
-            if (cityScreen != null) cityScreen.style.display = navigationState.ActiveScreen == ShellScreen.City ? DisplayStyle.Flex : DisplayStyle.None;
-            if (blackMarketScreen != null) blackMarketScreen.style.display = navigationState.ActiveScreen == ShellScreen.BlackMarket ? DisplayStyle.Flex : DisplayStyle.None;
-        }
+        private void Render() => appShellController?.Render();
 
         private string ResolveHttpBaseUrl()
         {
