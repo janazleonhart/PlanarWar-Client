@@ -13,10 +13,22 @@ namespace PlanarWar.Client.Core.Mapping
             if (summary == null) return ShellSummarySnapshot.Empty;
 
             var city = summary["city"] as JObject;
-            var resourceTickTiming = (summary["resourceTickTiming"] as JObject)
-                                     ?? (summary["resource_tick_timing"] as JObject)
-                                     ?? (city?["resourceTickTiming"] as JObject)
-                                     ?? (city?["resource_tick_timing"] as JObject);
+            var resourceTickTiming = FirstObject(
+                summary["resourceTickTiming"],
+                summary["resource_tick_timing"],
+                summary["resourceTick"],
+                summary["resource_tick"],
+                city?["resourceTickTiming"],
+                city?["resource_tick_timing"],
+                city?["resourceTick"],
+                city?["resource_tick"]);
+            var activeMissions = FirstArray(
+                summary["activeMissions"],
+                summary["active_missions"],
+                summary["missions"]?["activeMissions"],
+                summary["missions"]?["active_missions"],
+                city?["activeMissions"],
+                city?["active_missions"]);
             return new ShellSummarySnapshot
             {
                 Username = summary["username"]?.Read<string>() ?? "Anon",
@@ -35,11 +47,25 @@ namespace PlanarWar.Client.Core.Mapping
                 ActiveResearch = MapResearch(summary["activeResearch"] as JObject),
                 ThreatWarnings = (summary["threatWarnings"] as JArray)?.OfType<JObject>().Select(w => new ThreatWarningSnapshot { Headline = w["headline"]?.Read<string>() ?? w["title"]?.Read<string>() ?? w["summary"]?.Read<string>() ?? "Warning" }).ToList() ?? new(),
                 OpeningOperations = (city?["settlementOpeningOperations"] as JArray)?.OfType<JObject>().Select(op => new OperationSnapshot { Title = op["title"]?.Read<string>() ?? "Operation", Readiness = op["readiness"]?.Read<string>() ?? "-" }).ToList() ?? new(),
-                ActiveMissions = (summary["activeMissions"] as JArray)?.OfType<JObject>().Select(m => new MissionSnapshot
+                ActiveMissions = activeMissions?.OfType<JObject>().Select(m => new MissionSnapshot
                 {
                     Id = m["mission"]?["id"]?.Read<string>() ?? "mission",
                     Title = m["mission"]?["title"]?.Read<string>() ?? m["mission"]?["id"]?.Read<string>() ?? "Mission",
-                    FinishesAtUtc = ParseUtc(m["finishesAt"])
+                    FinishesAtUtc = ParseUtc(
+                        m["finishesAt"]
+                        ?? m["finishes_at"]
+                        ?? m["finishAt"]
+                        ?? m["finish_at"]
+                        ?? m["endsAt"]
+                        ?? m["ends_at"]
+                        ?? m["deadlineAt"]
+                        ?? m["deadline_at"]
+                        ?? m["timing"]?["finishesAt"]
+                        ?? m["timing"]?["finishes_at"]
+                        ?? m["timing"]?["finishAt"]
+                        ?? m["timing"]?["finish_at"]
+                        ?? m["timing"]?["endsAt"]
+                        ?? m["timing"]?["ends_at"])
                 }).ToList() ?? new(),
                 Heroes = (summary["heroes"] as JArray)?.OfType<JObject>().Select(h => new HeroSnapshot
                 {
@@ -89,10 +115,13 @@ namespace PlanarWar.Client.Core.Mapping
                          ?? obj["cadence_ms"]?.Read<double?>()
                          ?? obj["intervalMs"]?.Read<double?>()
                          ?? obj["interval_ms"]?.Read<double?>(),
-                LastTickAtUtc = ParseUtc(obj["lastTickAt"] ?? obj["last_tick_at"]),
-                NextTickAtUtc = ParseUtc(obj["nextTickAt"] ?? obj["next_tick_at"])
+                LastTickAtUtc = ParseUtc(obj["lastTickAt"] ?? obj["last_tick_at"] ?? obj["lastAt"] ?? obj["last_at"] ?? obj["lastTick"] ?? obj["last_tick"]),
+                NextTickAtUtc = ParseUtc(obj["nextTickAt"] ?? obj["next_tick_at"] ?? obj["nextAt"] ?? obj["next_at"] ?? obj["nextTick"] ?? obj["next_tick"])
             };
         }
+
+        private static JObject FirstObject(params JToken[] tokens) => tokens?.OfType<JObject>().FirstOrDefault();
+        private static JArray FirstArray(params JToken[] tokens) => tokens?.OfType<JArray>().FirstOrDefault();
 
         private static ResearchSnapshot MapResearch(JObject obj)
         {

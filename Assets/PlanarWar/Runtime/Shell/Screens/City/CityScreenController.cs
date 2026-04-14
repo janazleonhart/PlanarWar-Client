@@ -162,8 +162,23 @@ namespace PlanarWar.Client.UI.Screens.City
         private static string FormatProgress(double? progress, double? cost) => cost.GetValueOrDefault() > 0 ? $"{progress.GetValueOrDefault():0.#}/{cost.Value:0.#}" : $"{progress.GetValueOrDefault():0.#}";
         private static string FormatWorkshopHeadline(List<WorkshopJobSnapshot> jobs) => jobs.Count == 0 ? "No workshop queue visible." : $"{jobs.Count(j => !j.Completed)} active • {jobs.Count(j => j.Completed)} completed";
         private static string FormatResources(ResourceSnapshot r) => $"Food {r.Food.GetValueOrDefault():0.#} • Materials {r.Materials.GetValueOrDefault():0.#} • Wealth {r.Wealth.GetValueOrDefault():0.#} • Mana {r.Mana.GetValueOrDefault():0.#} • Knowledge {r.Knowledge.GetValueOrDefault():0.#} • Unity {r.Unity.GetValueOrDefault():0.#}";
-        private static string FormatTick(TimerSnapshot timing) => !timing.TickMs.HasValue || timing.TickMs <= 0 ? "Growth cadence unavailable." : $"{FormatRemaining(timing.NextTickAtUtc)} • every {TimeSpan.FromMilliseconds(timing.TickMs.Value):mm\\:ss}";
-        private static string FormatTickRaw(TimerSnapshot timing) => !timing.TickMs.HasValue || timing.TickMs <= 0 ? "No tick timing payload." : $"tickMs={timing.TickMs.Value:0.#}, next={(timing.NextTickAtUtc.HasValue ? timing.NextTickAtUtc.Value.ToString("HH:mm:ss") + " UTC" : "n/a")}";
+        private static string FormatTick(TimerSnapshot timing)
+        {
+            var cadence = GetCadence(timing);
+            var nextTickAtUtc = ResolveNextTickAtUtc(timing, cadence);
+            if (!nextTickAtUtc.HasValue && !cadence.HasValue) return "Growth cadence unavailable.";
+            var remaining = nextTickAtUtc.HasValue ? FormatRemaining(nextTickAtUtc) : "anchor missing";
+            var cadenceText = cadence.HasValue ? cadence.Value.ToString(@"mm\:ss") : "cadence unknown";
+            return $"{remaining} • every {cadenceText}";
+        }
+
+        private static string FormatTickRaw(TimerSnapshot timing)
+        {
+            var cadence = GetCadence(timing);
+            var nextTickAtUtc = ResolveNextTickAtUtc(timing, cadence);
+            if (!cadence.HasValue && !nextTickAtUtc.HasValue) return "state=no_timing_data; tickMs=n/a, next=n/a";
+            return $"state={(nextTickAtUtc.HasValue ? "countdown_ready" : "cadence_only_anchor_missing")}; tickMs={(cadence.HasValue ? cadence.Value.TotalMilliseconds.ToString("0.#") : "n/a")}, next={(nextTickAtUtc.HasValue ? nextTickAtUtc.Value.ToString("HH:mm:ss") + " UTC" : "n/a")}";
+        }
 
         private static string FormatRemaining(DateTime? utc)
         {
@@ -171,6 +186,19 @@ namespace PlanarWar.Client.UI.Screens.City
             var delta = utc.Value - DateTime.UtcNow;
             if (delta <= TimeSpan.Zero) return "due now";
             return delta.TotalHours >= 1 ? delta.ToString(@"hh\:mm\:ss") : delta.ToString(@"mm\:ss");
+        }
+
+        private static TimeSpan? GetCadence(TimerSnapshot timing)
+        {
+            if (!timing.TickMs.HasValue || timing.TickMs <= 0) return null;
+            return TimeSpan.FromMilliseconds(timing.TickMs.Value);
+        }
+
+        private static DateTime? ResolveNextTickAtUtc(TimerSnapshot timing, TimeSpan? cadence)
+        {
+            if (timing.NextTickAtUtc.HasValue) return timing.NextTickAtUtc.Value;
+            if (!timing.LastTickAtUtc.HasValue || !cadence.HasValue) return null;
+            return timing.LastTickAtUtc.Value + cadence.Value;
         }
 
         private readonly struct DevCard

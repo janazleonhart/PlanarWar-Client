@@ -95,7 +95,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
         {
             if (missions.Count == 0) return "No active mission clock.";
             var first = missions[0];
-            var timer = first.FinishesAtUtc.HasValue ? FormatRemaining(first.FinishesAtUtc.Value - DateTime.UtcNow) : "time unknown";
+            var timer = first.FinishesAtUtc.HasValue ? FormatRemaining(first.FinishesAtUtc.Value - DateTime.UtcNow) : "anchor missing";
             return $"{first.Title} • {timer}";
         }
 
@@ -111,9 +111,9 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             var remaining = nextTickAtUtc.HasValue
                 ? FormatRemaining(nextTickAtUtc.Value - DateTime.UtcNow)
-                : "next tick unknown";
+                : "anchor missing";
             var cadenceText = cadence.HasValue ? FormatRemaining(cadence.Value) : "cadence unknown";
-            return $"{remaining} • every {cadenceText}";
+            return $"{remaining} • every {cadenceText} • {DescribeTimingState(nextTickAtUtc.HasValue, cadence.HasValue)}";
         }
 
         private static string FormatTimerRaw(TimerSnapshot timing, bool isSummaryLoaded)
@@ -127,13 +127,13 @@ namespace PlanarWar.Client.UI.Screens.Summary
             var nextTickAtUtc = ResolveNextTickAtUtc(timing, cadence);
             if (!cadence.HasValue && !nextTickAtUtc.HasValue)
             {
-                return "raw: summary loaded; no resource tick timing in payload";
+                return "raw: state=no_timing_data; tickMs=n/a, last=n/a, next=n/a";
             }
 
             var last = timing.LastTickAtUtc.HasValue ? timing.LastTickAtUtc.Value.ToString("HH:mm:ss") + " UTC" : "n/a";
             var next = nextTickAtUtc.HasValue ? nextTickAtUtc.Value.ToString("HH:mm:ss") + " UTC" : "n/a";
             var tickMsText = cadence.HasValue ? $"{cadence.Value.TotalMilliseconds:0.#}" : "n/a";
-            return $"raw: tickMs={tickMsText}, last={last}, next={next}";
+            return $"raw: state={GetTimingState(nextTickAtUtc.HasValue, cadence.HasValue)}; tickMs={tickMsText}, last={last}, next={next}";
         }
 
         private static TimeSpan? GetCadence(TimerSnapshot timing)
@@ -155,6 +155,20 @@ namespace PlanarWar.Client.UI.Screens.Summary
             }
 
             return timing.LastTickAtUtc.Value + cadence.Value;
+        }
+
+        private static string DescribeTimingState(bool hasAnchor, bool hasCadence)
+        {
+            if (hasAnchor) return "countdown ready";
+            if (hasCadence) return "cadence-only";
+            return "no timing data";
+        }
+
+        private static string GetTimingState(bool hasAnchor, bool hasCadence)
+        {
+            if (hasAnchor) return "countdown_ready";
+            if (hasCadence) return "cadence_only_anchor_missing";
+            return "no_timing_data";
         }
     }
 }
