@@ -770,26 +770,30 @@
 
 .auth-login-stack {
     margin-top: 8px;
-    gap: 8px;
+    gap: 10px;
 }
 
 .auth-field {
-    min-height: 34px;
+    min-height: 38px;
+    align-items: center;
 }
 
 .auth-field .unity-base-field__label {
     min-width: 112px;
-    color: rgb(214, 226, 255);
+    color: rgb(228, 236, 255);
     font-size: 12px;
     -unity-font-style: bold;
     margin-right: 10px;
 }
 
-.auth-field .unity-base-field__input {
-    min-height: 34px;
+.auth-field .unity-base-field__input,
+.auth-field .unity-base-text-field__input,
+.auth-field .unity-base-text-field__input--single-line {
+    min-height: 38px;
     padding-left: 10px;
     padding-right: 10px;
-    background-color: rgba(8, 14, 30, 0.95);
+    background-color: rgba(8, 14, 30, 0.98);
+    color: rgb(244, 247, 255);
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
     border-bottom-left-radius: 8px;
@@ -798,25 +802,31 @@
     border-right-width: 1px;
     border-top-width: 1px;
     border-bottom-width: 1px;
-    border-left-color: rgba(95, 126, 210, 0.55);
-    border-right-color: rgba(95, 126, 210, 0.55);
-    border-top-color: rgba(95, 126, 210, 0.55);
-    border-bottom-color: rgba(95, 126, 210, 0.55);
+    border-left-color: rgba(110, 146, 235, 0.72);
+    border-right-color: rgba(110, 146, 235, 0.72);
+    border-top-color: rgba(110, 146, 235, 0.72);
+    border-bottom-color: rgba(110, 146, 235, 0.72);
 }
 
 .auth-field .unity-text-input,
-.auth-field .unity-base-field__input > .unity-text-input {
-    color: rgb(242, 246, 255);
+.auth-field .unity-base-field__input > .unity-text-input,
+.auth-field .unity-base-field__input .unity-text-element,
+.auth-field .unity-base-text-field__input .unity-text-element,
+.auth-field .unity-base-text-field__input--single-line .unity-text-element {
+    color: rgb(244, 247, 255);
     -unity-text-align: middle-left;
 }
 
-.auth-field--password .unity-text-input {
+.auth-field--password .unity-text-input,
+.auth-field--password .unity-base-field__input .unity-text-element,
+.auth-field--password .unity-base-text-field__input .unity-text-element {
     letter-spacing: 1px;
 }
 
 .auth-button-row {
     margin-top: 8px;
     justify-content: flex-end;
+    align-items: center;
 }
 
 .auth-button-row .action-button {
