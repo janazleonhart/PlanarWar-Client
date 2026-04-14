@@ -79,9 +79,9 @@ namespace PlanarWar.Client.Core.Mapping
             if (obj == null) return new TimerSnapshot();
             return new TimerSnapshot
             {
-                TickMs = obj["tickMs"]?.Read<double?>(),
-                LastTickAtUtc = ParseUtc(obj["lastTickAt"]),
-                NextTickAtUtc = ParseUtc(obj["nextTickAt"])
+                TickMs = obj["tickMs"]?.Read<double?>() ?? obj["tick_ms"]?.Read<double?>(),
+                LastTickAtUtc = ParseUtc(obj["lastTickAt"] ?? obj["last_tick_at"]),
+                NextTickAtUtc = ParseUtc(obj["nextTickAt"] ?? obj["next_tick_at"])
             };
         }
 

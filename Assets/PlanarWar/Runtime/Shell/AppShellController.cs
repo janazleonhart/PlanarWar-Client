@@ -3,6 +3,7 @@ using PlanarWar.Client.Core.Application;
 using PlanarWar.Client.UI.Screens.BlackMarket;
 using PlanarWar.Client.UI.Screens.City;
 using PlanarWar.Client.UI.Screens.Summary;
+using System;
 using UnityEngine.UIElements;
 
 namespace PlanarWar.Client.UI
@@ -29,6 +30,7 @@ namespace PlanarWar.Client.UI
         private readonly Label accountValue;
         private readonly Label actionHintValue;
         private readonly Label lastUpdatedValue;
+        private readonly Label liveClockValue;
 
         public AppShellController(VisualElement root, SessionState sessionState, SummaryState summaryState, ShellNavigationState navigationState)
         {
@@ -52,6 +54,7 @@ namespace PlanarWar.Client.UI
             accountValue = root.Q<Label>("account-value");
             actionHintValue = root.Q<Label>("action-hint-value");
             lastUpdatedValue = root.Q<Label>("last-updated-value");
+            liveClockValue = root.Q<Label>("live-clock-value");
         }
 
         public void Render()
@@ -64,8 +67,9 @@ namespace PlanarWar.Client.UI
             accountValue.text = sessionState.DisplayName;
             actionHintValue.text = summaryState.Snapshot.HasCity ? "Use City / Black Market tabs for lane-specific read-only surfaces." : "Founder mode: no city snapshot yet.";
             lastUpdatedValue.text = summaryState.IsLoaded ? $"Updated {summaryState.LastUpdatedUtc:HH:mm:ss} UTC" : "No summary fetch yet.";
+            liveClockValue.text = $"Now {DateTime.UtcNow:HH:mm:ss} UTC";
 
-            summaryScreen.Render(summaryState.Snapshot);
+            summaryScreen.Render(summaryState.Snapshot, summaryState.IsLoaded);
             cityScreen.Render(summaryState.Snapshot);
             blackMarketScreen.Render(summaryState.Snapshot);
 
