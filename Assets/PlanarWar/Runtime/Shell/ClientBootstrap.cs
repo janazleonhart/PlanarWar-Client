@@ -351,6 +351,24 @@ namespace PlanarWar.Client.UI
             DontDestroyOnLoad(cameraObject);
         }
 
+        private void SendRoomChatFromInput()
+        {
+            var chatInputField = uiDocument?.rootVisualElement?.Q<TextField>("chat-input-field");
+            if (chatInputField == null)
+            {
+                return;
+            }
+
+            var text = chatInputField.value?.Trim();
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return;
+            }
+
+            wsController?.SendRoomChat(text);
+            chatInputField.value = string.Empty;
+        }
+
         private void BindUi(VisualElement root)
         {
             loginNameField = root.Q<TextField>("login-name-field");
@@ -375,6 +393,18 @@ namespace PlanarWar.Client.UI
             root.Q<Button>("chat-all-button")?.RegisterCallback<ClickEvent>(_ => sessionState.SetActiveChatChannel("all"));
             root.Q<Button>("chat-room-button")?.RegisterCallback<ClickEvent>(_ => sessionState.SetActiveChatChannel("room"));
             root.Q<Button>("chat-system-button")?.RegisterCallback<ClickEvent>(_ => sessionState.SetActiveChatChannel("system"));
+
+            root.Q<Button>("send-chat-button")?.RegisterCallback<ClickEvent>(_ => SendRoomChatFromInput());
+            root.Q<TextField>("chat-input-field")?.RegisterCallback<KeyDownEvent>(evt =>
+            {
+                if (evt.keyCode != KeyCode.Return && evt.keyCode != KeyCode.KeypadEnter)
+                {
+                    return;
+                }
+
+                evt.StopPropagation();
+                SendRoomChatFromInput();
+            });
         }
 
         private async void RefreshSummary()

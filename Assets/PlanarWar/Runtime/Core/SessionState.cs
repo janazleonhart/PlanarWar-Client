@@ -31,7 +31,8 @@ namespace PlanarWar.Client.Core
         public string DisplayName { get; private set; } = "Anon";
         public string ShardId { get; private set; } = "-";
         public string RoomId { get; private set; } = "-";
-        public bool HasJoinedChatRoom => !string.IsNullOrWhiteSpace(RoomId) && RoomId != "-" && RoomId != "(unattached)";
+        public string ChatRoomId { get; private set; } = "-";
+        public bool HasJoinedChatRoom => !string.IsNullOrWhiteSpace(ChatRoomId) && ChatRoomId != "-" && ChatRoomId != "(unattached)";
         public bool IsConnected { get; private set; }
         public string LastInboundOp { get; private set; } = "-";
         public string LastError { get; private set; } = "-";
@@ -58,6 +59,7 @@ namespace PlanarWar.Client.Core
             if (!isConnected)
             {
                 RoomId = "-";
+                ChatRoomId = "-";
             }
             NotifyChanged();
         }
@@ -108,14 +110,14 @@ namespace PlanarWar.Client.Core
 
         public void ApplyRoomJoined(string roomId)
         {
-            RoomId = string.IsNullOrWhiteSpace(roomId) ? "lobby" : roomId.Trim();
-            ApplySystemNotice($"Joined chat room: {RoomId}.");
+            ChatRoomId = string.IsNullOrWhiteSpace(roomId) ? "lobby" : roomId.Trim();
+            ApplySystemNotice($"Joined chat room: {ChatRoomId}.");
             NotifyChanged();
         }
 
         public void ApplyRoomLeft()
         {
-            RoomId = "(unattached)";
+            ChatRoomId = "(unattached)";
             ApplySystemNotice("Left chat room.");
             NotifyChanged();
         }

@@ -194,14 +194,17 @@ namespace PlanarWar.Client.UI
                 commsStatusValue.text = sessionState.ChatLines.Count > 0 ? sessionState.LastChatLine : "No chat yet.";
             }
 
+            var canSendRoomChat = sessionState.IsConnected && sessionState.HasJoinedChatRoom;
             if (commsHintValue != null)
             {
-                var roomText = sessionState.HasJoinedChatRoom ? $"room {sessionState.RoomId}" : "no room attached";
-                commsHintValue.text = $"Read-only comms band. Filter {sessionState.ActiveChatChannel.ToUpperInvariant()} • {roomText} • send box parked until chat wiring lands.";
+                var roomText = sessionState.HasJoinedChatRoom ? $"room {sessionState.ChatRoomId}" : "no room attached";
+                commsHintValue.text = canSendRoomChat
+                    ? $"Room comms are live. Filter {sessionState.ActiveChatChannel.ToUpperInvariant()} • {roomText} • send box routes through websocket room chat."
+                    : $"Comms band is connected to live traffic, but outbound room chat waits for a room attachment. Filter {sessionState.ActiveChatChannel.ToUpperInvariant()} • {roomText}.";
             }
 
-            sendChatButton?.SetEnabled(false);
-            chatInputField?.SetEnabled(false);
+            sendChatButton?.SetEnabled(canSendRoomChat);
+            chatInputField?.SetEnabled(canSendRoomChat);
 
             SetFilterActive(chatAllButton, string.Equals(sessionState.ActiveChatChannel, "all", StringComparison.OrdinalIgnoreCase));
             SetFilterActive(chatRoomButton, string.Equals(sessionState.ActiveChatChannel, "room", StringComparison.OrdinalIgnoreCase));
@@ -281,7 +284,7 @@ namespace PlanarWar.Client.UI
                 var allLines = sessionState.ChatLines;
                 var systemLine = allLines.LastOrDefault(l => string.Equals(l.ChannelId, "system", StringComparison.OrdinalIgnoreCase));
                 var roomJoined = sessionState.HasJoinedChatRoom;
-                var roomText = roomJoined ? sessionState.RoomId : "(unattached)";
+                var roomText = roomJoined ? sessionState.ChatRoomId : "(unattached)";
 
                 headline.text = roomJoined || visibleLines.Count > 0 ? "Social desk" : "Social review";
                 copy.text = roomJoined
@@ -294,7 +297,7 @@ namespace PlanarWar.Client.UI
                 trafficValue.text = visibleLines.Count > 0 ? $"{visibleLines.Count} visible line(s) • {allLines.Count} stored" : "No visible lines for this filter.";
                 connectionValue.text = sessionState.IsConnected ? $"Connected • last op {sessionState.LastInboundOp}" : "Disconnected";
                 systemValue.text = systemLine != null ? systemLine.ToDisplayText() : "No system notice yet.";
-                noteValue.text = "Read-only desk: room state, recent lines, and filter posture are live. Friend lists and outbound chat stay deferred.";
+                noteValue.text = roomJoined ? "Room chat is live here; broader friend roster and cross-channel surfaces remain deferred." : "This desk keeps live room/system posture honest while broader friend and outbound channel surfaces stay deferred until they are real." ;
 
                 var cardViews = new[]
                 {
