@@ -18,12 +18,8 @@ namespace PlanarWar.Client.Core.Application
         public async Task RefreshAsync()
         {
             var raw = await apiClient.FetchSummaryAsync();
-			var snapshot = ShellSummarySnapshotMapper.Map(raw);
-			UnityEngine.Debug.Log(
-				$"MAPPED tick => ms={snapshot.ResourceTickTiming?.TickMs}, " +
-				$"last={snapshot.ResourceTickTiming?.LastTickAtUtc:o}, " +
-				$"next={snapshot.ResourceTickTiming?.NextTickAtUtc:o}");
-			summaryState.Apply(raw, snapshot);
+            var snapshot = ShellSummarySnapshotMapper.Map(raw);
+            summaryState.Apply(raw, snapshot);
         }
     }
 }

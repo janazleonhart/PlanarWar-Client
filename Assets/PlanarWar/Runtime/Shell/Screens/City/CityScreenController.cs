@@ -1,3 +1,4 @@
+using PlanarWar.Client.Core;
 using PlanarWar.Client.Core.Contracts;
 using System;
 using System.Collections.Generic;
@@ -41,6 +42,7 @@ namespace PlanarWar.Client.UI.Screens.City
         private readonly VisualElement researchSection;
         private readonly VisualElement workshopSection;
         private readonly VisualElement growthSection;
+        private readonly Action<string> onStartResearch;
 
         private readonly InfoCard[] researchCards;
         private readonly InfoCard[] workshopCards;
@@ -48,8 +50,10 @@ namespace PlanarWar.Client.UI.Screens.City
 
         private DevelopmentLane activeLane = DevelopmentLane.Research;
 
-        public CityScreenController(VisualElement root)
+        public CityScreenController(VisualElement root, Action<string> onStartResearch)
         {
+            this.onStartResearch = onStartResearch;
+
             headline = root.Q<Label>("development-headline-value");
             copy = root.Q<Label>("development-copy-value");
             laneTitle = root.Q<Label>("dev-lane-title-value");
@@ -77,7 +81,7 @@ namespace PlanarWar.Client.UI.Screens.City
             workshopSection = root.Q<VisualElement>("dev-workshop-cards-section");
             growthSection = root.Q<VisualElement>("dev-growth-cards-section");
 
-            researchCards = Enumerable.Range(1, 4).Select(i => new InfoCard(root, $"dev-research-card-{i}", hasButton: true)).ToArray();
+            researchCards = Enumerable.Range(1, 4).Select(i => new InfoCard(root, $"dev-research-card-{i}", onStartResearch)).ToArray();
             workshopCards = Enumerable.Range(1, 4).Select(i => new InfoCard(root, $"dev-workshop-card-{i}")).ToArray();
             growthCards = Enumerable.Range(1, 4).Select(i => new InfoCard(root, $"dev-growth-card-{i}")).ToArray();
 
@@ -87,11 +91,11 @@ namespace PlanarWar.Client.UI.Screens.City
             ApplyLaneSelection();
         }
 
-        public void Render(ShellSummarySnapshot s)
+        public void Render(ShellSummarySnapshot s, SummaryState summaryState)
         {
             if (!s.HasCity)
             {
-                RenderNoCity();
+                RenderNoCity(summaryState);
                 return;
             }
 
@@ -114,15 +118,15 @@ namespace PlanarWar.Client.UI.Screens.City
             workshopValue.text = DescribeWorkshopLane(s);
             growthValue.text = DescribeGrowthLane(s);
             supportValue.text = DescribeSupport(s);
-            noteValue.text = $"Read-only desk. Showing {s.AvailableTechs.Count} tech option(s), {s.WorkshopJobs.Count} workshop job(s), and {s.CityTimers.Count} live city timer(s).";
+            noteValue.text = BuildDeskNote(s, summaryState);
 
-            RenderResearchLane(s);
+            RenderResearchLane(s, summaryState);
             RenderWorkshopLane(s);
             RenderGrowthLane(s);
             ApplyLaneSelection();
         }
 
-        private void RenderNoCity()
+        private void RenderNoCity(SummaryState summaryState)
         {
             headline.text = "Development desk unavailable";
             copy.text = "Found a city first. Development desks stay read-only until a settlement snapshot exists.";
@@ -139,7 +143,9 @@ namespace PlanarWar.Client.UI.Screens.City
             workshopValue.text = "No workshop queue visible.";
             growthValue.text = "Growth cadence unavailable.";
             supportValue.text = "Support posture unavailable.";
-            noteValue.text = "Development Desk v1 stays honest: no city snapshot means no desk truth.";
+            noteValue.text = string.IsNullOrWhiteSpace(summaryState?.ActionStatus)
+                ? "Development Desk v1 stays honest: no city snapshot means no desk truth."
+                : summaryState.ActionStatus;
             researchCardsCopyValue.text = "No research cards without a city payload.";
             workshopCardsCopyValue.text = "No workshop cards without a city payload.";
             growthCardsCopyValue.text = "No growth cards without a city payload.";
@@ -150,7 +156,7 @@ namespace PlanarWar.Client.UI.Screens.City
             ApplyLaneSelection();
         }
 
-        private void RenderResearchLane(ShellSummarySnapshot s)
+        private void RenderResearchLane(ShellSummarySnapshot s, SummaryState summaryState)
         {
             laneTitle.text = activeLane == DevelopmentLane.Research ? "Research lane" : laneTitle.text;
             laneCopy.text = activeLane == DevelopmentLane.Research
@@ -165,7 +171,9 @@ namespace PlanarWar.Client.UI.Screens.City
                     title: s.ActiveResearch.Name,
                     lore: $"Progress {FormatProgress(s.ActiveResearch.Progress, s.ActiveResearch.Cost)}",
                     note: s.ActiveResearch.StartedAtUtc.HasValue ? $"Started {s.ActiveResearch.StartedAtUtc:HH:mm:ss} UTC" : "Live research queue entry from summary payload.",
-                    buttonText: "Active"));
+                    buttonText: "Live",
+                    buttonActionId: string.Empty,
+                    buttonEnabled: false));
             }
 
             cards.AddRange(s.AvailableTechs.Take(4 - cards.Count).Select(tech => new CardView(
@@ -173,18 +181,24 @@ namespace PlanarWar.Client.UI.Screens.City
                 title: tech.Name,
                 lore: FirstNonBlank(tech.IdentitySummary, tech.Description, tech.UnlockPreview.FirstOrDefault(), "No research summary provided."),
                 note: BuildTechNote(tech),
-                buttonText: "Read-only")));
+                buttonText: summaryState.IsActionBusy && string.Equals(summaryState.PendingResearchTechId, tech.Id, StringComparison.OrdinalIgnoreCase)
+                    ? "Starting..."
+                    : "Start research",
+                buttonActionId: tech.Id,
+                buttonEnabled: !summaryState.IsActionBusy)));
 
             if (cards.Count == 0)
             {
-                cards.Add(new CardView("Research payload", "No tech entry", "The current /api/me payload did not surface availableTechs or an activeResearch entry.", "No mutation wiring is attempted here.", "Read-only"));
+                cards.Add(new CardView("Research payload", "No tech entry", "The current /api/me payload did not surface availableTechs or an activeResearch entry.", "No mutation wiring is attempted here.", "Read-only", string.Empty, false));
             }
 
-            researchCardsCopyValue.text = s.ActiveResearch != null
-                ? $"Active research plus {Math.Max(0, s.AvailableTechs.Count)} surfaced tech option(s)."
-                : s.AvailableTechs.Count > 0
-                    ? $"Showing {s.AvailableTechs.Count} available tech option(s) from /api/me."
-                    : "No research cards were surfaced in payload.";
+            researchCardsCopyValue.text = summaryState.IsActionBusy
+                ? $"Submitting research order for {summaryState.PendingResearchTechId}."
+                : s.ActiveResearch != null
+                    ? $"Active research plus {Math.Max(0, s.AvailableTechs.Count)} surfaced tech option(s)."
+                    : s.AvailableTechs.Count > 0
+                        ? $"Showing {s.AvailableTechs.Count} available tech option(s) from /api/me."
+                        : "No research cards were surfaced in payload.";
 
             RenderCards(researchCards, cards);
         }
@@ -229,7 +243,7 @@ namespace PlanarWar.Client.UI.Screens.City
                 : readyJobs.Count > 0
                     ? $"{readyJobs.Count} ready pickup(s) visible; no active workshop work is in flight."
                     : workshopTimers.Count > 0
-                        ? $"Workshop timing is coming through cityTimers even though no job body is active."
+                        ? "Workshop timing is coming through cityTimers even though no job body is active."
                         : "No workshop queue or timer is visible right now.";
 
             RenderCards(workshopCards, cards);
@@ -419,6 +433,16 @@ namespace PlanarWar.Client.UI.Screens.City
             return parts.Count > 0 ? string.Join(" • ", parts) : "No extra operator note supplied.";
         }
 
+        private static string BuildDeskNote(ShellSummarySnapshot snapshot, SummaryState summaryState)
+        {
+            if (summaryState == null || string.IsNullOrWhiteSpace(summaryState.ActionStatus))
+            {
+                return $"Read-only desk. Showing {snapshot.AvailableTechs.Count} tech option(s), {snapshot.WorkshopJobs.Count} workshop job(s), and {snapshot.CityTimers.Count} live city timer(s).";
+            }
+
+            return summaryState.ActionStatus;
+        }
+
         private static string FirstNonBlank(params string[] values) => values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v)) ?? string.Empty;
 
         private static string FormatRemaining(TimeSpan span)
@@ -445,13 +469,15 @@ namespace PlanarWar.Client.UI.Screens.City
 
         private readonly struct CardView
         {
-            public CardView(string family, string title, string lore, string note, string buttonText = null)
+            public CardView(string family, string title, string lore, string note, string buttonText = null, string buttonActionId = null, bool buttonEnabled = false)
             {
                 Family = family;
                 Title = title;
                 Lore = lore;
                 Note = note;
                 ButtonText = buttonText;
+                ButtonActionId = buttonActionId;
+                ButtonEnabled = buttonEnabled;
             }
 
             public string Family { get; }
@@ -459,6 +485,8 @@ namespace PlanarWar.Client.UI.Screens.City
             public string Lore { get; }
             public string Note { get; }
             public string ButtonText { get; }
+            public string ButtonActionId { get; }
+            public bool ButtonEnabled { get; }
         }
 
         private sealed class InfoCard
@@ -469,15 +497,29 @@ namespace PlanarWar.Client.UI.Screens.City
             private readonly Label lore;
             private readonly Label note;
             private readonly Button button;
+            private readonly Action<string> onClick;
+            private string actionId;
 
-            public InfoCard(VisualElement shellRoot, string prefix, bool hasButton = false)
+            public InfoCard(VisualElement shellRoot, string prefix, Action<string> onClick = null)
             {
                 root = shellRoot.Q<VisualElement>(prefix);
                 family = shellRoot.Q<Label>($"{prefix}-family-value");
                 title = shellRoot.Q<Label>($"{prefix}-title-value");
                 lore = shellRoot.Q<Label>($"{prefix}-lore-value");
                 note = shellRoot.Q<Label>($"{prefix}-note-value");
-                button = hasButton ? shellRoot.Q<Button>($"{prefix}-button") : null;
+                button = shellRoot.Q<Button>($"{prefix}-button");
+                this.onClick = onClick;
+
+                if (button != null)
+                {
+                    button.RegisterCallback<ClickEvent>(_ =>
+                    {
+                        if (!string.IsNullOrWhiteSpace(actionId))
+                        {
+                            this.onClick?.Invoke(actionId);
+                        }
+                    });
+                }
             }
 
             public void Render(CardView view)
@@ -490,14 +532,17 @@ namespace PlanarWar.Client.UI.Screens.City
                 if (note != null) note.text = view.Note;
                 if (button != null)
                 {
+                    actionId = view.ButtonActionId;
                     button.text = view.ButtonText ?? "Read-only";
-                    button.SetEnabled(false);
+                    button.SetEnabled(view.ButtonEnabled && !string.IsNullOrWhiteSpace(view.ButtonActionId));
+                    button.style.display = string.IsNullOrWhiteSpace(view.ButtonText) ? DisplayStyle.None : DisplayStyle.Flex;
                 }
             }
 
             public void RenderHidden()
             {
                 if (root != null) root.style.display = DisplayStyle.None;
+                actionId = string.Empty;
             }
         }
     }
