@@ -203,6 +203,9 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 lore = root.Q<Label>($"{prefix}-lore-value");
                 note = root.Q<Label>($"{prefix}-note-value");
                 button = hasButton ? root.Q<Button>($"{prefix}-button") : null;
+
+                this.root?.AddToClassList("warfront-desk-card");
+                button?.AddToClassList("warfront-desk-card__button");
                 if (button != null) button.clicked += () => clickAction?.Invoke();
             }
 

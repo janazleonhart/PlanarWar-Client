@@ -903,3 +903,66 @@
 .rail-version-card {
     gap: 4px;
 }
+
+
+/* Warfront layout cleanup v1 */
+.warfront-screen-content {
+    gap: 16px;
+    padding-right: 8px;
+    padding-bottom: 10px;
+}
+
+.warfront-hero {
+    gap: 8px;
+    padding-top: 2px;
+    padding-bottom: 12px;
+}
+
+.warfront-overview-card,
+.warfront-cards-shell {
+    flex-shrink: 0;
+}
+
+.warfront-cards-grid {
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.warfront-desk-card {
+    min-width: 340px;
+    max-width: 48%;
+    min-height: 180px;
+    gap: 8px;
+    justify-content: flex-start;
+    flex-grow: 1;
+}
+
+.warfront-desk-card .rail-note-title,
+.warfront-desk-card .summary-value,
+.warfront-desk-card .metric-subvalue,
+.warfront-support-card .summary-value {
+    white-space: normal;
+}
+
+.warfront-desk-card__button {
+    margin-top: auto;
+    min-width: 150px;
+    align-self: stretch;
+}
+
+.warfront-support-grid {
+    align-items: stretch;
+    gap: 12px;
+    margin-top: 2px;
+    margin-bottom: 4px;
+}
+
+.warfront-support-card {
+    min-width: 280px;
+    max-width: 31%;
+    min-height: 116px;
+    gap: 6px;
+    flex-grow: 1;
+}

@@ -426,76 +426,78 @@
                                     </ui:VisualElement>
                 </ui:ScrollView>
 
-                <ui:VisualElement name="placeholder-screen" class="screen-panel">
-                    <ui:VisualElement class="summary-hero">
-                        <ui:Label text="Field doctrine" class="eyebrow" />
-                        <ui:Label name="placeholder-headline-value" text="Warfront desk" class="headline" />
-                        <ui:Label name="placeholder-copy-value" text="Read-only warfront review surfaces live windows, field timers, and posture without pretending command actions already exist in the client." class="headline-subtext" />
-                    </ui:VisualElement>
-                    <ui:VisualElement class="summary-card summary-card--full">
-                        <ui:Label text="Field overview" class="eyebrow" />
-                        <ui:Label name="placeholder-note-value" text="Warfront read-only desk uses live field timers and summary status instead of fake placeholder copy." class="summary-value summary-value--glance" />
-                    </ui:VisualElement>
+                <ui:ScrollView name="placeholder-screen" class="screen-panel screen-scroll" mode="Vertical">
+                    <ui:VisualElement class="screen-scroll-content warfront-screen-content">
+                        <ui:VisualElement class="summary-hero warfront-hero">
+                            <ui:Label text="Field doctrine" class="eyebrow" />
+                            <ui:Label name="placeholder-headline-value" text="Warfront desk" class="headline" />
+                            <ui:Label name="placeholder-copy-value" text="Read-only warfront review surfaces live windows, field timers, and posture without pretending command actions already exist in the client." class="headline-subtext" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="summary-card summary-card--full warfront-overview-card">
+                            <ui:Label text="Field overview" class="eyebrow" />
+                            <ui:Label name="placeholder-note-value" text="Warfront read-only desk uses live field timers and summary status instead of fake placeholder copy." class="summary-value summary-value--glance" />
+                        </ui:VisualElement>
 
-                    <ui:VisualElement class="summary-card summary-card--full">
-                        <ui:Label text="Visible warfront cards" class="eyebrow" />
-                        <ui:Label name="warfront-cards-copy-value" text="No active front windows are visible right now." class="metric-subvalue metric-subvalue--wrap" />
-                        <ui:VisualElement class="summary-grid summary-grid--desk-cards">
-                            <ui:VisualElement name="warfront-card-1-root" class="summary-card glance-card">
-                                <ui:Label name="warfront-card-1-title" text="Warfront window" class="eyebrow" />
-                                <ui:Label name="warfront-card-1-title-value" text="No warfront entry" class="rail-note-title" />
-                                <ui:Label name="warfront-card-1-lore-value" text="No active frontline data is visible." class="summary-value summary-value--glance" />
-                                <ui:Label name="warfront-card-1-note-value" text="Read-only field review." class="metric-subvalue metric-subvalue--wrap" />
-                                <ui:Button name="warfront-card-1-button" text="Reinforce army" class="action-button action-button--primary" />
-                            </ui:VisualElement>
-                            <ui:VisualElement name="warfront-card-2-root" class="summary-card glance-card">
-                                <ui:Label name="warfront-card-2-title" text="Field timer" class="eyebrow" />
-                                <ui:Label name="warfront-card-2-title-value" text="No support timer" class="rail-note-title" />
-                                <ui:Label name="warfront-card-2-lore-value" text="No active warfront timer." class="summary-value summary-value--glance" />
-                                <ui:Label name="warfront-card-2-note-value" text="Read-only field review." class="metric-subvalue metric-subvalue--wrap" />
-                            </ui:VisualElement>
-                            <ui:VisualElement name="warfront-card-3-root" class="summary-card glance-card">
-                                <ui:Label name="warfront-card-3-title" text="Support mission" class="eyebrow" />
-                                <ui:Label name="warfront-card-3-title-value" text="No mission" class="rail-note-title" />
-                                <ui:Label name="warfront-card-3-lore-value" text="No active field mission visible." class="summary-value summary-value--glance" />
-                                <ui:Label name="warfront-card-3-note-value" text="Read-only field review." class="metric-subvalue metric-subvalue--wrap" />
-                            </ui:VisualElement>
-                            <ui:VisualElement name="warfront-card-4-root" class="summary-card glance-card">
-                                <ui:Label name="warfront-card-4-title" text="Signal posture" class="eyebrow" />
-                                <ui:Label name="warfront-card-4-title-value" text="No signal" class="rail-note-title" />
-                                <ui:Label name="warfront-card-4-lore-value" text="No warfront signal visible." class="summary-value summary-value--glance" />
-                                <ui:Label name="warfront-card-4-note-value" text="Read-only field review." class="metric-subvalue metric-subvalue--wrap" />
+                        <ui:VisualElement class="summary-card summary-card--full warfront-cards-shell">
+                            <ui:Label text="Visible warfront cards" class="eyebrow" />
+                            <ui:Label name="warfront-cards-copy-value" text="No active front windows are visible right now." class="metric-subvalue metric-subvalue--wrap" />
+                            <ui:VisualElement class="summary-grid summary-grid--desk-cards warfront-cards-grid">
+                                <ui:VisualElement name="warfront-card-1-root" class="summary-card glance-card warfront-desk-card">
+                                    <ui:Label name="warfront-card-1-title" text="Warfront window" class="eyebrow" />
+                                    <ui:Label name="warfront-card-1-title-value" text="No warfront entry" class="rail-note-title" />
+                                    <ui:Label name="warfront-card-1-lore-value" text="No active frontline data is visible." class="summary-value summary-value--glance" />
+                                    <ui:Label name="warfront-card-1-note-value" text="Read-only field review." class="metric-subvalue metric-subvalue--wrap" />
+                                    <ui:Button name="warfront-card-1-button" text="Reinforce army" class="action-button action-button--primary warfront-desk-card__button" />
+                                </ui:VisualElement>
+                                <ui:VisualElement name="warfront-card-2-root" class="summary-card glance-card warfront-desk-card">
+                                    <ui:Label name="warfront-card-2-title" text="Field timer" class="eyebrow" />
+                                    <ui:Label name="warfront-card-2-title-value" text="No support timer" class="rail-note-title" />
+                                    <ui:Label name="warfront-card-2-lore-value" text="No active warfront timer." class="summary-value summary-value--glance" />
+                                    <ui:Label name="warfront-card-2-note-value" text="Read-only field review." class="metric-subvalue metric-subvalue--wrap" />
+                                </ui:VisualElement>
+                                <ui:VisualElement name="warfront-card-3-root" class="summary-card glance-card warfront-desk-card">
+                                    <ui:Label name="warfront-card-3-title" text="Support mission" class="eyebrow" />
+                                    <ui:Label name="warfront-card-3-title-value" text="No mission" class="rail-note-title" />
+                                    <ui:Label name="warfront-card-3-lore-value" text="No active field mission visible." class="summary-value summary-value--glance" />
+                                    <ui:Label name="warfront-card-3-note-value" text="Read-only field review." class="metric-subvalue metric-subvalue--wrap" />
+                                </ui:VisualElement>
+                                <ui:VisualElement name="warfront-card-4-root" class="summary-card glance-card warfront-desk-card">
+                                    <ui:Label name="warfront-card-4-title" text="Signal posture" class="eyebrow" />
+                                    <ui:Label name="warfront-card-4-title-value" text="No signal" class="rail-note-title" />
+                                    <ui:Label name="warfront-card-4-lore-value" text="No warfront signal visible." class="summary-value summary-value--glance" />
+                                    <ui:Label name="warfront-card-4-note-value" text="Read-only field review." class="metric-subvalue metric-subvalue--wrap" />
+                                </ui:VisualElement>
                             </ui:VisualElement>
                         </ui:VisualElement>
-                    </ui:VisualElement>
 
-                    <ui:VisualElement class="summary-grid summary-grid--desk-support">
-                        <ui:VisualElement class="summary-card glance-card">
-                            <ui:Label text="Open windows" class="eyebrow" />
-                            <ui:Label name="warfront-open-windows-value" text="No active front window." class="summary-value summary-value--glance" />
-                        </ui:VisualElement>
-                        <ui:VisualElement class="summary-card glance-card">
-                            <ui:Label text="Field readiness" class="eyebrow" />
-                            <ui:Label name="warfront-readiness-value" text="No formations visible in payload." class="summary-value summary-value--glance" />
-                        </ui:VisualElement>
-                        <ui:VisualElement class="summary-card glance-card">
-                            <ui:Label text="Signal posture" class="eyebrow" />
-                            <ui:Label name="warfront-signal-value" text="No warfront status signals." class="summary-value summary-value--glance" />
-                        </ui:VisualElement>
-                        <ui:VisualElement class="summary-card glance-card">
-                            <ui:Label text="Support mission" class="eyebrow" />
-                            <ui:Label name="warfront-mission-value" text="No active field support mission." class="summary-value summary-value--glance" />
-                        </ui:VisualElement>
-                        <ui:VisualElement class="summary-card glance-card">
-                            <ui:Label text="Pressure posture" class="eyebrow" />
-                            <ui:Label name="warfront-pressure-value" text="No extra frontline warning surfaced." class="summary-value summary-value--glance" />
-                        </ui:VisualElement>
-                        <ui:VisualElement class="summary-card glance-card">
-                            <ui:Label text="Desk note" class="eyebrow" />
-                            <ui:Label name="warfront-note-value" text="Read-only desk: fronts, signals, and readiness will surface here without attack wiring." class="summary-value summary-value--glance" />
+                        <ui:VisualElement class="summary-grid summary-grid--desk-support warfront-support-grid">
+                            <ui:VisualElement class="summary-card glance-card warfront-support-card">
+                                <ui:Label text="Open windows" class="eyebrow" />
+                                <ui:Label name="warfront-open-windows-value" text="No active front window." class="summary-value summary-value--glance" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="summary-card glance-card warfront-support-card">
+                                <ui:Label text="Field readiness" class="eyebrow" />
+                                <ui:Label name="warfront-readiness-value" text="No formations visible in payload." class="summary-value summary-value--glance" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="summary-card glance-card warfront-support-card">
+                                <ui:Label text="Signal posture" class="eyebrow" />
+                                <ui:Label name="warfront-signal-value" text="No warfront status signals." class="summary-value summary-value--glance" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="summary-card glance-card warfront-support-card">
+                                <ui:Label text="Support mission" class="eyebrow" />
+                                <ui:Label name="warfront-mission-value" text="No active field support mission." class="summary-value summary-value--glance" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="summary-card glance-card warfront-support-card">
+                                <ui:Label text="Pressure posture" class="eyebrow" />
+                                <ui:Label name="warfront-pressure-value" text="No extra frontline warning surfaced." class="summary-value summary-value--glance" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="summary-card glance-card warfront-support-card">
+                                <ui:Label text="Desk note" class="eyebrow" />
+                                <ui:Label name="warfront-note-value" text="Read-only desk: fronts, signals, and readiness will surface here without attack wiring." class="summary-value summary-value--glance" />
+                            </ui:VisualElement>
                         </ui:VisualElement>
                     </ui:VisualElement>
-                </ui:VisualElement>
+                </ui:ScrollView>
 
                 <ui:ScrollView name="social-screen" class="screen-panel screen-scroll" mode="Vertical">
                     <ui:VisualElement class="screen-scroll-content social-screen-content">
