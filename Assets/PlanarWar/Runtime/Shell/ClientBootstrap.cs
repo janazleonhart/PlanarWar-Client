@@ -79,6 +79,8 @@ namespace PlanarWar.Client.UI
                     HandleReinforceArmyRequestedAsync,
                     HandleRenameArmyRequestedAsync,
                     HandleSplitArmyRequestedAsync,
+                    HandleMergeArmyRequestedAsync,
+                    HandleDisbandArmyRequestedAsync,
                     RefreshSummary,
                     () => navigationState.SetActive(ShellScreen.Summary));
             }
@@ -386,6 +388,60 @@ namespace PlanarWar.Client.UI
             catch (Exception ex)
             {
                 summaryState.FinishAction($"Formation split failed: {ex.Message}", failed: true);
+            }
+        }
+
+
+        private async Task HandleMergeArmyRequestedAsync(string sourceArmyId, string targetArmyId)
+        {
+            if (summaryState == null || apiClient == null || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            var trimmedSourceArmyId = sourceArmyId?.Trim() ?? string.Empty;
+            var trimmedTargetArmyId = targetArmyId?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(trimmedSourceArmyId) || string.IsNullOrWhiteSpace(trimmedTargetArmyId))
+            {
+                return;
+            }
+
+            try
+            {
+                summaryState.BeginArmyMerge(trimmedSourceArmyId, trimmedTargetArmyId);
+                await apiClient.MergeArmyAsync(trimmedSourceArmyId, trimmedTargetArmyId);
+                await summaryController.RefreshAsync();
+                summaryState.FinishAction($"Formation merged into {trimmedTargetArmyId}.");
+            }
+            catch (Exception ex)
+            {
+                summaryState.FinishAction($"Formation merge failed: {ex.Message}", failed: true);
+            }
+        }
+
+        private async Task HandleDisbandArmyRequestedAsync(string armyId)
+        {
+            if (summaryState == null || apiClient == null || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            var trimmedArmyId = armyId?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(trimmedArmyId))
+            {
+                return;
+            }
+
+            try
+            {
+                summaryState.BeginArmyDisband(trimmedArmyId);
+                await apiClient.DisbandArmyAsync(trimmedArmyId);
+                await summaryController.RefreshAsync();
+                summaryState.FinishAction($"Formation disbanded: {trimmedArmyId}.");
+            }
+            catch (Exception ex)
+            {
+                summaryState.FinishAction($"Formation disband failed: {ex.Message}", failed: true);
             }
         }
 

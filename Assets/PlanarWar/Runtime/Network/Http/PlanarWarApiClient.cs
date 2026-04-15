@@ -192,6 +192,42 @@ namespace PlanarWar.Client.Network
             return PostJsonAsync(BuildUrl("/api/armies/split"), body, includeBearerToken: true);
         }
 
+        public Task<JObject> MergeArmyAsync(string sourceArmyId, string targetArmyId)
+        {
+            if (string.IsNullOrWhiteSpace(sourceArmyId))
+            {
+                throw new ArgumentException("sourceArmyId is required", nameof(sourceArmyId));
+            }
+
+            if (string.IsNullOrWhiteSpace(targetArmyId))
+            {
+                throw new ArgumentException("targetArmyId is required", nameof(targetArmyId));
+            }
+
+            var body = new JObject
+            {
+                ["sourceArmyId"] = sourceArmyId.Trim(),
+                ["targetArmyId"] = targetArmyId.Trim(),
+            };
+
+            return PostJsonAsync(BuildUrl("/api/armies/merge"), body, includeBearerToken: true);
+        }
+
+        public Task<JObject> DisbandArmyAsync(string armyId)
+        {
+            if (string.IsNullOrWhiteSpace(armyId))
+            {
+                throw new ArgumentException("armyId is required", nameof(armyId));
+            }
+
+            var body = new JObject
+            {
+                ["armyId"] = armyId.Trim(),
+            };
+
+            return PostJsonAsync(BuildUrl("/api/armies/disband"), body, includeBearerToken: true);
+        }
+
         private string BuildUrl(string path)
         {
             var baseUrl = getHttpBaseUrl()?.Trim();

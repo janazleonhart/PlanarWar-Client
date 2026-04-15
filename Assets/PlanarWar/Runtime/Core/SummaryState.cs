@@ -119,6 +119,26 @@ namespace PlanarWar.Client.Core
             BeginAction(label);
         }
 
+        public void BeginArmyMerge(string sourceArmyId, string targetArmyId)
+        {
+            var label = string.IsNullOrWhiteSpace(sourceArmyId)
+                ? "Merging formation..."
+                : $"Merging formation: {sourceArmyId.Trim()}";
+            if (!string.IsNullOrWhiteSpace(targetArmyId))
+            {
+                label += $" -> {targetArmyId.Trim()}";
+            }
+
+            BeginAction(label);
+        }
+
+        public void BeginArmyDisband(string armyId)
+        {
+            BeginAction(string.IsNullOrWhiteSpace(armyId)
+                ? "Disbanding formation..."
+                : $"Disbanding formation: {armyId.Trim()}");
+        }
+
         public void FinishAction(string status, bool failed = false)
         {
             IsActionBusy = false;

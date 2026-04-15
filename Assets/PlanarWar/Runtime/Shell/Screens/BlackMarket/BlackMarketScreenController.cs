@@ -28,21 +28,28 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private readonly TextField splitSizeInput;
         private readonly TextField splitNameInput;
         private readonly Button splitButton;
+        private readonly DropdownField mergeTargetField;
+        private readonly Button mergeButton;
+        private readonly Button disbandButton;
         private readonly InfoCard[] cards;
         private readonly SummaryState summaryState;
         private readonly Func<string, Task> onReinforceArmyRequested;
         private readonly Func<string, string, Task> onRenameArmyRequested;
         private readonly Func<string, int, string, Task> onSplitArmyRequested;
+        private readonly Func<string, string, Task> onMergeArmyRequested;
+        private readonly Func<string, Task> onDisbandArmyRequested;
         private readonly Action onRefreshDeskRequested;
         private readonly List<string> managementArmyChoiceIds = new();
+        private readonly List<string> mergeArmyChoiceIds = new();
         private string selectedArmyId = string.Empty;
         private string draftedArmyId = string.Empty;
         private string renameDraft = string.Empty;
         private string splitSizeDraft = string.Empty;
         private string splitNameDraft = string.Empty;
+        private string selectedMergeArmyId = string.Empty;
         private bool suppressManagementEvents;
 
-        public BlackMarketScreenController(VisualElement root, SummaryState summaryState, Func<string, Task> onReinforceArmyRequested, Func<string, string, Task> onRenameArmyRequested, Func<string, int, string, Task> onSplitArmyRequested, Action onRefreshDeskRequested)
+        public BlackMarketScreenController(VisualElement root, SummaryState summaryState, Func<string, Task> onReinforceArmyRequested, Func<string, string, Task> onRenameArmyRequested, Func<string, int, string, Task> onSplitArmyRequested, Func<string, string, Task> onMergeArmyRequested, Func<string, Task> onDisbandArmyRequested, Action onRefreshDeskRequested)
         {
             headline = root.Q<Label>("placeholder-headline-value");
             copy = root.Q<Label>("placeholder-copy-value");
@@ -62,11 +69,16 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             splitSizeInput = root.Q<TextField>("warfront-manage-split-size-input");
             splitNameInput = root.Q<TextField>("warfront-manage-split-name-input");
             splitButton = root.Q<Button>("warfront-manage-split-button");
+            mergeTargetField = root.Q<DropdownField>("warfront-manage-merge-target-field");
+            mergeButton = root.Q<Button>("warfront-manage-merge-button");
+            disbandButton = root.Q<Button>("warfront-manage-disband-button");
             cards = Enumerable.Range(1, 4).Select(i => new InfoCard(root, $"warfront-card-{i}", hasButton: true)).ToArray();
             this.summaryState = summaryState;
             this.onReinforceArmyRequested = onReinforceArmyRequested;
             this.onRenameArmyRequested = onRenameArmyRequested;
             this.onSplitArmyRequested = onSplitArmyRequested;
+            this.onMergeArmyRequested = onMergeArmyRequested;
+            this.onDisbandArmyRequested = onDisbandArmyRequested;
             this.onRefreshDeskRequested = onRefreshDeskRequested;
 
             if (managementArmyField != null)
@@ -86,6 +98,20 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                     }
                 });
             }
+
+            mergeTargetField?.RegisterValueChangedCallback(evt =>
+            {
+                if (suppressManagementEvents)
+                {
+                    return;
+                }
+
+                var index = mergeTargetField.choices?.IndexOf(evt.newValue) ?? -1;
+                if (index >= 0 && index < mergeArmyChoiceIds.Count)
+                {
+                    selectedMergeArmyId = mergeArmyChoiceIds[index];
+                }
+            });
 
             renameInput?.RegisterValueChangedCallback(evt =>
             {
@@ -113,6 +139,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
             renameButton?.RegisterCallback<ClickEvent>(_ => TriggerRenameArmy());
             splitButton?.RegisterCallback<ClickEvent>(_ => TriggerSplitArmy());
+            mergeButton?.RegisterCallback<ClickEvent>(_ => TriggerMergeArmy());
+            disbandButton?.RegisterCallback<ClickEvent>(_ => TriggerDisbandArmy());
         }
 
         public void Render(ShellSummarySnapshot summary)
@@ -153,6 +181,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             RenderFormationManagement(summary, rankedArmies, targetArmyId);
         }
 
+
         private void RenderFormationManagement(ShellSummarySnapshot summary, List<ArmySnapshot> rankedArmies, string targetArmyId)
         {
             if (managementCopy == null && managementNote == null && managementArmyField == null)
@@ -163,8 +192,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var armies = (rankedArmies ?? new List<ArmySnapshot>()).Where(army => army != null).ToList();
             if (armies.Count == 0)
             {
-                if (managementCopy != null) managementCopy.text = "No formation payload is visible yet, so rename and split controls stay parked.";
-                if (managementNote != null) managementNote.text = "Warfront will unlock formation management once at least one army is present in /api/me.";
+                if (managementCopy != null) managementCopy.text = "No formation payload is visible yet, so formation controls stay parked.";
+                if (managementNote != null) managementNote.text = "Warfront will unlock rename, split, merge, and disband once at least one army is present in /api/me.";
                 if (managementArmyField != null)
                 {
                     suppressManagementEvents = true;
@@ -175,11 +204,23 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                     suppressManagementEvents = false;
                 }
 
+                if (mergeTargetField != null)
+                {
+                    suppressManagementEvents = true;
+                    mergeArmyChoiceIds.Clear();
+                    mergeTargetField.choices = new List<string>();
+                    mergeTargetField.SetValueWithoutNotify(string.Empty);
+                    mergeTargetField.SetEnabled(false);
+                    suppressManagementEvents = false;
+                }
+
                 renameInput?.SetEnabled(false);
                 splitSizeInput?.SetEnabled(false);
                 splitNameInput?.SetEnabled(false);
                 renameButton?.SetEnabled(false);
                 splitButton?.SetEnabled(false);
+                mergeButton?.SetEnabled(false);
+                disbandButton?.SetEnabled(false);
                 return;
             }
 
@@ -193,10 +234,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var choices = armies.Select(army =>
             {
                 managementArmyChoiceIds.Add(army.Id);
-                var typeLabel = string.IsNullOrWhiteSpace(army.Type) ? "formation" : HumanizeKey(army.Type);
-                var sizeText = army.Size.HasValue ? $"{army.Size.Value:0} troops" : "troops unknown";
-                var powerText = army.Power.HasValue ? $"{army.Power.Value:0} power" : "power unknown";
-                return $"{army.Name} • {typeLabel} • {sizeText} • {powerText}";
+                return BuildArmyChoiceLabel(army);
             }).ToList();
 
             var selectedIndex = Math.Max(0, managementArmyChoiceIds.FindIndex(id => string.Equals(id, selectedArmyId, StringComparison.OrdinalIgnoreCase)));
@@ -225,6 +263,46 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 suppressManagementEvents = false;
             }
 
+            var mergeCandidates = armies.Where(army => !string.Equals(army.Id, selectedArmy.Id, StringComparison.OrdinalIgnoreCase)).ToList();
+            if (mergeCandidates.Count == 0)
+            {
+                selectedMergeArmyId = string.Empty;
+            }
+            else if (string.IsNullOrWhiteSpace(selectedMergeArmyId) || mergeCandidates.All(army => !string.Equals(army.Id, selectedMergeArmyId, StringComparison.OrdinalIgnoreCase)))
+            {
+                selectedMergeArmyId = mergeCandidates[0].Id;
+            }
+
+            if (mergeTargetField != null)
+            {
+                suppressManagementEvents = true;
+                mergeArmyChoiceIds.Clear();
+                var mergeChoices = mergeCandidates.Select(army =>
+                {
+                    mergeArmyChoiceIds.Add(army.Id);
+                    return BuildArmyChoiceLabel(army);
+                }).ToList();
+                mergeTargetField.choices = mergeChoices;
+                var mergeIndex = Math.Max(0, mergeArmyChoiceIds.FindIndex(id => string.Equals(id, selectedMergeArmyId, StringComparison.OrdinalIgnoreCase)));
+                if (mergeIndex >= mergeArmyChoiceIds.Count)
+                {
+                    mergeIndex = mergeArmyChoiceIds.Count > 0 ? 0 : -1;
+                }
+
+                if (mergeIndex >= 0 && mergeIndex < mergeChoices.Count)
+                {
+                    selectedMergeArmyId = mergeArmyChoiceIds[mergeIndex];
+                    mergeTargetField.SetValueWithoutNotify(mergeChoices[mergeIndex]);
+                }
+                else
+                {
+                    mergeTargetField.SetValueWithoutNotify(string.Empty);
+                }
+
+                mergeTargetField.SetEnabled(!summaryState.IsActionBusy && mergeChoices.Count > 0);
+                suppressManagementEvents = false;
+            }
+
             suppressManagementEvents = true;
             renameInput?.SetValueWithoutNotify(renameDraft);
             splitSizeInput?.SetValueWithoutNotify(splitSizeDraft);
@@ -236,10 +314,13 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var idle = string.Equals(selectedArmy.Status, "idle", StringComparison.OrdinalIgnoreCase);
             var canRename = !summaryState.IsActionBusy && idle && onRenameArmyRequested != null && !string.IsNullOrWhiteSpace(renameDraft?.Trim()) && !string.Equals(renameDraft.Trim(), selectedArmy.Name, StringComparison.OrdinalIgnoreCase);
             var canSplit = !summaryState.IsActionBusy && idle && onSplitArmyRequested != null && splitSize >= 40 && splitSize <= maxSplit;
+            var canMerge = !summaryState.IsActionBusy && idle && onMergeArmyRequested != null && !string.IsNullOrWhiteSpace(selectedMergeArmyId);
+            var canDisband = !summaryState.IsActionBusy && idle && onDisbandArmyRequested != null && armies.Count > 1;
 
             renameInput?.SetEnabled(!summaryState.IsActionBusy && idle);
             splitSizeInput?.SetEnabled(!summaryState.IsActionBusy && idle);
             splitNameInput?.SetEnabled(!summaryState.IsActionBusy && idle);
+
             if (renameButton != null)
             {
                 renameButton.text = summaryState.IsActionBusy ? "Working..." : "Rename formation";
@@ -252,14 +333,27 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 splitButton.SetEnabled(canSplit);
             }
 
+            if (mergeButton != null)
+            {
+                mergeButton.text = summaryState.IsActionBusy ? "Working..." : "Merge into target";
+                mergeButton.SetEnabled(canMerge);
+            }
+
+            if (disbandButton != null)
+            {
+                disbandButton.text = summaryState.IsActionBusy ? "Working..." : "Disband formation";
+                disbandButton.SetEnabled(canDisband);
+            }
+
             if (managementCopy != null)
             {
-                managementCopy.text = $"Commander controls stay bounded here: rename an idle formation or peel troops into a new sibling formation. Focus: {selectedArmy.Name} • {BuildFormationLore(selectedArmy)}.";
+                managementCopy.text = $"Commander controls stay bounded here: rename, split, merge, or disband an idle formation. Focus: {selectedArmy.Name} • {BuildFormationLore(selectedArmy)}.";
             }
 
             if (managementNote != null)
             {
-                managementNote.text = BuildFormationManagementNote(selectedArmy, splitSize, maxSplit);
+                var mergeTarget = mergeCandidates.FirstOrDefault(army => string.Equals(army.Id, selectedMergeArmyId, StringComparison.OrdinalIgnoreCase));
+                managementNote.text = BuildFormationManagementNote(selectedArmy, splitSize, maxSplit, mergeTarget, armies.Count);
             }
         }
 
@@ -287,6 +381,26 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             }
 
             _ = onSplitArmyRequested.Invoke(selectedArmyId.Trim(), splitSize, splitNameDraft?.Trim() ?? string.Empty);
+        }
+
+        private void TriggerMergeArmy()
+        {
+            if (summaryState.IsActionBusy || onMergeArmyRequested == null || string.IsNullOrWhiteSpace(selectedArmyId) || string.IsNullOrWhiteSpace(selectedMergeArmyId))
+            {
+                return;
+            }
+
+            _ = onMergeArmyRequested.Invoke(selectedArmyId.Trim(), selectedMergeArmyId.Trim());
+        }
+
+        private void TriggerDisbandArmy()
+        {
+            if (summaryState.IsActionBusy || onDisbandArmyRequested == null || string.IsNullOrWhiteSpace(selectedArmyId))
+            {
+                return;
+            }
+
+            _ = onDisbandArmyRequested.Invoke(selectedArmyId.Trim());
         }
 
         private List<CardView> BuildCards(ShellSummarySnapshot summary, List<ArmySnapshot> rankedArmies, List<CityTimerEntrySnapshot> windows, MissionSnapshot activeMission, string primaryWarning, List<WarfrontSignalSnapshot> signalPairs, ArmyReinforcementSnapshot reinforceState, CityTimerEntrySnapshot reinforceTimer, OperationSnapshot reinforceOp)
@@ -729,20 +843,37 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             }
         }
 
-        private static string BuildFormationManagementNote(ArmySnapshot army, int splitSize, int maxSplit)
+        private static string BuildFormationManagementNote(ArmySnapshot army, int splitSize, int maxSplit, ArmySnapshot mergeTarget, int formationCount)
         {
             if (!string.Equals(army.Status, "idle", StringComparison.OrdinalIgnoreCase))
             {
-                return $"{army.Name} is {HumanizeStatus(army.Status)}. Rename and split stay locked until the formation returns to idle posture.";
+                return $"{army.Name} is {HumanizeStatus(army.Status)}. Rename, split, merge, and disband stay locked until the formation returns to idle posture.";
             }
 
+            var parts = new List<string>();
             if ((army.Size ?? 0) < 80)
             {
-                return $"{army.Name} is too small to split safely. Keep at least 40 troops on each side of the split.";
+                parts.Add($"{army.Name} is too small to split safely. Keep at least 40 troops on each side of the split.");
+            }
+            else
+            {
+                var range = maxSplit >= 40 ? $"Valid split window: 40-{maxSplit} troops." : "Valid split window is currently unavailable.";
+                parts.Add($"{range} Current draft: {BuildSplitDraftSummary(splitSize, army)}.");
             }
 
-            var range = maxSplit >= 40 ? $"Valid split window: 40-{maxSplit} troops." : "Valid split window is currently unavailable.";
-            return $"{range} Current draft: {BuildSplitDraftSummary(splitSize, army)}.";
+            if (mergeTarget != null)
+            {
+                parts.Add($"Merge target: {mergeTarget.Name} • {BuildFormationLore(mergeTarget)}.");
+            }
+            else
+            {
+                parts.Add("No secondary formation is available to merge into yet.");
+            }
+
+            parts.Add(formationCount > 1
+                ? "Disband removes the selected idle formation and trims upkeep without refunding field investment directly."
+                : "You must keep at least one formation on the roster, so disband is parked right now.");
+            return string.Join(" ", parts.Where(part => !string.IsNullOrWhiteSpace(part)));
         }
 
         private static string BuildSplitDraftSummary(int splitSize, ArmySnapshot army)
@@ -755,6 +886,14 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var size = (int)Math.Round(army.Size ?? 0);
             var remaining = Math.Max(0, size - splitSize);
             return $"move {splitSize} troops from {army.Name} and leave {remaining}";
+        }
+
+        private static string BuildArmyChoiceLabel(ArmySnapshot army)
+        {
+            var typeLabel = string.IsNullOrWhiteSpace(army.Type) ? "formation" : HumanizeKey(army.Type);
+            var sizeText = army.Size.HasValue ? $"{army.Size.Value:0} troops" : "troops unknown";
+            var powerText = army.Power.HasValue ? $"{army.Power.Value:0} power" : "power unknown";
+            return $"{army.Name} • {typeLabel} • {sizeText} • {powerText}";
         }
 
         private static string BuildSuggestedSplitSize(ArmySnapshot army)
