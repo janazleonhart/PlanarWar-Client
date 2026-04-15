@@ -254,6 +254,46 @@ namespace PlanarWar.Client.Network
             return PostJsonAsync(BuildUrl("/api/armies/hold"), body, includeBearerToken: true);
         }
 
+        public Task<JObject> StartWarfrontAssaultAsync(string regionId, string armyId = null)
+        {
+            if (string.IsNullOrWhiteSpace(regionId))
+            {
+                throw new ArgumentException("regionId is required", nameof(regionId));
+            }
+
+            var body = new JObject
+            {
+                ["regionId"] = regionId.Trim(),
+            };
+
+            if (!string.IsNullOrWhiteSpace(armyId))
+            {
+                body["armyId"] = armyId.Trim();
+            }
+
+            return PostJsonAsync(BuildUrl("/api/warfront/assault"), body, includeBearerToken: true);
+        }
+
+        public Task<JObject> StartGarrisonStrikeAsync(string regionId, string armyId = null)
+        {
+            if (string.IsNullOrWhiteSpace(regionId))
+            {
+                throw new ArgumentException("regionId is required", nameof(regionId));
+            }
+
+            var body = new JObject
+            {
+                ["regionId"] = regionId.Trim(),
+            };
+
+            if (!string.IsNullOrWhiteSpace(armyId))
+            {
+                body["armyId"] = armyId.Trim();
+            }
+
+            return PostJsonAsync(BuildUrl("/api/garrisons/strike"), body, includeBearerToken: true);
+        }
+
         public Task<JObject> ReleaseArmyHoldAsync(string armyId)
         {
             if (string.IsNullOrWhiteSpace(armyId))

@@ -64,7 +64,7 @@ namespace PlanarWar.Client.UI
         private readonly Button sendChatButton;
         private readonly TextField chatInputField;
 
-        public AppShellController(VisualElement root, SessionState sessionState, SummaryState summaryState, ShellNavigationState navigationState, ClientVersionState versionState, Func<string, System.Threading.Tasks.Task> onStartResearchRequested, Func<string, System.Threading.Tasks.Task> onStartWorkshopCraftRequested, Func<string, System.Threading.Tasks.Task> onCollectWorkshopRequested, Func<string, System.Threading.Tasks.Task> onRecruitHeroRequested, Func<string, System.Threading.Tasks.Task> onAcceptHeroRecruitCandidateRequested, Func<System.Threading.Tasks.Task> onDismissHeroRecruitCandidatesRequested, Func<string, System.Threading.Tasks.Task> onReinforceArmyRequested, Func<string, string, System.Threading.Tasks.Task> onRenameArmyRequested, Func<string, int, string, System.Threading.Tasks.Task> onSplitArmyRequested, Func<string, string, System.Threading.Tasks.Task> onMergeArmyRequested, Func<string, System.Threading.Tasks.Task> onDisbandArmyRequested, Func<string, string, string, System.Threading.Tasks.Task> onAssignArmyHoldRequested, Func<string, System.Threading.Tasks.Task> onReleaseArmyHoldRequested, Action onRefreshDeskRequested, Action onBackHomeRequested)
+        public AppShellController(VisualElement root, SessionState sessionState, SummaryState summaryState, ShellNavigationState navigationState, ClientVersionState versionState, Func<string, System.Threading.Tasks.Task> onStartResearchRequested, Func<string, System.Threading.Tasks.Task> onStartWorkshopCraftRequested, Func<string, System.Threading.Tasks.Task> onCollectWorkshopRequested, Func<string, System.Threading.Tasks.Task> onRecruitHeroRequested, Func<string, System.Threading.Tasks.Task> onAcceptHeroRecruitCandidateRequested, Func<System.Threading.Tasks.Task> onDismissHeroRecruitCandidatesRequested, Func<string, System.Threading.Tasks.Task> onReinforceArmyRequested, Func<string, string, System.Threading.Tasks.Task> onRenameArmyRequested, Func<string, int, string, System.Threading.Tasks.Task> onSplitArmyRequested, Func<string, string, System.Threading.Tasks.Task> onMergeArmyRequested, Func<string, System.Threading.Tasks.Task> onDisbandArmyRequested, Func<string, string, string, System.Threading.Tasks.Task> onAssignArmyHoldRequested, Func<string, System.Threading.Tasks.Task> onReleaseArmyHoldRequested, Func<string, string, System.Threading.Tasks.Task> onWarfrontAssaultRequested, Func<string, string, System.Threading.Tasks.Task> onGarrisonStrikeRequested, Action onRefreshDeskRequested, Action onBackHomeRequested)
         {
             this.sessionState = sessionState;
             this.summaryState = summaryState;
@@ -78,7 +78,7 @@ namespace PlanarWar.Client.UI
 
             summaryScreen = new SummaryScreenController(root);
             cityScreen = new CityScreenController(root, summaryState, onStartResearchRequested, onStartWorkshopCraftRequested, onCollectWorkshopRequested, onRecruitHeroRequested, onAcceptHeroRecruitCandidateRequested, onDismissHeroRecruitCandidatesRequested, onRefreshDeskRequested, onBackHomeRequested);
-            blackMarketScreen = new BlackMarketScreenController(root, summaryState, onReinforceArmyRequested, onRenameArmyRequested, onSplitArmyRequested, onMergeArmyRequested, onDisbandArmyRequested, onAssignArmyHoldRequested, onReleaseArmyHoldRequested, onRefreshDeskRequested);
+            blackMarketScreen = new BlackMarketScreenController(root, summaryState, onReinforceArmyRequested, onRenameArmyRequested, onSplitArmyRequested, onMergeArmyRequested, onDisbandArmyRequested, onAssignArmyHoldRequested, onReleaseArmyHoldRequested, onWarfrontAssaultRequested, onGarrisonStrikeRequested, onRefreshDeskRequested);
             socialScreen = new SocialScreenController(root);
 
             connectionValue = root.Q<Label>("connection-value");
@@ -171,7 +171,7 @@ namespace PlanarWar.Client.UI
             {
                 ShellScreen.Summary => ("Summary", "Command floor", "This rail stays menu-owned. Use Home to scan the empire, then jump into a desk when something needs action."),
                 ShellScreen.City => ("Development", "Growth desk", "Research, workshop, and growth cadence stay grouped here as a read-only planning desk."),
-                ShellScreen.BlackMarket => ("Warfront", "Field doctrine", "Field windows, readiness, and support posture stay visible here before later action wiring lands."),
+                ShellScreen.BlackMarket => ("Warfront", "Field doctrine", "Field windows, readiness, holds, and frontline dispatch stay visible here before deeper theater wiring lands."),
                 ShellScreen.Social => ("Social", "Shared comms", "Room state, recent lines, and channel posture stay honest here without inventing a full social stack."),
                 _ => ("Summary", "Command floor", "This rail stays menu-owned.")
             };

@@ -35,6 +35,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private readonly DropdownField holdPostureField;
         private readonly Button assignHoldButton;
         private readonly Button releaseHoldButton;
+        private readonly Button dispatchAssaultButton;
+        private readonly Button dispatchGarrisonButton;
         private readonly InfoCard[] cards;
         private readonly SummaryState summaryState;
         private readonly Func<string, Task> onReinforceArmyRequested;
@@ -44,6 +46,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private readonly Func<string, Task> onDisbandArmyRequested;
         private readonly Func<string, string, string, Task> onAssignArmyHoldRequested;
         private readonly Func<string, Task> onReleaseArmyHoldRequested;
+        private readonly Func<string, string, Task> onWarfrontAssaultRequested;
+        private readonly Func<string, string, Task> onGarrisonStrikeRequested;
         private readonly Action onRefreshDeskRequested;
         private readonly List<string> managementArmyChoiceIds = new();
         private readonly List<string> mergeArmyChoiceIds = new();
@@ -58,7 +62,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private string selectedHoldPosture = "frontier_hold";
         private bool suppressManagementEvents;
 
-        public BlackMarketScreenController(VisualElement root, SummaryState summaryState, Func<string, Task> onReinforceArmyRequested, Func<string, string, Task> onRenameArmyRequested, Func<string, int, string, Task> onSplitArmyRequested, Func<string, string, Task> onMergeArmyRequested, Func<string, Task> onDisbandArmyRequested, Func<string, string, string, Task> onAssignArmyHoldRequested, Func<string, Task> onReleaseArmyHoldRequested, Action onRefreshDeskRequested)
+        public BlackMarketScreenController(VisualElement root, SummaryState summaryState, Func<string, Task> onReinforceArmyRequested, Func<string, string, Task> onRenameArmyRequested, Func<string, int, string, Task> onSplitArmyRequested, Func<string, string, Task> onMergeArmyRequested, Func<string, Task> onDisbandArmyRequested, Func<string, string, string, Task> onAssignArmyHoldRequested, Func<string, Task> onReleaseArmyHoldRequested, Func<string, string, Task> onWarfrontAssaultRequested, Func<string, string, Task> onGarrisonStrikeRequested, Action onRefreshDeskRequested)
         {
             headline = root.Q<Label>("placeholder-headline-value");
             copy = root.Q<Label>("placeholder-copy-value");
@@ -85,6 +89,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             holdPostureField = root.Q<DropdownField>("warfront-manage-hold-posture-field");
             assignHoldButton = root.Q<Button>("warfront-manage-hold-assign-button");
             releaseHoldButton = root.Q<Button>("warfront-manage-hold-release-button");
+            dispatchAssaultButton = root.Q<Button>("warfront-manage-dispatch-assault-button");
+            dispatchGarrisonButton = root.Q<Button>("warfront-manage-dispatch-garrison-button");
             cards = Enumerable.Range(1, 4).Select(i => new InfoCard(root, $"warfront-card-{i}", hasButton: true)).ToArray();
             this.summaryState = summaryState;
             this.onReinforceArmyRequested = onReinforceArmyRequested;
@@ -94,6 +100,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             this.onDisbandArmyRequested = onDisbandArmyRequested;
             this.onAssignArmyHoldRequested = onAssignArmyHoldRequested;
             this.onReleaseArmyHoldRequested = onReleaseArmyHoldRequested;
+            this.onWarfrontAssaultRequested = onWarfrontAssaultRequested;
+            this.onGarrisonStrikeRequested = onGarrisonStrikeRequested;
             this.onRefreshDeskRequested = onRefreshDeskRequested;
 
             if (managementArmyField != null)
@@ -182,6 +190,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             disbandButton?.RegisterCallback<ClickEvent>(_ => TriggerDisbandArmy());
             assignHoldButton?.RegisterCallback<ClickEvent>(_ => TriggerAssignHold());
             releaseHoldButton?.RegisterCallback<ClickEvent>(_ => TriggerReleaseHold());
+            dispatchAssaultButton?.RegisterCallback<ClickEvent>(_ => TriggerWarfrontAssault());
+            dispatchGarrisonButton?.RegisterCallback<ClickEvent>(_ => TriggerGarrisonStrike());
         }
 
         public void Render(ShellSummarySnapshot summary)
@@ -204,7 +214,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
             headline.text = warfrontWindows.Count > 0 ? "Warfront desk" : summary.WarfrontSignals.Count > 0 ? "Warfront snapshot" : "Warfront review";
             copy.text = warfrontWindows.Count > 0
-                ? $"{warfrontWindows.Count} live front window(s) open. Review formations, reinforcement truth, and field posture."
+                ? $"{warfrontWindows.Count} live front window(s) open. Review formations, reinforcement truth, hold posture, and frontline dispatch."
                 : summary.WarfrontSignals.Count > 0
                     ? "Warfront posture is visible from the current summary payload."
                     : "No active warfront snapshot is visible in the current payload.";
@@ -251,6 +261,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 disbandButton?.SetEnabled(false);
                 assignHoldButton?.SetEnabled(false);
                 releaseHoldButton?.SetEnabled(false);
+                dispatchAssaultButton?.SetEnabled(false);
+                dispatchGarrisonButton?.SetEnabled(false);
                 return;
             }
 
@@ -381,6 +393,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var canDisband = !summaryState.IsActionBusy && idle && onDisbandArmyRequested != null && armies.Count > 1;
             var canAssignHold = !summaryState.IsActionBusy && idle && onAssignArmyHoldRequested != null && !string.IsNullOrWhiteSpace(selectedHoldRegionId);
             var canReleaseHold = !summaryState.IsActionBusy && holding && onReleaseArmyHoldRequested != null;
+            var canDispatchAssault = !summaryState.IsActionBusy && idle && onWarfrontAssaultRequested != null && !string.IsNullOrWhiteSpace(selectedHoldRegionId);
+            var canDispatchGarrison = !summaryState.IsActionBusy && idle && onGarrisonStrikeRequested != null && !string.IsNullOrWhiteSpace(selectedHoldRegionId);
 
             renameInput?.SetEnabled(!summaryState.IsActionBusy && idle);
             splitSizeInput?.SetEnabled(!summaryState.IsActionBusy && idle);
@@ -415,10 +429,20 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 releaseHoldButton.text = summaryState.IsActionBusy ? "Working..." : "Release hold";
                 releaseHoldButton.SetEnabled(canReleaseHold);
             }
+            if (dispatchAssaultButton != null)
+            {
+                dispatchAssaultButton.text = summaryState.IsActionBusy ? "Working..." : "Dispatch assault";
+                dispatchAssaultButton.SetEnabled(canDispatchAssault);
+            }
+            if (dispatchGarrisonButton != null)
+            {
+                dispatchGarrisonButton.text = summaryState.IsActionBusy ? "Working..." : "Dispatch garrison strike";
+                dispatchGarrisonButton.SetEnabled(canDispatchGarrison);
+            }
 
             if (managementCopy != null)
             {
-                managementCopy.text = $"Commander controls stay bounded here: rename, split, merge, disband, or assign an idle formation to a regional hold. Focus: {selectedArmy.Name} • {BuildFormationLore(selectedArmy)}.";
+                managementCopy.text = $"Commander controls stay bounded here: rename, split, merge, disband, assign holds, and dispatch the selected idle formation into frontline actions. Focus: {selectedArmy.Name} • {BuildFormationLore(selectedArmy)}.";
             }
 
             if (managementNote != null)
@@ -493,6 +517,26 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             }
 
             _ = onReleaseArmyHoldRequested.Invoke(selectedArmyId.Trim());
+        }
+
+        private void TriggerWarfrontAssault()
+        {
+            if (summaryState.IsActionBusy || onWarfrontAssaultRequested == null || string.IsNullOrWhiteSpace(selectedArmyId) || string.IsNullOrWhiteSpace(selectedHoldRegionId))
+            {
+                return;
+            }
+
+            _ = onWarfrontAssaultRequested.Invoke(selectedHoldRegionId.Trim(), selectedArmyId.Trim());
+        }
+
+        private void TriggerGarrisonStrike()
+        {
+            if (summaryState.IsActionBusy || onGarrisonStrikeRequested == null || string.IsNullOrWhiteSpace(selectedArmyId) || string.IsNullOrWhiteSpace(selectedHoldRegionId))
+            {
+                return;
+            }
+
+            _ = onGarrisonStrikeRequested.Invoke(selectedHoldRegionId.Trim(), selectedArmyId.Trim());
         }
 
         private List<CardView> BuildCards(ShellSummarySnapshot summary, List<ArmySnapshot> rankedArmies, List<CityTimerEntrySnapshot> windows, MissionSnapshot activeMission, string primaryWarning, List<WarfrontSignalSnapshot> signalPairs, ArmyReinforcementSnapshot reinforceState, CityTimerEntrySnapshot reinforceTimer, OperationSnapshot reinforceOp)
@@ -969,8 +1013,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             }
 
             parts.Add(string.IsNullOrWhiteSpace(holdRegionId)
-                ? "Choose a region and posture before assigning a hold line."
-                : $"Hold order: {(string.IsNullOrWhiteSpace(holdRegionLabel) ? holdRegionId : holdRegionLabel)} as {HumanizeKey(holdPosture)} duty.");
+                ? "Choose a region and posture before assigning a hold line or dispatching a frontline action."
+                : $"Region desk: {(string.IsNullOrWhiteSpace(holdRegionLabel) ? holdRegionId : holdRegionLabel)} as {HumanizeKey(holdPosture)} duty, or dispatch {army.Name} there directly.");
             parts.Add(formationCount > 1
                 ? "Disband removes the selected idle formation and trims upkeep without refunding field investment directly."
                 : "You must keep at least one formation on the roster, so disband is parked right now.");

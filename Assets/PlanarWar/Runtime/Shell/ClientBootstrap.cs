@@ -83,6 +83,8 @@ namespace PlanarWar.Client.UI
                     HandleDisbandArmyRequestedAsync,
                     HandleAssignArmyHoldRequestedAsync,
                     HandleReleaseArmyHoldRequestedAsync,
+                    HandleWarfrontAssaultRequestedAsync,
+                    HandleGarrisonStrikeRequestedAsync,
                     RefreshSummary,
                     () => navigationState.SetActive(ShellScreen.Summary));
             }
@@ -498,6 +500,60 @@ namespace PlanarWar.Client.UI
             catch (Exception ex)
             {
                 summaryState.FinishAction($"Release hold failed: {ex.Message}", failed: true);
+            }
+        }
+
+        private async Task HandleWarfrontAssaultRequestedAsync(string regionId, string armyId)
+        {
+            if (summaryState == null || apiClient == null || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            var trimmedRegionId = regionId?.Trim() ?? string.Empty;
+            var trimmedArmyId = armyId?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(trimmedRegionId) || string.IsNullOrWhiteSpace(trimmedArmyId))
+            {
+                return;
+            }
+
+            try
+            {
+                summaryState.BeginFrontlineDispatch("warfront assault", trimmedRegionId, trimmedArmyId);
+                await apiClient.StartWarfrontAssaultAsync(trimmedRegionId, trimmedArmyId);
+                await summaryController.RefreshAsync();
+                summaryState.FinishAction($"Warfront assault launched for {trimmedRegionId} with {trimmedArmyId}.");
+            }
+            catch (Exception ex)
+            {
+                summaryState.FinishAction($"Warfront assault failed: {ex.Message}", failed: true);
+            }
+        }
+
+        private async Task HandleGarrisonStrikeRequestedAsync(string regionId, string armyId)
+        {
+            if (summaryState == null || apiClient == null || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            var trimmedRegionId = regionId?.Trim() ?? string.Empty;
+            var trimmedArmyId = armyId?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(trimmedRegionId) || string.IsNullOrWhiteSpace(trimmedArmyId))
+            {
+                return;
+            }
+
+            try
+            {
+                summaryState.BeginFrontlineDispatch("garrison strike", trimmedRegionId, trimmedArmyId);
+                await apiClient.StartGarrisonStrikeAsync(trimmedRegionId, trimmedArmyId);
+                await summaryController.RefreshAsync();
+                summaryState.FinishAction($"Garrison strike launched for {trimmedRegionId} with {trimmedArmyId} as support.");
+            }
+            catch (Exception ex)
+            {
+                summaryState.FinishAction($"Garrison strike failed: {ex.Message}", failed: true);
             }
         }
 

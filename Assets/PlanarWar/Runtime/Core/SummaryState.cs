@@ -164,6 +164,21 @@ namespace PlanarWar.Client.Core
                 : $"Releasing regional hold: {armyId.Trim()}");
         }
 
+        public void BeginFrontlineDispatch(string actionLabel, string regionId, string armyId)
+        {
+            var label = string.IsNullOrWhiteSpace(actionLabel) ? "Dispatching frontline action..." : $"Dispatching {actionLabel.Trim()}";
+            if (!string.IsNullOrWhiteSpace(regionId))
+            {
+                label += $" -> {regionId.Trim()}";
+            }
+            if (!string.IsNullOrWhiteSpace(armyId))
+            {
+                label += $" with {armyId.Trim()}";
+            }
+
+            BeginAction(label);
+        }
+
         public void FinishAction(string status, bool failed = false)
         {
             IsActionBusy = false;
