@@ -39,19 +39,18 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         {
             var warfrontTimers = s.CityTimers
                 .Where(t => t.Category != null && t.Category.IndexOf("warfront", StringComparison.OrdinalIgnoreCase) >= 0)
+                .OrderBy(t => t.FinishesAtUtc ?? DateTime.MaxValue)
                 .ToList();
             var warfrontWindows = warfrontTimers
                 .Where(t => string.Equals(t.Category, "warfront_window", StringComparison.OrdinalIgnoreCase))
-                .OrderBy(t => t.FinishesAtUtc ?? DateTime.MaxValue)
                 .ToList();
             var warfrontOps = warfrontTimers
                 .Where(t => !string.Equals(t.Category, "warfront_window", StringComparison.OrdinalIgnoreCase))
-                .OrderBy(t => t.FinishesAtUtc ?? DateTime.MaxValue)
                 .ToList();
             var readyArmies = s.Armies.Where(a => (a.Readiness ?? 0) >= 70).ToList();
             var activeMission = s.ActiveMissions.FirstOrDefault();
             var primaryWarning = s.ThreatWarnings.FirstOrDefault()?.Headline;
-            var signalPairs = s.WarfrontSignals.Take(3).ToList();
+            var signalPairs = s.WarfrontSignals.Take(2).ToList();
 
             headline.text = warfrontWindows.Count > 0
                 ? "Warfront desk"
@@ -60,16 +59,16 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                     : "Warfront review";
 
             copy.text = warfrontWindows.Count > 0
-                ? $"{warfrontWindows.Count} live front window(s) are open. Review readiness, timers, and support posture before committing later action wiring."
+                ? $"{warfrontWindows.Count} live front window(s) open. Review readiness, timers, and support posture."
                 : s.WarfrontSignals.Count > 0
-                    ? "Warfront status is visible even without an open front window. This desk stays read-only and shows the current field posture from the summary payload."
-                    : "No active warfront snapshot is visible in the current payload. The desk stays honest instead of inventing fronts.";
+                    ? "Read-only warfront posture from the current summary payload."
+                    : "No active warfront snapshot is visible in the current payload.";
 
-            note.text = $"Lane {s.City.SettlementLaneLabel} • windows {warfrontWindows.Count} • field timers {warfrontTimers.Count} • signals {s.WarfrontSignals.Count}";
+            note.text = $"Lane {s.City.SettlementLaneLabel} • windows {warfrontWindows.Count} • timers {warfrontTimers.Count} • signals {s.WarfrontSignals.Count}";
             cardsCopy.text = warfrontWindows.Count > 0
-                ? $"Showing {warfrontWindows.Count} active front window(s), {warfrontOps.Count} support timer(s), and current field posture from /api/me."
+                ? $"Showing {warfrontWindows.Count} front window(s) and {warfrontOps.Count} field timer(s)."
                 : warfrontOps.Count > 0
-                    ? $"No open front windows, but {warfrontOps.Count} field timer(s) are still visible in the summary payload."
+                    ? $"{warfrontOps.Count} field timer(s) visible without an open front window."
                     : "No active front windows are visible right now.";
 
             windowsValue.text = warfrontWindows.Count > 0
@@ -79,19 +78,19 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 ? $"{readyArmies.Count}/{s.Armies.Count} formation(s) ready"
                 : "No formations visible in payload.";
             signalValue.text = signalPairs.Count > 0
-                ? string.Join(" • ", signalPairs.Select(FormatSignal))
+                ? CompactSignalSummary(signalPairs)
                 : "No warfront status signals.";
             missionValue.text = activeMission != null
                 ? $"{activeMission.Title} • {(activeMission.FinishesAtUtc.HasValue ? FormatRemaining(activeMission.FinishesAtUtc.Value - DateTime.UtcNow) : "anchor missing")}"
                 : "No active field support mission.";
             pressureValue.text = !string.IsNullOrWhiteSpace(primaryWarning)
-                ? primaryWarning
+                ? Truncate(primaryWarning, 96)
                 : warfrontWindows.Count > 0
-                    ? "Field windows are open but no extra warning headline is active."
+                    ? "Field windows are open; no extra warning headline is active."
                     : "No extra frontline warning surfaced.";
             noteValue.text = warfrontWindows.Count > 0
-                ? "Read-only desk: fronts, signals, and readiness are live; attack/commit actions are intentionally deferred."
-                : "Read-only desk: this surface stays honest when the summary payload does not expose a live front window.";
+                ? "Read-only desk: fronts, signals, and readiness are live. Action wiring comes later."
+                : "Read-only desk: this surface stays honest when no live front window is exposed.";
 
             RenderCards(cards, BuildCards(warfrontWindows, warfrontOps, activeMission, primaryWarning, signalPairs));
         }
@@ -104,13 +103,13 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 family: "Warfront window",
                 title: timer.Label,
                 lore: $"{HumanizeStatus(timer.Status)} • {FormatRemaining(timer.FinishesAtUtc.HasValue ? timer.FinishesAtUtc.Value - DateTime.UtcNow : (TimeSpan?)null)}",
-                note: FirstNonBlank(timer.Detail, "Live warfront window surfaced from cityTimers."))));
+                note: Truncate(FirstNonBlank(timer.Detail, "Live warfront window surfaced from cityTimers."), 96))));
 
             cards.AddRange(ops.Take(Math.Max(0, 3 - cards.Count)).Select(timer => new CardView(
                 family: HumanizeCategory(timer.Category),
                 title: timer.Label,
                 lore: timer.FinishesAtUtc.HasValue ? $"{HumanizeStatus(timer.Status)} • {FormatRemaining(timer.FinishesAtUtc.Value - DateTime.UtcNow)}" : HumanizeStatus(timer.Status),
-                note: FirstNonBlank(timer.Detail, "Field timer surfaced from cityTimers."))));
+                note: Truncate(FirstNonBlank(timer.Detail, "Field timer surfaced from cityTimers."), 96))));
 
             if (cards.Count < 4 && activeMission != null)
             {
@@ -118,7 +117,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                     family: "Support mission",
                     title: activeMission.Title,
                     lore: activeMission.FinishesAtUtc.HasValue ? $"Mission resolves in {FormatRemaining(activeMission.FinishesAtUtc.Value - DateTime.UtcNow)}" : "Mission is live without a finish anchor.",
-                    note: FirstNonBlank(primaryWarning, "Active mission pressure remains part of the current warfront posture.")));
+                    note: Truncate(FirstNonBlank(primaryWarning, "Active mission pressure remains part of the current warfront posture."), 96)));
             }
 
             if (cards.Count < 4 && signalPairs.Count > 0)
@@ -126,8 +125,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 cards.Add(new CardView(
                     family: "Signal posture",
                     title: signalPairs[0].Label,
-                    lore: signalPairs[0].Value,
-                    note: signalPairs.Count > 1 ? string.Join(" • ", signalPairs.Skip(1).Select(FormatSignal)) : "Warfront status comes through the summary signal map."));
+                    lore: Truncate(signalPairs[0].Value, 72),
+                    note: signalPairs.Count > 1 ? Truncate(string.Join(" • ", signalPairs.Skip(1).Select(FormatSignal)), 96) : "Warfront status comes through the summary signal map."));
             }
 
             if (cards.Count == 0)
@@ -171,7 +170,33 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
         private static string FormatSignal(WarfrontSignalSnapshot signal) => $"{signal.Label}: {signal.Value}";
 
+        private static string CompactSignalSummary(List<WarfrontSignalSnapshot> signals)
+        {
+            if (signals == null || signals.Count == 0)
+            {
+                return "No warfront status signals.";
+            }
+
+            var first = signals[0];
+            if (signals.Count == 1)
+            {
+                return FormatSignal(first);
+            }
+
+            return $"{FormatSignal(first)} • +{signals.Count - 1} more";
+        }
+
         private static string FirstNonBlank(params string[] values) => values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v)) ?? string.Empty;
+
+        private static string Truncate(string value, int maxLen)
+        {
+            if (string.IsNullOrWhiteSpace(value) || value.Length <= maxLen)
+            {
+                return value ?? string.Empty;
+            }
+
+            return value.Substring(0, Math.Max(0, maxLen - 1)).TrimEnd() + "…";
+        }
 
         private static string FormatRemaining(TimeSpan? span)
         {
