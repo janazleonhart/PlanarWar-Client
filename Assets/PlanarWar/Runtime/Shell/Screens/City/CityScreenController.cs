@@ -231,7 +231,7 @@ namespace PlanarWar.Client.UI.Screens.City
         {
             laneTitle.text = activeLane == DevelopmentLane.Workshop ? "Workshop lane" : laneTitle.text;
             laneCopy.text = activeLane == DevelopmentLane.Workshop
-                ? "Workshop keeps active jobs, ready pickups, and queue posture visible without pretending craft actions already exist in the client."
+                ? "Workshop keeps active jobs, ready pickups, real recipe cards, and queue posture visible in one place."
                 : laneCopy.text;
 
             var cards = new List<CardView>();
@@ -241,7 +241,7 @@ namespace PlanarWar.Client.UI.Screens.City
 
             cards.AddRange(activeJobs.Take(2).Select(job => new CardView(
                 family: "Active job",
-                title: HumanizeKey(job.AttachmentKind),
+                title: ResolveWorkshopJobTitle(job),
                 lore: job.FinishesAtUtc.HasValue ? $"Ready in {FormatRemaining(job.FinishesAtUtc.Value - DateTime.UtcNow)}" : "Job surfaced without a finish anchor.",
                 note: job.Completed ? "Marked complete in payload." : "Queued workshop job from summary payload.",
                 buttonText: "In flight",
@@ -249,7 +249,7 @@ namespace PlanarWar.Client.UI.Screens.City
 
             cards.AddRange(readyJobs.Take(2).Select(job => new CardView(
                 family: "Ready pickup",
-                title: HumanizeKey(job.AttachmentKind),
+                title: ResolveWorkshopJobTitle(job),
                 lore: "Complete and waiting in the workshop queue.",
                 note: job.Id == "job" ? "Ready workshop item surfaced without a stable job id." : $"Ready job {job.Id} can now be collected into storage.",
                 buttonText: summaryState.IsActionBusy && string.Equals(summaryState.PendingWorkshopJobId, job.Id, StringComparison.OrdinalIgnoreCase) ? "Collecting..." : "Collect",
@@ -468,6 +468,17 @@ namespace PlanarWar.Client.UI.Screens.City
             }
 
             return workshopTimers > 0 ? $"{workshopTimers} workshop timer(s) visible." : "No workshop queue visible.";
+        }
+
+        private static string ResolveWorkshopJobTitle(WorkshopJobSnapshot job)
+        {
+            if (job == null)
+            {
+                return "Workshop job";
+            }
+
+            var title = FirstNonBlank(job.OutputName, job.DisplayName, job.RecipeId, job.AttachmentKind, job.OutputItemId);
+            return string.IsNullOrWhiteSpace(title) ? "Workshop job" : HumanizeKey(title);
         }
 
         private static string DescribeGrowthLane(ShellSummarySnapshot s)

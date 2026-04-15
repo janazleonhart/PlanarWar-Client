@@ -96,12 +96,24 @@ namespace PlanarWar.Client.Core.Mapping
                     Status = a["status"]?.Read<string>() ?? "-",
                     Readiness = a["readiness"]?.Read<double?>()
                 }).ToList() ?? new(),
-                WorkshopJobs = (summary["workshopJobs"] as JArray)?.OfType<JObject>().Select(j => new WorkshopJobSnapshot
+                WorkshopJobs = (summary["workshopJobs"] as JArray)?.OfType<JObject>().Select(j =>
                 {
-                    Id = j["id"]?.Read<string>() ?? j["jobId"]?.Read<string>() ?? "job",
-                    AttachmentKind = j["attachmentKind"]?.Read<string>() ?? "job",
-                    Completed = j["completed"]?.Read<bool>() ?? false,
-                    FinishesAtUtc = ParseUtc(j["finishesAt"])
+                    var recipeId = j["recipeId"]?.Read<string>() ?? j["recipe_id"]?.Read<string>() ?? string.Empty;
+                    var attachmentKind = j["attachmentKind"]?.Read<string>() ?? j["attachment_kind"]?.Read<string>() ?? string.Empty;
+                    var outputName = j["outputName"]?.Read<string>() ?? j["output_name"]?.Read<string>() ?? string.Empty;
+                    var outputItemId = j["outputItemId"]?.Read<string>() ?? j["output_item_id"]?.Read<string>() ?? string.Empty;
+
+                    return new WorkshopJobSnapshot
+                    {
+                        Id = j["id"]?.Read<string>() ?? j["jobId"]?.Read<string>() ?? "job",
+                        RecipeId = recipeId,
+                        AttachmentKind = attachmentKind,
+                        OutputName = outputName,
+                        OutputItemId = outputItemId,
+                        DisplayName = FirstNonBlank(outputName, recipeId, attachmentKind, outputItemId, "Workshop job"),
+                        Completed = j["completed"]?.Read<bool>() ?? false,
+                        FinishesAtUtc = ParseUtc(j["finishesAt"] ?? j["finishes_at"])
+                    };
                 }).ToList() ?? new(),
                 WarfrontSignals = (summary["warfrontStatus"] as JObject)?.Properties().Select(p => new WarfrontSignalSnapshot { Label = p.Name, Value = p.Value?.ToString() ?? "-" }).ToList()
                     ?? (summary["warfront"] as JObject)?.Properties().Select(p => new WarfrontSignalSnapshot { Label = p.Name, Value = p.Value?.ToString() ?? "-" }).ToList()
@@ -177,6 +189,19 @@ namespace PlanarWar.Client.Core.Mapping
 
         private static JObject FirstObject(params JToken[] tokens) => tokens?.OfType<JObject>().FirstOrDefault();
         private static JArray FirstArray(params JToken[] tokens) => tokens?.OfType<JArray>().FirstOrDefault();
+
+        private static string FirstNonBlank(params string[] values)
+        {
+            foreach (var value in values ?? Array.Empty<string>())
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    return value.Trim();
+                }
+            }
+
+            return string.Empty;
+        }
 
         private static ResearchSnapshot MapResearch(JObject obj)
         {

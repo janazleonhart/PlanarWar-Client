@@ -52,7 +52,7 @@ namespace PlanarWar.Client.Core.Application
                     Summary = r["summary"]?.ToString()?.Trim() ?? string.Empty,
                     GearFamily = r["gearFamily"]?.ToString()?.Trim() ?? string.Empty,
                     OutputItemId = r["outputItemId"]?.ToString()?.Trim() ?? string.Empty,
-                    WealthCost = ReadDouble(r["wealthCost"]),
+                    WealthCost = ReadDouble(r["effectiveWealthCost"] ?? r["craftWealthCost"] ?? r["wealthCost"]),
                     ManaCost = ReadDouble(r["manaCost"]),
                     MaterialsCost = ReadDouble(r["craftMaterialsCost"] ?? r["materialsCost"]),
                     CraftMinutes = ReadDouble(r["craftMinutes"]),

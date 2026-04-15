@@ -88,7 +88,42 @@ namespace PlanarWar.Client.UI.Screens.Summary
             if (active.Length == 0) return "No active workshop queue.";
             var first = active[0];
             var timer = first.FinishesAtUtc.HasValue ? FormatRemaining(first.FinishesAtUtc.Value - DateTime.UtcNow) : "time unknown";
-            return $"{first.AttachmentKind} • {timer}";
+            return $"{DescribeWorkshopJob(first)} • {timer}";
+        }
+
+        private static string DescribeWorkshopJob(WorkshopJobSnapshot job)
+        {
+            if (job == null)
+            {
+                return "Workshop job";
+            }
+
+            var label = FirstNonBlank(job.OutputName, job.DisplayName, job.RecipeId, job.AttachmentKind, job.OutputItemId);
+            return string.IsNullOrWhiteSpace(label) ? "Workshop job" : HumanizeKey(label);
+        }
+
+        private static string FirstNonBlank(params string[] values)
+        {
+            foreach (var value in values ?? Array.Empty<string>())
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    return value.Trim();
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private static string HumanizeKey(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return "-";
+            }
+
+            return string.Join(" ", value.Trim().Split(new[] { '_', '-', ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(part => char.ToUpperInvariant(part[0]) + part.Substring(1)));
         }
 
         private static string FormatMission(List<MissionSnapshot> missions)
