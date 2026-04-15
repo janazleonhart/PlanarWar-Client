@@ -1,5 +1,6 @@
 using PlanarWar.Client.Core;
 using PlanarWar.Client.Core.Application;
+using PlanarWar.Client.Core.Contracts;
 using PlanarWar.Client.Network;
 using System;
 using System.Threading.Tasks;
@@ -71,6 +72,8 @@ namespace PlanarWar.Client.UI
                     HandleStartResearchRequestedAsync,
                     HandleStartWorkshopCraftRequestedAsync,
                     HandleCollectWorkshopRequestedAsync,
+                    HandleStartMissionRequestedAsync,
+                    HandleCompleteMissionRequestedAsync,
                     RefreshSummary,
                     () => navigationState.SetActive(ShellScreen.Summary));
             }
@@ -148,6 +151,53 @@ namespace PlanarWar.Client.UI
             catch (Exception ex)
             {
                 summaryState.FinishAction($"Workshop craft failed: {ex.Message}", failed: true);
+            }
+        }
+
+
+        private async Task HandleStartMissionRequestedAsync(OperationSnapshot operation)
+        {
+            var missionId = operation?.Action?.MissionId?.Trim();
+            if (summaryState == null || apiClient == null || string.IsNullOrWhiteSpace(missionId) || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            try
+            {
+                summaryState.BeginMissionStart(missionId);
+                await apiClient.StartMissionAsync(
+                    missionId,
+                    string.IsNullOrWhiteSpace(operation?.Action?.HeroId) ? null : operation.Action.HeroId.Trim(),
+                    string.IsNullOrWhiteSpace(operation?.Action?.ArmyId) ? null : operation.Action.ArmyId.Trim(),
+                    string.IsNullOrWhiteSpace(operation?.Action?.ResponsePosture) ? null : operation.Action.ResponsePosture.Trim());
+                await summaryController.RefreshAsync();
+                summaryState.FinishAction($"Mission started: {(string.IsNullOrWhiteSpace(operation?.Title) ? missionId : operation.Title.Trim())}");
+            }
+            catch (Exception ex)
+            {
+                summaryState.FinishAction($"Mission start failed: {ex.Message}", failed: true);
+            }
+        }
+
+        private async Task HandleCompleteMissionRequestedAsync(MissionSnapshot mission)
+        {
+            var instanceId = mission?.InstanceId?.Trim();
+            if (summaryState == null || apiClient == null || string.IsNullOrWhiteSpace(instanceId) || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            try
+            {
+                summaryState.BeginMissionComplete(instanceId, mission?.Title);
+                await apiClient.CompleteMissionAsync(instanceId);
+                await summaryController.RefreshAsync();
+                summaryState.FinishAction($"Mission complete: {(string.IsNullOrWhiteSpace(mission?.Title) ? instanceId : mission.Title.Trim())}");
+            }
+            catch (Exception ex)
+            {
+                summaryState.FinishAction($"Mission completion failed: {ex.Message}", failed: true);
             }
         }
 

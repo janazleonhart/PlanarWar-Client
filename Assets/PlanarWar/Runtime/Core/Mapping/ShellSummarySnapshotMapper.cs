@@ -62,10 +62,11 @@ namespace PlanarWar.Client.Core.Mapping
                 AvailableTechs = availableTechs?.OfType<JObject>().Select(MapTech).Where(t => t != null).ToList() ?? new List<TechOptionSnapshot>(),
                 CityTimers = cityTimers?.OfType<JObject>().Select(MapCityTimer).Where(t => t != null).ToList() ?? new List<CityTimerEntrySnapshot>(),
                 ThreatWarnings = (summary["threatWarnings"] as JArray)?.OfType<JObject>().Select(w => new ThreatWarningSnapshot { Headline = w["headline"]?.Read<string>() ?? w["title"]?.Read<string>() ?? w["summary"]?.Read<string>() ?? "Warning" }).ToList() ?? new(),
-                OpeningOperations = (city?["settlementOpeningOperations"] as JArray)?.OfType<JObject>().Select(op => new OperationSnapshot { Title = op["title"]?.Read<string>() ?? "Operation", Readiness = op["readiness"]?.Read<string>() ?? "-" }).ToList() ?? new(),
+                OpeningOperations = (city?["settlementOpeningOperations"] as JArray)?.OfType<JObject>().Select(MapOpeningOperation).Where(op => op != null).ToList() ?? new(),
                 ActiveMissions = activeMissions?.OfType<JObject>().Select(m => new MissionSnapshot
                 {
-                    Id = m["mission"]?["id"]?.Read<string>() ?? "mission",
+                    Id = m["mission"]?["id"]?.Read<string>() ?? m["instanceId"]?.Read<string>() ?? m["instance_id"]?.Read<string>() ?? "mission",
+                    InstanceId = m["instanceId"]?.Read<string>() ?? m["instance_id"]?.Read<string>() ?? string.Empty,
                     Title = m["mission"]?["title"]?.Read<string>() ?? m["mission"]?["id"]?.Read<string>() ?? "Mission",
                     FinishesAtUtc = ParseUtc(
                         m["finishesAt"]
@@ -160,6 +161,45 @@ namespace PlanarWar.Client.Core.Mapping
                 UnlockPreview = (obj["unlockPreview"] as JArray)?.Values<string>().Where(v => !string.IsNullOrWhiteSpace(v)).ToList()
                     ?? (obj["unlock_preview"] as JArray)?.Values<string>().Where(v => !string.IsNullOrWhiteSpace(v)).ToList()
                     ?? new List<string>()
+            };
+        }
+
+
+        private static OperationSnapshot MapOpeningOperation(JObject obj)
+        {
+            if (obj == null) return null;
+
+            var action = obj["action"] as JObject;
+            return new OperationSnapshot
+            {
+                Id = obj["id"]?.Read<string>() ?? "operation",
+                Title = obj["title"]?.Read<string>() ?? "Operation",
+                Summary = obj["summary"]?.Read<string>() ?? string.Empty,
+                Detail = obj["detail"]?.Read<string>() ?? string.Empty,
+                WhyNow = obj["whyNow"]?.Read<string>() ?? obj["why_now"]?.Read<string>() ?? string.Empty,
+                Payoff = obj["payoff"]?.Read<string>() ?? string.Empty,
+                Risk = obj["risk"]?.Read<string>() ?? string.Empty,
+                Lane = obj["lane"]?.Read<string>() ?? string.Empty,
+                Priority = obj["priority"]?.Read<string>() ?? string.Empty,
+                Readiness = obj["readiness"]?.Read<string>() ?? "-",
+                CtaLabel = obj["ctaLabel"]?.Read<string>() ?? obj["cta_label"]?.Read<string>() ?? string.Empty,
+                FocusLabel = obj["focusLabel"]?.Read<string>() ?? obj["focus_label"]?.Read<string>() ?? string.Empty,
+                ImpactPreview = (obj["impactPreview"] as JArray)?.Values<string>().Where(v => !string.IsNullOrWhiteSpace(v)).ToList()
+                    ?? (obj["impact_preview"] as JArray)?.Values<string>().Where(v => !string.IsNullOrWhiteSpace(v)).ToList()
+                    ?? new List<string>(),
+                Action = new OpeningActionSnapshot
+                {
+                    Kind = action?["kind"]?.Read<string>() ?? string.Empty,
+                    BuildingKind = action?["buildingKind"]?.Read<string>() ?? action?["building_kind"]?.Read<string>() ?? string.Empty,
+                    BuildingId = action?["buildingId"]?.Read<string>() ?? action?["building_id"]?.Read<string>() ?? string.Empty,
+                    TechId = action?["techId"]?.Read<string>() ?? action?["tech_id"]?.Read<string>() ?? string.Empty,
+                    MissionId = action?["missionId"]?.Read<string>() ?? action?["mission_id"]?.Read<string>() ?? string.Empty,
+                    ActionId = action?["actionId"]?.Read<string>() ?? action?["action_id"]?.Read<string>() ?? string.Empty,
+                    Role = action?["role"]?.Read<string>() ?? string.Empty,
+                    ArmyId = action?["armyId"]?.Read<string>() ?? action?["army_id"]?.Read<string>() ?? string.Empty,
+                    HeroId = action?["heroId"]?.Read<string>() ?? action?["hero_id"]?.Read<string>() ?? string.Empty,
+                    ResponsePosture = action?["responsePosture"]?.Read<string>() ?? action?["response_posture"]?.Read<string>() ?? string.Empty,
+                }
             };
         }
 

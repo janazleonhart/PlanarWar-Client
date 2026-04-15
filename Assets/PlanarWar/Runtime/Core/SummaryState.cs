@@ -24,6 +24,8 @@ namespace PlanarWar.Client.Core
         public string PendingResearchTechId { get; private set; } = string.Empty;
         public string PendingWorkshopJobId { get; private set; } = string.Empty;
         public string PendingWorkshopRecipeId { get; private set; } = string.Empty;
+        public string PendingMissionId { get; private set; } = string.Empty;
+        public string PendingMissionInstanceId { get; private set; } = string.Empty;
 
         public void Apply(JObject summary, ShellSummarySnapshot snapshot, IEnumerable<WorkshopRecipeSnapshot> workshopRecipes = null)
         {
@@ -49,6 +51,8 @@ namespace PlanarWar.Client.Core
             PendingResearchTechId = techId?.Trim() ?? string.Empty;
             PendingWorkshopJobId = string.Empty;
             PendingWorkshopRecipeId = string.Empty;
+            PendingMissionId = string.Empty;
+            PendingMissionInstanceId = string.Empty;
             ActionStatus = string.IsNullOrWhiteSpace(PendingResearchTechId) ? "Starting research..." : $"Starting research: {PendingResearchTechId}";
             Changed?.Invoke();
         }
@@ -60,6 +64,8 @@ namespace PlanarWar.Client.Core
             PendingResearchTechId = string.Empty;
             PendingWorkshopJobId = string.Empty;
             PendingWorkshopRecipeId = recipeId?.Trim() ?? string.Empty;
+            PendingMissionId = string.Empty;
+            PendingMissionInstanceId = string.Empty;
             ActionStatus = string.IsNullOrWhiteSpace(PendingWorkshopRecipeId) ? "Starting workshop craft..." : $"Starting workshop craft: {PendingWorkshopRecipeId}";
             Changed?.Invoke();
         }
@@ -71,9 +77,43 @@ namespace PlanarWar.Client.Core
             PendingResearchTechId = string.Empty;
             PendingWorkshopRecipeId = string.Empty;
             PendingWorkshopJobId = jobId?.Trim() ?? string.Empty;
+            PendingMissionId = string.Empty;
+            PendingMissionInstanceId = string.Empty;
             ActionStatus = string.IsNullOrWhiteSpace(PendingWorkshopJobId) ? "Collecting workshop item..." : $"Collecting workshop job: {PendingWorkshopJobId}";
             Changed?.Invoke();
         }
+
+
+        public void BeginMissionStart(string missionId)
+        {
+            IsActionBusy = true;
+            ActionFailed = false;
+            PendingResearchTechId = string.Empty;
+            PendingWorkshopJobId = string.Empty;
+            PendingWorkshopRecipeId = string.Empty;
+            PendingMissionId = missionId?.Trim() ?? string.Empty;
+            PendingMissionInstanceId = string.Empty;
+            ActionStatus = string.IsNullOrWhiteSpace(PendingMissionId) ? "Launching mission..." : $"Launching mission: {PendingMissionId}";
+            Changed?.Invoke();
+        }
+
+        public void BeginMissionComplete(string instanceId, string missionTitle = null)
+        {
+            IsActionBusy = true;
+            ActionFailed = false;
+            PendingResearchTechId = string.Empty;
+            PendingWorkshopJobId = string.Empty;
+            PendingWorkshopRecipeId = string.Empty;
+            PendingMissionId = string.Empty;
+            PendingMissionInstanceId = instanceId?.Trim() ?? string.Empty;
+            ActionStatus = !string.IsNullOrWhiteSpace(missionTitle)
+                ? $"Completing mission: {missionTitle.Trim()}"
+                : string.IsNullOrWhiteSpace(PendingMissionInstanceId)
+                    ? "Completing mission..."
+                    : $"Completing mission: {PendingMissionInstanceId}";
+            Changed?.Invoke();
+        }
+
 
         public void FinishAction(string status, bool failed = false)
         {
@@ -82,6 +122,8 @@ namespace PlanarWar.Client.Core
             PendingResearchTechId = string.Empty;
             PendingWorkshopJobId = string.Empty;
             PendingWorkshopRecipeId = string.Empty;
+            PendingMissionId = string.Empty;
+            PendingMissionInstanceId = string.Empty;
             ActionStatus = string.IsNullOrWhiteSpace(status) ? (failed ? "Action failed." : "Action complete.") : status.Trim();
             Changed?.Invoke();
         }

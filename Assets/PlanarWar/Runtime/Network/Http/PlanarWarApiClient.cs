@@ -67,6 +67,52 @@ namespace PlanarWar.Client.Network
 
 
 
+
+        public Task<JObject> StartMissionAsync(string missionId, string heroId = null, string armyId = null, string responsePosture = null)
+        {
+            if (string.IsNullOrWhiteSpace(missionId))
+            {
+                throw new ArgumentException("missionId is required", nameof(missionId));
+            }
+
+            var body = new JObject
+            {
+                ["missionId"] = missionId.Trim(),
+            };
+
+            if (!string.IsNullOrWhiteSpace(heroId))
+            {
+                body["heroId"] = heroId.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(armyId))
+            {
+                body["armyId"] = armyId.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(responsePosture))
+            {
+                body["responsePosture"] = responsePosture.Trim();
+            }
+
+            return PostJsonAsync(BuildUrl("/api/missions/start"), body, includeBearerToken: true);
+        }
+
+        public Task<JObject> CompleteMissionAsync(string instanceId)
+        {
+            if (string.IsNullOrWhiteSpace(instanceId))
+            {
+                throw new ArgumentException("instanceId is required", nameof(instanceId));
+            }
+
+            var body = new JObject
+            {
+                ["instanceId"] = instanceId.Trim(),
+            };
+
+            return PostJsonAsync(BuildUrl("/api/missions/complete"), body, includeBearerToken: true);
+        }
+
         public Task<JObject> StartWorkshopCraftAsync(string recipeId)
         {
             if (string.IsNullOrWhiteSpace(recipeId))

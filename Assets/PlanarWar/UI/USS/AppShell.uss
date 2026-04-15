@@ -386,6 +386,26 @@
     margin-bottom: 12px;
 }
 
+
+.warfront-screen-content {
+    gap: 14px;
+    padding-right: 6px;
+    padding-bottom: 8px;
+}
+
+.warfront-screen-content .summary-hero {
+    gap: 8px;
+    padding-bottom: 10px;
+}
+
+.warfront-screen-content .summary-grid--desk-cards {
+    gap: 12px;
+    justify-content: flex-start;
+}
+
+.warfront-screen-content .summary-grid--desk-support {
+    gap: 12px;
+}
 .summary-screen-content .summary-grid--glance {
     margin-top: 4px;
     margin-bottom: 6px;
@@ -697,6 +717,47 @@
 
 .development-research-card .action-button {
     min-width: 148px;
+}
+
+.summary-grid--desk-cards {
+    align-items: stretch;
+}
+
+.warfront-desk-card {
+    min-width: 360px;
+    max-width: 48%;
+    min-height: 188px;
+    gap: 8px;
+    justify-content: flex-start;
+}
+
+.warfront-desk-card .rail-note-title,
+.warfront-desk-card .summary-value,
+.warfront-desk-card .metric-subvalue {
+    white-space: normal;
+}
+
+.warfront-desk-card__status {
+    display: none;
+    margin-top: auto;
+    min-height: 34px;
+    padding-left: 12px;
+    padding-right: 12px;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(54, 88, 176, 0.45);
+    color: rgb(220, 228, 255);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    unity-text-align: middle-center;
+}
+
+.warfront-desk-card__button {
+    margin-top: auto;
+    min-width: 136px;
+    align-self: stretch;
 }
 
 /* Comms containment pass v1 */
