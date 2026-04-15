@@ -59,6 +59,23 @@ namespace PlanarWar.Client.Network
             return PostJsonAsync(BuildUrl("/api/tech/start"), body, includeBearerToken: true);
         }
 
+
+        public Task<JObject> CollectWorkshopAsync(string jobId)
+        {
+            if (string.IsNullOrWhiteSpace(jobId))
+            {
+                throw new ArgumentException("jobId is required", nameof(jobId));
+            }
+
+            var body = new JObject
+            {
+                ["jobId"] = jobId.Trim(),
+                ["serviceMode"] = "private_city"
+            };
+
+            return PostJsonAsync(BuildUrl("/api/workshop/collect"), body, includeBearerToken: true);
+        }
+
         private string BuildUrl(string path)
         {
             var baseUrl = getHttpBaseUrl()?.Trim();

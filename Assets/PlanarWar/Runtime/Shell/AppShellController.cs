@@ -64,7 +64,7 @@ namespace PlanarWar.Client.UI
         private readonly Button sendChatButton;
         private readonly TextField chatInputField;
 
-        public AppShellController(VisualElement root, SessionState sessionState, SummaryState summaryState, ShellNavigationState navigationState, ClientVersionState versionState, Action<string> onStartResearch)
+        public AppShellController(VisualElement root, SessionState sessionState, SummaryState summaryState, ShellNavigationState navigationState, ClientVersionState versionState, Func<string, System.Threading.Tasks.Task> onStartResearchRequested, Func<string, System.Threading.Tasks.Task> onCollectWorkshopRequested, Action onRefreshDeskRequested, Action onBackHomeRequested)
         {
             this.sessionState = sessionState;
             this.summaryState = summaryState;
@@ -77,7 +77,7 @@ namespace PlanarWar.Client.UI
             socialRoot = root.Q<VisualElement>("social-screen");
 
             summaryScreen = new SummaryScreenController(root);
-            cityScreen = new CityScreenController(root, onStartResearch);
+            cityScreen = new CityScreenController(root, summaryState, onStartResearchRequested, onCollectWorkshopRequested, onRefreshDeskRequested, onBackHomeRequested);
             blackMarketScreen = new BlackMarketScreenController(root);
             socialScreen = new SocialScreenController(root);
 
@@ -299,7 +299,7 @@ namespace PlanarWar.Client.UI
                 var cardViews = new[]
                 {
                     new CardView("Room state", roomJoined ? $"Room {roomText}" : "No attached room", roomJoined ? "Chat room is attached through WS session state." : "Where-am-I is live, but no room is attached yet.", $"Shard {sessionState.ShardId} • account {sessionState.DisplayName}"),
-                    new CardView("Channel filter", sessionState.ActiveChatChannel.ToUpperInvariant(), visibleLines.Count > 0 ? $"Showing {visibleLines.Count} recent line(s) for this filter." : "This filter has no visible lines yet.", "Available filters: all, room, system."),
+                    new CardView("Channel filter", sessionState.ActiveChatChannel.ToUpperInvariant(), visibleLines.Count > 0 ? $"Showing {visibleLines.Count} recent line(s) for this filter." : "This filter has no visible lines yet.", $"Available filters: all, room, system."),
                     BuildLineCard(visibleLines.ElementAtOrDefault(0), "Recent line", "No recent chat line is visible yet."),
                     BuildLineCard(visibleLines.ElementAtOrDefault(1) ?? systemLine, "Secondary line", "No secondary line is visible yet.")
                 };

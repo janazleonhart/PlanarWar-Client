@@ -98,6 +98,7 @@ namespace PlanarWar.Client.Core.Mapping
                 }).ToList() ?? new(),
                 WorkshopJobs = (summary["workshopJobs"] as JArray)?.OfType<JObject>().Select(j => new WorkshopJobSnapshot
                 {
+                    Id = j["id"]?.Read<string>() ?? j["jobId"]?.Read<string>() ?? "job",
                     AttachmentKind = j["attachmentKind"]?.Read<string>() ?? "job",
                     Completed = j["completed"]?.Read<bool>() ?? false,
                     FinishesAtUtc = ParseUtc(j["finishesAt"])

@@ -19,6 +19,7 @@ namespace PlanarWar.Client.Core
         public string ActionStatus { get; private set; } = string.Empty;
         public bool ActionFailed { get; private set; }
         public string PendingResearchTechId { get; private set; } = string.Empty;
+        public string PendingWorkshopJobId { get; private set; } = string.Empty;
 
         public void Apply(JObject summary, ShellSummarySnapshot snapshot)
         {
@@ -36,30 +37,33 @@ namespace PlanarWar.Client.Core
             Changed?.Invoke();
         }
 
-        public void BeginResearchAction(string techId, string statusMessage = null)
+        public void BeginResearchAction(string techId)
         {
             IsActionBusy = true;
             ActionFailed = false;
-            PendingResearchTechId = string.IsNullOrWhiteSpace(techId) ? string.Empty : techId.Trim();
-            ActionStatus = string.IsNullOrWhiteSpace(statusMessage) ? "Submitting research order..." : statusMessage.Trim();
+            PendingResearchTechId = techId?.Trim() ?? string.Empty;
+            PendingWorkshopJobId = string.Empty;
+            ActionStatus = string.IsNullOrWhiteSpace(PendingResearchTechId) ? "Starting research..." : $"Starting research: {PendingResearchTechId}";
             Changed?.Invoke();
         }
 
-        public void CompleteResearchAction(string statusMessage)
+        public void BeginWorkshopCollect(string jobId)
         {
-            IsActionBusy = false;
+            IsActionBusy = true;
             ActionFailed = false;
             PendingResearchTechId = string.Empty;
-            ActionStatus = string.IsNullOrWhiteSpace(statusMessage) ? "Research order accepted." : statusMessage.Trim();
+            PendingWorkshopJobId = jobId?.Trim() ?? string.Empty;
+            ActionStatus = string.IsNullOrWhiteSpace(PendingWorkshopJobId) ? "Collecting workshop item..." : $"Collecting workshop job: {PendingWorkshopJobId}";
             Changed?.Invoke();
         }
 
-        public void FailResearchAction(string statusMessage)
+        public void FinishAction(string status, bool failed = false)
         {
             IsActionBusy = false;
-            ActionFailed = true;
+            ActionFailed = failed;
             PendingResearchTechId = string.Empty;
-            ActionStatus = string.IsNullOrWhiteSpace(statusMessage) ? "Research order failed." : statusMessage.Trim();
+            PendingWorkshopJobId = string.Empty;
+            ActionStatus = string.IsNullOrWhiteSpace(status) ? (failed ? "Action failed." : "Action complete.") : status.Trim();
             Changed?.Invoke();
         }
     }

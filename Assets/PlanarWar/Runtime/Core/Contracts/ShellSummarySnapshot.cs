@@ -38,6 +38,6 @@ namespace PlanarWar.Client.Core.Contracts
     [Serializable] public sealed class MissionSnapshot { public string Id { get; set; } = "mission"; public string Title { get; set; } = "Mission"; public DateTime? FinishesAtUtc { get; set; } }
     [Serializable] public sealed class HeroSnapshot { public string Name { get; set; } = "Hero"; public string Status { get; set; } = "-"; public double? Level { get; set; } public int AttachmentCount { get; set; } }
     [Serializable] public sealed class ArmySnapshot { public string Name { get; set; } = "Army"; public string Status { get; set; } = "-"; public double? Readiness { get; set; } }
-    [Serializable] public sealed class WorkshopJobSnapshot { public string AttachmentKind { get; set; } = "job"; public bool Completed { get; set; } public DateTime? FinishesAtUtc { get; set; } }
+    [Serializable] public sealed class WorkshopJobSnapshot { public string Id { get; set; } = "job"; public string AttachmentKind { get; set; } = "job"; public bool Completed { get; set; } public DateTime? FinishesAtUtc { get; set; } }
     [Serializable] public sealed class WarfrontSignalSnapshot { public string Label { get; set; } = "-"; public string Value { get; set; } = "-"; }
 }

@@ -2,6 +2,7 @@ using PlanarWar.Client.Core;
 using PlanarWar.Client.Core.Application;
 using PlanarWar.Client.Network;
 using System;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -61,7 +62,16 @@ namespace PlanarWar.Client.UI
             {
                 var root = uiDocument.rootVisualElement;
                 BindUi(root);
-                appShellController = new AppShellController(root, sessionState, summaryState, navigationState, versionState, HandleStartResearchRequested);
+                appShellController = new AppShellController(
+                    root,
+                    sessionState,
+                    summaryState,
+                    navigationState,
+                    versionState,
+                    HandleStartResearchRequestedAsync,
+                    HandleCollectWorkshopRequestedAsync,
+                    RefreshSummary,
+                    () => navigationState.SetActive(ShellScreen.Summary));
             }
 
             sessionState.Changed += Render;
@@ -97,6 +107,46 @@ namespace PlanarWar.Client.UI
 
             nextClockRenderAt = Time.unscaledTime + 1f;
             Render();
+        }
+
+        private async Task HandleStartResearchRequestedAsync(string techId)
+        {
+            if (summaryState == null || apiClient == null || string.IsNullOrWhiteSpace(techId) || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            try
+            {
+                summaryState.BeginResearchAction(techId);
+                await apiClient.StartResearchAsync(techId.Trim());
+                await summaryController.RefreshAsync();
+                summaryState.FinishAction($"Research started: {techId.Trim()}");
+            }
+            catch (Exception ex)
+            {
+                summaryState.FinishAction($"Research failed: {ex.Message}", failed: true);
+            }
+        }
+
+        private async Task HandleCollectWorkshopRequestedAsync(string jobId)
+        {
+            if (summaryState == null || apiClient == null || string.IsNullOrWhiteSpace(jobId) || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            try
+            {
+                summaryState.BeginWorkshopCollect(jobId);
+                await apiClient.CollectWorkshopAsync(jobId.Trim());
+                await summaryController.RefreshAsync();
+                summaryState.FinishAction($"Workshop collect complete: {jobId.Trim()}");
+            }
+            catch (Exception ex)
+            {
+                summaryState.FinishAction($"Workshop collect failed: {ex.Message}", failed: true);
+            }
         }
 
         private static void EnsureFallbackCamera()
@@ -174,40 +224,6 @@ namespace PlanarWar.Client.UI
             }
         }
 
-        private async void HandleStartResearchRequested(string techId)
-        {
-            if (string.IsNullOrWhiteSpace(techId) || summaryState.IsActionBusy)
-            {
-                return;
-            }
-
-            summaryState.BeginResearchAction(techId, $"Submitting research order for {techId}...");
-
-            try
-            {
-                await apiClient.StartResearchAsync(techId);
-            }
-            catch (Exception ex)
-            {
-                summaryState.FailResearchAction($"Research order failed: {CompactError(ex.Message)}");
-                return;
-            }
-
-            try
-            {
-                await summaryController.RefreshAsync();
-                var resolvedName = string.IsNullOrWhiteSpace(summaryState.Snapshot.ActiveResearch?.Name)
-                    ? techId
-                    : summaryState.Snapshot.ActiveResearch.Name;
-                summaryState.CompleteResearchAction($"Research started: {resolvedName}.");
-            }
-            catch (Exception ex)
-            {
-                summaryState.CompleteResearchAction($"Research order submitted, but refresh failed: {CompactError(ex.Message)}");
-                summaryState.SetError(ex.Message);
-            }
-        }
-
         private void Logout() => authController.Logout();
 
         private void Render() => appShellController?.Render();
@@ -233,17 +249,6 @@ namespace PlanarWar.Client.UI
             }
 
             return "http://127.0.0.1:7777";
-        }
-
-        private static string CompactError(string error)
-        {
-            if (string.IsNullOrWhiteSpace(error))
-            {
-                return "Unknown error.";
-            }
-
-            var firstLine = error.Replace('\r', '\n').Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            return firstLine.Length == 0 ? error.Trim() : firstLine[0].Trim();
         }
     }
 }
