@@ -6,7 +6,8 @@ namespace PlanarWar.Client.Core.Application
     {
         Summary,
         City,
-        BlackMarket
+        BlackMarket,
+        Social
     }
 
     public sealed class ShellNavigationState
