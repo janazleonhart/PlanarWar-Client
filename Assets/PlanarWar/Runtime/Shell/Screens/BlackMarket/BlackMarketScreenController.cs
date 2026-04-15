@@ -31,6 +31,10 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private readonly DropdownField mergeTargetField;
         private readonly Button mergeButton;
         private readonly Button disbandButton;
+        private readonly DropdownField holdRegionField;
+        private readonly DropdownField holdPostureField;
+        private readonly Button assignHoldButton;
+        private readonly Button releaseHoldButton;
         private readonly InfoCard[] cards;
         private readonly SummaryState summaryState;
         private readonly Func<string, Task> onReinforceArmyRequested;
@@ -38,18 +42,23 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private readonly Func<string, int, string, Task> onSplitArmyRequested;
         private readonly Func<string, string, Task> onMergeArmyRequested;
         private readonly Func<string, Task> onDisbandArmyRequested;
+        private readonly Func<string, string, string, Task> onAssignArmyHoldRequested;
+        private readonly Func<string, Task> onReleaseArmyHoldRequested;
         private readonly Action onRefreshDeskRequested;
         private readonly List<string> managementArmyChoiceIds = new();
         private readonly List<string> mergeArmyChoiceIds = new();
+        private readonly List<string> holdRegionChoiceIds = new();
         private string selectedArmyId = string.Empty;
         private string draftedArmyId = string.Empty;
         private string renameDraft = string.Empty;
         private string splitSizeDraft = string.Empty;
         private string splitNameDraft = string.Empty;
         private string selectedMergeArmyId = string.Empty;
+        private string selectedHoldRegionId = string.Empty;
+        private string selectedHoldPosture = "frontier_hold";
         private bool suppressManagementEvents;
 
-        public BlackMarketScreenController(VisualElement root, SummaryState summaryState, Func<string, Task> onReinforceArmyRequested, Func<string, string, Task> onRenameArmyRequested, Func<string, int, string, Task> onSplitArmyRequested, Func<string, string, Task> onMergeArmyRequested, Func<string, Task> onDisbandArmyRequested, Action onRefreshDeskRequested)
+        public BlackMarketScreenController(VisualElement root, SummaryState summaryState, Func<string, Task> onReinforceArmyRequested, Func<string, string, Task> onRenameArmyRequested, Func<string, int, string, Task> onSplitArmyRequested, Func<string, string, Task> onMergeArmyRequested, Func<string, Task> onDisbandArmyRequested, Func<string, string, string, Task> onAssignArmyHoldRequested, Func<string, Task> onReleaseArmyHoldRequested, Action onRefreshDeskRequested)
         {
             headline = root.Q<Label>("placeholder-headline-value");
             copy = root.Q<Label>("placeholder-copy-value");
@@ -72,6 +81,10 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             mergeTargetField = root.Q<DropdownField>("warfront-manage-merge-target-field");
             mergeButton = root.Q<Button>("warfront-manage-merge-button");
             disbandButton = root.Q<Button>("warfront-manage-disband-button");
+            holdRegionField = root.Q<DropdownField>("warfront-manage-hold-region-field");
+            holdPostureField = root.Q<DropdownField>("warfront-manage-hold-posture-field");
+            assignHoldButton = root.Q<Button>("warfront-manage-hold-assign-button");
+            releaseHoldButton = root.Q<Button>("warfront-manage-hold-release-button");
             cards = Enumerable.Range(1, 4).Select(i => new InfoCard(root, $"warfront-card-{i}", hasButton: true)).ToArray();
             this.summaryState = summaryState;
             this.onReinforceArmyRequested = onReinforceArmyRequested;
@@ -79,6 +92,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             this.onSplitArmyRequested = onSplitArmyRequested;
             this.onMergeArmyRequested = onMergeArmyRequested;
             this.onDisbandArmyRequested = onDisbandArmyRequested;
+            this.onAssignArmyHoldRequested = onAssignArmyHoldRequested;
+            this.onReleaseArmyHoldRequested = onReleaseArmyHoldRequested;
             this.onRefreshDeskRequested = onRefreshDeskRequested;
 
             if (managementArmyField != null)
@@ -113,6 +128,30 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 }
             });
 
+            holdRegionField?.RegisterValueChangedCallback(evt =>
+            {
+                if (suppressManagementEvents)
+                {
+                    return;
+                }
+
+                var index = holdRegionField.choices?.IndexOf(evt.newValue) ?? -1;
+                if (index >= 0 && index < holdRegionChoiceIds.Count)
+                {
+                    selectedHoldRegionId = holdRegionChoiceIds[index];
+                }
+            });
+
+            holdPostureField?.RegisterValueChangedCallback(evt =>
+            {
+                if (suppressManagementEvents)
+                {
+                    return;
+                }
+
+                selectedHoldPosture = NormalizeHoldPostureLabel(evt.newValue);
+            });
+
             renameInput?.RegisterValueChangedCallback(evt =>
             {
                 if (!suppressManagementEvents)
@@ -141,6 +180,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             splitButton?.RegisterCallback<ClickEvent>(_ => TriggerSplitArmy());
             mergeButton?.RegisterCallback<ClickEvent>(_ => TriggerMergeArmy());
             disbandButton?.RegisterCallback<ClickEvent>(_ => TriggerDisbandArmy());
+            assignHoldButton?.RegisterCallback<ClickEvent>(_ => TriggerAssignHold());
+            releaseHoldButton?.RegisterCallback<ClickEvent>(_ => TriggerReleaseHold());
         }
 
         public void Render(ShellSummarySnapshot summary)
@@ -193,27 +234,14 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             if (armies.Count == 0)
             {
                 if (managementCopy != null) managementCopy.text = "No formation payload is visible yet, so formation controls stay parked.";
-                if (managementNote != null) managementNote.text = "Warfront will unlock rename, split, merge, and disband once at least one army is present in /api/me.";
-                if (managementArmyField != null)
-                {
-                    suppressManagementEvents = true;
-                    managementArmyChoiceIds.Clear();
-                    managementArmyField.choices = new List<string>();
-                    managementArmyField.SetValueWithoutNotify(string.Empty);
-                    managementArmyField.SetEnabled(false);
-                    suppressManagementEvents = false;
-                }
-
-                if (mergeTargetField != null)
-                {
-                    suppressManagementEvents = true;
-                    mergeArmyChoiceIds.Clear();
-                    mergeTargetField.choices = new List<string>();
-                    mergeTargetField.SetValueWithoutNotify(string.Empty);
-                    mergeTargetField.SetEnabled(false);
-                    suppressManagementEvents = false;
-                }
-
+                if (managementNote != null) managementNote.text = "Warfront will unlock rename, split, merge, disband, and hold controls once at least one army is present in /api/me.";
+                managementArmyChoiceIds.Clear();
+                mergeArmyChoiceIds.Clear();
+                holdRegionChoiceIds.Clear();
+                managementArmyField?.SetEnabled(false);
+                mergeTargetField?.SetEnabled(false);
+                holdRegionField?.SetEnabled(false);
+                holdPostureField?.SetEnabled(false);
                 renameInput?.SetEnabled(false);
                 splitSizeInput?.SetEnabled(false);
                 splitNameInput?.SetEnabled(false);
@@ -221,6 +249,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 splitButton?.SetEnabled(false);
                 mergeButton?.SetEnabled(false);
                 disbandButton?.SetEnabled(false);
+                assignHoldButton?.SetEnabled(false);
+                releaseHoldButton?.SetEnabled(false);
                 return;
             }
 
@@ -236,7 +266,6 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 managementArmyChoiceIds.Add(army.Id);
                 return BuildArmyChoiceLabel(army);
             }).ToList();
-
             var selectedIndex = Math.Max(0, managementArmyChoiceIds.FindIndex(id => string.Equals(id, selectedArmyId, StringComparison.OrdinalIgnoreCase)));
             if (selectedIndex >= managementArmyChoiceIds.Count)
             {
@@ -245,6 +274,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
             selectedArmyId = managementArmyChoiceIds[selectedIndex];
             var selectedArmy = armies[selectedIndex];
+            var idle = string.Equals(selectedArmy.Status, "idle", StringComparison.OrdinalIgnoreCase);
+            var holding = string.Equals(selectedArmy.Status, "holding", StringComparison.OrdinalIgnoreCase);
 
             if (!string.Equals(draftedArmyId, selectedArmy.Id, StringComparison.OrdinalIgnoreCase))
             {
@@ -252,6 +283,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 renameDraft = selectedArmy.Name;
                 splitSizeDraft = BuildSuggestedSplitSize(selectedArmy);
                 splitNameDraft = BuildSuggestedSplitName(summary.Armies, selectedArmy);
+                selectedHoldRegionId = FirstNonBlank(selectedArmy.HoldRegionId, ResolveDefaultHoldRegionId());
+                selectedHoldPosture = string.IsNullOrWhiteSpace(selectedArmy.HoldPosture) ? "frontier_hold" : NormalizeHoldPostureLabel(selectedArmy.HoldPosture);
             }
 
             if (managementArmyField != null)
@@ -288,18 +321,49 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 {
                     mergeIndex = mergeArmyChoiceIds.Count > 0 ? 0 : -1;
                 }
+                mergeTargetField.SetValueWithoutNotify(mergeIndex >= 0 && mergeIndex < mergeChoices.Count ? mergeChoices[mergeIndex] : string.Empty);
+                mergeTargetField.SetEnabled(!summaryState.IsActionBusy && idle && mergeChoices.Count > 0);
+                suppressManagementEvents = false;
+            }
 
-                if (mergeIndex >= 0 && mergeIndex < mergeChoices.Count)
-                {
-                    selectedMergeArmyId = mergeArmyChoiceIds[mergeIndex];
-                    mergeTargetField.SetValueWithoutNotify(mergeChoices[mergeIndex]);
-                }
-                else
-                {
-                    mergeTargetField.SetValueWithoutNotify(string.Empty);
-                }
+            var holdRegions = BuildHoldRegionOptions();
+            if (holdRegions.Count == 0)
+            {
+                selectedHoldRegionId = string.Empty;
+            }
+            else if (string.IsNullOrWhiteSpace(selectedHoldRegionId) || holdRegions.All(option => !string.Equals(option.RegionId, selectedHoldRegionId, StringComparison.OrdinalIgnoreCase)))
+            {
+                selectedHoldRegionId = holdRegions[0].RegionId;
+            }
 
-                mergeTargetField.SetEnabled(!summaryState.IsActionBusy && mergeChoices.Count > 0);
+            if (holdRegionField != null)
+            {
+                suppressManagementEvents = true;
+                holdRegionChoiceIds.Clear();
+                var regionChoices = holdRegions.Select(option =>
+                {
+                    holdRegionChoiceIds.Add(option.RegionId);
+                    return option.Label;
+                }).ToList();
+                holdRegionField.choices = regionChoices;
+                var regionIndex = Math.Max(0, holdRegionChoiceIds.FindIndex(id => string.Equals(id, selectedHoldRegionId, StringComparison.OrdinalIgnoreCase)));
+                if (regionIndex >= holdRegionChoiceIds.Count)
+                {
+                    regionIndex = holdRegionChoiceIds.Count > 0 ? 0 : -1;
+                }
+                holdRegionField.SetValueWithoutNotify(regionIndex >= 0 && regionIndex < regionChoices.Count ? regionChoices[regionIndex] : string.Empty);
+                holdRegionField.SetEnabled(!summaryState.IsActionBusy && idle && regionChoices.Count > 0);
+                suppressManagementEvents = false;
+            }
+
+            if (holdPostureField != null)
+            {
+                suppressManagementEvents = true;
+                var postureChoices = BuildHoldPostureChoices();
+                holdPostureField.choices = postureChoices;
+                var postureLabel = HoldPostureToLabel(selectedHoldPosture);
+                holdPostureField.SetValueWithoutNotify(postureChoices.Contains(postureLabel) ? postureLabel : postureChoices.FirstOrDefault() ?? string.Empty);
+                holdPostureField.SetEnabled(!summaryState.IsActionBusy && idle);
                 suppressManagementEvents = false;
             }
 
@@ -311,49 +375,57 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
             var splitSize = ParsePositiveInt(splitSizeDraft);
             var maxSplit = Math.Max(0, (int)Math.Round(selectedArmy.Size ?? 0) - 40);
-            var idle = string.Equals(selectedArmy.Status, "idle", StringComparison.OrdinalIgnoreCase);
             var canRename = !summaryState.IsActionBusy && idle && onRenameArmyRequested != null && !string.IsNullOrWhiteSpace(renameDraft?.Trim()) && !string.Equals(renameDraft.Trim(), selectedArmy.Name, StringComparison.OrdinalIgnoreCase);
             var canSplit = !summaryState.IsActionBusy && idle && onSplitArmyRequested != null && splitSize >= 40 && splitSize <= maxSplit;
             var canMerge = !summaryState.IsActionBusy && idle && onMergeArmyRequested != null && !string.IsNullOrWhiteSpace(selectedMergeArmyId);
             var canDisband = !summaryState.IsActionBusy && idle && onDisbandArmyRequested != null && armies.Count > 1;
+            var canAssignHold = !summaryState.IsActionBusy && idle && onAssignArmyHoldRequested != null && !string.IsNullOrWhiteSpace(selectedHoldRegionId);
+            var canReleaseHold = !summaryState.IsActionBusy && holding && onReleaseArmyHoldRequested != null;
 
             renameInput?.SetEnabled(!summaryState.IsActionBusy && idle);
             splitSizeInput?.SetEnabled(!summaryState.IsActionBusy && idle);
             splitNameInput?.SetEnabled(!summaryState.IsActionBusy && idle);
-
             if (renameButton != null)
             {
                 renameButton.text = summaryState.IsActionBusy ? "Working..." : "Rename formation";
                 renameButton.SetEnabled(canRename);
             }
-
             if (splitButton != null)
             {
                 splitButton.text = summaryState.IsActionBusy ? "Working..." : "Split formation";
                 splitButton.SetEnabled(canSplit);
             }
-
             if (mergeButton != null)
             {
                 mergeButton.text = summaryState.IsActionBusy ? "Working..." : "Merge into target";
                 mergeButton.SetEnabled(canMerge);
             }
-
             if (disbandButton != null)
             {
                 disbandButton.text = summaryState.IsActionBusy ? "Working..." : "Disband formation";
                 disbandButton.SetEnabled(canDisband);
             }
+            if (assignHoldButton != null)
+            {
+                assignHoldButton.text = summaryState.IsActionBusy ? "Working..." : "Assign hold";
+                assignHoldButton.SetEnabled(canAssignHold);
+            }
+            if (releaseHoldButton != null)
+            {
+                releaseHoldButton.text = summaryState.IsActionBusy ? "Working..." : "Release hold";
+                releaseHoldButton.SetEnabled(canReleaseHold);
+            }
 
             if (managementCopy != null)
             {
-                managementCopy.text = $"Commander controls stay bounded here: rename, split, merge, or disband an idle formation. Focus: {selectedArmy.Name} • {BuildFormationLore(selectedArmy)}.";
+                managementCopy.text = $"Commander controls stay bounded here: rename, split, merge, disband, or assign an idle formation to a regional hold. Focus: {selectedArmy.Name} • {BuildFormationLore(selectedArmy)}.";
             }
 
             if (managementNote != null)
             {
                 var mergeTarget = mergeCandidates.FirstOrDefault(army => string.Equals(army.Id, selectedMergeArmyId, StringComparison.OrdinalIgnoreCase));
-                managementNote.text = BuildFormationManagementNote(selectedArmy, splitSize, maxSplit, mergeTarget, armies.Count);
+                var holdLabel = holdRegions.FirstOrDefault(option => string.Equals(option.RegionId, selectedHoldRegionId, StringComparison.OrdinalIgnoreCase)).Label;
+                managementNote.text = BuildFormationManagementNote(selectedArmy, splitSize, maxSplit, mergeTarget, armies.Count, selectedHoldRegionId, selectedHoldPosture, holdLabel);
             }
         }
 
@@ -401,6 +473,26 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             }
 
             _ = onDisbandArmyRequested.Invoke(selectedArmyId.Trim());
+        }
+
+        private void TriggerAssignHold()
+        {
+            if (summaryState.IsActionBusy || onAssignArmyHoldRequested == null || string.IsNullOrWhiteSpace(selectedArmyId) || string.IsNullOrWhiteSpace(selectedHoldRegionId))
+            {
+                return;
+            }
+
+            _ = onAssignArmyHoldRequested.Invoke(selectedArmyId.Trim(), selectedHoldRegionId.Trim(), selectedHoldPosture?.Trim() ?? string.Empty);
+        }
+
+        private void TriggerReleaseHold()
+        {
+            if (summaryState.IsActionBusy || onReleaseArmyHoldRequested == null || string.IsNullOrWhiteSpace(selectedArmyId))
+            {
+                return;
+            }
+
+            _ = onReleaseArmyHoldRequested.Invoke(selectedArmyId.Trim());
         }
 
         private List<CardView> BuildCards(ShellSummarySnapshot summary, List<ArmySnapshot> rankedArmies, List<CityTimerEntrySnapshot> windows, MissionSnapshot activeMission, string primaryWarning, List<WarfrontSignalSnapshot> signalPairs, ArmyReinforcementSnapshot reinforceState, CityTimerEntrySnapshot reinforceTimer, OperationSnapshot reinforceOp)
@@ -843,11 +935,17 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             }
         }
 
-        private static string BuildFormationManagementNote(ArmySnapshot army, int splitSize, int maxSplit, ArmySnapshot mergeTarget, int formationCount)
+        private static string BuildFormationManagementNote(ArmySnapshot army, int splitSize, int maxSplit, ArmySnapshot mergeTarget, int formationCount, string holdRegionId, string holdPosture, string holdRegionLabel)
         {
+            if (string.Equals(army.Status, "holding", StringComparison.OrdinalIgnoreCase))
+            {
+                var holdLine = string.IsNullOrWhiteSpace(army.HoldRegionId) ? "a regional line" : army.HoldRegionId;
+                return $"{army.Name} is currently holding {holdLine} as {HumanizeKey(army.HoldPosture)} duty. Release the hold before reassigning region/posture, renaming, splitting, merging, or disbanding.";
+            }
+
             if (!string.Equals(army.Status, "idle", StringComparison.OrdinalIgnoreCase))
             {
-                return $"{army.Name} is {HumanizeStatus(army.Status)}. Rename, split, merge, and disband stay locked until the formation returns to idle posture.";
+                return $"{army.Name} is {HumanizeStatus(army.Status)}. Rename, split, merge, disband, and hold orders stay locked until the formation returns to idle posture.";
             }
 
             var parts = new List<string>();
@@ -870,6 +968,9 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 parts.Add("No secondary formation is available to merge into yet.");
             }
 
+            parts.Add(string.IsNullOrWhiteSpace(holdRegionId)
+                ? "Choose a region and posture before assigning a hold line."
+                : $"Hold order: {(string.IsNullOrWhiteSpace(holdRegionLabel) ? holdRegionId : holdRegionLabel)} as {HumanizeKey(holdPosture)} duty.");
             parts.Add(formationCount > 1
                 ? "Disband removes the selected idle formation and trims upkeep without refunding field investment directly."
                 : "You must keep at least one formation on the roster, so disband is parked right now.");
@@ -886,6 +987,117 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var size = (int)Math.Round(army.Size ?? 0);
             var remaining = Math.Max(0, size - splitSize);
             return $"move {splitSize} troops from {army.Name} and leave {remaining}";
+        }
+
+        private List<HoldRegionOption> BuildHoldRegionOptions()
+        {
+            var options = new List<HoldRegionOption>();
+            if (summaryState?.RawSummary?["regionWar"] is Newtonsoft.Json.Linq.JArray regionWar)
+            {
+                foreach (var token in regionWar.OfType<Newtonsoft.Json.Linq.JObject>())
+                {
+                    var regionId = token["regionId"]?.ToString()?.Trim();
+                    if (string.IsNullOrWhiteSpace(regionId) || options.Any(option => string.Equals(option.RegionId, regionId, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        continue;
+                    }
+
+                    var pieces = new List<string>();
+                    if (TryReadDoubleToken(token["control"], out var control))
+                    {
+                        pieces.Add($"control {control:0}");
+                    }
+                    if (TryReadDoubleToken(token["threat"], out var threat))
+                    {
+                        pieces.Add($"threat {threat:0}");
+                    }
+
+                    options.Add(new HoldRegionOption(regionId, pieces.Count > 0 ? $"{HumanizeRegionLabel(regionId)} • {string.Join(" • ", pieces)}" : HumanizeRegionLabel(regionId)));
+                }
+            }
+
+            return options;
+        }
+
+        private static bool TryReadDoubleToken(Newtonsoft.Json.Linq.JToken token, out double value)
+        {
+            value = 0;
+            if (token == null)
+            {
+                return false;
+            }
+
+            switch (token.Type)
+            {
+                case Newtonsoft.Json.Linq.JTokenType.Integer:
+                case Newtonsoft.Json.Linq.JTokenType.Float:
+                    try
+                    {
+                        value = token.ToObject<double>();
+                        return true;
+                    }
+                    catch
+                    {
+                        return false;
+                    }
+                default:
+                    return double.TryParse(token.ToString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out value)
+                        || double.TryParse(token.ToString(), out value);
+            }
+        }
+
+        private string ResolveDefaultHoldRegionId()
+        {
+            return BuildHoldRegionOptions().FirstOrDefault().RegionId ?? string.Empty;
+        }
+
+        private static List<string> BuildHoldPostureChoices()
+        {
+            return new List<string>
+            {
+                HoldPostureToLabel("home_guard"),
+                HoldPostureToLabel("frontier_hold"),
+                HoldPostureToLabel("occupation"),
+            };
+        }
+
+        private static string HoldPostureToLabel(string posture)
+        {
+            return NormalizeHoldPostureLabel(posture) switch
+            {
+                "home_guard" => "Home guard",
+                "occupation" => "Occupation",
+                _ => "Frontier hold",
+            };
+        }
+
+        private static string NormalizeHoldPostureLabel(string posture)
+        {
+            var normalized = (posture ?? string.Empty).Trim().ToLowerInvariant().Replace("-", "_").Replace(" ", "_");
+            return normalized switch
+            {
+                "home_guard" => "home_guard",
+                "occupation" => "occupation",
+                _ => "frontier_hold",
+            };
+        }
+
+        private static string HumanizeRegionLabel(string regionId)
+        {
+            return HumanizeKey((regionId ?? string.Empty).Replace(".", " "));
+        }
+
+        private sealed class HoldRegionOption
+        {
+            public HoldRegionOption(string regionId, string label)
+            {
+                RegionId = regionId ?? string.Empty;
+                Label = label ?? string.Empty;
+            }
+
+            public string RegionId { get; }
+
+            public string Label { get; }
         }
 
         private static string BuildArmyChoiceLabel(ArmySnapshot army)

@@ -139,6 +139,31 @@ namespace PlanarWar.Client.Core
                 : $"Disbanding formation: {armyId.Trim()}");
         }
 
+        public void BeginArmyHoldAssign(string armyId, string regionId, string posture)
+        {
+            var label = string.IsNullOrWhiteSpace(armyId)
+                ? "Assigning regional hold..."
+                : $"Assigning regional hold: {armyId.Trim()}";
+            if (!string.IsNullOrWhiteSpace(regionId))
+            {
+                label += $" -> {regionId.Trim()}";
+            }
+
+            if (!string.IsNullOrWhiteSpace(posture))
+            {
+                label += $" ({posture.Trim()})";
+            }
+
+            BeginAction(label);
+        }
+
+        public void BeginArmyHoldRelease(string armyId)
+        {
+            BeginAction(string.IsNullOrWhiteSpace(armyId)
+                ? "Releasing regional hold..."
+                : $"Releasing regional hold: {armyId.Trim()}");
+        }
+
         public void FinishAction(string status, bool failed = false)
         {
             IsActionBusy = false;

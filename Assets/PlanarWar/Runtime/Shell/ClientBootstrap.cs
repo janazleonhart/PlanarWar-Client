@@ -81,6 +81,8 @@ namespace PlanarWar.Client.UI
                     HandleSplitArmyRequestedAsync,
                     HandleMergeArmyRequestedAsync,
                     HandleDisbandArmyRequestedAsync,
+                    HandleAssignArmyHoldRequestedAsync,
+                    HandleReleaseArmyHoldRequestedAsync,
                     RefreshSummary,
                     () => navigationState.SetActive(ShellScreen.Summary));
             }
@@ -442,6 +444,60 @@ namespace PlanarWar.Client.UI
             catch (Exception ex)
             {
                 summaryState.FinishAction($"Formation disband failed: {ex.Message}", failed: true);
+            }
+        }
+
+        private async Task HandleAssignArmyHoldRequestedAsync(string armyId, string regionId, string posture)
+        {
+            if (summaryState == null || apiClient == null || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            var trimmedArmyId = armyId?.Trim() ?? string.Empty;
+            var trimmedRegionId = regionId?.Trim() ?? string.Empty;
+            var trimmedPosture = posture?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(trimmedArmyId) || string.IsNullOrWhiteSpace(trimmedRegionId))
+            {
+                return;
+            }
+
+            try
+            {
+                summaryState.BeginArmyHoldAssign(trimmedArmyId, trimmedRegionId, trimmedPosture);
+                await apiClient.AssignArmyHoldAsync(trimmedArmyId, trimmedRegionId, trimmedPosture);
+                await summaryController.RefreshAsync();
+                summaryState.FinishAction($"Regional hold assigned: {trimmedRegionId}." + (string.IsNullOrWhiteSpace(trimmedPosture) ? string.Empty : $" Posture {trimmedPosture}."));
+            }
+            catch (Exception ex)
+            {
+                summaryState.FinishAction($"Regional hold failed: {ex.Message}", failed: true);
+            }
+        }
+
+        private async Task HandleReleaseArmyHoldRequestedAsync(string armyId)
+        {
+            if (summaryState == null || apiClient == null || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            var trimmedArmyId = armyId?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(trimmedArmyId))
+            {
+                return;
+            }
+
+            try
+            {
+                summaryState.BeginArmyHoldRelease(trimmedArmyId);
+                await apiClient.ReleaseArmyHoldAsync(trimmedArmyId);
+                await summaryController.RefreshAsync();
+                summaryState.FinishAction($"Regional hold released: {trimmedArmyId}.");
+            }
+            catch (Exception ex)
+            {
+                summaryState.FinishAction($"Release hold failed: {ex.Message}", failed: true);
             }
         }
 

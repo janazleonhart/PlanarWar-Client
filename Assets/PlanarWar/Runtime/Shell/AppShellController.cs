@@ -64,7 +64,7 @@ namespace PlanarWar.Client.UI
         private readonly Button sendChatButton;
         private readonly TextField chatInputField;
 
-        public AppShellController(VisualElement root, SessionState sessionState, SummaryState summaryState, ShellNavigationState navigationState, ClientVersionState versionState, Func<string, System.Threading.Tasks.Task> onStartResearchRequested, Func<string, System.Threading.Tasks.Task> onStartWorkshopCraftRequested, Func<string, System.Threading.Tasks.Task> onCollectWorkshopRequested, Func<string, System.Threading.Tasks.Task> onRecruitHeroRequested, Func<string, System.Threading.Tasks.Task> onAcceptHeroRecruitCandidateRequested, Func<System.Threading.Tasks.Task> onDismissHeroRecruitCandidatesRequested, Func<string, System.Threading.Tasks.Task> onReinforceArmyRequested, Func<string, string, System.Threading.Tasks.Task> onRenameArmyRequested, Func<string, int, string, System.Threading.Tasks.Task> onSplitArmyRequested, Func<string, string, System.Threading.Tasks.Task> onMergeArmyRequested, Func<string, System.Threading.Tasks.Task> onDisbandArmyRequested, Action onRefreshDeskRequested, Action onBackHomeRequested)
+        public AppShellController(VisualElement root, SessionState sessionState, SummaryState summaryState, ShellNavigationState navigationState, ClientVersionState versionState, Func<string, System.Threading.Tasks.Task> onStartResearchRequested, Func<string, System.Threading.Tasks.Task> onStartWorkshopCraftRequested, Func<string, System.Threading.Tasks.Task> onCollectWorkshopRequested, Func<string, System.Threading.Tasks.Task> onRecruitHeroRequested, Func<string, System.Threading.Tasks.Task> onAcceptHeroRecruitCandidateRequested, Func<System.Threading.Tasks.Task> onDismissHeroRecruitCandidatesRequested, Func<string, System.Threading.Tasks.Task> onReinforceArmyRequested, Func<string, string, System.Threading.Tasks.Task> onRenameArmyRequested, Func<string, int, string, System.Threading.Tasks.Task> onSplitArmyRequested, Func<string, string, System.Threading.Tasks.Task> onMergeArmyRequested, Func<string, System.Threading.Tasks.Task> onDisbandArmyRequested, Func<string, string, string, System.Threading.Tasks.Task> onAssignArmyHoldRequested, Func<string, System.Threading.Tasks.Task> onReleaseArmyHoldRequested, Action onRefreshDeskRequested, Action onBackHomeRequested)
         {
             this.sessionState = sessionState;
             this.summaryState = summaryState;
@@ -78,7 +78,7 @@ namespace PlanarWar.Client.UI
 
             summaryScreen = new SummaryScreenController(root);
             cityScreen = new CityScreenController(root, summaryState, onStartResearchRequested, onStartWorkshopCraftRequested, onCollectWorkshopRequested, onRecruitHeroRequested, onAcceptHeroRecruitCandidateRequested, onDismissHeroRecruitCandidatesRequested, onRefreshDeskRequested, onBackHomeRequested);
-            blackMarketScreen = new BlackMarketScreenController(root, summaryState, onReinforceArmyRequested, onRenameArmyRequested, onSplitArmyRequested, onMergeArmyRequested, onDisbandArmyRequested, onRefreshDeskRequested);
+            blackMarketScreen = new BlackMarketScreenController(root, summaryState, onReinforceArmyRequested, onRenameArmyRequested, onSplitArmyRequested, onMergeArmyRequested, onDisbandArmyRequested, onAssignArmyHoldRequested, onReleaseArmyHoldRequested, onRefreshDeskRequested);
             socialScreen = new SocialScreenController(root);
 
             connectionValue = root.Q<Label>("connection-value");
