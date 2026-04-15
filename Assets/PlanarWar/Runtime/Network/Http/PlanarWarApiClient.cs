@@ -22,6 +22,12 @@ namespace PlanarWar.Client.Network
             return GetJsonAsync(BuildUrl("/api/me"));
         }
 
+
+        public Task<JObject> FetchWorkshopRecipesAsync()
+        {
+            return GetJsonAsync(BuildUrl("/api/workshop/recipes"));
+        }
+
         public Task<JObject> LoginAsync(string emailOrName, string password)
         {
             if (string.IsNullOrWhiteSpace(emailOrName))
@@ -59,6 +65,23 @@ namespace PlanarWar.Client.Network
             return PostJsonAsync(BuildUrl("/api/tech/start"), body, includeBearerToken: true);
         }
 
+
+
+        public Task<JObject> StartWorkshopCraftAsync(string recipeId)
+        {
+            if (string.IsNullOrWhiteSpace(recipeId))
+            {
+                throw new ArgumentException("recipeId is required", nameof(recipeId));
+            }
+
+            var body = new JObject
+            {
+                ["recipeId"] = recipeId.Trim(),
+                ["serviceMode"] = "private_city"
+            };
+
+            return PostJsonAsync(BuildUrl("/api/workshop/craft"), body, includeBearerToken: true);
+        }
 
         public Task<JObject> CollectWorkshopAsync(string jobId)
         {

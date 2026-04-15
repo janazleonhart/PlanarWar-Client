@@ -69,6 +69,7 @@ namespace PlanarWar.Client.UI
                     navigationState,
                     versionState,
                     HandleStartResearchRequestedAsync,
+                    HandleStartWorkshopCraftRequestedAsync,
                     HandleCollectWorkshopRequestedAsync,
                     RefreshSummary,
                     () => navigationState.SetActive(ShellScreen.Summary));
@@ -126,6 +127,27 @@ namespace PlanarWar.Client.UI
             catch (Exception ex)
             {
                 summaryState.FinishAction($"Research failed: {ex.Message}", failed: true);
+            }
+        }
+
+
+        private async Task HandleStartWorkshopCraftRequestedAsync(string recipeId)
+        {
+            if (summaryState == null || apiClient == null || string.IsNullOrWhiteSpace(recipeId) || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            try
+            {
+                summaryState.BeginWorkshopCraft(recipeId);
+                await apiClient.StartWorkshopCraftAsync(recipeId.Trim());
+                await summaryController.RefreshAsync();
+                summaryState.FinishAction($"Workshop craft started: {recipeId.Trim()}");
+            }
+            catch (Exception ex)
+            {
+                summaryState.FinishAction($"Workshop craft failed: {ex.Message}", failed: true);
             }
         }
 

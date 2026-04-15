@@ -39,5 +39,6 @@ namespace PlanarWar.Client.Core.Contracts
     [Serializable] public sealed class HeroSnapshot { public string Name { get; set; } = "Hero"; public string Status { get; set; } = "-"; public double? Level { get; set; } public int AttachmentCount { get; set; } }
     [Serializable] public sealed class ArmySnapshot { public string Name { get; set; } = "Army"; public string Status { get; set; } = "-"; public double? Readiness { get; set; } }
     [Serializable] public sealed class WorkshopJobSnapshot { public string Id { get; set; } = "job"; public string AttachmentKind { get; set; } = "job"; public bool Completed { get; set; } public DateTime? FinishesAtUtc { get; set; } }
+    [Serializable] public sealed class WorkshopRecipeSnapshot { public string RecipeId { get; set; } = "recipe"; public string Name { get; set; } = "Recipe"; public string Summary { get; set; } = string.Empty; public string GearFamily { get; set; } = string.Empty; public string OutputItemId { get; set; } = string.Empty; public double? WealthCost { get; set; } public double? ManaCost { get; set; } public double? MaterialsCost { get; set; } public double? CraftMinutes { get; set; } public List<string> ResponseTags { get; set; } = new(); }
     [Serializable] public sealed class WarfrontSignalSnapshot { public string Label { get; set; } = "-"; public string Value { get; set; } = "-"; }
 }

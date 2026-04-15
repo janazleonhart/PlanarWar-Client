@@ -49,6 +49,7 @@ namespace PlanarWar.Client.UI.Screens.City
         private readonly InfoCard[] growthCards;
         private readonly SummaryState summaryState;
         private readonly Func<string, Task> onStartResearchRequested;
+        private readonly Func<string, Task> onStartWorkshopCraftRequested;
         private readonly Func<string, Task> onCollectWorkshopRequested;
         private readonly Action onRefreshDeskRequested;
         private readonly Action onBackHomeRequested;
@@ -58,7 +59,7 @@ namespace PlanarWar.Client.UI.Screens.City
 
         private DevelopmentLane activeLane = DevelopmentLane.Research;
 
-        public CityScreenController(VisualElement root, SummaryState summaryState, Func<string, Task> onStartResearchRequested, Func<string, Task> onCollectWorkshopRequested, Action onRefreshDeskRequested, Action onBackHomeRequested)
+        public CityScreenController(VisualElement root, SummaryState summaryState, Func<string, Task> onStartResearchRequested, Func<string, Task> onStartWorkshopCraftRequested, Func<string, Task> onCollectWorkshopRequested, Action onRefreshDeskRequested, Action onBackHomeRequested)
         {
             headline = root.Q<Label>("development-headline-value");
             copy = root.Q<Label>("development-copy-value");
@@ -89,6 +90,7 @@ namespace PlanarWar.Client.UI.Screens.City
 
             this.summaryState = summaryState;
             this.onStartResearchRequested = onStartResearchRequested;
+            this.onStartWorkshopCraftRequested = onStartWorkshopCraftRequested;
             this.onCollectWorkshopRequested = onCollectWorkshopRequested;
             this.onRefreshDeskRequested = onRefreshDeskRequested;
             this.onBackHomeRequested = onBackHomeRequested;
@@ -111,6 +113,8 @@ namespace PlanarWar.Client.UI.Screens.City
 
         public void Render(ShellSummarySnapshot s, SummaryState summaryState)
         {
+            var recipeCount = summaryState?.WorkshopRecipes?.Count ?? 0;
+
             if (!s.HasCity)
             {
                 RenderNoCity();
@@ -127,13 +131,13 @@ namespace PlanarWar.Client.UI.Screens.City
                     ? $"{s.AvailableTechs.Count} tech option{(s.AvailableTechs.Count == 1 ? string.Empty : "s")} ready"
                     : "No active research or tech options surfaced.";
             card2Title.text = "Workshop lane";
-            card2Value.text = DescribeWorkshopLane(s);
+            card2Value.text = DescribeWorkshopLane(s, recipeCount);
             card3Title.text = "Growth lane";
             card3Value.text = DescribeGrowthLane(s);
 
             researchFocusValue.text = s.ActiveResearch?.Name ?? "No active research focus.";
             nextTechValue.text = s.AvailableTechs.FirstOrDefault()?.Name ?? "No available tech surfaced.";
-            workshopValue.text = DescribeWorkshopLane(s);
+            workshopValue.text = DescribeWorkshopLane(s, recipeCount);
             growthValue.text = DescribeGrowthLane(s);
             supportValue.text = DescribeSupport(s);
             noteValue.text = BuildDeskNote(s, summaryState);
@@ -258,18 +262,36 @@ namespace PlanarWar.Client.UI.Screens.City
                 lore: timer.FinishesAtUtc.HasValue ? $"{timer.Status} • {FormatRemaining(timer.FinishesAtUtc.Value - DateTime.UtcNow)}" : timer.Status,
                 note: FirstNonBlank(timer.Detail, "Timer surfaced from cityTimers."))));
 
+            if (cards.Count < 4)
+            {
+                var recipeCards = summaryState.WorkshopRecipes
+                    .Where(r => !string.IsNullOrWhiteSpace(r.RecipeId))
+                    .Take(4 - cards.Count)
+                    .Select(recipe => new CardView(
+                        family: string.IsNullOrWhiteSpace(recipe.GearFamily) ? "Workshop recipe" : HumanizeKey(recipe.GearFamily),
+                        title: recipe.Name,
+                        lore: FirstNonBlank(recipe.Summary, recipe.ResponseTags.FirstOrDefault(), "Craftable recipe from workshop catalog."),
+                        note: BuildWorkshopRecipeNote(recipe),
+                        buttonText: summaryState.IsActionBusy && string.Equals(summaryState.PendingWorkshopRecipeId, recipe.RecipeId, StringComparison.OrdinalIgnoreCase) ? "Crafting..." : "Craft",
+                        buttonEnabled: !summaryState.IsActionBusy && onStartWorkshopCraftRequested != null,
+                        onClick: () => TriggerStartWorkshopCraft(recipe.RecipeId)));
+                cards.AddRange(recipeCards);
+            }
+
             if (cards.Count == 0)
             {
-                cards.Add(new CardView("Workshop payload", "No workshop entry", "No workshop job or workshop timer is currently visible in the summary payload.", "The desk stays honest instead of inventing a fake queue.", "Read-only", false));
+                cards.Add(new CardView("Workshop payload", "No workshop entry", "No workshop job, timer, or recipe catalog entry is currently visible.", "The desk stays honest instead of inventing a fake queue.", "Read-only", false));
             }
 
             workshopCardsCopyValue.text = activeJobs.Count > 0
                 ? $"{activeJobs.Count} active workshop job(s) and {readyJobs.Count} ready pickup(s) are visible."
                 : readyJobs.Count > 0
                     ? $"{readyJobs.Count} ready pickup(s) visible; collect wiring is now live."
-                    : workshopTimers.Count > 0
-                        ? $"Workshop timing is coming through cityTimers even though no job body is active."
-                        : "No workshop queue or timer is visible right now.";
+                    : summaryState.WorkshopRecipes.Count > 0
+                        ? $"Showing {summaryState.WorkshopRecipes.Count} craft recipe(s) from /api/workshop/recipes."
+                        : workshopTimers.Count > 0
+                            ? $"Workshop timing is coming through cityTimers even though no job body is active."
+                            : "No workshop queue, timer, or recipe catalog is visible right now.";
 
             RenderCards(workshopCards, cards);
         }
@@ -345,6 +367,16 @@ namespace PlanarWar.Client.UI.Screens.City
             _ = onStartResearchRequested.Invoke(techId.Trim());
         }
 
+        private void TriggerStartWorkshopCraft(string recipeId)
+        {
+            if (summaryState.IsActionBusy || onStartWorkshopCraftRequested == null || string.IsNullOrWhiteSpace(recipeId))
+            {
+                return;
+            }
+
+            _ = onStartWorkshopCraftRequested.Invoke(recipeId.Trim());
+        }
+
         private void TriggerCollectWorkshop(string jobId)
         {
             if (summaryState.IsActionBusy || onCollectWorkshopRequested == null || string.IsNullOrWhiteSpace(jobId))
@@ -415,7 +447,7 @@ namespace PlanarWar.Client.UI.Screens.City
             }
         }
 
-        private static string DescribeWorkshopLane(ShellSummarySnapshot s)
+        private static string DescribeWorkshopLane(ShellSummarySnapshot s, int recipeCount)
         {
             var activeJobs = s.WorkshopJobs.Count(j => !j.Completed);
             var readyJobs = s.WorkshopJobs.Count(j => j.Completed);
@@ -428,6 +460,11 @@ namespace PlanarWar.Client.UI.Screens.City
             if (readyJobs > 0)
             {
                 return $"{readyJobs} ready pickup(s) • no active workshop work.";
+            }
+
+            if (recipeCount > 0)
+            {
+                return $"{recipeCount} craft recipe(s) ready.";
             }
 
             return workshopTimers > 0 ? $"{workshopTimers} workshop timer(s) visible." : "No workshop queue visible.";
@@ -496,6 +533,17 @@ namespace PlanarWar.Client.UI.Screens.City
             }
         }
 
+        private static string BuildWorkshopRecipeNote(WorkshopRecipeSnapshot recipe)
+        {
+            var parts = new List<string>();
+            if (recipe.WealthCost.HasValue) parts.Add($"Wealth {recipe.WealthCost.Value:0.#}");
+            if (recipe.ManaCost.HasValue) parts.Add($"Mana {recipe.ManaCost.Value:0.#}");
+            if (recipe.MaterialsCost.HasValue) parts.Add($"Materials {recipe.MaterialsCost.Value:0.#}");
+            if (recipe.CraftMinutes.HasValue) parts.Add($"Time {FormatMinutes(recipe.CraftMinutes.Value)}");
+            if (recipe.ResponseTags.Count > 0) parts.Add(string.Join("/", recipe.ResponseTags.Take(2).Select(HumanizeKey)));
+            return parts.Count > 0 ? string.Join(" • ", parts) : "Workshop recipe is ready to craft.";
+        }
+
         private static string BuildTechNote(TechOptionSnapshot tech)
         {
             var parts = new List<string>();
@@ -506,6 +554,13 @@ namespace PlanarWar.Client.UI.Screens.City
         }
 
         private static string FirstNonBlank(params string[] values) => values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v)) ?? string.Empty;
+
+        private static string FormatMinutes(double minutes)
+        {
+            if (minutes <= 0) return "now";
+            var span = TimeSpan.FromMinutes(minutes);
+            return span.TotalHours >= 1 ? span.ToString(@"hh\:mm") : span.ToString(@"mm\:ss");
+        }
 
         private static string FormatRemaining(TimeSpan span)
         {

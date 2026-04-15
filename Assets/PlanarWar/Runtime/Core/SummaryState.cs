@@ -1,6 +1,8 @@
 using Newtonsoft.Json.Linq;
 using PlanarWar.Client.Core.Contracts;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace PlanarWar.Client.Core
 {
@@ -14,20 +16,23 @@ namespace PlanarWar.Client.Core
         public bool IsLoaded { get; private set; }
         public string LastError { get; private set; } = "-";
         public DateTime LastUpdatedUtc { get; private set; }
+        public List<WorkshopRecipeSnapshot> WorkshopRecipes { get; private set; } = new();
 
         public bool IsActionBusy { get; private set; }
         public string ActionStatus { get; private set; } = string.Empty;
         public bool ActionFailed { get; private set; }
         public string PendingResearchTechId { get; private set; } = string.Empty;
         public string PendingWorkshopJobId { get; private set; } = string.Empty;
+        public string PendingWorkshopRecipeId { get; private set; } = string.Empty;
 
-        public void Apply(JObject summary, ShellSummarySnapshot snapshot)
+        public void Apply(JObject summary, ShellSummarySnapshot snapshot, IEnumerable<WorkshopRecipeSnapshot> workshopRecipes = null)
         {
             RawSummary = summary;
             Snapshot = snapshot ?? ShellSummarySnapshot.Empty;
             IsLoaded = summary != null;
             LastError = "-";
             LastUpdatedUtc = DateTime.UtcNow;
+            WorkshopRecipes = workshopRecipes?.Where(r => r != null).ToList() ?? new List<WorkshopRecipeSnapshot>();
             Changed?.Invoke();
         }
 
@@ -43,7 +48,19 @@ namespace PlanarWar.Client.Core
             ActionFailed = false;
             PendingResearchTechId = techId?.Trim() ?? string.Empty;
             PendingWorkshopJobId = string.Empty;
+            PendingWorkshopRecipeId = string.Empty;
             ActionStatus = string.IsNullOrWhiteSpace(PendingResearchTechId) ? "Starting research..." : $"Starting research: {PendingResearchTechId}";
+            Changed?.Invoke();
+        }
+
+        public void BeginWorkshopCraft(string recipeId)
+        {
+            IsActionBusy = true;
+            ActionFailed = false;
+            PendingResearchTechId = string.Empty;
+            PendingWorkshopJobId = string.Empty;
+            PendingWorkshopRecipeId = recipeId?.Trim() ?? string.Empty;
+            ActionStatus = string.IsNullOrWhiteSpace(PendingWorkshopRecipeId) ? "Starting workshop craft..." : $"Starting workshop craft: {PendingWorkshopRecipeId}";
             Changed?.Invoke();
         }
 
@@ -52,6 +69,7 @@ namespace PlanarWar.Client.Core
             IsActionBusy = true;
             ActionFailed = false;
             PendingResearchTechId = string.Empty;
+            PendingWorkshopRecipeId = string.Empty;
             PendingWorkshopJobId = jobId?.Trim() ?? string.Empty;
             ActionStatus = string.IsNullOrWhiteSpace(PendingWorkshopJobId) ? "Collecting workshop item..." : $"Collecting workshop job: {PendingWorkshopJobId}";
             Changed?.Invoke();
@@ -63,6 +81,7 @@ namespace PlanarWar.Client.Core
             ActionFailed = failed;
             PendingResearchTechId = string.Empty;
             PendingWorkshopJobId = string.Empty;
+            PendingWorkshopRecipeId = string.Empty;
             ActionStatus = string.IsNullOrWhiteSpace(status) ? (failed ? "Action failed." : "Action complete.") : status.Trim();
             Changed?.Invoke();
         }

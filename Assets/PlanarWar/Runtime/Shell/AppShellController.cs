@@ -64,7 +64,7 @@ namespace PlanarWar.Client.UI
         private readonly Button sendChatButton;
         private readonly TextField chatInputField;
 
-        public AppShellController(VisualElement root, SessionState sessionState, SummaryState summaryState, ShellNavigationState navigationState, ClientVersionState versionState, Func<string, System.Threading.Tasks.Task> onStartResearchRequested, Func<string, System.Threading.Tasks.Task> onCollectWorkshopRequested, Action onRefreshDeskRequested, Action onBackHomeRequested)
+        public AppShellController(VisualElement root, SessionState sessionState, SummaryState summaryState, ShellNavigationState navigationState, ClientVersionState versionState, Func<string, System.Threading.Tasks.Task> onStartResearchRequested, Func<string, System.Threading.Tasks.Task> onStartWorkshopCraftRequested, Func<string, System.Threading.Tasks.Task> onCollectWorkshopRequested, Action onRefreshDeskRequested, Action onBackHomeRequested)
         {
             this.sessionState = sessionState;
             this.summaryState = summaryState;
@@ -77,7 +77,7 @@ namespace PlanarWar.Client.UI
             socialRoot = root.Q<VisualElement>("social-screen");
 
             summaryScreen = new SummaryScreenController(root);
-            cityScreen = new CityScreenController(root, summaryState, onStartResearchRequested, onCollectWorkshopRequested, onRefreshDeskRequested, onBackHomeRequested);
+            cityScreen = new CityScreenController(root, summaryState, onStartResearchRequested, onStartWorkshopCraftRequested, onCollectWorkshopRequested, onRefreshDeskRequested, onBackHomeRequested);
             blackMarketScreen = new BlackMarketScreenController(root);
             socialScreen = new SocialScreenController(root);
 
