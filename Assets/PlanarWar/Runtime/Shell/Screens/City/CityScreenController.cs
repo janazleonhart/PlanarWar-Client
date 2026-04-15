@@ -588,8 +588,15 @@ namespace PlanarWar.Client.UI.Screens.City
         private static string BuildHeroRecruitCandidateNote(HeroRecruitCandidateSnapshot candidate)
         {
             var parts = new List<string>();
-            if (!string.IsNullOrWhiteSpace(candidate.Summary)) parts.Add(candidate.Summary);
-            if (candidate.Traits.Count > 0) parts.Add($"Traits: {string.Join(", ", candidate.Traits.Take(2).Select(HumanizeKey))}");
+            if (!string.IsNullOrWhiteSpace(candidate.Summary))
+            {
+                parts.Add(candidate.Summary);
+            }
+            else if (candidate.TraitDetails.Count > 0 || candidate.Traits.Count > 0)
+            {
+                parts.Add(BuildHeroRecruitTraitDigest(candidate));
+            }
+
             if (candidate.WealthCost.HasValue || candidate.UnityCost.HasValue)
             {
                 var costParts = new List<string>();
@@ -599,6 +606,47 @@ namespace PlanarWar.Client.UI.Screens.City
             }
 
             return parts.Count > 0 ? string.Join(" • ", parts) : "Recruit candidate is ready for selection.";
+        }
+
+        private static string BuildHeroRecruitTraitDigest(HeroRecruitCandidateSnapshot candidate)
+        {
+            var traitLabels = candidate.TraitDetails
+                .Take(2)
+                .Select(BuildHeroRecruitTraitLabel)
+                .Where(label => !string.IsNullOrWhiteSpace(label))
+                .ToList();
+
+            if (traitLabels.Count == 0)
+            {
+                traitLabels = candidate.Traits
+                    .Take(2)
+                    .Select(HumanizeKey)
+                    .Where(label => !string.IsNullOrWhiteSpace(label))
+                    .ToList();
+            }
+
+            return traitLabels.Count > 0 ? $"Traits: {string.Join(", ", traitLabels)}" : string.Empty;
+        }
+
+        private static string BuildHeroRecruitTraitLabel(HeroRecruitTraitSnapshot trait)
+        {
+            if (trait == null)
+            {
+                return string.Empty;
+            }
+
+            var name = FirstNonBlank(trait.Name, trait.Id);
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return string.Empty;
+            }
+
+            var prefix = string.Equals(trait.Polarity, "pro", StringComparison.OrdinalIgnoreCase)
+                ? "+"
+                : string.Equals(trait.Polarity, "con", StringComparison.OrdinalIgnoreCase)
+                    ? "-"
+                    : string.Empty;
+            return $"{prefix}{HumanizeKey(name)}";
         }
 
         private static string BuildHeroRecruitmentScoutingNote(HeroRecruitmentSnapshot recruitment)

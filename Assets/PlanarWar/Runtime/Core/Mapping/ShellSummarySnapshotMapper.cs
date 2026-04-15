@@ -153,10 +153,84 @@ namespace PlanarWar.Client.Core.Mapping
                 ClassName = obj["className"]?.Read<string>() ?? obj["class_name"]?.Read<string>() ?? string.Empty,
                 DisplayName = obj["displayName"]?.Read<string>() ?? obj["display_name"]?.Read<string>() ?? string.Empty,
                 Summary = obj["summary"]?.Read<string>() ?? string.Empty,
-                Traits = (obj["traits"] as JArray)?.Select(t => t?.Read<string>()).Where(t => !string.IsNullOrWhiteSpace(t)).ToList() ?? new List<string>(),
+                Traits = MapHeroRecruitTraitNames(obj["traits"]),
+                TraitDetails = MapHeroRecruitTraitDetails(obj["traits"]),
                 WealthCost = obj["cost"]?["wealth"]?.Read<double?>() ?? obj["wealthCost"]?.Read<double?>() ?? obj["wealth_cost"]?.Read<double?>(),
                 UnityCost = obj["cost"]?["unity"]?.Read<double?>() ?? obj["unityCost"]?.Read<double?>() ?? obj["unity_cost"]?.Read<double?>(),
             };
+        }
+
+        private static List<string> MapHeroRecruitTraitNames(JToken token)
+        {
+            if (token is not JArray traits)
+            {
+                return new List<string>();
+            }
+
+            return traits
+                .Select(MapHeroRecruitTraitName)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private static List<HeroRecruitTraitSnapshot> MapHeroRecruitTraitDetails(JToken token)
+        {
+            if (token is not JArray traits)
+            {
+                return new List<HeroRecruitTraitSnapshot>();
+            }
+
+            return traits
+                .Select(MapHeroRecruitTraitDetail)
+                .Where(detail => detail != null)
+                .GroupBy(detail => FirstNonBlank(detail.Id, detail.Name), StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.First())
+                .ToList();
+        }
+
+        private static HeroRecruitTraitSnapshot MapHeroRecruitTraitDetail(JToken token)
+        {
+            if (token == null || token.Type == JTokenType.Null || token.Type == JTokenType.Undefined)
+            {
+                return null;
+            }
+
+            if (token is JObject obj)
+            {
+                var name = FirstNonBlank(obj["name"]?.Read<string>(), obj["label"]?.Read<string>(), obj["id"]?.Read<string>());
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    return null;
+                }
+
+                return new HeroRecruitTraitSnapshot
+                {
+                    Id = obj["id"]?.Read<string>() ?? string.Empty,
+                    Name = name,
+                    Polarity = obj["polarity"]?.Read<string>() ?? string.Empty,
+                    Summary = obj["summary"]?.Read<string>() ?? string.Empty,
+                };
+            }
+
+            var raw = token.Read<string>();
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return null;
+            }
+
+            return new HeroRecruitTraitSnapshot
+            {
+                Id = raw.Trim(),
+                Name = raw.Trim(),
+                Polarity = string.Empty,
+                Summary = string.Empty,
+            };
+        }
+
+        private static string MapHeroRecruitTraitName(JToken token)
+        {
+            return MapHeroRecruitTraitDetail(token)?.Name;
         }
 
         private static OperationSnapshot MapOperation(JObject obj)
@@ -245,6 +319,24 @@ namespace PlanarWar.Client.Core.Mapping
 
         private static JObject FirstObject(params JToken[] tokens) => tokens?.OfType<JObject>().FirstOrDefault();
         private static JArray FirstArray(params JToken[] tokens) => tokens?.OfType<JArray>().FirstOrDefault();
+
+        private static string FirstNonBlank(params string[] values)
+        {
+            if (values == null)
+            {
+                return string.Empty;
+            }
+
+            foreach (var value in values)
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    return value.Trim();
+                }
+            }
+
+            return string.Empty;
+        }
 
         private static ResearchSnapshot MapResearch(JObject obj)
         {
