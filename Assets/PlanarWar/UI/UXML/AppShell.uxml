@@ -496,6 +496,18 @@
                                 <ui:Label name="warfront-note-value" text="Read-only desk: fronts, signals, and readiness will surface here without attack wiring." class="summary-value summary-value--glance" />
                             </ui:VisualElement>
                         </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card summary-card--full warfront-management-card">
+                            <ui:Label text="Formation management" class="eyebrow" />
+                            <ui:Label name="warfront-management-copy-value" text="Rename an idle formation or split troops into a sibling formation without reopening decorative desk churn." class="metric-subvalue metric-subvalue--wrap" />
+                            <ui:DropdownField name="warfront-manage-army-field" label="Formation" />
+                            <ui:TextField name="warfront-manage-rename-input" label="Rename to" />
+                            <ui:Button name="warfront-manage-rename-button" text="Rename formation" class="action-button action-button--primary" />
+                            <ui:TextField name="warfront-manage-split-size-input" label="Split troops" />
+                            <ui:TextField name="warfront-manage-split-name-input" label="New formation" />
+                            <ui:Button name="warfront-manage-split-button" text="Split formation" class="action-button action-button--primary" />
+                            <ui:Label name="warfront-manage-note-value" text="Formation management details load from live summary payload." class="metric-subvalue metric-subvalue--wrap" />
+                        </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:ScrollView>
 

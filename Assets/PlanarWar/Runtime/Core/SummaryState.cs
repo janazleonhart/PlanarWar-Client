@@ -95,6 +95,30 @@ namespace PlanarWar.Client.Core
             PendingArmyReinforcementId = armyId?.Trim() ?? string.Empty;
         }
 
+        public void BeginArmyRename(string armyId, string requestedName)
+        {
+            var label = string.IsNullOrWhiteSpace(armyId) ? "Renaming formation..." : $"Renaming formation: {armyId.Trim()}";
+            if (!string.IsNullOrWhiteSpace(requestedName))
+            {
+                label += $" -> {requestedName.Trim()}";
+            }
+
+            BeginAction(label);
+        }
+
+        public void BeginArmySplit(string armyId, int requestedSize, string requestedName)
+        {
+            var label = string.IsNullOrWhiteSpace(armyId)
+                ? $"Splitting formation ({requestedSize})..."
+                : $"Splitting formation: {armyId.Trim()} ({requestedSize})";
+            if (!string.IsNullOrWhiteSpace(requestedName))
+            {
+                label += $" -> {requestedName.Trim()}";
+            }
+
+            BeginAction(label);
+        }
+
         public void FinishAction(string status, bool failed = false)
         {
             IsActionBusy = false;

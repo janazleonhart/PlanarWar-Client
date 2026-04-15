@@ -20,12 +20,29 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private readonly Label missionValue;
         private readonly Label pressureValue;
         private readonly Label noteValue;
+        private readonly Label managementCopy;
+        private readonly Label managementNote;
+        private readonly DropdownField managementArmyField;
+        private readonly TextField renameInput;
+        private readonly Button renameButton;
+        private readonly TextField splitSizeInput;
+        private readonly TextField splitNameInput;
+        private readonly Button splitButton;
         private readonly InfoCard[] cards;
         private readonly SummaryState summaryState;
         private readonly Func<string, Task> onReinforceArmyRequested;
+        private readonly Func<string, string, Task> onRenameArmyRequested;
+        private readonly Func<string, int, string, Task> onSplitArmyRequested;
         private readonly Action onRefreshDeskRequested;
+        private readonly List<string> managementArmyChoiceIds = new();
+        private string selectedArmyId = string.Empty;
+        private string draftedArmyId = string.Empty;
+        private string renameDraft = string.Empty;
+        private string splitSizeDraft = string.Empty;
+        private string splitNameDraft = string.Empty;
+        private bool suppressManagementEvents;
 
-        public BlackMarketScreenController(VisualElement root, SummaryState summaryState, Func<string, Task> onReinforceArmyRequested, Action onRefreshDeskRequested)
+        public BlackMarketScreenController(VisualElement root, SummaryState summaryState, Func<string, Task> onReinforceArmyRequested, Func<string, string, Task> onRenameArmyRequested, Func<string, int, string, Task> onSplitArmyRequested, Action onRefreshDeskRequested)
         {
             headline = root.Q<Label>("placeholder-headline-value");
             copy = root.Q<Label>("placeholder-copy-value");
@@ -37,10 +54,65 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             missionValue = root.Q<Label>("warfront-mission-value");
             pressureValue = root.Q<Label>("warfront-pressure-value");
             noteValue = root.Q<Label>("warfront-note-value");
+            managementCopy = root.Q<Label>("warfront-management-copy-value");
+            managementNote = root.Q<Label>("warfront-manage-note-value");
+            managementArmyField = root.Q<DropdownField>("warfront-manage-army-field");
+            renameInput = root.Q<TextField>("warfront-manage-rename-input");
+            renameButton = root.Q<Button>("warfront-manage-rename-button");
+            splitSizeInput = root.Q<TextField>("warfront-manage-split-size-input");
+            splitNameInput = root.Q<TextField>("warfront-manage-split-name-input");
+            splitButton = root.Q<Button>("warfront-manage-split-button");
             cards = Enumerable.Range(1, 4).Select(i => new InfoCard(root, $"warfront-card-{i}", hasButton: true)).ToArray();
             this.summaryState = summaryState;
             this.onReinforceArmyRequested = onReinforceArmyRequested;
+            this.onRenameArmyRequested = onRenameArmyRequested;
+            this.onSplitArmyRequested = onSplitArmyRequested;
             this.onRefreshDeskRequested = onRefreshDeskRequested;
+
+            if (managementArmyField != null)
+            {
+                managementArmyField.RegisterValueChangedCallback(evt =>
+                {
+                    if (suppressManagementEvents)
+                    {
+                        return;
+                    }
+
+                    var index = managementArmyField.choices?.IndexOf(evt.newValue) ?? -1;
+                    if (index >= 0 && index < managementArmyChoiceIds.Count)
+                    {
+                        selectedArmyId = managementArmyChoiceIds[index];
+                        draftedArmyId = string.Empty;
+                    }
+                });
+            }
+
+            renameInput?.RegisterValueChangedCallback(evt =>
+            {
+                if (!suppressManagementEvents)
+                {
+                    renameDraft = evt.newValue ?? string.Empty;
+                }
+            });
+
+            splitSizeInput?.RegisterValueChangedCallback(evt =>
+            {
+                if (!suppressManagementEvents)
+                {
+                    splitSizeDraft = evt.newValue ?? string.Empty;
+                }
+            });
+
+            splitNameInput?.RegisterValueChangedCallback(evt =>
+            {
+                if (!suppressManagementEvents)
+                {
+                    splitNameDraft = evt.newValue ?? string.Empty;
+                }
+            });
+
+            renameButton?.RegisterCallback<ClickEvent>(_ => TriggerRenameArmy());
+            splitButton?.RegisterCallback<ClickEvent>(_ => TriggerSplitArmy());
         }
 
         public void Render(ShellSummarySnapshot summary)
@@ -78,6 +150,143 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             noteValue.text = BuildReinforcementDeskNote(summary.Armies, reinforceState, reinforceTimer, reinforceOp, warfrontWindows.Count > 0);
 
             RenderCards(cards, BuildCards(summary, rankedArmies, warfrontWindows, activeMission, primaryWarning, signalPairs, reinforceState, reinforceTimer, reinforceOp));
+            RenderFormationManagement(summary, rankedArmies, targetArmyId);
+        }
+
+        private void RenderFormationManagement(ShellSummarySnapshot summary, List<ArmySnapshot> rankedArmies, string targetArmyId)
+        {
+            if (managementCopy == null && managementNote == null && managementArmyField == null)
+            {
+                return;
+            }
+
+            var armies = (rankedArmies ?? new List<ArmySnapshot>()).Where(army => army != null).ToList();
+            if (armies.Count == 0)
+            {
+                if (managementCopy != null) managementCopy.text = "No formation payload is visible yet, so rename and split controls stay parked.";
+                if (managementNote != null) managementNote.text = "Warfront will unlock formation management once at least one army is present in /api/me.";
+                if (managementArmyField != null)
+                {
+                    suppressManagementEvents = true;
+                    managementArmyChoiceIds.Clear();
+                    managementArmyField.choices = new List<string>();
+                    managementArmyField.SetValueWithoutNotify(string.Empty);
+                    managementArmyField.SetEnabled(false);
+                    suppressManagementEvents = false;
+                }
+
+                renameInput?.SetEnabled(false);
+                splitSizeInput?.SetEnabled(false);
+                splitNameInput?.SetEnabled(false);
+                renameButton?.SetEnabled(false);
+                splitButton?.SetEnabled(false);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(selectedArmyId) || armies.All(army => !string.Equals(army.Id, selectedArmyId, StringComparison.OrdinalIgnoreCase)))
+            {
+                selectedArmyId = FirstNonBlank(targetArmyId, armies[0].Id);
+                draftedArmyId = string.Empty;
+            }
+
+            managementArmyChoiceIds.Clear();
+            var choices = armies.Select(army =>
+            {
+                managementArmyChoiceIds.Add(army.Id);
+                var typeLabel = string.IsNullOrWhiteSpace(army.Type) ? "formation" : HumanizeKey(army.Type);
+                var sizeText = army.Size.HasValue ? $"{army.Size.Value:0} troops" : "troops unknown";
+                var powerText = army.Power.HasValue ? $"{army.Power.Value:0} power" : "power unknown";
+                return $"{army.Name} • {typeLabel} • {sizeText} • {powerText}";
+            }).ToList();
+
+            var selectedIndex = Math.Max(0, managementArmyChoiceIds.FindIndex(id => string.Equals(id, selectedArmyId, StringComparison.OrdinalIgnoreCase)));
+            if (selectedIndex >= managementArmyChoiceIds.Count)
+            {
+                selectedIndex = 0;
+            }
+
+            selectedArmyId = managementArmyChoiceIds[selectedIndex];
+            var selectedArmy = armies[selectedIndex];
+
+            if (!string.Equals(draftedArmyId, selectedArmy.Id, StringComparison.OrdinalIgnoreCase))
+            {
+                draftedArmyId = selectedArmy.Id;
+                renameDraft = selectedArmy.Name;
+                splitSizeDraft = BuildSuggestedSplitSize(selectedArmy);
+                splitNameDraft = BuildSuggestedSplitName(summary.Armies, selectedArmy);
+            }
+
+            if (managementArmyField != null)
+            {
+                suppressManagementEvents = true;
+                managementArmyField.choices = choices;
+                managementArmyField.SetValueWithoutNotify(choices[selectedIndex]);
+                managementArmyField.SetEnabled(!summaryState.IsActionBusy);
+                suppressManagementEvents = false;
+            }
+
+            suppressManagementEvents = true;
+            renameInput?.SetValueWithoutNotify(renameDraft);
+            splitSizeInput?.SetValueWithoutNotify(splitSizeDraft);
+            splitNameInput?.SetValueWithoutNotify(splitNameDraft);
+            suppressManagementEvents = false;
+
+            var splitSize = ParsePositiveInt(splitSizeDraft);
+            var maxSplit = Math.Max(0, (int)Math.Round(selectedArmy.Size ?? 0) - 40);
+            var idle = string.Equals(selectedArmy.Status, "idle", StringComparison.OrdinalIgnoreCase);
+            var canRename = !summaryState.IsActionBusy && idle && onRenameArmyRequested != null && !string.IsNullOrWhiteSpace(renameDraft?.Trim()) && !string.Equals(renameDraft.Trim(), selectedArmy.Name, StringComparison.OrdinalIgnoreCase);
+            var canSplit = !summaryState.IsActionBusy && idle && onSplitArmyRequested != null && splitSize >= 40 && splitSize <= maxSplit;
+
+            renameInput?.SetEnabled(!summaryState.IsActionBusy && idle);
+            splitSizeInput?.SetEnabled(!summaryState.IsActionBusy && idle);
+            splitNameInput?.SetEnabled(!summaryState.IsActionBusy && idle);
+            if (renameButton != null)
+            {
+                renameButton.text = summaryState.IsActionBusy ? "Working..." : "Rename formation";
+                renameButton.SetEnabled(canRename);
+            }
+
+            if (splitButton != null)
+            {
+                splitButton.text = summaryState.IsActionBusy ? "Working..." : "Split formation";
+                splitButton.SetEnabled(canSplit);
+            }
+
+            if (managementCopy != null)
+            {
+                managementCopy.text = $"Commander controls stay bounded here: rename an idle formation or peel troops into a new sibling formation. Focus: {selectedArmy.Name} • {BuildFormationLore(selectedArmy)}.";
+            }
+
+            if (managementNote != null)
+            {
+                managementNote.text = BuildFormationManagementNote(selectedArmy, splitSize, maxSplit);
+            }
+        }
+
+        private void TriggerRenameArmy()
+        {
+            if (summaryState.IsActionBusy || onRenameArmyRequested == null || string.IsNullOrWhiteSpace(selectedArmyId))
+            {
+                return;
+            }
+
+            _ = onRenameArmyRequested.Invoke(selectedArmyId.Trim(), renameDraft?.Trim() ?? string.Empty);
+        }
+
+        private void TriggerSplitArmy()
+        {
+            if (summaryState.IsActionBusy || onSplitArmyRequested == null || string.IsNullOrWhiteSpace(selectedArmyId))
+            {
+                return;
+            }
+
+            var splitSize = ParsePositiveInt(splitSizeDraft);
+            if (splitSize <= 0)
+            {
+                return;
+            }
+
+            _ = onSplitArmyRequested.Invoke(selectedArmyId.Trim(), splitSize, splitNameDraft?.Trim() ?? string.Empty);
         }
 
         private List<CardView> BuildCards(ShellSummarySnapshot summary, List<ArmySnapshot> rankedArmies, List<CityTimerEntrySnapshot> windows, MissionSnapshot activeMission, string primaryWarning, List<WarfrontSignalSnapshot> signalPairs, ArmyReinforcementSnapshot reinforceState, CityTimerEntrySnapshot reinforceTimer, OperationSnapshot reinforceOp)
@@ -518,6 +727,64 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 if (i < cards.Count) slots[i].Show(cards[i]);
                 else slots[i].Hide();
             }
+        }
+
+        private static string BuildFormationManagementNote(ArmySnapshot army, int splitSize, int maxSplit)
+        {
+            if (!string.Equals(army.Status, "idle", StringComparison.OrdinalIgnoreCase))
+            {
+                return $"{army.Name} is {HumanizeStatus(army.Status)}. Rename and split stay locked until the formation returns to idle posture.";
+            }
+
+            if ((army.Size ?? 0) < 80)
+            {
+                return $"{army.Name} is too small to split safely. Keep at least 40 troops on each side of the split.";
+            }
+
+            var range = maxSplit >= 40 ? $"Valid split window: 40-{maxSplit} troops." : "Valid split window is currently unavailable.";
+            return $"{range} Current draft: {BuildSplitDraftSummary(splitSize, army)}.";
+        }
+
+        private static string BuildSplitDraftSummary(int splitSize, ArmySnapshot army)
+        {
+            if (splitSize <= 0)
+            {
+                return "enter a troop count to peel off a sibling formation";
+            }
+
+            var size = (int)Math.Round(army.Size ?? 0);
+            var remaining = Math.Max(0, size - splitSize);
+            return $"move {splitSize} troops from {army.Name} and leave {remaining}";
+        }
+
+        private static string BuildSuggestedSplitSize(ArmySnapshot army)
+        {
+            var size = (int)Math.Round(army.Size ?? 0);
+            if (size <= 80)
+            {
+                return "40";
+            }
+
+            var half = Math.Max(40, Math.Min(size - 40, (int)Math.Round(size / 2d)));
+            return half.ToString();
+        }
+
+        private static string BuildSuggestedSplitName(IReadOnlyList<ArmySnapshot> armies, ArmySnapshot army)
+        {
+            var baseName = string.IsNullOrWhiteSpace(army?.Name) ? "Field Detachment" : $"{army.Name} Reserve";
+            var candidate = baseName;
+            var index = 2;
+            while (armies.Any(existing => existing != null && string.Equals(existing.Name, candidate, StringComparison.OrdinalIgnoreCase)))
+            {
+                candidate = $"{baseName} {index}";
+                index += 1;
+            }
+            return candidate;
+        }
+
+        private static int ParsePositiveInt(string rawValue)
+        {
+            return int.TryParse(rawValue?.Trim(), out var parsed) ? Math.Max(0, parsed) : 0;
         }
 
         private static string HumanizeStatus(string value) => string.IsNullOrWhiteSpace(value) ? "unknown" : value.Replace('_', ' ');

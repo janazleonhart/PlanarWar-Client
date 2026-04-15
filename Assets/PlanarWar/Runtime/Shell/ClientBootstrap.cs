@@ -77,6 +77,8 @@ namespace PlanarWar.Client.UI
                     HandleAcceptHeroRecruitCandidateRequestedAsync,
                     HandleDismissHeroRecruitCandidatesRequestedAsync,
                     HandleReinforceArmyRequestedAsync,
+                    HandleRenameArmyRequestedAsync,
+                    HandleSplitArmyRequestedAsync,
                     RefreshSummary,
                     () => navigationState.SetActive(ShellScreen.Summary));
             }
@@ -328,6 +330,62 @@ namespace PlanarWar.Client.UI
             catch (Exception ex)
             {
                 summaryState.FinishAction($"Army reinforcement failed: {ex.Message}", failed: true);
+            }
+        }
+
+        private async Task HandleRenameArmyRequestedAsync(string armyId, string requestedName)
+        {
+            if (summaryState == null || apiClient == null || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            var trimmedArmyId = armyId?.Trim() ?? string.Empty;
+            var trimmedName = requestedName?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(trimmedArmyId) || string.IsNullOrWhiteSpace(trimmedName))
+            {
+                return;
+            }
+
+            try
+            {
+                summaryState.BeginArmyRename(trimmedArmyId, trimmedName);
+                await apiClient.RenameArmyAsync(trimmedArmyId, trimmedName);
+                await summaryController.RefreshAsync();
+                summaryState.FinishAction($"Formation renamed: {trimmedName}");
+            }
+            catch (Exception ex)
+            {
+                summaryState.FinishAction($"Formation rename failed: {ex.Message}", failed: true);
+            }
+        }
+
+        private async Task HandleSplitArmyRequestedAsync(string armyId, int requestedSize, string requestedName)
+        {
+            if (summaryState == null || apiClient == null || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            var trimmedArmyId = armyId?.Trim() ?? string.Empty;
+            var trimmedName = requestedName?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(trimmedArmyId) || requestedSize <= 0)
+            {
+                return;
+            }
+
+            try
+            {
+                summaryState.BeginArmySplit(trimmedArmyId, requestedSize, trimmedName);
+                await apiClient.SplitArmyAsync(trimmedArmyId, requestedSize, trimmedName);
+                await summaryController.RefreshAsync();
+                summaryState.FinishAction(string.IsNullOrWhiteSpace(trimmedName)
+                    ? $"Formation split: {requestedSize} troops."
+                    : $"Formation split into {trimmedName}: {requestedSize} troops.");
+            }
+            catch (Exception ex)
+            {
+                summaryState.FinishAction($"Formation split failed: {ex.Message}", failed: true);
             }
         }
 
