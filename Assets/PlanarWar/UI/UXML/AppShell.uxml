@@ -21,6 +21,17 @@
                 <ui:Label text="4 lanes" class="rail-section-head__meta" />
             </ui:VisualElement>
 
+            <ui:VisualElement class="rail-active-card rail-version-card">
+                <ui:VisualElement class="rail-section-head">
+                    <ui:Label text="Client version" class="eyebrow" />
+                    <ui:Label text="Updater foundation" class="rail-section-head__meta" />
+                </ui:VisualElement>
+                <ui:Label name="client-version-value" text="v0.0.0-local" class="rail-note-title" />
+                <ui:Label name="client-channel-value" text="editor-local" class="rail-active-card__kicker" />
+                <ui:Label name="client-update-value" text="Update manifest not wired yet." class="rail-copy" />
+                <ui:Label name="client-authority-value" text="Patch authority will come from the box manifest." class="rail-copy" />
+            </ui:VisualElement>
+
             <ui:VisualElement class="rail-menu rail-menu--cards">
                 <ui:Button name="nav-home-button" class="chapter-row rail-button rail-button--active">
                     <ui:Label text="01" class="chapter-row__index" />

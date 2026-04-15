@@ -14,6 +14,7 @@ namespace PlanarWar.Client.UI
         private readonly SessionState sessionState;
         private readonly SummaryState summaryState;
         private readonly ShellNavigationState navigationState;
+        private readonly ClientVersionState versionState;
 
         private readonly SummaryScreenController summaryScreen;
         private readonly CityScreenController cityScreen;
@@ -34,6 +35,10 @@ namespace PlanarWar.Client.UI
         private readonly Label actionHintValue;
         private readonly Label lastUpdatedValue;
         private readonly Label liveClockValue;
+        private readonly Label clientVersionValue;
+        private readonly Label clientChannelValue;
+        private readonly Label clientUpdateValue;
+        private readonly Label clientAuthorityValue;
 
         private readonly VisualElement authLoginFields;
         private readonly VisualElement loginButtonRow;
@@ -59,11 +64,12 @@ namespace PlanarWar.Client.UI
         private readonly Button sendChatButton;
         private readonly TextField chatInputField;
 
-        public AppShellController(VisualElement root, SessionState sessionState, SummaryState summaryState, ShellNavigationState navigationState)
+        public AppShellController(VisualElement root, SessionState sessionState, SummaryState summaryState, ShellNavigationState navigationState, ClientVersionState versionState)
         {
             this.sessionState = sessionState;
             this.summaryState = summaryState;
             this.navigationState = navigationState;
+            this.versionState = versionState;
 
             summaryRoot = root.Q<VisualElement>("summary-screen");
             cityRoot = root.Q<VisualElement>("development-screen");
@@ -84,6 +90,10 @@ namespace PlanarWar.Client.UI
             actionHintValue = root.Q<Label>("action-hint-value");
             lastUpdatedValue = root.Q<Label>("last-updated-value");
             liveClockValue = root.Q<Label>("live-clock-value");
+            clientVersionValue = root.Q<Label>("client-version-value");
+            clientChannelValue = root.Q<Label>("client-channel-value");
+            clientUpdateValue = root.Q<Label>("client-update-value");
+            clientAuthorityValue = root.Q<Label>("client-authority-value");
 
             authLoginFields = root.Q<VisualElement>("auth-login-fields");
             loginButtonRow = root.Q<VisualElement>("login-button-row");
@@ -130,6 +140,10 @@ namespace PlanarWar.Client.UI
             actionHintValue.text = summaryState.Snapshot.HasCity ? "Use City / Black Market tabs for lane-specific read-only surfaces." : "Founder mode: no city snapshot yet.";
             lastUpdatedValue.text = summaryState.IsLoaded ? $"Updated {summaryState.LastUpdatedUtc:HH:mm:ss} UTC" : "No summary fetch yet.";
             liveClockValue.text = $"Now {DateTime.UtcNow:HH:mm:ss} UTC";
+            clientVersionValue.text = versionState?.BuildLabel ?? "v0.0.0-local";
+            clientChannelValue.text = versionState?.ChannelLabel ?? "unknown channel";
+            clientUpdateValue.text = versionState?.UpdateStatus ?? "Update status unavailable.";
+            clientAuthorityValue.text = versionState?.AuthorityHint ?? "Patch authority unknown.";
 
             if (authLoginFields != null) authLoginFields.style.display = isAuthenticated ? DisplayStyle.None : DisplayStyle.Flex;
             if (loginButtonRow != null) loginButtonRow.style.display = isAuthenticated ? DisplayStyle.None : DisplayStyle.Flex;

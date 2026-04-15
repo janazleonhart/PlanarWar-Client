@@ -29,6 +29,7 @@ namespace PlanarWar.Client.UI
         private SummaryRefreshController summaryController;
         private WsSessionController wsController;
         private ShellNavigationState navigationState;
+        private ClientVersionState versionState;
         private AppShellController appShellController;
         private float nextClockRenderAt;
 
@@ -46,6 +47,7 @@ namespace PlanarWar.Client.UI
             sessionState = new SessionState();
             summaryState = new SummaryState();
             navigationState = new ShellNavigationState();
+            versionState = new ClientVersionState();
 
             var resolvedHttpBaseUrl = ResolveHttpBaseUrl();
             sessionState.SetUrls(networkClient != null ? networkClient.ServerUrl : "-", resolvedHttpBaseUrl);
@@ -59,7 +61,7 @@ namespace PlanarWar.Client.UI
             {
                 var root = uiDocument.rootVisualElement;
                 BindUi(root);
-                appShellController = new AppShellController(root, sessionState, summaryState, navigationState);
+                appShellController = new AppShellController(root, sessionState, summaryState, navigationState, versionState);
             }
 
             sessionState.Changed += Render;
