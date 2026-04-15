@@ -84,46 +84,61 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
         private static string FormatWorkshop(List<WorkshopJobSnapshot> jobs)
         {
-            var active = jobs.Where(j => !j.Completed).ToArray();
+            var nowUtc = DateTime.UtcNow;
+            var ready = jobs.Where(j => IsWorkshopJobCollectable(j, nowUtc)).ToArray();
+            if (ready.Length > 0)
+            {
+                return $"{GetWorkshopJobTitle(ready[0])} • ready to collect";
+            }
+
+            var active = jobs.Where(j => !IsWorkshopJobCollected(j) && !IsWorkshopJobCollectable(j, nowUtc)).ToArray();
             if (active.Length == 0) return "No active workshop queue.";
             var first = active[0];
-            var timer = first.FinishesAtUtc.HasValue ? FormatRemaining(first.FinishesAtUtc.Value - DateTime.UtcNow) : "time unknown";
-            return $"{DescribeWorkshopJob(first)} • {timer}";
+            var timer = first.FinishesAtUtc.HasValue ? FormatRemaining(first.FinishesAtUtc.Value - nowUtc) : "time unknown";
+            return $"{GetWorkshopJobTitle(first)} • {timer}";
         }
 
-        private static string DescribeWorkshopJob(WorkshopJobSnapshot job)
+        private static bool IsWorkshopJobCollected(WorkshopJobSnapshot job)
         {
-            if (job == null)
-            {
-                return "Workshop job";
-            }
-
-            var label = FirstNonBlank(job.OutputName, job.DisplayName, job.RecipeId, job.AttachmentKind, job.OutputItemId);
-            return string.IsNullOrWhiteSpace(label) ? "Workshop job" : HumanizeKey(label);
+            return job?.CollectedAtUtc.HasValue == true;
         }
 
-        private static string FirstNonBlank(params string[] values)
+        private static bool IsWorkshopJobCollectable(WorkshopJobSnapshot job, DateTime nowUtc)
         {
-            foreach (var value in values ?? Array.Empty<string>())
+            if (job == null || IsWorkshopJobCollected(job))
             {
-                if (!string.IsNullOrWhiteSpace(value))
-                {
-                    return value.Trim();
-                }
+                return false;
             }
 
-            return string.Empty;
+            if (job.Completed)
+            {
+                return true;
+            }
+
+            return job.FinishesAtUtc.HasValue && job.FinishesAtUtc.Value <= nowUtc;
         }
 
-        private static string HumanizeKey(string value)
+        private static string GetWorkshopJobTitle(WorkshopJobSnapshot job)
         {
-            if (string.IsNullOrWhiteSpace(value))
+            var outputName = job?.OutputName?.Trim();
+            if (!string.IsNullOrWhiteSpace(outputName))
             {
-                return "-";
+                return outputName;
             }
 
-            return string.Join(" ", value.Trim().Split(new[] { '_', '-', ' ' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(part => char.ToUpperInvariant(part[0]) + part.Substring(1)));
+            var recipeId = job?.RecipeId?.Trim();
+            if (!string.IsNullOrWhiteSpace(recipeId))
+            {
+                return recipeId;
+            }
+
+            var attachmentKind = job?.AttachmentKind?.Trim();
+            if (!string.IsNullOrWhiteSpace(attachmentKind))
+            {
+                return attachmentKind;
+            }
+
+            return "workshop job";
         }
 
         private static string FormatMission(List<MissionSnapshot> missions)

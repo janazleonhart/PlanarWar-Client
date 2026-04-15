@@ -235,22 +235,27 @@ namespace PlanarWar.Client.UI.Screens.City
                 : laneCopy.text;
 
             var cards = new List<CardView>();
-            var activeJobs = s.WorkshopJobs.Where(j => !j.Completed).ToList();
-            var readyJobs = s.WorkshopJobs.Where(j => j.Completed).ToList();
-            var workshopTimers = s.CityTimers.Where(t => string.Equals(t.Category, "workshop_job", StringComparison.OrdinalIgnoreCase)).ToList();
+            var nowUtc = DateTime.UtcNow;
+            var activeJobs = s.WorkshopJobs.Where(j => !IsWorkshopJobCollected(j) && !IsWorkshopJobCollectable(j, nowUtc)).ToList();
+            var readyJobs = s.WorkshopJobs.Where(j => !IsWorkshopJobCollected(j) && IsWorkshopJobCollectable(j, nowUtc)).ToList();
+            var readyJobIds = new HashSet<string>(readyJobs.Select(j => j.Id), StringComparer.OrdinalIgnoreCase);
+            var workshopTimers = s.CityTimers
+                .Where(t => string.Equals(t.Category, "workshop_job", StringComparison.OrdinalIgnoreCase))
+                .Where(t => !readyJobIds.Contains(t.Id))
+                .ToList();
 
             cards.AddRange(activeJobs.Take(2).Select(job => new CardView(
                 family: "Active job",
-                title: ResolveWorkshopJobTitle(job),
-                lore: job.FinishesAtUtc.HasValue ? $"Ready in {FormatRemaining(job.FinishesAtUtc.Value - DateTime.UtcNow)}" : "Job surfaced without a finish anchor.",
-                note: job.Completed ? "Marked complete in payload." : "Queued workshop job from summary payload.",
+                title: GetWorkshopJobTitle(job),
+                lore: job.FinishesAtUtc.HasValue ? $"Ready in {FormatRemaining(job.FinishesAtUtc.Value - nowUtc)}" : "Job surfaced without a finish anchor.",
+                note: "Queued workshop job from summary payload.",
                 buttonText: "In flight",
                 buttonEnabled: false)));
 
             cards.AddRange(readyJobs.Take(2).Select(job => new CardView(
                 family: "Ready pickup",
-                title: ResolveWorkshopJobTitle(job),
-                lore: "Complete and waiting in the workshop queue.",
+                title: GetWorkshopJobTitle(job),
+                lore: "Crafting time elapsed. Collect to deliver the item into city armory storage.",
                 note: job.Id == "job" ? "Ready workshop item surfaced without a stable job id." : $"Ready job {job.Id} can now be collected into storage.",
                 buttonText: summaryState.IsActionBusy && string.Equals(summaryState.PendingWorkshopJobId, job.Id, StringComparison.OrdinalIgnoreCase) ? "Collecting..." : "Collect",
                 buttonEnabled: !summaryState.IsActionBusy && !string.IsNullOrWhiteSpace(job.Id) && job.Id != "job" && onCollectWorkshopRequested != null,
@@ -392,6 +397,49 @@ namespace PlanarWar.Client.UI.Screens.City
             return s?.AvailableTechs?.FirstOrDefault(t => !string.IsNullOrWhiteSpace(t?.Id));
         }
 
+        private static bool IsWorkshopJobCollected(WorkshopJobSnapshot job)
+        {
+            return job?.CollectedAtUtc.HasValue == true;
+        }
+
+        private static bool IsWorkshopJobCollectable(WorkshopJobSnapshot job, DateTime nowUtc)
+        {
+            if (job == null || IsWorkshopJobCollected(job))
+            {
+                return false;
+            }
+
+            if (job.Completed)
+            {
+                return true;
+            }
+
+            return job.FinishesAtUtc.HasValue && job.FinishesAtUtc.Value <= nowUtc;
+        }
+
+        private static string GetWorkshopJobTitle(WorkshopJobSnapshot job)
+        {
+            var outputName = job?.OutputName?.Trim();
+            if (!string.IsNullOrWhiteSpace(outputName))
+            {
+                return outputName;
+            }
+
+            var recipeId = job?.RecipeId?.Trim();
+            if (!string.IsNullOrWhiteSpace(recipeId))
+            {
+                return HumanizeKey(recipeId);
+            }
+
+            var attachmentKind = job?.AttachmentKind?.Trim();
+            if (!string.IsNullOrWhiteSpace(attachmentKind))
+            {
+                return HumanizeKey(attachmentKind);
+            }
+
+            return "Workshop job";
+        }
+
         private static string BuildDeskNote(ShellSummarySnapshot s, SummaryState summaryState)
         {
             if (!string.IsNullOrWhiteSpace(summaryState?.ActionStatus))
@@ -449,8 +497,9 @@ namespace PlanarWar.Client.UI.Screens.City
 
         private static string DescribeWorkshopLane(ShellSummarySnapshot s, int recipeCount)
         {
-            var activeJobs = s.WorkshopJobs.Count(j => !j.Completed);
-            var readyJobs = s.WorkshopJobs.Count(j => j.Completed);
+            var nowUtc = DateTime.UtcNow;
+            var activeJobs = s.WorkshopJobs.Count(j => !IsWorkshopJobCollected(j) && !IsWorkshopJobCollectable(j, nowUtc));
+            var readyJobs = s.WorkshopJobs.Count(j => !IsWorkshopJobCollected(j) && IsWorkshopJobCollectable(j, nowUtc));
             var workshopTimers = s.CityTimers.Count(t => string.Equals(t.Category, "workshop_job", StringComparison.OrdinalIgnoreCase));
             if (activeJobs > 0)
             {
@@ -468,17 +517,6 @@ namespace PlanarWar.Client.UI.Screens.City
             }
 
             return workshopTimers > 0 ? $"{workshopTimers} workshop timer(s) visible." : "No workshop queue visible.";
-        }
-
-        private static string ResolveWorkshopJobTitle(WorkshopJobSnapshot job)
-        {
-            if (job == null)
-            {
-                return "Workshop job";
-            }
-
-            var title = FirstNonBlank(job.OutputName, job.DisplayName, job.RecipeId, job.AttachmentKind, job.OutputItemId);
-            return string.IsNullOrWhiteSpace(title) ? "Workshop job" : HumanizeKey(title);
         }
 
         private static string DescribeGrowthLane(ShellSummarySnapshot s)
