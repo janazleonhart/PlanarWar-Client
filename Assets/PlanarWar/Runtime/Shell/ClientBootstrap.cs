@@ -33,8 +33,8 @@ namespace PlanarWar.Client.UI
         private ClientVersionState versionState;
         private AppShellController appShellController;
         private float nextClockRenderAt;
-        private bool summaryRefreshInFlight;
-        private DateTime nextAutoHeroRecruitRefreshAttemptUtc = DateTime.MinValue;
+        private float nextTimedRefreshCheckAt;
+        private bool timedRefreshInFlight;
 
         private TextField loginNameField;
         private TextField passwordField;
@@ -107,6 +107,12 @@ namespace PlanarWar.Client.UI
 
         private void Update()
         {
+            if (Time.unscaledTime >= nextTimedRefreshCheckAt)
+            {
+                nextTimedRefreshCheckAt = Time.unscaledTime + 1f;
+                MaybeRefreshTimedState();
+            }
+
             if (Time.unscaledTime < nextClockRenderAt)
             {
                 return;
@@ -114,7 +120,63 @@ namespace PlanarWar.Client.UI
 
             nextClockRenderAt = Time.unscaledTime + 1f;
             Render();
-            MaybeRefreshHeroRecruitmentBoundary();
+        }
+
+        private void MaybeRefreshTimedState()
+        {
+            if (timedRefreshInFlight || summaryState == null || !summaryState.IsLoaded || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            var snapshot = summaryState.Snapshot;
+            var nowUtc = DateTime.UtcNow;
+
+            var heroRecruitment = snapshot.HeroRecruitment;
+            var heroScoutingElapsed = heroRecruitment != null
+                && string.Equals(heroRecruitment.Status, "scouting", StringComparison.OrdinalIgnoreCase)
+                && heroRecruitment.FinishesAtUtc.HasValue
+                && heroRecruitment.FinishesAtUtc.Value <= nowUtc;
+
+            var heroCandidateReviewElapsed = heroRecruitment != null
+                && string.Equals(heroRecruitment.Status, "candidates_ready", StringComparison.OrdinalIgnoreCase)
+                && heroRecruitment.CandidateExpiresAtUtc.HasValue
+                && heroRecruitment.CandidateExpiresAtUtc.Value <= nowUtc;
+
+            var armyReinforcement = snapshot.ArmyReinforcement;
+            var armyReinforcementElapsed = armyReinforcement != null
+                && string.Equals(armyReinforcement.Status, "reinforcing", StringComparison.OrdinalIgnoreCase)
+                && armyReinforcement.FinishesAtUtc.HasValue
+                && armyReinforcement.FinishesAtUtc.Value <= nowUtc;
+
+            if (!heroScoutingElapsed && !heroCandidateReviewElapsed && !armyReinforcementElapsed)
+            {
+                return;
+            }
+
+            TriggerTimedRefresh();
+        }
+
+        private async void TriggerTimedRefresh()
+        {
+            if (timedRefreshInFlight)
+            {
+                return;
+            }
+
+            timedRefreshInFlight = true;
+            try
+            {
+                await summaryController.RefreshAsync();
+            }
+            catch (Exception ex)
+            {
+                summaryState.SetError(ex.Message);
+            }
+            finally
+            {
+                timedRefreshInFlight = false;
+            }
         }
 
         private async Task HandleStartResearchRequestedAsync(string techId)
@@ -247,17 +309,21 @@ namespace PlanarWar.Client.UI
 
         private async Task HandleReinforceArmyRequestedAsync(string armyId)
         {
-            if (summaryState == null || apiClient == null || string.IsNullOrWhiteSpace(armyId) || summaryState.IsActionBusy)
+            if (summaryState == null || apiClient == null || summaryState.IsActionBusy)
             {
                 return;
             }
 
+            var trimmedArmyId = armyId?.Trim() ?? string.Empty;
+
             try
             {
-                summaryState.BeginArmyReinforcement(armyId);
-                await apiClient.ReinforceArmyAsync(armyId.Trim());
+                summaryState.BeginArmyReinforcement(trimmedArmyId);
+                await apiClient.ReinforceArmyAsync(trimmedArmyId);
                 await summaryController.RefreshAsync();
-                summaryState.FinishAction($"Army reinforcement started: {armyId.Trim()}");
+                summaryState.FinishAction(string.IsNullOrWhiteSpace(trimmedArmyId)
+                    ? "Army reinforcement started."
+                    : $"Army reinforcement started: {trimmedArmyId}");
             }
             catch (Exception ex)
             {
@@ -313,12 +379,6 @@ namespace PlanarWar.Client.UI
 
         private async void RefreshSummary()
         {
-            if (summaryRefreshInFlight || summaryController == null || summaryState == null)
-            {
-                return;
-            }
-
-            summaryRefreshInFlight = true;
             try
             {
                 await summaryController.RefreshAsync();
@@ -327,48 +387,6 @@ namespace PlanarWar.Client.UI
             {
                 summaryState.SetError(ex.Message);
             }
-            finally
-            {
-                summaryRefreshInFlight = false;
-            }
-        }
-
-        private void MaybeRefreshHeroRecruitmentBoundary()
-        {
-            if (summaryRefreshInFlight || summaryState == null || !summaryState.IsLoaded || summaryState.IsActionBusy)
-            {
-                return;
-            }
-
-            var recruitment = summaryState.Snapshot?.HeroRecruitment;
-            if (recruitment == null)
-            {
-                return;
-            }
-
-            var nowUtc = DateTime.UtcNow;
-            if (nowUtc < nextAutoHeroRecruitRefreshAttemptUtc)
-            {
-                return;
-            }
-
-            static bool IsBoundaryElapsed(DateTime? boundaryUtc, DateTime nowUtc, DateTime lastUpdatedUtc)
-            {
-                return boundaryUtc.HasValue && boundaryUtc.Value <= nowUtc && lastUpdatedUtc < boundaryUtc.Value;
-            }
-
-            var shouldRefresh = string.Equals(recruitment.Status, "scouting", StringComparison.OrdinalIgnoreCase)
-                ? IsBoundaryElapsed(recruitment.FinishesAtUtc, nowUtc, summaryState.LastUpdatedUtc)
-                : string.Equals(recruitment.Status, "candidates_ready", StringComparison.OrdinalIgnoreCase)
-                    && IsBoundaryElapsed(recruitment.CandidateExpiresAtUtc, nowUtc, summaryState.LastUpdatedUtc);
-
-            if (!shouldRefresh)
-            {
-                return;
-            }
-
-            nextAutoHeroRecruitRefreshAttemptUtc = nowUtc.AddSeconds(2);
-            RefreshSummary();
         }
 
         private async void Login()

@@ -100,6 +100,7 @@ namespace PlanarWar.Client.Core.Mapping
                     Readiness = a["readiness"]?.Read<double?>()
                 }).ToList() ?? new(),
                 HeroRecruitment = MapHeroRecruitment(summary["heroRecruitment"] as JObject ?? summary["hero_recruitment"] as JObject),
+                ArmyReinforcement = MapArmyReinforcement(summary["armyReinforcement"] as JObject ?? summary["army_reinforcement"] as JObject),
                 WorkshopJobs = (summary["workshopJobs"] as JArray)?.OfType<JObject>().Select(j => new WorkshopJobSnapshot
                 {
                     Id = j["id"]?.Read<string>() ?? j["jobId"]?.Read<string>() ?? "job",
@@ -153,84 +154,51 @@ namespace PlanarWar.Client.Core.Mapping
                 ClassName = obj["className"]?.Read<string>() ?? obj["class_name"]?.Read<string>() ?? string.Empty,
                 DisplayName = obj["displayName"]?.Read<string>() ?? obj["display_name"]?.Read<string>() ?? string.Empty,
                 Summary = obj["summary"]?.Read<string>() ?? string.Empty,
-                Traits = MapHeroRecruitTraitNames(obj["traits"]),
-                TraitDetails = MapHeroRecruitTraitDetails(obj["traits"]),
+                Traits = (obj["traits"] as JArray)?.Select(t =>
+                    t is JObject traitObj
+                        ? FirstNonBlank(traitObj["name"]?.Read<string>(), traitObj["id"]?.Read<string>())
+                        : t?.Read<string>())
+                    .Where(t => !string.IsNullOrWhiteSpace(t)).ToList() ?? new List<string>(),
+                TraitDetails = (obj["traits"] as JArray)?.OfType<JObject>().Select(MapHeroRecruitTrait).Where(t => t != null).ToList() ?? new List<HeroRecruitTraitSnapshot>(),
                 WealthCost = obj["cost"]?["wealth"]?.Read<double?>() ?? obj["wealthCost"]?.Read<double?>() ?? obj["wealth_cost"]?.Read<double?>(),
                 UnityCost = obj["cost"]?["unity"]?.Read<double?>() ?? obj["unityCost"]?.Read<double?>() ?? obj["unity_cost"]?.Read<double?>(),
             };
         }
 
-        private static List<string> MapHeroRecruitTraitNames(JToken token)
+        private static HeroRecruitTraitSnapshot MapHeroRecruitTrait(JObject obj)
         {
-            if (token is not JArray traits)
-            {
-                return new List<string>();
-            }
-
-            return traits
-                .Select(MapHeroRecruitTraitName)
-                .Where(name => !string.IsNullOrWhiteSpace(name))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-        }
-
-        private static List<HeroRecruitTraitSnapshot> MapHeroRecruitTraitDetails(JToken token)
-        {
-            if (token is not JArray traits)
-            {
-                return new List<HeroRecruitTraitSnapshot>();
-            }
-
-            return traits
-                .Select(MapHeroRecruitTraitDetail)
-                .Where(detail => detail != null)
-                .GroupBy(detail => FirstNonBlank(detail.Id, detail.Name), StringComparer.OrdinalIgnoreCase)
-                .Select(group => group.First())
-                .ToList();
-        }
-
-        private static HeroRecruitTraitSnapshot MapHeroRecruitTraitDetail(JToken token)
-        {
-            if (token == null || token.Type == JTokenType.Null || token.Type == JTokenType.Undefined)
-            {
-                return null;
-            }
-
-            if (token is JObject obj)
-            {
-                var name = FirstNonBlank(obj["name"]?.Read<string>(), obj["label"]?.Read<string>(), obj["id"]?.Read<string>());
-                if (string.IsNullOrWhiteSpace(name))
-                {
-                    return null;
-                }
-
-                return new HeroRecruitTraitSnapshot
-                {
-                    Id = obj["id"]?.Read<string>() ?? string.Empty,
-                    Name = name,
-                    Polarity = obj["polarity"]?.Read<string>() ?? string.Empty,
-                    Summary = obj["summary"]?.Read<string>() ?? string.Empty,
-                };
-            }
-
-            var raw = token.Read<string>();
-            if (string.IsNullOrWhiteSpace(raw))
-            {
-                return null;
-            }
-
+            if (obj == null) return null;
             return new HeroRecruitTraitSnapshot
             {
-                Id = raw.Trim(),
-                Name = raw.Trim(),
-                Polarity = string.Empty,
-                Summary = string.Empty,
+                Id = obj["id"]?.Read<string>() ?? string.Empty,
+                Name = obj["name"]?.Read<string>() ?? string.Empty,
+                Polarity = obj["polarity"]?.Read<string>() ?? string.Empty,
+                Summary = obj["summary"]?.Read<string>() ?? string.Empty,
             };
         }
 
-        private static string MapHeroRecruitTraitName(JToken token)
+        private static ArmyReinforcementSnapshot MapArmyReinforcement(JObject obj)
         {
-            return MapHeroRecruitTraitDetail(token)?.Name;
+            if (obj == null) return null;
+            return new ArmyReinforcementSnapshot
+            {
+                Status = obj["status"]?.Read<string>() ?? string.Empty,
+                ArmyId = obj["armyId"]?.Read<string>() ?? obj["army_id"]?.Read<string>() ?? string.Empty,
+                ArmyName = obj["armyName"]?.Read<string>() ?? obj["army_name"]?.Read<string>() ?? string.Empty,
+                ArmyType = obj["armyType"]?.Read<string>() ?? obj["army_type"]?.Read<string>() ?? string.Empty,
+                ArmyReadiness = obj["armyReadiness"]?.Read<double?>() ?? obj["army_readiness"]?.Read<double?>(),
+                StartedAtUtc = ParseUtc(obj["startedAt"] ?? obj["started_at"]),
+                FinishesAtUtc = ParseUtc(obj["finishesAt"] ?? obj["finishes_at"]),
+                SizeDelta = obj["sizeDelta"]?.Read<double?>() ?? obj["size_delta"]?.Read<double?>(),
+                PowerDelta = obj["powerDelta"]?.Read<double?>() ?? obj["power_delta"]?.Read<double?>(),
+                ReadinessDelta = obj["readinessDelta"]?.Read<double?>() ?? obj["readiness_delta"]?.Read<double?>(),
+                MaterialsCost = obj["materialsCost"]?.Read<double?>() ?? obj["materials_cost"]?.Read<double?>(),
+                WealthCost = obj["wealthCost"]?.Read<double?>() ?? obj["wealth_cost"]?.Read<double?>(),
+                StartEligible = obj["startEligible"]?.Read<bool>() ?? obj["start_eligible"]?.Read<bool>() ?? false,
+                CtaLabel = obj["ctaLabel"]?.Read<string>() ?? obj["cta_label"]?.Read<string>() ?? string.Empty,
+                BlockedReason = obj["blockedReason"]?.Read<string>() ?? obj["blocked_reason"]?.Read<string>() ?? string.Empty,
+                Shortfall = obj["shortfall"]?.Read<string>() ?? string.Empty,
+            };
         }
 
         private static OperationSnapshot MapOperation(JObject obj)
@@ -317,26 +285,23 @@ namespace PlanarWar.Client.Core.Mapping
             };
         }
 
-        private static JObject FirstObject(params JToken[] tokens) => tokens?.OfType<JObject>().FirstOrDefault();
-        private static JArray FirstArray(params JToken[] tokens) => tokens?.OfType<JArray>().FirstOrDefault();
 
         private static string FirstNonBlank(params string[] values)
         {
-            if (values == null)
-            {
-                return string.Empty;
-            }
-
+            if (values == null) return string.Empty;
             foreach (var value in values)
             {
                 if (!string.IsNullOrWhiteSpace(value))
                 {
-                    return value.Trim();
+                    return value;
                 }
             }
 
             return string.Empty;
         }
+
+        private static JObject FirstObject(params JToken[] tokens) => tokens?.OfType<JObject>().FirstOrDefault();
+        private static JArray FirstArray(params JToken[] tokens) => tokens?.OfType<JArray>().FirstOrDefault();
 
         private static ResearchSnapshot MapResearch(JObject obj)
         {

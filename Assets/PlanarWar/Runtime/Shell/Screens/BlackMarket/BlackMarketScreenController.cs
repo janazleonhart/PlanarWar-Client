@@ -23,8 +23,9 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private readonly InfoCard[] cards;
         private readonly SummaryState summaryState;
         private readonly Func<string, Task> onReinforceArmyRequested;
+        private readonly Action onRefreshDeskRequested;
 
-        public BlackMarketScreenController(VisualElement root, SummaryState summaryState, Func<string, Task> onReinforceArmyRequested)
+        public BlackMarketScreenController(VisualElement root, SummaryState summaryState, Func<string, Task> onReinforceArmyRequested, Action onRefreshDeskRequested)
         {
             headline = root.Q<Label>("placeholder-headline-value");
             copy = root.Q<Label>("placeholder-copy-value");
@@ -39,6 +40,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             cards = Enumerable.Range(1, 4).Select(i => new InfoCard(root, $"warfront-card-{i}", hasButton: true)).ToArray();
             this.summaryState = summaryState;
             this.onReinforceArmyRequested = onReinforceArmyRequested;
+            this.onRefreshDeskRequested = onRefreshDeskRequested;
         }
 
         public void Render(ShellSummarySnapshot s)
@@ -52,6 +54,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var otherWarfrontTimers = warfrontTimers.Where(t => !string.Equals(t.Category, "warfront_window", StringComparison.OrdinalIgnoreCase)).ToList();
             var reinforceTimer = otherWarfrontTimers.FirstOrDefault(t => string.Equals(t.Category, "army_reinforcement", StringComparison.OrdinalIgnoreCase));
             var reinforceOp = s.OpeningOperations.FirstOrDefault(o => string.Equals(o.Kind, "reinforce_army", StringComparison.OrdinalIgnoreCase) && string.Equals(o.Readiness, "ready_now", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(o.ArmyId));
+            var reinforceState = s.ArmyReinforcement;
             var readyArmies = s.Armies.Where(a => (a.Readiness ?? 0) >= 70).ToList();
             var activeMission = s.ActiveMissions.FirstOrDefault();
             var primaryWarning = s.ThreatWarnings.FirstOrDefault()?.Headline;
@@ -64,38 +67,64 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                     ? "Warfront posture is visible from the current summary payload."
                     : "No active warfront snapshot is visible in the current payload.";
             note.text = $"Lane {s.City.SettlementLaneLabel} • windows {warfrontWindows.Count} • timers {warfrontTimers.Count} • signals {s.WarfrontSignals.Count}";
-            cardsCopy.text = reinforceTimer != null
-                ? $"Army reinforcement is live alongside {warfrontWindows.Count} front window(s)."
-                : reinforceOp != null
-                    ? $"Reinforce {ResolveArmyName(s, reinforceOp.ArmyId)} is ready now."
-                    : warfrontWindows.Count > 0
-                        ? $"Showing {warfrontWindows.Count} front window(s) and {otherWarfrontTimers.Count} field timer(s)."
-                        : otherWarfrontTimers.Count > 0
-                            ? $"{otherWarfrontTimers.Count} field timer(s) visible without an open front window."
-                            : "No active front windows are visible right now.";
+            cardsCopy.text = BuildCardsCopy(reinforceState, reinforceTimer, reinforceOp, warfrontWindows.Count, otherWarfrontTimers.Count);
 
             windowsValue.text = warfrontWindows.Count > 0 ? $"{warfrontWindows.Count} open • {string.Join(" • ", warfrontWindows.Take(2).Select(w => HumanizeStatus(w.Status)))}" : "No active front window.";
-            readinessValue.text = s.Armies.Count > 0 ? $"{readyArmies.Count}/{s.Armies.Count} formation(s) ready" : "No formations visible in payload.";
+            readinessValue.text = reinforceState != null
+                ? BuildReinforcementReadinessSummary(reinforceState)
+                : s.Armies.Count > 0 ? $"{readyArmies.Count}/{s.Armies.Count} formation(s) ready" : "No formations visible in payload.";
             signalValue.text = signalPairs.Count > 0 ? CompactSignalSummary(signalPairs) : "No warfront status signals.";
             missionValue.text = activeMission != null ? $"{activeMission.Title} • {(activeMission.FinishesAtUtc.HasValue ? FormatRemaining(activeMission.FinishesAtUtc.Value - nowUtc) : "anchor missing")}" : "No active field support mission.";
             pressureValue.text = !string.IsNullOrWhiteSpace(primaryWarning) ? Truncate(primaryWarning, 96) : warfrontWindows.Count > 0 ? "Field windows are open; no extra warning headline is active." : "No extra frontline warning surfaced.";
-            noteValue.text = reinforceTimer != null
-                ? "Army reinforcement timer is live here. Fresh reinforce orders stay parked until the current build clears."
-                : reinforceOp != null
-                    ? "A real reinforce-army opening is visible from settlementOpeningOperations."
-                    : warfrontWindows.Count > 0
-                        ? "Warfront truth is live here. Reinforce buttons only appear when the payload exposes a ready-now order."
-                        : "No reinforce order is currently exposed in the payload.";
+            noteValue.text = BuildReinforcementDeskNote(reinforceState, reinforceTimer, reinforceOp, warfrontWindows.Count > 0);
 
-            RenderCards(cards, BuildCards(s, warfrontWindows, otherWarfrontTimers, activeMission, primaryWarning, signalPairs, reinforceTimer, reinforceOp));
+            RenderCards(cards, BuildCards(s, warfrontWindows, otherWarfrontTimers, activeMission, primaryWarning, signalPairs, reinforceState, reinforceTimer, reinforceOp));
         }
 
-        private List<CardView> BuildCards(ShellSummarySnapshot s, List<CityTimerEntrySnapshot> windows, List<CityTimerEntrySnapshot> timers, MissionSnapshot activeMission, string primaryWarning, List<WarfrontSignalSnapshot> signalPairs, CityTimerEntrySnapshot reinforceTimer, OperationSnapshot reinforceOp)
+        private List<CardView> BuildCards(ShellSummarySnapshot s, List<CityTimerEntrySnapshot> windows, List<CityTimerEntrySnapshot> timers, MissionSnapshot activeMission, string primaryWarning, List<WarfrontSignalSnapshot> signalPairs, ArmyReinforcementSnapshot reinforceState, CityTimerEntrySnapshot reinforceTimer, OperationSnapshot reinforceOp)
         {
             var cards = new List<CardView>();
             var nowUtc = DateTime.UtcNow;
 
-            if (reinforceTimer != null)
+            if (reinforceState != null)
+            {
+                if (string.Equals(reinforceState.Status, "reinforcing", StringComparison.OrdinalIgnoreCase))
+                {
+                    var reinforcingExpiredLocally = reinforceState.FinishesAtUtc.HasValue && reinforceState.FinishesAtUtc.Value <= nowUtc;
+                    cards.Add(new CardView(
+                        family: "Army reinforcement",
+                        title: FirstNonBlank(reinforceState.ArmyName, ResolveArmyName(s, reinforceState.ArmyId), "Army reinforcement"),
+                        lore: reinforceState.FinishesAtUtc.HasValue
+                            ? reinforcingExpiredLocally
+                                ? "ready • refresh now"
+                                : $"active • {FormatRemaining(reinforceState.FinishesAtUtc.Value - nowUtc)}"
+                            : "active",
+                        note: reinforcingExpiredLocally
+                            ? $"{BuildArmyReinforcementActiveNote(reinforceState, reinforceTimer)} • Timer elapsed locally. Refresh to load the completed reinforcement state."
+                            : BuildArmyReinforcementActiveNote(reinforceState, reinforceTimer),
+                        buttonText: reinforcingExpiredLocally ? "Refresh reinforcement" : (summaryState.IsActionBusy ? "Reinforcing..." : "Reinforcing"),
+                        buttonEnabled: reinforcingExpiredLocally && !summaryState.IsActionBusy && onRefreshDeskRequested != null,
+                        onClick: reinforcingExpiredLocally ? TriggerRefreshDesk : null));
+                }
+                else if (string.Equals(reinforceState.Status, "idle", StringComparison.OrdinalIgnoreCase))
+                {
+                    var targetArmyId = FirstNonBlank(reinforceState.ArmyId, reinforceOp?.ArmyId);
+                    var pendingForArmy = summaryState.IsActionBusy &&
+                        (string.IsNullOrWhiteSpace(summaryState.PendingArmyReinforcementId)
+                            ? string.IsNullOrWhiteSpace(targetArmyId)
+                            : string.Equals(summaryState.PendingArmyReinforcementId, targetArmyId, StringComparison.OrdinalIgnoreCase));
+
+                    cards.Add(new CardView(
+                        family: "Army reinforce",
+                        title: FirstNonBlank(reinforceState.ArmyName, ResolveArmyName(s, targetArmyId), "Recommended formation"),
+                        lore: BuildArmyReinforcementIdleLore(reinforceState),
+                        note: BuildArmyReinforcementIdleNote(reinforceState),
+                        buttonText: pendingForArmy ? "Reinforcing..." : FirstNonBlank(reinforceState.CtaLabel, "Reinforce formation"),
+                        buttonEnabled: !summaryState.IsActionBusy && onReinforceArmyRequested != null && reinforceState.StartEligible,
+                        onClick: () => TriggerReinforceArmy(targetArmyId)));
+                }
+            }
+            else if (reinforceTimer != null)
             {
                 cards.Add(new CardView(
                     family: "Army reinforcement",
@@ -153,14 +182,148 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             return cards;
         }
 
-        private void TriggerReinforceArmy(string armyId)
+        private void TriggerRefreshDesk()
         {
-            if (summaryState.IsActionBusy || onReinforceArmyRequested == null || string.IsNullOrWhiteSpace(armyId))
+            if (summaryState.IsActionBusy || onRefreshDeskRequested == null)
             {
                 return;
             }
 
-            _ = onReinforceArmyRequested.Invoke(armyId.Trim());
+            onRefreshDeskRequested.Invoke();
+        }
+
+        private void TriggerReinforceArmy(string armyId)
+        {
+            if (summaryState.IsActionBusy || onReinforceArmyRequested == null)
+            {
+                return;
+            }
+
+            _ = onReinforceArmyRequested.Invoke(armyId?.Trim() ?? string.Empty);
+        }
+
+        private static string BuildCardsCopy(ArmyReinforcementSnapshot reinforceState, CityTimerEntrySnapshot reinforceTimer, OperationSnapshot reinforceOp, int windowCount, int otherTimerCount)
+        {
+            if (reinforceState != null)
+            {
+                if (string.Equals(reinforceState.Status, "reinforcing", StringComparison.OrdinalIgnoreCase))
+                {
+                    return reinforceState.FinishesAtUtc.HasValue && reinforceState.FinishesAtUtc.Value <= DateTime.UtcNow
+                        ? $"Army reinforcement timer elapsed for {FirstNonBlank(reinforceState.ArmyName, "the recommended formation")}. Refresh now to load the settled state."
+                        : $"Army reinforcement is live for {FirstNonBlank(reinforceState.ArmyName, "the recommended formation")}.";
+                }
+
+                if (string.Equals(reinforceState.Status, "idle", StringComparison.OrdinalIgnoreCase))
+                {
+                    return reinforceState.StartEligible
+                        ? $"Reinforcement can open directly for {FirstNonBlank(reinforceState.ArmyName, "the recommended formation")}."
+                        : FirstNonBlank(reinforceState.BlockedReason, reinforceState.Shortfall, "Reinforcement is idle but currently blocked by resource shortfalls.");
+                }
+            }
+
+            if (reinforceTimer != null)
+            {
+                return $"Army reinforcement is live alongside {windowCount} front window(s).";
+            }
+
+            if (reinforceOp != null)
+            {
+                return !string.IsNullOrWhiteSpace(reinforceOp.ArmyId) ? $"Reinforce order ready for {reinforceOp.ArmyId}." : "A reinforce order is ready now.";
+            }
+
+            return windowCount > 0
+                ? $"Showing {windowCount} front window(s) and {otherTimerCount} field timer(s)."
+                : otherTimerCount > 0
+                    ? $"{otherTimerCount} field timer(s) visible without an open front window."
+                    : "No active front windows are visible right now.";
+        }
+
+        private string BuildReinforcementReadinessSummary(ArmyReinforcementSnapshot reinforceState)
+        {
+            if (reinforceState == null)
+            {
+                return "No formations visible in payload.";
+            }
+
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(reinforceState.ArmyName)) parts.Add(reinforceState.ArmyName);
+            if (!string.IsNullOrWhiteSpace(reinforceState.ArmyType)) parts.Add(HumanizeKey(reinforceState.ArmyType));
+            if (reinforceState.ArmyReadiness.HasValue) parts.Add($"Readiness {reinforceState.ArmyReadiness.Value:0.#}");
+            return parts.Count > 0 ? string.Join(" • ", parts) : "Recommended formation surfaced from the payload.";
+        }
+
+        private static string BuildReinforcementDeskNote(ArmyReinforcementSnapshot reinforceState, CityTimerEntrySnapshot reinforceTimer, OperationSnapshot reinforceOp, bool hasWarfrontWindows)
+        {
+            if (reinforceState != null)
+            {
+                if (string.Equals(reinforceState.Status, "reinforcing", StringComparison.OrdinalIgnoreCase))
+                {
+                    return reinforceState.FinishesAtUtc.HasValue && reinforceState.FinishesAtUtc.Value <= DateTime.UtcNow
+                        ? "Army reinforcement timer elapsed locally. Refresh now to load the settled payload state."
+                        : "Army reinforcement timer is live here. Fresh reinforce orders stay parked until the current build clears.";
+                }
+
+                if (string.Equals(reinforceState.Status, "idle", StringComparison.OrdinalIgnoreCase))
+                {
+                    return reinforceState.StartEligible
+                        ? "Warfront truth is live here. Reinforcement can open directly from the desk without waiting on opening-op luck."
+                        : FirstNonBlank(reinforceState.BlockedReason, reinforceState.Shortfall, "Army reinforcement is idle but blocked until resource shortfalls clear.");
+                }
+            }
+
+            if (reinforceTimer != null)
+            {
+                return "Army reinforcement timer is live here. Fresh reinforce orders stay parked until the current build clears.";
+            }
+
+            if (reinforceOp != null)
+            {
+                return "A real reinforce-army opening is visible from settlementOpeningOperations.";
+            }
+
+            return hasWarfrontWindows
+                ? "Warfront truth is live here. Reinforce buttons only appear when the payload exposes a ready-now order."
+                : "No reinforce order is currently exposed in the payload.";
+        }
+
+        private static string BuildArmyReinforcementIdleLore(ArmyReinforcementSnapshot reinforceState)
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(reinforceState.ArmyType)) parts.Add(HumanizeKey(reinforceState.ArmyType));
+            if (reinforceState.ArmyReadiness.HasValue) parts.Add($"Readiness {reinforceState.ArmyReadiness.Value:0.#}");
+            if (reinforceState.MaterialsCost.HasValue) parts.Add($"Materials {reinforceState.MaterialsCost.Value:0.#}");
+            if (reinforceState.WealthCost.HasValue) parts.Add($"Wealth {reinforceState.WealthCost.Value:0.#}");
+            return parts.Count > 0 ? string.Join(" • ", parts) : "Army reinforcement is available from the Warfront desk.";
+        }
+
+        private static string BuildArmyReinforcementIdleNote(ArmyReinforcementSnapshot reinforceState)
+        {
+            var parts = new List<string>();
+            if (reinforceState.SizeDelta.HasValue) parts.Add($"+{reinforceState.SizeDelta.Value:0.#} troops");
+            if (reinforceState.PowerDelta.HasValue) parts.Add($"+{reinforceState.PowerDelta.Value:0.#} power");
+            if (reinforceState.ReadinessDelta.HasValue) parts.Add($"+{reinforceState.ReadinessDelta.Value:0.#} readiness");
+            if (!string.IsNullOrWhiteSpace(reinforceState.BlockedReason)) parts.Add(reinforceState.BlockedReason);
+            else if (!string.IsNullOrWhiteSpace(reinforceState.Shortfall)) parts.Add($"Shortfall: {reinforceState.Shortfall}");
+            return parts.Count > 0 ? string.Join(" • ", parts) : "This reinforcement plan is ready from the payload.";
+        }
+
+        private static string BuildArmyReinforcementActiveNote(ArmyReinforcementSnapshot reinforceState, CityTimerEntrySnapshot reinforceTimer)
+        {
+            var parts = new List<string>();
+            if (reinforceState.SizeDelta.HasValue) parts.Add($"+{reinforceState.SizeDelta.Value:0.#} troops");
+            if (reinforceState.PowerDelta.HasValue) parts.Add($"+{reinforceState.PowerDelta.Value:0.#} power");
+            if (reinforceState.ReadinessDelta.HasValue) parts.Add($"+{reinforceState.ReadinessDelta.Value:0.#} readiness");
+            if (reinforceState.MaterialsCost.HasValue) parts.Add($"Materials {reinforceState.MaterialsCost.Value:0.#}");
+            if (reinforceState.WealthCost.HasValue) parts.Add($"Wealth {reinforceState.WealthCost.Value:0.#}");
+            if (parts.Count == 0 && !string.IsNullOrWhiteSpace(reinforceTimer?.Detail)) parts.Add(reinforceTimer.Detail);
+            return parts.Count > 0 ? string.Join(" • ", parts) : "Army reinforcement timer surfaced from /api/me.";
+        }
+
+        private static string HumanizeKey(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return string.Empty;
+            var cleaned = value.Replace('_', ' ').Replace('-', ' ').Trim();
+            return cleaned.Length == 0 ? string.Empty : char.ToUpperInvariant(cleaned[0]) + cleaned.Substring(1);
         }
 
         private static string ResolveArmyName(ShellSummarySnapshot s, string armyId)
@@ -203,9 +366,6 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 lore = root.Q<Label>($"{prefix}-lore-value");
                 note = root.Q<Label>($"{prefix}-note-value");
                 button = hasButton ? root.Q<Button>($"{prefix}-button") : null;
-
-                this.root?.AddToClassList("warfront-desk-card");
-                button?.AddToClassList("warfront-desk-card__button");
                 if (button != null) button.clicked += () => clickAction?.Invoke();
             }
 

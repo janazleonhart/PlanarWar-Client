@@ -78,7 +78,7 @@ namespace PlanarWar.Client.UI
 
             summaryScreen = new SummaryScreenController(root);
             cityScreen = new CityScreenController(root, summaryState, onStartResearchRequested, onStartWorkshopCraftRequested, onCollectWorkshopRequested, onRecruitHeroRequested, onAcceptHeroRecruitCandidateRequested, onDismissHeroRecruitCandidatesRequested, onRefreshDeskRequested, onBackHomeRequested);
-            blackMarketScreen = new BlackMarketScreenController(root, summaryState, onReinforceArmyRequested);
+            blackMarketScreen = new BlackMarketScreenController(root, summaryState, onReinforceArmyRequested, onRefreshDeskRequested);
             socialScreen = new SocialScreenController(root);
 
             connectionValue = root.Q<Label>("connection-value");
