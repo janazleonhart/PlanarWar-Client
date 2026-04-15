@@ -51,6 +51,9 @@ namespace PlanarWar.Client.UI.Screens.City
         private readonly Func<string, Task> onStartResearchRequested;
         private readonly Func<string, Task> onStartWorkshopCraftRequested;
         private readonly Func<string, Task> onCollectWorkshopRequested;
+        private readonly Func<string, Task> onRecruitHeroRequested;
+        private readonly Func<string, Task> onAcceptHeroRecruitCandidateRequested;
+        private readonly Func<Task> onDismissHeroRecruitCandidatesRequested;
         private readonly Action onRefreshDeskRequested;
         private readonly Action onBackHomeRequested;
         private readonly Button refreshDeskButton;
@@ -59,7 +62,7 @@ namespace PlanarWar.Client.UI.Screens.City
 
         private DevelopmentLane activeLane = DevelopmentLane.Research;
 
-        public CityScreenController(VisualElement root, SummaryState summaryState, Func<string, Task> onStartResearchRequested, Func<string, Task> onStartWorkshopCraftRequested, Func<string, Task> onCollectWorkshopRequested, Action onRefreshDeskRequested, Action onBackHomeRequested)
+        public CityScreenController(VisualElement root, SummaryState summaryState, Func<string, Task> onStartResearchRequested, Func<string, Task> onStartWorkshopCraftRequested, Func<string, Task> onCollectWorkshopRequested, Func<string, Task> onRecruitHeroRequested, Func<string, Task> onAcceptHeroRecruitCandidateRequested, Func<Task> onDismissHeroRecruitCandidatesRequested, Action onRefreshDeskRequested, Action onBackHomeRequested)
         {
             headline = root.Q<Label>("development-headline-value");
             copy = root.Q<Label>("development-copy-value");
@@ -92,12 +95,15 @@ namespace PlanarWar.Client.UI.Screens.City
             this.onStartResearchRequested = onStartResearchRequested;
             this.onStartWorkshopCraftRequested = onStartWorkshopCraftRequested;
             this.onCollectWorkshopRequested = onCollectWorkshopRequested;
+            this.onRecruitHeroRequested = onRecruitHeroRequested;
+            this.onAcceptHeroRecruitCandidateRequested = onAcceptHeroRecruitCandidateRequested;
+            this.onDismissHeroRecruitCandidatesRequested = onDismissHeroRecruitCandidatesRequested;
             this.onRefreshDeskRequested = onRefreshDeskRequested;
             this.onBackHomeRequested = onBackHomeRequested;
 
             researchCards = Enumerable.Range(1, 4).Select(i => new InfoCard(root, $"dev-research-card-{i}", hasButton: true)).ToArray();
             workshopCards = Enumerable.Range(1, 4).Select(i => new InfoCard(root, $"dev-workshop-card-{i}", hasButton: true)).ToArray();
-            growthCards = Enumerable.Range(1, 4).Select(i => new InfoCard(root, $"dev-growth-card-{i}")).ToArray();
+            growthCards = Enumerable.Range(1, 4).Select(i => new InfoCard(root, $"dev-growth-card-{i}", hasButton: true)).ToArray();
             refreshDeskButton = root.Q<Button>("dev-refresh-button");
             startSuggestedResearchButton = root.Q<Button>("dev-start-research-button");
             backHomeButton = root.Q<Button>("dev-back-home-button");
@@ -305,37 +311,113 @@ namespace PlanarWar.Client.UI.Screens.City
         {
             laneTitle.text = activeLane == DevelopmentLane.Growth ? "Growth lane" : laneTitle.text;
             laneCopy.text = activeLane == DevelopmentLane.Growth
-                ? "Growth keeps cadence, live timers, and support posture visible so you can read the city’s pacing without drilling into mutations."
+                ? "Growth keeps cadence, staffing, and support posture visible so you can read the city’s pacing without drilling into mutations."
                 : laneCopy.text;
 
+            var nowUtc = DateTime.UtcNow;
             var cards = new List<CardView>();
             cards.Add(new CardView(
                 family: "Production",
                 title: "Per-tick output",
                 lore: FormatProduction(s.ProductionPerTick),
-                note: s.ResourceTickTiming.NextTickAtUtc.HasValue ? $"Next resource tick in {FormatRemaining(s.ResourceTickTiming.NextTickAtUtc.Value - DateTime.UtcNow)}" : "Resource cadence is visible without a live anchor."));
+                note: s.ResourceTickTiming.NextTickAtUtc.HasValue ? $"Next resource tick in {FormatRemaining(s.ResourceTickTiming.NextTickAtUtc.Value - nowUtc)}" : "Resource cadence is visible without a live anchor."));
+
+            var heroRecruitment = s.HeroRecruitment;
+            var recruitTimer = s.CityTimers.FirstOrDefault(t => string.Equals(t.Category, "operator_recruit", StringComparison.OrdinalIgnoreCase));
+            if (heroRecruitment != null && string.Equals(heroRecruitment.Status, "candidates_ready", StringComparison.OrdinalIgnoreCase) && heroRecruitment.Candidates.Count > 0)
+            {
+                cards.Clear();
+                foreach (var candidate in heroRecruitment.Candidates.Take(3))
+                {
+                    cards.Add(new CardView(
+                        family: $"{FirstNonBlank(candidate.ClassName, HumanizeKey(candidate.Role))} candidate",
+                        title: FirstNonBlank(candidate.DisplayName, candidate.ClassName, HumanizeKey(candidate.Role), "Candidate"),
+                        lore: BuildHeroRecruitCandidateLore(candidate),
+                        note: BuildHeroRecruitCandidateNote(candidate),
+                        buttonText: summaryState.IsActionBusy && string.Equals(summaryState.PendingHeroRecruitCandidateId, candidate.CandidateId, StringComparison.OrdinalIgnoreCase) ? "Signing..." : "Recruit",
+                        buttonEnabled: !summaryState.IsActionBusy && onAcceptHeroRecruitCandidateRequested != null && !string.IsNullOrWhiteSpace(candidate.CandidateId),
+                        onClick: () => TriggerAcceptHeroRecruitCandidate(candidate.CandidateId)));
+                }
+
+                if (cards.Count < 4)
+                {
+                    cards.Add(new CardView(
+                        family: "Candidate review",
+                        title: "Pass on current candidates",
+                        lore: heroRecruitment.CandidateExpiresAtUtc.HasValue ? $"Review closes in {FormatRemaining(heroRecruitment.CandidateExpiresAtUtc.Value - nowUtc)}" : "Clear this candidate slate and scout again later.",
+                        note: "Dismiss the current pool without signing anyone. The next recruit attempt will open a fresh scouting window.",
+                        buttonText: summaryState.IsActionBusy && summaryState.PendingHeroRecruitDismiss ? "Dismissing..." : "Dismiss pool",
+                        buttonEnabled: !summaryState.IsActionBusy && onDismissHeroRecruitCandidatesRequested != null,
+                        onClick: TriggerDismissHeroRecruitCandidates));
+                }
+            }
+            else if (heroRecruitment != null && string.Equals(heroRecruitment.Status, "scouting", StringComparison.OrdinalIgnoreCase))
+            {
+                var scoutingExpiredLocally = heroRecruitment.FinishesAtUtc.HasValue && heroRecruitment.FinishesAtUtc.Value <= nowUtc;
+                cards.Add(new CardView(
+                    family: "Hero recruit",
+                    title: $"Scouting {HumanizeKey(heroRecruitment.Role)} candidates",
+                    lore: heroRecruitment.FinishesAtUtc.HasValue
+                        ? scoutingExpiredLocally
+                            ? "ready • refresh now"
+                            : $"active • {FormatRemaining(heroRecruitment.FinishesAtUtc.Value - nowUtc)}"
+                        : "active",
+                    note: scoutingExpiredLocally
+                        ? $"{BuildHeroRecruitmentScoutingNote(heroRecruitment)} • Timer elapsed locally. Refresh to load candidate cards."
+                        : BuildHeroRecruitmentScoutingNote(heroRecruitment),
+                    buttonText: scoutingExpiredLocally ? "Refresh candidates" : "Scouting",
+                    buttonEnabled: scoutingExpiredLocally && !summaryState.IsActionBusy && onRefreshDeskRequested != null,
+                    onClick: scoutingExpiredLocally ? TriggerRefreshDesk : null));
+            }
+            else if (recruitTimer != null)
+            {
+                cards.Add(new CardView(
+                    family: "Hero recruit",
+                    title: recruitTimer.Label,
+                    lore: recruitTimer.FinishesAtUtc.HasValue ? $"active • {FormatRemaining(recruitTimer.FinishesAtUtc.Value - nowUtc)}" : "active",
+                    note: FirstNonBlank(recruitTimer.Detail, "Hero recruitment timer surfaced from /api/me."),
+                    buttonText: summaryState.IsActionBusy && !string.IsNullOrWhiteSpace(summaryState.PendingHeroRecruitRole) ? "Recruiting..." : "Scouting",
+                    buttonEnabled: false));
+            }
+            else if (heroRecruitment != null && string.Equals(heroRecruitment.Status, "idle", StringComparison.OrdinalIgnoreCase))
+            {
+                var startRole = FirstNonBlank(heroRecruitment.StartRole, heroRecruitment.Role);
+                var pendingStart = summaryState.IsActionBusy
+                    && (string.IsNullOrWhiteSpace(startRole)
+                        || string.Equals(summaryState.PendingHeroRecruitRole, startRole, StringComparison.OrdinalIgnoreCase));
+                cards.Add(new CardView(
+                    family: "Hero recruit",
+                    title: FirstNonBlank(heroRecruitment.CtaLabel, !string.IsNullOrWhiteSpace(startRole) ? $"Open {HumanizeKey(startRole)} recruitment" : "Open recruitment"),
+                    lore: BuildHeroRecruitmentIdleLore(heroRecruitment),
+                    note: BuildHeroRecruitmentIdleNote(heroRecruitment),
+                    buttonText: pendingStart ? "Opening..." : FirstNonBlank(heroRecruitment.CtaLabel, "Open recruitment"),
+                    buttonEnabled: !summaryState.IsActionBusy && onRecruitHeroRequested != null && heroRecruitment.StartEligible,
+                    onClick: () => TriggerRecruitHero(startRole)));
+            }
+            else
+            {
+                var recruitOp = s.OpeningOperations.FirstOrDefault(o => string.Equals(o.Kind, "recruit_hero", StringComparison.OrdinalIgnoreCase) && string.Equals(o.Readiness, "ready_now", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(o.Role));
+                if (recruitOp != null)
+                {
+                    cards.Add(new CardView(
+                        family: "Hero recruit",
+                        title: $"Scout {HumanizeKey(recruitOp.Role)} candidates",
+                        lore: "Start a real scouting cooldown that resolves into recruitable hero candidates.",
+                        note: FirstNonBlank(recruitOp.Title, "A live recruit opening is visible from settlementOpeningOperations."),
+                        buttonText: summaryState.IsActionBusy && string.Equals(summaryState.PendingHeroRecruitRole, recruitOp.Role, StringComparison.OrdinalIgnoreCase) ? "Recruiting..." : "Open recruitment",
+                        buttonEnabled: !summaryState.IsActionBusy && onRecruitHeroRequested != null,
+                        onClick: () => TriggerRecruitHero(recruitOp.Role)));
+                }
+            }
 
             cards.AddRange(s.CityTimers
-                .Where(t => !string.Equals(t.Category, "resource_tick", StringComparison.OrdinalIgnoreCase) && !string.Equals(t.Category, "workshop_job", StringComparison.OrdinalIgnoreCase))
-                .Take(2)
+                .Where(t => !string.Equals(t.Category, "resource_tick", StringComparison.OrdinalIgnoreCase) && !string.Equals(t.Category, "workshop_job", StringComparison.OrdinalIgnoreCase) && !string.Equals(t.Category, "operator_recruit", StringComparison.OrdinalIgnoreCase))
+                .Take(Math.Max(0, 3 - cards.Count))
                 .Select(timer => new CardView(
                     family: HumanizeCategory(timer.Category),
                     title: timer.Label,
-                    lore: timer.FinishesAtUtc.HasValue ? $"{timer.Status} • {FormatRemaining(timer.FinishesAtUtc.Value - DateTime.UtcNow)}" : timer.Status,
+                    lore: timer.FinishesAtUtc.HasValue ? $"{timer.Status} • {FormatRemaining(timer.FinishesAtUtc.Value - nowUtc)}" : timer.Status,
                     note: FirstNonBlank(timer.Detail, "Live city timer surfaced from /api/me."))));
-
-            if (cards.Count < 4)
-            {
-                var mission = s.ActiveMissions.FirstOrDefault();
-                if (mission != null)
-                {
-                    cards.Add(new CardView(
-                        family: "Mission pressure",
-                        title: mission.Title,
-                        lore: mission.FinishesAtUtc.HasValue ? $"Mission resolves in {FormatRemaining(mission.FinishesAtUtc.Value - DateTime.UtcNow)}" : "Mission is live without a finish anchor.",
-                        note: FirstNonBlank(s.ThreatWarnings.FirstOrDefault()?.Headline, "Mission pressure is part of the current growth posture.")));
-                }
-            }
 
             if (cards.Count < 4)
             {
@@ -346,10 +428,34 @@ namespace PlanarWar.Client.UI.Screens.City
                     note: s.OpeningOperations.Count > 0 ? $"Opening operations visible: {string.Join(" • ", s.OpeningOperations.Take(2).Select(o => o.Title))}" : "No extra opening operation pressure is surfaced right now."));
             }
 
-            growthCardsCopyValue.text = $"Showing cadence, {s.CityTimers.Count} live timer(s), and current support posture from the summary payload.";
+            growthCardsCopyValue.text = heroRecruitment != null && string.Equals(heroRecruitment.Status, "candidates_ready", StringComparison.OrdinalIgnoreCase)
+                ? $"Candidate review is live with {heroRecruitment.Candidates.Count} hero option(s) ready for selection."
+                : heroRecruitment != null && string.Equals(heroRecruitment.Status, "scouting", StringComparison.OrdinalIgnoreCase)
+                    ? heroRecruitment.FinishesAtUtc.HasValue && heroRecruitment.FinishesAtUtc.Value <= nowUtc
+                        ? "Scouting timer elapsed. Refresh now to load candidate cards from the latest summary payload."
+                        : "Hero recruitment is scouting now and will surface candidate cards when the timer resolves."
+                    : heroRecruitment != null && string.Equals(heroRecruitment.Status, "idle", StringComparison.OrdinalIgnoreCase)
+                        ? heroRecruitment.StartEligible
+                            ? "Hero recruitment can be opened directly from the Growth desk."
+                            : FirstNonBlank(heroRecruitment.BlockedReason, "Hero recruitment is idle but blocked until resource shortfalls clear.")
+                        : recruitTimer != null
+                            ? $"Showing cadence, hero recruit timing, and {s.CityTimers.Count} live timer(s)."
+                            : s.OpeningOperations.Any(o => string.Equals(o.Kind, "recruit_hero", StringComparison.OrdinalIgnoreCase) && string.Equals(o.Readiness, "ready_now", StringComparison.OrdinalIgnoreCase))
+                                ? "Hero recruit opening is visible from settlementOpeningOperations."
+                                : $"Showing cadence, {s.CityTimers.Count} live timer(s), and current support posture from the summary payload.";
             RenderCards(growthCards, cards);
         }
 
+
+        private void TriggerRefreshDesk()
+        {
+            if (summaryState.IsActionBusy || onRefreshDeskRequested == null)
+            {
+                return;
+            }
+
+            onRefreshDeskRequested.Invoke();
+        }
 
         private void TriggerSuggestedResearch()
         {
@@ -390,6 +496,36 @@ namespace PlanarWar.Client.UI.Screens.City
             }
 
             _ = onCollectWorkshopRequested.Invoke(jobId.Trim());
+        }
+
+        private void TriggerRecruitHero(string role)
+        {
+            if (summaryState.IsActionBusy || onRecruitHeroRequested == null)
+            {
+                return;
+            }
+
+            _ = onRecruitHeroRequested.Invoke(role?.Trim() ?? string.Empty);
+        }
+
+        private void TriggerAcceptHeroRecruitCandidate(string candidateId)
+        {
+            if (summaryState.IsActionBusy || onAcceptHeroRecruitCandidateRequested == null || string.IsNullOrWhiteSpace(candidateId))
+            {
+                return;
+            }
+
+            _ = onAcceptHeroRecruitCandidateRequested.Invoke(candidateId.Trim());
+        }
+
+        private void TriggerDismissHeroRecruitCandidates()
+        {
+            if (summaryState.IsActionBusy || onDismissHeroRecruitCandidatesRequested == null)
+            {
+                return;
+            }
+
+            _ = onDismissHeroRecruitCandidatesRequested.Invoke();
         }
 
         private static TechOptionSnapshot GetSuggestedTech(ShellSummarySnapshot s)
@@ -438,6 +574,60 @@ namespace PlanarWar.Client.UI.Screens.City
             }
 
             return "Workshop job";
+        }
+
+        private static string BuildHeroRecruitCandidateLore(HeroRecruitCandidateSnapshot candidate)
+        {
+            var bits = new List<string>();
+            if (!string.IsNullOrWhiteSpace(candidate.ClassName)) bits.Add(candidate.ClassName);
+            if (!string.IsNullOrWhiteSpace(candidate.Role)) bits.Add(HumanizeKey(candidate.Role));
+            if (!string.IsNullOrWhiteSpace(candidate.Lane)) bits.Add(HumanizeKey(candidate.Lane));
+            return bits.Count > 0 ? string.Join(" • ", bits) : "Recruit candidate ready for review.";
+        }
+
+        private static string BuildHeroRecruitCandidateNote(HeroRecruitCandidateSnapshot candidate)
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(candidate.Summary)) parts.Add(candidate.Summary);
+            if (candidate.Traits.Count > 0) parts.Add($"Traits: {string.Join(", ", candidate.Traits.Take(2).Select(HumanizeKey))}");
+            if (candidate.WealthCost.HasValue || candidate.UnityCost.HasValue)
+            {
+                var costParts = new List<string>();
+                if (candidate.WealthCost.HasValue) costParts.Add($"Wealth {candidate.WealthCost.Value:0.#}");
+                if (candidate.UnityCost.HasValue) costParts.Add($"Unity {candidate.UnityCost.Value:0.#}");
+                parts.Add(string.Join(" • ", costParts));
+            }
+
+            return parts.Count > 0 ? string.Join(" • ", parts) : "Recruit candidate is ready for selection.";
+        }
+
+        private static string BuildHeroRecruitmentScoutingNote(HeroRecruitmentSnapshot recruitment)
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(recruitment.Role)) parts.Add($"Role {HumanizeKey(recruitment.Role)}");
+            if (recruitment.WealthCost.HasValue) parts.Add($"Wealth {recruitment.WealthCost.Value:0.#}");
+            if (recruitment.UnityCost.HasValue) parts.Add($"Unity {recruitment.UnityCost.Value:0.#}");
+            return parts.Count > 0 ? string.Join(" • ", parts) : "Recruitment scouting is in progress.";
+        }
+
+        private static string BuildHeroRecruitmentIdleLore(HeroRecruitmentSnapshot recruitment)
+        {
+            var parts = new List<string>();
+            var startRole = FirstNonBlank(recruitment?.StartRole, recruitment?.Role);
+            if (!string.IsNullOrWhiteSpace(startRole)) parts.Add($"Role {HumanizeKey(startRole)}");
+            if (!string.IsNullOrWhiteSpace(recruitment?.Lane)) parts.Add(HumanizeKey(recruitment.Lane));
+            if (recruitment?.WealthCost.HasValue == true) parts.Add($"Wealth {recruitment.WealthCost.Value:0.#}");
+            if (recruitment?.UnityCost.HasValue == true) parts.Add($"Unity {recruitment.UnityCost.Value:0.#}");
+            return parts.Count > 0 ? string.Join(" • ", parts) : "Hero recruitment can open from the Growth desk.";
+        }
+
+        private static string BuildHeroRecruitmentIdleNote(HeroRecruitmentSnapshot recruitment)
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(recruitment?.BlockedReason)) parts.Add(recruitment.BlockedReason);
+            else parts.Add("Starts a scouting cooldown that resolves into MUD-class hero candidates.");
+            if (!string.IsNullOrWhiteSpace(recruitment?.Shortfall)) parts.Add($"Shortfall: {recruitment.Shortfall}");
+            return string.Join(" • ", parts.Where(part => !string.IsNullOrWhiteSpace(part)));
         }
 
         private static string BuildDeskNote(ShellSummarySnapshot s, SummaryState summaryState)

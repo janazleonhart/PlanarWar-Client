@@ -1,6 +1,5 @@
 using PlanarWar.Client.Core;
 using PlanarWar.Client.Core.Application;
-using PlanarWar.Client.Core.Contracts;
 using PlanarWar.Client.Network;
 using System;
 using System.Threading.Tasks;
@@ -34,6 +33,8 @@ namespace PlanarWar.Client.UI
         private ClientVersionState versionState;
         private AppShellController appShellController;
         private float nextClockRenderAt;
+        private bool summaryRefreshInFlight;
+        private DateTime nextAutoHeroRecruitRefreshAttemptUtc = DateTime.MinValue;
 
         private TextField loginNameField;
         private TextField passwordField;
@@ -72,8 +73,10 @@ namespace PlanarWar.Client.UI
                     HandleStartResearchRequestedAsync,
                     HandleStartWorkshopCraftRequestedAsync,
                     HandleCollectWorkshopRequestedAsync,
-                    HandleStartMissionRequestedAsync,
-                    HandleCompleteMissionRequestedAsync,
+                    HandleRecruitHeroRequestedAsync,
+                    HandleAcceptHeroRecruitCandidateRequestedAsync,
+                    HandleDismissHeroRecruitCandidatesRequestedAsync,
+                    HandleReinforceArmyRequestedAsync,
                     RefreshSummary,
                     () => navigationState.SetActive(ShellScreen.Summary));
             }
@@ -111,6 +114,7 @@ namespace PlanarWar.Client.UI
 
             nextClockRenderAt = Time.unscaledTime + 1f;
             Render();
+            MaybeRefreshHeroRecruitmentBoundary();
         }
 
         private async Task HandleStartResearchRequestedAsync(string techId)
@@ -154,53 +158,6 @@ namespace PlanarWar.Client.UI
             }
         }
 
-
-        private async Task HandleStartMissionRequestedAsync(OperationSnapshot operation)
-        {
-            var missionId = operation?.Action?.MissionId?.Trim();
-            if (summaryState == null || apiClient == null || string.IsNullOrWhiteSpace(missionId) || summaryState.IsActionBusy)
-            {
-                return;
-            }
-
-            try
-            {
-                summaryState.BeginMissionStart(missionId);
-                await apiClient.StartMissionAsync(
-                    missionId,
-                    string.IsNullOrWhiteSpace(operation?.Action?.HeroId) ? null : operation.Action.HeroId.Trim(),
-                    string.IsNullOrWhiteSpace(operation?.Action?.ArmyId) ? null : operation.Action.ArmyId.Trim(),
-                    string.IsNullOrWhiteSpace(operation?.Action?.ResponsePosture) ? null : operation.Action.ResponsePosture.Trim());
-                await summaryController.RefreshAsync();
-                summaryState.FinishAction($"Mission started: {(string.IsNullOrWhiteSpace(operation?.Title) ? missionId : operation.Title.Trim())}");
-            }
-            catch (Exception ex)
-            {
-                summaryState.FinishAction($"Mission start failed: {ex.Message}", failed: true);
-            }
-        }
-
-        private async Task HandleCompleteMissionRequestedAsync(MissionSnapshot mission)
-        {
-            var instanceId = mission?.InstanceId?.Trim();
-            if (summaryState == null || apiClient == null || string.IsNullOrWhiteSpace(instanceId) || summaryState.IsActionBusy)
-            {
-                return;
-            }
-
-            try
-            {
-                summaryState.BeginMissionComplete(instanceId, mission?.Title);
-                await apiClient.CompleteMissionAsync(instanceId);
-                await summaryController.RefreshAsync();
-                summaryState.FinishAction($"Mission complete: {(string.IsNullOrWhiteSpace(mission?.Title) ? instanceId : mission.Title.Trim())}");
-            }
-            catch (Exception ex)
-            {
-                summaryState.FinishAction($"Mission completion failed: {ex.Message}", failed: true);
-            }
-        }
-
         private async Task HandleCollectWorkshopRequestedAsync(string jobId)
         {
             if (summaryState == null || apiClient == null || string.IsNullOrWhiteSpace(jobId) || summaryState.IsActionBusy)
@@ -218,6 +175,93 @@ namespace PlanarWar.Client.UI
             catch (Exception ex)
             {
                 summaryState.FinishAction($"Workshop collect failed: {ex.Message}", failed: true);
+            }
+        }
+
+
+
+        private async Task HandleRecruitHeroRequestedAsync(string role)
+        {
+            if (summaryState == null || apiClient == null || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            var trimmedRole = role?.Trim() ?? string.Empty;
+
+            try
+            {
+                summaryState.BeginHeroRecruit(trimmedRole);
+                await apiClient.RecruitHeroAsync(trimmedRole);
+                await summaryController.RefreshAsync();
+                summaryState.FinishAction(string.IsNullOrWhiteSpace(trimmedRole)
+                    ? "Hero recruitment scouting started."
+                    : $"Hero recruit started: {trimmedRole}");
+            }
+            catch (Exception ex)
+            {
+                summaryState.FinishAction($"Hero recruit failed: {ex.Message}", failed: true);
+            }
+        }
+
+
+        private async Task HandleAcceptHeroRecruitCandidateRequestedAsync(string candidateId)
+        {
+            if (summaryState == null || apiClient == null || string.IsNullOrWhiteSpace(candidateId) || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            try
+            {
+                summaryState.BeginHeroRecruitAccept(candidateId);
+                await apiClient.AcceptHeroRecruitCandidateAsync(candidateId.Trim());
+                await summaryController.RefreshAsync();
+                summaryState.FinishAction("Hero candidate accepted.");
+            }
+            catch (Exception ex)
+            {
+                summaryState.FinishAction($"Hero candidate accept failed: {ex.Message}", failed: true);
+            }
+        }
+
+        private async Task HandleDismissHeroRecruitCandidatesRequestedAsync()
+        {
+            if (summaryState == null || apiClient == null || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            try
+            {
+                summaryState.BeginHeroRecruitDismiss();
+                await apiClient.DismissHeroRecruitCandidatesAsync();
+                await summaryController.RefreshAsync();
+                summaryState.FinishAction("Hero candidates dismissed.");
+            }
+            catch (Exception ex)
+            {
+                summaryState.FinishAction($"Hero candidate dismiss failed: {ex.Message}", failed: true);
+            }
+        }
+
+        private async Task HandleReinforceArmyRequestedAsync(string armyId)
+        {
+            if (summaryState == null || apiClient == null || string.IsNullOrWhiteSpace(armyId) || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            try
+            {
+                summaryState.BeginArmyReinforcement(armyId);
+                await apiClient.ReinforceArmyAsync(armyId.Trim());
+                await summaryController.RefreshAsync();
+                summaryState.FinishAction($"Army reinforcement started: {armyId.Trim()}");
+            }
+            catch (Exception ex)
+            {
+                summaryState.FinishAction($"Army reinforcement failed: {ex.Message}", failed: true);
             }
         }
 
@@ -269,6 +313,12 @@ namespace PlanarWar.Client.UI
 
         private async void RefreshSummary()
         {
+            if (summaryRefreshInFlight || summaryController == null || summaryState == null)
+            {
+                return;
+            }
+
+            summaryRefreshInFlight = true;
             try
             {
                 await summaryController.RefreshAsync();
@@ -277,6 +327,48 @@ namespace PlanarWar.Client.UI
             {
                 summaryState.SetError(ex.Message);
             }
+            finally
+            {
+                summaryRefreshInFlight = false;
+            }
+        }
+
+        private void MaybeRefreshHeroRecruitmentBoundary()
+        {
+            if (summaryRefreshInFlight || summaryState == null || !summaryState.IsLoaded || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            var recruitment = summaryState.Snapshot?.HeroRecruitment;
+            if (recruitment == null)
+            {
+                return;
+            }
+
+            var nowUtc = DateTime.UtcNow;
+            if (nowUtc < nextAutoHeroRecruitRefreshAttemptUtc)
+            {
+                return;
+            }
+
+            static bool IsBoundaryElapsed(DateTime? boundaryUtc, DateTime nowUtc, DateTime lastUpdatedUtc)
+            {
+                return boundaryUtc.HasValue && boundaryUtc.Value <= nowUtc && lastUpdatedUtc < boundaryUtc.Value;
+            }
+
+            var shouldRefresh = string.Equals(recruitment.Status, "scouting", StringComparison.OrdinalIgnoreCase)
+                ? IsBoundaryElapsed(recruitment.FinishesAtUtc, nowUtc, summaryState.LastUpdatedUtc)
+                : string.Equals(recruitment.Status, "candidates_ready", StringComparison.OrdinalIgnoreCase)
+                    && IsBoundaryElapsed(recruitment.CandidateExpiresAtUtc, nowUtc, summaryState.LastUpdatedUtc);
+
+            if (!shouldRefresh)
+            {
+                return;
+            }
+
+            nextAutoHeroRecruitRefreshAttemptUtc = nowUtc.AddSeconds(2);
+            RefreshSummary();
         }
 
         private async void Login()

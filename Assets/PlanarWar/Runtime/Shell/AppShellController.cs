@@ -64,7 +64,7 @@ namespace PlanarWar.Client.UI
         private readonly Button sendChatButton;
         private readonly TextField chatInputField;
 
-        public AppShellController(VisualElement root, SessionState sessionState, SummaryState summaryState, ShellNavigationState navigationState, ClientVersionState versionState, Func<string, System.Threading.Tasks.Task> onStartResearchRequested, Func<string, System.Threading.Tasks.Task> onStartWorkshopCraftRequested, Func<string, System.Threading.Tasks.Task> onCollectWorkshopRequested, Func<PlanarWar.Client.Core.Contracts.OperationSnapshot, System.Threading.Tasks.Task> onStartMissionRequested, Func<PlanarWar.Client.Core.Contracts.MissionSnapshot, System.Threading.Tasks.Task> onCompleteMissionRequested, Action onRefreshDeskRequested, Action onBackHomeRequested)
+        public AppShellController(VisualElement root, SessionState sessionState, SummaryState summaryState, ShellNavigationState navigationState, ClientVersionState versionState, Func<string, System.Threading.Tasks.Task> onStartResearchRequested, Func<string, System.Threading.Tasks.Task> onStartWorkshopCraftRequested, Func<string, System.Threading.Tasks.Task> onCollectWorkshopRequested, Func<string, System.Threading.Tasks.Task> onRecruitHeroRequested, Func<string, System.Threading.Tasks.Task> onAcceptHeroRecruitCandidateRequested, Func<System.Threading.Tasks.Task> onDismissHeroRecruitCandidatesRequested, Func<string, System.Threading.Tasks.Task> onReinforceArmyRequested, Action onRefreshDeskRequested, Action onBackHomeRequested)
         {
             this.sessionState = sessionState;
             this.summaryState = summaryState;
@@ -77,8 +77,8 @@ namespace PlanarWar.Client.UI
             socialRoot = root.Q<VisualElement>("social-screen");
 
             summaryScreen = new SummaryScreenController(root);
-            cityScreen = new CityScreenController(root, summaryState, onStartResearchRequested, onStartWorkshopCraftRequested, onCollectWorkshopRequested, onRefreshDeskRequested, onBackHomeRequested);
-            blackMarketScreen = new BlackMarketScreenController(root, summaryState, onStartMissionRequested, onCompleteMissionRequested);
+            cityScreen = new CityScreenController(root, summaryState, onStartResearchRequested, onStartWorkshopCraftRequested, onCollectWorkshopRequested, onRecruitHeroRequested, onAcceptHeroRecruitCandidateRequested, onDismissHeroRecruitCandidatesRequested, onRefreshDeskRequested, onBackHomeRequested);
+            blackMarketScreen = new BlackMarketScreenController(root, summaryState, onReinforceArmyRequested);
             socialScreen = new SocialScreenController(root);
 
             connectionValue = root.Q<Label>("connection-value");

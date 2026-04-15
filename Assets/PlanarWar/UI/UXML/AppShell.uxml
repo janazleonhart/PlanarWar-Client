@@ -354,6 +354,7 @@
                                 <ui:Label name="dev-growth-card-1-title-value" text="Growth card" class="rail-note-title" />
                                 <ui:Label name="dev-growth-card-1-lore-value" text="Lore line." class="summary-value summary-value--glance" />
                                 <ui:Label name="dev-growth-card-1-note-value" text="Operator note." class="metric-subvalue metric-subvalue--wrap" />
+                                <ui:Button name="dev-growth-card-1-button" text="Recruit hero" class="action-button action-button--primary" />
                             </ui:VisualElement>
 
                             <ui:VisualElement name="dev-growth-card-2" class="summary-card glance-card development-info-card">
@@ -361,6 +362,7 @@
                                 <ui:Label name="dev-growth-card-2-title-value" text="Growth card" class="rail-note-title" />
                                 <ui:Label name="dev-growth-card-2-lore-value" text="Lore line." class="summary-value summary-value--glance" />
                                 <ui:Label name="dev-growth-card-2-note-value" text="Operator note." class="metric-subvalue metric-subvalue--wrap" />
+                                <ui:Button name="dev-growth-card-2-button" text="Recruit hero" class="action-button action-button--primary" />
                             </ui:VisualElement>
 
                             <ui:VisualElement name="dev-growth-card-3" class="summary-card glance-card development-info-card">
@@ -368,6 +370,7 @@
                                 <ui:Label name="dev-growth-card-3-title-value" text="Growth card" class="rail-note-title" />
                                 <ui:Label name="dev-growth-card-3-lore-value" text="Lore line." class="summary-value summary-value--glance" />
                                 <ui:Label name="dev-growth-card-3-note-value" text="Operator note." class="metric-subvalue metric-subvalue--wrap" />
+                                <ui:Button name="dev-growth-card-3-button" text="Recruit hero" class="action-button action-button--primary" />
                             </ui:VisualElement>
 
                             <ui:VisualElement name="dev-growth-card-4" class="summary-card glance-card development-info-card">
@@ -375,6 +378,7 @@
                                 <ui:Label name="dev-growth-card-4-title-value" text="Growth card" class="rail-note-title" />
                                 <ui:Label name="dev-growth-card-4-lore-value" text="Lore line." class="summary-value summary-value--glance" />
                                 <ui:Label name="dev-growth-card-4-note-value" text="Operator note." class="metric-subvalue metric-subvalue--wrap" />
+                                <ui:Button name="dev-growth-card-4-button" text="Recruit hero" class="action-button action-button--primary" />
                             </ui:VisualElement>
                         </ui:VisualElement>
                     </ui:VisualElement>
@@ -422,8 +426,7 @@
                                     </ui:VisualElement>
                 </ui:ScrollView>
 
-                <ui:ScrollView name="placeholder-screen" class="screen-panel screen-scroll" mode="Vertical">
-                    <ui:VisualElement class="screen-scroll-content warfront-screen-content">
+                <ui:VisualElement name="placeholder-screen" class="screen-panel">
                     <ui:VisualElement class="summary-hero">
                         <ui:Label text="Field doctrine" class="eyebrow" />
                         <ui:Label name="placeholder-headline-value" text="Warfront desk" class="headline" />
@@ -438,37 +441,30 @@
                         <ui:Label text="Visible warfront cards" class="eyebrow" />
                         <ui:Label name="warfront-cards-copy-value" text="No active front windows are visible right now." class="metric-subvalue metric-subvalue--wrap" />
                         <ui:VisualElement class="summary-grid summary-grid--desk-cards">
-                            <ui:VisualElement name="warfront-card-1-root" class="summary-card glance-card warfront-desk-card">
+                            <ui:VisualElement name="warfront-card-1-root" class="summary-card glance-card">
                                 <ui:Label name="warfront-card-1-title" text="Warfront window" class="eyebrow" />
                                 <ui:Label name="warfront-card-1-title-value" text="No warfront entry" class="rail-note-title" />
                                 <ui:Label name="warfront-card-1-lore-value" text="No active frontline data is visible." class="summary-value summary-value--glance" />
                                 <ui:Label name="warfront-card-1-note-value" text="Read-only field review." class="metric-subvalue metric-subvalue--wrap" />
-                                <ui:Label name="warfront-card-1-status" text="Mission live" class="warfront-desk-card__status" />
-                                <ui:Button name="warfront-card-1-button" text="Launch" class="action-button action-button--primary warfront-desk-card__button" />
+                                <ui:Button name="warfront-card-1-button" text="Reinforce army" class="action-button action-button--primary" />
                             </ui:VisualElement>
-                            <ui:VisualElement name="warfront-card-2-root" class="summary-card glance-card warfront-desk-card">
+                            <ui:VisualElement name="warfront-card-2-root" class="summary-card glance-card">
                                 <ui:Label name="warfront-card-2-title" text="Field timer" class="eyebrow" />
                                 <ui:Label name="warfront-card-2-title-value" text="No support timer" class="rail-note-title" />
                                 <ui:Label name="warfront-card-2-lore-value" text="No active warfront timer." class="summary-value summary-value--glance" />
                                 <ui:Label name="warfront-card-2-note-value" text="Read-only field review." class="metric-subvalue metric-subvalue--wrap" />
-                                <ui:Label name="warfront-card-2-status" text="Mission live" class="warfront-desk-card__status" />
-                                <ui:Button name="warfront-card-2-button" text="Launch" class="action-button action-button--primary warfront-desk-card__button" />
                             </ui:VisualElement>
-                            <ui:VisualElement name="warfront-card-3-root" class="summary-card glance-card warfront-desk-card">
+                            <ui:VisualElement name="warfront-card-3-root" class="summary-card glance-card">
                                 <ui:Label name="warfront-card-3-title" text="Support mission" class="eyebrow" />
                                 <ui:Label name="warfront-card-3-title-value" text="No mission" class="rail-note-title" />
                                 <ui:Label name="warfront-card-3-lore-value" text="No active field mission visible." class="summary-value summary-value--glance" />
                                 <ui:Label name="warfront-card-3-note-value" text="Read-only field review." class="metric-subvalue metric-subvalue--wrap" />
-                                <ui:Label name="warfront-card-3-status" text="Mission live" class="warfront-desk-card__status" />
-                                <ui:Button name="warfront-card-3-button" text="Launch" class="action-button action-button--primary warfront-desk-card__button" />
                             </ui:VisualElement>
-                            <ui:VisualElement name="warfront-card-4-root" class="summary-card glance-card warfront-desk-card">
+                            <ui:VisualElement name="warfront-card-4-root" class="summary-card glance-card">
                                 <ui:Label name="warfront-card-4-title" text="Signal posture" class="eyebrow" />
                                 <ui:Label name="warfront-card-4-title-value" text="No signal" class="rail-note-title" />
                                 <ui:Label name="warfront-card-4-lore-value" text="No warfront signal visible." class="summary-value summary-value--glance" />
                                 <ui:Label name="warfront-card-4-note-value" text="Read-only field review." class="metric-subvalue metric-subvalue--wrap" />
-                                <ui:Label name="warfront-card-4-status" text="Mission live" class="warfront-desk-card__status" />
-                                <ui:Button name="warfront-card-4-button" text="Launch" class="action-button action-button--primary warfront-desk-card__button" />
                             </ui:VisualElement>
                         </ui:VisualElement>
                     </ui:VisualElement>
@@ -500,7 +496,6 @@
                         </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:VisualElement>
-                </ui:ScrollView>
 
                 <ui:ScrollView name="social-screen" class="screen-panel screen-scroll" mode="Vertical">
                     <ui:VisualElement class="screen-scroll-content social-screen-content">

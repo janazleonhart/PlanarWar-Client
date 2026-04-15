@@ -24,8 +24,11 @@ namespace PlanarWar.Client.Core
         public string PendingResearchTechId { get; private set; } = string.Empty;
         public string PendingWorkshopJobId { get; private set; } = string.Empty;
         public string PendingWorkshopRecipeId { get; private set; } = string.Empty;
-        public string PendingMissionId { get; private set; } = string.Empty;
         public string PendingMissionInstanceId { get; private set; } = string.Empty;
+        public string PendingHeroRecruitRole { get; private set; } = string.Empty;
+        public string PendingHeroRecruitCandidateId { get; private set; } = string.Empty;
+        public bool PendingHeroRecruitDismiss { get; private set; }
+        public string PendingArmyReinforcementId { get; private set; } = string.Empty;
 
         public void Apply(JObject summary, ShellSummarySnapshot snapshot, IEnumerable<WorkshopRecipeSnapshot> workshopRecipes = null)
         {
@@ -46,74 +49,51 @@ namespace PlanarWar.Client.Core
 
         public void BeginResearchAction(string techId)
         {
-            IsActionBusy = true;
-            ActionFailed = false;
+            BeginAction(string.IsNullOrWhiteSpace(techId) ? "Starting research..." : $"Starting research: {techId.Trim()}");
             PendingResearchTechId = techId?.Trim() ?? string.Empty;
-            PendingWorkshopJobId = string.Empty;
-            PendingWorkshopRecipeId = string.Empty;
-            PendingMissionId = string.Empty;
-            PendingMissionInstanceId = string.Empty;
-            ActionStatus = string.IsNullOrWhiteSpace(PendingResearchTechId) ? "Starting research..." : $"Starting research: {PendingResearchTechId}";
-            Changed?.Invoke();
         }
 
         public void BeginWorkshopCraft(string recipeId)
         {
-            IsActionBusy = true;
-            ActionFailed = false;
-            PendingResearchTechId = string.Empty;
-            PendingWorkshopJobId = string.Empty;
+            BeginAction(string.IsNullOrWhiteSpace(recipeId) ? "Starting workshop craft..." : $"Starting workshop craft: {recipeId.Trim()}");
             PendingWorkshopRecipeId = recipeId?.Trim() ?? string.Empty;
-            PendingMissionId = string.Empty;
-            PendingMissionInstanceId = string.Empty;
-            ActionStatus = string.IsNullOrWhiteSpace(PendingWorkshopRecipeId) ? "Starting workshop craft..." : $"Starting workshop craft: {PendingWorkshopRecipeId}";
-            Changed?.Invoke();
         }
 
         public void BeginWorkshopCollect(string jobId)
         {
-            IsActionBusy = true;
-            ActionFailed = false;
-            PendingResearchTechId = string.Empty;
-            PendingWorkshopRecipeId = string.Empty;
+            BeginAction(string.IsNullOrWhiteSpace(jobId) ? "Collecting workshop item..." : $"Collecting workshop job: {jobId.Trim()}");
             PendingWorkshopJobId = jobId?.Trim() ?? string.Empty;
-            PendingMissionId = string.Empty;
-            PendingMissionInstanceId = string.Empty;
-            ActionStatus = string.IsNullOrWhiteSpace(PendingWorkshopJobId) ? "Collecting workshop item..." : $"Collecting workshop job: {PendingWorkshopJobId}";
-            Changed?.Invoke();
         }
 
-
-        public void BeginMissionStart(string missionId)
+        public void BeginMissionComplete(string instanceId)
         {
-            IsActionBusy = true;
-            ActionFailed = false;
-            PendingResearchTechId = string.Empty;
-            PendingWorkshopJobId = string.Empty;
-            PendingWorkshopRecipeId = string.Empty;
-            PendingMissionId = missionId?.Trim() ?? string.Empty;
-            PendingMissionInstanceId = string.Empty;
-            ActionStatus = string.IsNullOrWhiteSpace(PendingMissionId) ? "Launching mission..." : $"Launching mission: {PendingMissionId}";
-            Changed?.Invoke();
-        }
-
-        public void BeginMissionComplete(string instanceId, string missionTitle = null)
-        {
-            IsActionBusy = true;
-            ActionFailed = false;
-            PendingResearchTechId = string.Empty;
-            PendingWorkshopJobId = string.Empty;
-            PendingWorkshopRecipeId = string.Empty;
-            PendingMissionId = string.Empty;
+            BeginAction(string.IsNullOrWhiteSpace(instanceId) ? "Completing mission..." : $"Completing mission: {instanceId.Trim()}");
             PendingMissionInstanceId = instanceId?.Trim() ?? string.Empty;
-            ActionStatus = !string.IsNullOrWhiteSpace(missionTitle)
-                ? $"Completing mission: {missionTitle.Trim()}"
-                : string.IsNullOrWhiteSpace(PendingMissionInstanceId)
-                    ? "Completing mission..."
-                    : $"Completing mission: {PendingMissionInstanceId}";
-            Changed?.Invoke();
         }
 
+        public void BeginHeroRecruit(string role)
+        {
+            BeginAction(string.IsNullOrWhiteSpace(role) ? "Recruiting hero..." : $"Recruiting hero: {role.Trim()}");
+            PendingHeroRecruitRole = role?.Trim() ?? string.Empty;
+        }
+
+        public void BeginHeroRecruitAccept(string candidateId)
+        {
+            BeginAction(string.IsNullOrWhiteSpace(candidateId) ? "Accepting hero candidate..." : $"Accepting hero candidate: {candidateId.Trim()}");
+            PendingHeroRecruitCandidateId = candidateId?.Trim() ?? string.Empty;
+        }
+
+        public void BeginHeroRecruitDismiss()
+        {
+            BeginAction("Dismissing hero candidates...");
+            PendingHeroRecruitDismiss = true;
+        }
+
+        public void BeginArmyReinforcement(string armyId)
+        {
+            BeginAction(string.IsNullOrWhiteSpace(armyId) ? "Reinforcing army..." : $"Reinforcing army: {armyId.Trim()}");
+            PendingArmyReinforcementId = armyId?.Trim() ?? string.Empty;
+        }
 
         public void FinishAction(string status, bool failed = false)
         {
@@ -122,9 +102,28 @@ namespace PlanarWar.Client.Core
             PendingResearchTechId = string.Empty;
             PendingWorkshopJobId = string.Empty;
             PendingWorkshopRecipeId = string.Empty;
-            PendingMissionId = string.Empty;
             PendingMissionInstanceId = string.Empty;
+            PendingHeroRecruitRole = string.Empty;
+            PendingHeroRecruitCandidateId = string.Empty;
+            PendingHeroRecruitDismiss = false;
+            PendingArmyReinforcementId = string.Empty;
             ActionStatus = string.IsNullOrWhiteSpace(status) ? (failed ? "Action failed." : "Action complete.") : status.Trim();
+            Changed?.Invoke();
+        }
+
+        private void BeginAction(string status)
+        {
+            IsActionBusy = true;
+            ActionFailed = false;
+            PendingResearchTechId = string.Empty;
+            PendingWorkshopJobId = string.Empty;
+            PendingWorkshopRecipeId = string.Empty;
+            PendingMissionInstanceId = string.Empty;
+            PendingHeroRecruitRole = string.Empty;
+            PendingHeroRecruitCandidateId = string.Empty;
+            PendingHeroRecruitDismiss = false;
+            PendingArmyReinforcementId = string.Empty;
+            ActionStatus = status;
             Changed?.Invoke();
         }
     }

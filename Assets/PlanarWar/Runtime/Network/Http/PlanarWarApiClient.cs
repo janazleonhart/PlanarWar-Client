@@ -67,52 +67,6 @@ namespace PlanarWar.Client.Network
 
 
 
-
-        public Task<JObject> StartMissionAsync(string missionId, string heroId = null, string armyId = null, string responsePosture = null)
-        {
-            if (string.IsNullOrWhiteSpace(missionId))
-            {
-                throw new ArgumentException("missionId is required", nameof(missionId));
-            }
-
-            var body = new JObject
-            {
-                ["missionId"] = missionId.Trim(),
-            };
-
-            if (!string.IsNullOrWhiteSpace(heroId))
-            {
-                body["heroId"] = heroId.Trim();
-            }
-
-            if (!string.IsNullOrWhiteSpace(armyId))
-            {
-                body["armyId"] = armyId.Trim();
-            }
-
-            if (!string.IsNullOrWhiteSpace(responsePosture))
-            {
-                body["responsePosture"] = responsePosture.Trim();
-            }
-
-            return PostJsonAsync(BuildUrl("/api/missions/start"), body, includeBearerToken: true);
-        }
-
-        public Task<JObject> CompleteMissionAsync(string instanceId)
-        {
-            if (string.IsNullOrWhiteSpace(instanceId))
-            {
-                throw new ArgumentException("instanceId is required", nameof(instanceId));
-            }
-
-            var body = new JObject
-            {
-                ["instanceId"] = instanceId.Trim(),
-            };
-
-            return PostJsonAsync(BuildUrl("/api/missions/complete"), body, includeBearerToken: true);
-        }
-
         public Task<JObject> StartWorkshopCraftAsync(string recipeId)
         {
             if (string.IsNullOrWhiteSpace(recipeId))
@@ -143,6 +97,56 @@ namespace PlanarWar.Client.Network
             };
 
             return PostJsonAsync(BuildUrl("/api/workshop/collect"), body, includeBearerToken: true);
+        }
+
+        public Task<JObject> RecruitHeroAsync(string role = null)
+        {
+            var body = new JObject
+            {
+                ["serviceMode"] = "private_city"
+            };
+
+            if (!string.IsNullOrWhiteSpace(role))
+            {
+                body["role"] = role.Trim();
+            }
+
+            return PostJsonAsync(BuildUrl("/api/heroes/recruit"), body, includeBearerToken: true);
+        }
+
+        public Task<JObject> AcceptHeroRecruitCandidateAsync(string candidateId)
+        {
+            if (string.IsNullOrWhiteSpace(candidateId))
+            {
+                throw new ArgumentException("candidateId is required", nameof(candidateId));
+            }
+
+            var body = new JObject
+            {
+                ["candidateId"] = candidateId.Trim()
+            };
+
+            return PostJsonAsync(BuildUrl("/api/heroes/recruit/accept"), body, includeBearerToken: true);
+        }
+
+        public Task<JObject> DismissHeroRecruitCandidatesAsync()
+        {
+            return PostJsonAsync(BuildUrl("/api/heroes/recruit/dismiss"), new JObject(), includeBearerToken: true);
+        }
+
+        public Task<JObject> ReinforceArmyAsync(string armyId)
+        {
+            if (string.IsNullOrWhiteSpace(armyId))
+            {
+                throw new ArgumentException("armyId is required", nameof(armyId));
+            }
+
+            var body = new JObject
+            {
+                ["armyId"] = armyId.Trim()
+            };
+
+            return PostJsonAsync(BuildUrl("/api/armies/reinforce"), body, includeBearerToken: true);
         }
 
         private string BuildUrl(string path)
