@@ -96,8 +96,14 @@ namespace PlanarWar.Client.Core.Mapping
                 {
                     Id = a["id"]?.Read<string>() ?? string.Empty,
                     Name = a["name"]?.Read<string>() ?? "Army",
+                    Type = a["type"]?.Read<string>() ?? string.Empty,
                     Status = a["status"]?.Read<string>() ?? "-",
-                    Readiness = a["readiness"]?.Read<double?>()
+                    Readiness = a["readiness"]?.Read<double?>(),
+                    Power = a["power"]?.Read<double?>(),
+                    Size = a["size"]?.Read<double?>(),
+                    HoldRegionId = a["hold"]?["regionId"]?.Read<string>() ?? a["hold"]?["region_id"]?.Read<string>() ?? string.Empty,
+                    HoldPosture = a["hold"]?["posture"]?.Read<string>() ?? string.Empty,
+                    Specialties = (a["specialties"] as JArray)?.Select(specialty => specialty?.Read<string>()).Where(specialty => !string.IsNullOrWhiteSpace(specialty)).ToList() ?? new List<string>()
                 }).ToList() ?? new(),
                 HeroRecruitment = MapHeroRecruitment(summary["heroRecruitment"] as JObject ?? summary["hero_recruitment"] as JObject),
                 ArmyReinforcement = MapArmyReinforcement(summary["armyReinforcement"] as JObject ?? summary["army_reinforcement"] as JObject),

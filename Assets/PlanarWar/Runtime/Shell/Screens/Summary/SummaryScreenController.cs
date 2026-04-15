@@ -58,7 +58,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             warnings.text = s.ThreatWarnings.Count == 0 ? "No active threat warnings." : s.ThreatWarnings[0].Headline;
             readyOps.text = s.OpeningOperations.Count == 0 ? "No opening operations surfaced." : $"{s.OpeningOperations.Count(o => string.Equals(o.Readiness, "ready_now", StringComparison.OrdinalIgnoreCase))} ready now";
             heroes.text = s.Heroes.Count == 0 ? (s.HasCity ? "No officer corps visible." : "Found a city to unlock officers.") : $"{s.Heroes.Count(h => h.Status == "idle")}/{s.Heroes.Count} idle • {s.Heroes.Count(h => h.AttachmentCount > 0)} geared";
-            armies.text = s.Armies.Count == 0 ? (s.HasCity ? "No formations visible." : "Found a city to unlock formations.") : $"{s.Armies.Count(a => (a.Readiness ?? 0) >= 70)}/{s.Armies.Count} ready";
+            armies.text = BuildArmyDeskSummary(s);
             researchTimer.text = s.ActiveResearch?.StartedAtUtc == null ? "No active research timer." : $"Running {FormatRemaining(nowUtc - s.ActiveResearch.StartedAtUtc.Value)}";
             workshopTimer.text = FormatWorkshop(s.WorkshopJobs);
             missionTimer.text = FormatMission(s.ActiveMissions);
@@ -76,6 +76,165 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 Pair("Food", r.Food, suffix), Pair("Materials", r.Materials, suffix), Pair("Wealth", r.Wealth, suffix), Pair("Mana", r.Mana, suffix), Pair("Knowledge", r.Knowledge, suffix), Pair("Unity", r.Unity, suffix)
             }.Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
             return chunks.Length == 0 ? fallback : string.Join(" • ", chunks);
+        }
+
+        private static string BuildArmyDeskSummary(ShellSummarySnapshot summary)
+        {
+            if (summary.Armies.Count == 0)
+            {
+                return summary.HasCity ? "No formations visible." : "Found a city to unlock formations.";
+            }
+
+            var reinforceState = summary.ArmyReinforcement;
+            var targetArmyId = FirstNonBlank(reinforceState?.ArmyId);
+            var rankedArmies = RankArmies(summary.Armies, targetArmyId).Take(2).ToList();
+            var readyCount = summary.Armies.Count(army => (army.Readiness ?? 0) >= 70);
+            var parts = new List<string> { $"{readyCount}/{summary.Armies.Count} ready" };
+
+            var totals = BuildArmyTotals(summary.Armies);
+            if (!string.IsNullOrWhiteSpace(totals))
+            {
+                parts.Add(totals);
+            }
+
+            foreach (var army in rankedArmies)
+            {
+                parts.Add(FormatArmyHeadline(army, string.Equals(army.Id, targetArmyId, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            var reinforcement = BuildReinforcementInline(reinforceState, summary.Armies);
+            if (!string.IsNullOrWhiteSpace(reinforcement))
+            {
+                parts.Add(reinforcement);
+            }
+
+            return string.Join(" • ", parts.Where(part => !string.IsNullOrWhiteSpace(part)));
+        }
+
+        private static string BuildArmyTotals(IEnumerable<ArmySnapshot> armies)
+        {
+            var parts = new List<string>();
+            var sizedArmies = armies.Where(army => army.Size.HasValue).ToList();
+            if (sizedArmies.Count > 0)
+            {
+                parts.Add($"{sizedArmies.Sum(army => army.Size.Value):0.#} troops");
+            }
+
+            var poweredArmies = armies.Where(army => army.Power.HasValue).ToList();
+            if (poweredArmies.Count > 0)
+            {
+                parts.Add($"{poweredArmies.Sum(army => army.Power.Value):0.#} power");
+            }
+
+            return parts.Count == 0 ? string.Empty : string.Join(" • ", parts);
+        }
+
+        private static string FormatArmyHeadline(ArmySnapshot army, bool isTarget)
+        {
+            var label = new List<string>();
+            if (isTarget)
+            {
+                label.Add("target");
+            }
+
+            label.Add(army.Name);
+            if (!string.Equals(army.Status, "idle", StringComparison.OrdinalIgnoreCase))
+            {
+                label.Add(HumanizeStatus(army.Status));
+            }
+
+            if (army.Readiness.HasValue)
+            {
+                label.Add($"{army.Readiness.Value:0.#}");
+            }
+
+            return string.Join(" ", label.Where(part => !string.IsNullOrWhiteSpace(part)));
+        }
+
+        private static string BuildReinforcementInline(ArmyReinforcementSnapshot reinforceState, IReadOnlyList<ArmySnapshot> armies)
+        {
+            if (reinforceState == null)
+            {
+                return string.Empty;
+            }
+
+            var armyName = FirstNonBlank(reinforceState.ArmyName, ResolveArmyName(armies, reinforceState.ArmyId), "formation");
+            var deltaText = BuildReinforcementDeltaText(reinforceState);
+            if (string.Equals(reinforceState.Status, "reinforcing", StringComparison.OrdinalIgnoreCase))
+            {
+                return string.IsNullOrWhiteSpace(deltaText)
+                    ? $"Reinforcing {armyName}"
+                    : $"Reinforcing {armyName} {deltaText}";
+            }
+
+            if (string.Equals(reinforceState.Status, "idle", StringComparison.OrdinalIgnoreCase) && reinforceState.StartEligible)
+            {
+                return string.IsNullOrWhiteSpace(deltaText)
+                    ? $"Next reinforce {armyName}"
+                    : $"Next reinforce {armyName} {deltaText}";
+            }
+
+            if (!string.IsNullOrWhiteSpace(reinforceState.BlockedReason))
+            {
+                return $"Reinforce blocked: {reinforceState.BlockedReason}";
+            }
+
+            if (!string.IsNullOrWhiteSpace(reinforceState.Shortfall))
+            {
+                return $"Reinforce shortfall: {reinforceState.Shortfall}";
+            }
+
+            return string.Empty;
+        }
+
+        private static string BuildReinforcementDeltaText(ArmyReinforcementSnapshot reinforceState)
+        {
+            var parts = new List<string>();
+            if (reinforceState.SizeDelta.HasValue)
+            {
+                parts.Add($"+{reinforceState.SizeDelta.Value:0.#} troops");
+            }
+
+            if (reinforceState.PowerDelta.HasValue)
+            {
+                parts.Add($"+{reinforceState.PowerDelta.Value:0.#} power");
+            }
+
+            if (reinforceState.ReadinessDelta.HasValue)
+            {
+                parts.Add($"+{reinforceState.ReadinessDelta.Value:0.#} readiness");
+            }
+
+            return parts.Count == 0 ? string.Empty : $"({string.Join(", ", parts)})";
+        }
+
+        private static List<ArmySnapshot> RankArmies(IEnumerable<ArmySnapshot> armies, string targetArmyId)
+        {
+            return armies
+                .OrderByDescending(army => !string.IsNullOrWhiteSpace(targetArmyId) && string.Equals(army.Id, targetArmyId, StringComparison.OrdinalIgnoreCase))
+                .ThenByDescending(army => GetArmyStatusPriority(army.Status))
+                .ThenByDescending(army => army.Readiness ?? -1)
+                .ThenByDescending(army => army.Power ?? -1)
+                .ThenBy(army => army.Name ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private static int GetArmyStatusPriority(string status)
+        {
+            if (string.Equals(status, "reinforcing", StringComparison.OrdinalIgnoreCase)) return 3;
+            if (string.Equals(status, "holding", StringComparison.OrdinalIgnoreCase)) return 2;
+            if (string.Equals(status, "on_mission", StringComparison.OrdinalIgnoreCase)) return 1;
+            return 0;
+        }
+
+        private static string ResolveArmyName(IReadOnlyList<ArmySnapshot> armies, string armyId)
+        {
+            if (string.IsNullOrWhiteSpace(armyId))
+            {
+                return string.Empty;
+            }
+
+            return armies.FirstOrDefault(army => string.Equals(army.Id, armyId, StringComparison.OrdinalIgnoreCase))?.Name ?? armyId;
         }
 
         private static string Pair(string name, double? value, string suffix) => value.HasValue ? $"{name} {value.Value:0.#}{suffix}" : null;
@@ -220,5 +379,8 @@ namespace PlanarWar.Client.UI.Screens.Summary
             if (hasCadence) return "cadence_only_anchor_missing";
             return "no_timing_data";
         }
+
+        private static string HumanizeStatus(string value) => string.IsNullOrWhiteSpace(value) ? "unknown" : value.Replace('_', ' ');
+        private static string FirstNonBlank(params string[] values) => values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? string.Empty;
     }
 }
