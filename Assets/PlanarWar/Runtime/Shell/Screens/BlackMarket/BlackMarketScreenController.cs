@@ -673,7 +673,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                     family: "Support mission",
                     title: activeMission.Title,
                     lore: activeMission.FinishesAtUtc.HasValue ? $"Mission resolves in {FormatRemaining(activeMission.FinishesAtUtc.Value - nowUtc)}" : "Mission is live without a finish anchor.",
-                    note: Truncate(FirstNonBlank(primaryWarning, "Active mission pressure remains part of the current warfront posture."), 96)));
+                    note: Truncate(BuildActiveMissionCardNote(activeMission, summary, primaryWarning), 96)));
             }
 
             if (cards.Count < 4 && signalPairs.Count > 0)
@@ -724,6 +724,69 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             }
 
             _ = onReinforceArmyRequested.Invoke(armyId?.Trim() ?? string.Empty);
+        }
+
+
+        private static string BuildActiveMissionCardNote(MissionSnapshot activeMission, ShellSummarySnapshot summary, string fallbackWarning)
+        {
+            var commitment = BuildMissionCommitmentSummary(activeMission, summary?.Armies ?? new List<ArmySnapshot>(), summary?.Heroes ?? new List<HeroSnapshot>());
+            if (!string.IsNullOrWhiteSpace(commitment) && !string.IsNullOrWhiteSpace(fallbackWarning))
+            {
+                return $"{commitment} • {fallbackWarning}";
+            }
+
+            return FirstNonBlank(commitment, fallbackWarning, "Active mission pressure remains part of the current warfront posture.");
+        }
+
+        private static string BuildMissionCommitmentSummary(MissionSnapshot mission, IReadOnlyList<ArmySnapshot> armies, IReadOnlyList<HeroSnapshot> heroes)
+        {
+            if (mission == null)
+            {
+                return string.Empty;
+            }
+
+            var parts = new List<string>();
+            var regionLabel = HumanizeRegionId(mission.RegionId);
+            if (!string.IsNullOrWhiteSpace(regionLabel))
+            {
+                parts.Add($"Region: {regionLabel}");
+            }
+
+            var armyName = ResolveMissionArmyName(armies, mission.AssignedArmyId);
+            if (!string.IsNullOrWhiteSpace(armyName))
+            {
+                parts.Add($"Formation: {armyName}");
+            }
+
+            var heroName = ResolveMissionHeroName(heroes, mission.AssignedHeroId);
+            if (!string.IsNullOrWhiteSpace(heroName))
+            {
+                parts.Add($"Hero: {heroName}");
+            }
+
+            return string.Join(" • ", parts.Where(part => !string.IsNullOrWhiteSpace(part)));
+        }
+
+        private static string ResolveMissionArmyName(IReadOnlyList<ArmySnapshot> armies, string armyId)
+        {
+            if (string.IsNullOrWhiteSpace(armyId) || armies == null)
+            {
+                return string.Empty;
+            }
+
+            return armies.FirstOrDefault(army => string.Equals(army.Id, armyId, StringComparison.OrdinalIgnoreCase))?.Name
+                ?? armyId.Trim();
+        }
+
+        private static string ResolveMissionHeroName(IReadOnlyList<HeroSnapshot> heroes, string heroId)
+        {
+            if (string.IsNullOrWhiteSpace(heroId) || heroes == null)
+            {
+                return string.Empty;
+            }
+
+            return heroes.FirstOrDefault(hero => string.Equals(hero.Id, heroId, StringComparison.OrdinalIgnoreCase))?.Name
+                ?? heroId.Trim();
         }
 
         private static string BuildCardsCopy(IReadOnlyList<ArmySnapshot> armies, ArmyReinforcementSnapshot reinforceState, CityTimerEntrySnapshot reinforceTimer, OperationSnapshot reinforceOp, int windowCount, int otherTimerCount)
@@ -1005,6 +1068,14 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private static string FormatArmyReadinessSuffix(double? readiness)
         {
             return readiness.HasValue ? $" {readiness.Value:0.#}" : string.Empty;
+        }
+
+
+        private static string HumanizeRegionId(string regionId)
+        {
+            if (string.IsNullOrWhiteSpace(regionId)) return string.Empty;
+            var cleaned = regionId.Replace('_', ' ').Replace('-', ' ').Trim();
+            return cleaned.Length == 0 ? string.Empty : char.ToUpperInvariant(cleaned[0]) + cleaned.Substring(1);
         }
 
         private static string HumanizeKey(string value)

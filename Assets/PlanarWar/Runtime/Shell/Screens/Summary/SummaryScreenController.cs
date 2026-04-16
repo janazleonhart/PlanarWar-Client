@@ -61,7 +61,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             armies.text = BuildArmyDeskSummary(s);
             researchTimer.text = s.ActiveResearch?.StartedAtUtc == null ? "No active research timer." : $"Running {FormatRemaining(nowUtc - s.ActiveResearch.StartedAtUtc.Value)}";
             workshopTimer.text = FormatWorkshop(s.WorkshopJobs);
-            missionTimer.text = FormatMission(s.ActiveMissions);
+            missionTimer.text = BuildMissionDeskSummary(s);
             resourceTick.text = FormatTick(s.ResourceTickTiming);
             timerDiagNow.text = $"Live UI clock {nowUtc:HH:mm:ss} UTC";
             timerDiagHeartbeat.text = $"Heartbeat #{heartbeat}";
@@ -300,12 +300,120 @@ namespace PlanarWar.Client.UI.Screens.Summary
             return "workshop job";
         }
 
-        private static string FormatMission(List<MissionSnapshot> missions)
+
+        private static string BuildMissionDeskSummary(ShellSummarySnapshot summary)
         {
-            if (missions.Count == 0) return "No active mission clock.";
-            var first = missions[0];
-            var timer = first.FinishesAtUtc.HasValue ? FormatRemaining(first.FinishesAtUtc.Value - DateTime.UtcNow) : "anchor missing";
-            return $"{first.Title} • {timer}";
+            if (summary == null || summary.ActiveMissions == null || summary.ActiveMissions.Count == 0)
+            {
+                return "No active mission clock.";
+            }
+
+            return BuildMissionDeskSummary(summary.ActiveMissions[0], summary.Armies, summary.Heroes, includeTimer: true);
+        }
+
+        private static string BuildMissionDeskSummary(MissionSnapshot mission, IReadOnlyList<ArmySnapshot> armies, IReadOnlyList<HeroSnapshot> heroes, bool includeTimer)
+        {
+            if (mission == null)
+            {
+                return "No active mission clock.";
+            }
+
+            var parts = new List<string>();
+            var title = FirstNonBlank(mission.Title, mission.Id, "Mission");
+            parts.Add(title);
+
+            var regionLabel = HumanizeRegionId(mission.RegionId);
+            if (!string.IsNullOrWhiteSpace(regionLabel))
+            {
+                parts.Add(regionLabel);
+            }
+
+            var armyName = ResolveMissionArmyName(armies, mission.AssignedArmyId);
+            if (!string.IsNullOrWhiteSpace(armyName))
+            {
+                parts.Add(armyName);
+            }
+
+            var heroName = ResolveMissionHeroName(heroes, mission.AssignedHeroId);
+            if (!string.IsNullOrWhiteSpace(heroName))
+            {
+                parts.Add(heroName);
+            }
+
+            if (includeTimer)
+            {
+                var timer = mission.FinishesAtUtc.HasValue ? FormatRemaining(mission.FinishesAtUtc.Value - DateTime.UtcNow) : "anchor missing";
+                parts.Add(timer);
+            }
+
+            return string.Join(" • ", parts.Where(part => !string.IsNullOrWhiteSpace(part)));
+        }
+
+        private static string BuildMissionCommitmentSummary(MissionSnapshot mission, IReadOnlyList<ArmySnapshot> armies, IReadOnlyList<HeroSnapshot> heroes)
+        {
+            if (mission == null)
+            {
+                return string.Empty;
+            }
+
+            var details = new List<string>();
+            var regionLabel = HumanizeRegionId(mission.RegionId);
+            if (!string.IsNullOrWhiteSpace(regionLabel))
+            {
+                details.Add($"Region: {regionLabel}");
+            }
+
+            var armyName = ResolveMissionArmyName(armies, mission.AssignedArmyId);
+            if (!string.IsNullOrWhiteSpace(armyName))
+            {
+                details.Add($"Formation: {armyName}");
+            }
+
+            var heroName = ResolveMissionHeroName(heroes, mission.AssignedHeroId);
+            if (!string.IsNullOrWhiteSpace(heroName))
+            {
+                details.Add($"Hero: {heroName}");
+            }
+
+            return string.Join(" • ", details.Where(detail => !string.IsNullOrWhiteSpace(detail)));
+        }
+
+        private static string ResolveMissionArmyName(IReadOnlyList<ArmySnapshot> armies, string armyId)
+        {
+            if (string.IsNullOrWhiteSpace(armyId) || armies == null)
+            {
+                return string.Empty;
+            }
+
+            return armies.FirstOrDefault(army => string.Equals(army.Id, armyId, StringComparison.OrdinalIgnoreCase))?.Name
+                ?? armyId.Trim();
+        }
+
+        private static string ResolveMissionHeroName(IReadOnlyList<HeroSnapshot> heroes, string heroId)
+        {
+            if (string.IsNullOrWhiteSpace(heroId) || heroes == null)
+            {
+                return string.Empty;
+            }
+
+            return heroes.FirstOrDefault(hero => string.Equals(hero.Id, heroId, StringComparison.OrdinalIgnoreCase))?.Name
+                ?? heroId.Trim();
+        }
+
+        private static string HumanizeRegionId(string regionId)
+        {
+            if (string.IsNullOrWhiteSpace(regionId))
+            {
+                return string.Empty;
+            }
+
+            var cleaned = regionId.Replace('_', ' ').Replace('-', ' ').Trim();
+            if (cleaned.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            return char.ToUpperInvariant(cleaned[0]) + cleaned.Substring(1);
         }
 
         private static string FormatTick(TimerSnapshot timing)

@@ -69,6 +69,9 @@ namespace PlanarWar.Client.Core.Mapping
                     Id = m["mission"]?["id"]?.Read<string>() ?? "mission",
                     Title = m["mission"]?["title"]?.Read<string>() ?? m["mission"]?["id"]?.Read<string>() ?? "Mission",
                     InstanceId = m["instanceId"]?.Read<string>() ?? m["instance_id"]?.Read<string>() ?? string.Empty,
+                    RegionId = m["mission"]?["regionId"]?.Read<string>() ?? m["mission"]?["region_id"]?.Read<string>() ?? string.Empty,
+                    AssignedArmyId = m["assignedArmyId"]?.Read<string>() ?? m["assigned_army_id"]?.Read<string>() ?? string.Empty,
+                    AssignedHeroId = m["assignedHeroId"]?.Read<string>() ?? m["assigned_hero_id"]?.Read<string>() ?? string.Empty,
                     FinishesAtUtc = ParseUtc(
                         m["finishesAt"]
                         ?? m["finishes_at"]
