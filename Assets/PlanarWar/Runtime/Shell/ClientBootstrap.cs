@@ -503,7 +503,7 @@ namespace PlanarWar.Client.UI
             }
         }
 
-        private async Task HandleWarfrontAssaultRequestedAsync(string regionId, string armyId)
+        private async Task HandleWarfrontAssaultRequestedAsync(string regionId, string armyId, string heroId)
         {
             if (summaryState == null || apiClient == null || summaryState.IsActionBusy)
             {
@@ -512,6 +512,7 @@ namespace PlanarWar.Client.UI
 
             var trimmedRegionId = regionId?.Trim() ?? string.Empty;
             var trimmedArmyId = armyId?.Trim() ?? string.Empty;
+            var trimmedHeroId = heroId?.Trim() ?? string.Empty;
             if (string.IsNullOrWhiteSpace(trimmedRegionId) || string.IsNullOrWhiteSpace(trimmedArmyId))
             {
                 return;
@@ -519,10 +520,12 @@ namespace PlanarWar.Client.UI
 
             try
             {
-                summaryState.BeginFrontlineDispatch("warfront assault", trimmedRegionId, trimmedArmyId);
-                await apiClient.StartWarfrontAssaultAsync(trimmedRegionId, trimmedArmyId);
+                summaryState.BeginFrontlineDispatch("warfront assault", trimmedRegionId, trimmedArmyId, trimmedHeroId);
+                await apiClient.StartWarfrontAssaultAsync(trimmedRegionId, trimmedArmyId, trimmedHeroId);
                 await summaryController.RefreshAsync();
-                summaryState.FinishAction($"Warfront assault launched for {trimmedRegionId} with {trimmedArmyId}.");
+                summaryState.FinishAction(string.IsNullOrWhiteSpace(trimmedHeroId)
+                    ? $"Warfront assault launched for {trimmedRegionId} with {trimmedArmyId}."
+                    : $"Warfront assault launched for {trimmedRegionId} with {trimmedArmyId} under {trimmedHeroId}.");
             }
             catch (Exception ex)
             {
@@ -530,7 +533,7 @@ namespace PlanarWar.Client.UI
             }
         }
 
-        private async Task HandleGarrisonStrikeRequestedAsync(string regionId, string armyId)
+        private async Task HandleGarrisonStrikeRequestedAsync(string regionId, string armyId, string heroId)
         {
             if (summaryState == null || apiClient == null || summaryState.IsActionBusy)
             {
@@ -539,6 +542,7 @@ namespace PlanarWar.Client.UI
 
             var trimmedRegionId = regionId?.Trim() ?? string.Empty;
             var trimmedArmyId = armyId?.Trim() ?? string.Empty;
+            var trimmedHeroId = heroId?.Trim() ?? string.Empty;
             if (string.IsNullOrWhiteSpace(trimmedRegionId) || string.IsNullOrWhiteSpace(trimmedArmyId))
             {
                 return;
@@ -546,10 +550,12 @@ namespace PlanarWar.Client.UI
 
             try
             {
-                summaryState.BeginFrontlineDispatch("garrison strike", trimmedRegionId, trimmedArmyId);
-                await apiClient.StartGarrisonStrikeAsync(trimmedRegionId, trimmedArmyId);
+                summaryState.BeginFrontlineDispatch("garrison strike", trimmedRegionId, trimmedArmyId, trimmedHeroId);
+                await apiClient.StartGarrisonStrikeAsync(trimmedRegionId, trimmedArmyId, trimmedHeroId);
                 await summaryController.RefreshAsync();
-                summaryState.FinishAction($"Garrison strike launched for {trimmedRegionId} with {trimmedArmyId} as support.");
+                summaryState.FinishAction(string.IsNullOrWhiteSpace(trimmedHeroId)
+                    ? $"Garrison strike launched for {trimmedRegionId} with {trimmedArmyId} as support."
+                    : $"Garrison strike launched for {trimmedRegionId} with {trimmedArmyId} under {trimmedHeroId}.");
             }
             catch (Exception ex)
             {

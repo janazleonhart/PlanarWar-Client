@@ -35,6 +35,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private readonly DropdownField holdPostureField;
         private readonly Button assignHoldButton;
         private readonly Button releaseHoldButton;
+        private readonly DropdownField dispatchHeroField;
         private readonly Button dispatchAssaultButton;
         private readonly Button dispatchGarrisonButton;
         private readonly InfoCard[] cards;
@@ -46,12 +47,13 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private readonly Func<string, Task> onDisbandArmyRequested;
         private readonly Func<string, string, string, Task> onAssignArmyHoldRequested;
         private readonly Func<string, Task> onReleaseArmyHoldRequested;
-        private readonly Func<string, string, Task> onWarfrontAssaultRequested;
-        private readonly Func<string, string, Task> onGarrisonStrikeRequested;
+        private readonly Func<string, string, string, Task> onWarfrontAssaultRequested;
+        private readonly Func<string, string, string, Task> onGarrisonStrikeRequested;
         private readonly Action onRefreshDeskRequested;
         private readonly List<string> managementArmyChoiceIds = new();
         private readonly List<string> mergeArmyChoiceIds = new();
         private readonly List<string> holdRegionChoiceIds = new();
+        private readonly List<string> dispatchHeroChoiceIds = new();
         private string selectedArmyId = string.Empty;
         private string draftedArmyId = string.Empty;
         private string renameDraft = string.Empty;
@@ -60,9 +62,10 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private string selectedMergeArmyId = string.Empty;
         private string selectedHoldRegionId = string.Empty;
         private string selectedHoldPosture = "frontier_hold";
+        private string selectedDispatchHeroId = string.Empty;
         private bool suppressManagementEvents;
 
-        public BlackMarketScreenController(VisualElement root, SummaryState summaryState, Func<string, Task> onReinforceArmyRequested, Func<string, string, Task> onRenameArmyRequested, Func<string, int, string, Task> onSplitArmyRequested, Func<string, string, Task> onMergeArmyRequested, Func<string, Task> onDisbandArmyRequested, Func<string, string, string, Task> onAssignArmyHoldRequested, Func<string, Task> onReleaseArmyHoldRequested, Func<string, string, Task> onWarfrontAssaultRequested, Func<string, string, Task> onGarrisonStrikeRequested, Action onRefreshDeskRequested)
+        public BlackMarketScreenController(VisualElement root, SummaryState summaryState, Func<string, Task> onReinforceArmyRequested, Func<string, string, Task> onRenameArmyRequested, Func<string, int, string, Task> onSplitArmyRequested, Func<string, string, Task> onMergeArmyRequested, Func<string, Task> onDisbandArmyRequested, Func<string, string, string, Task> onAssignArmyHoldRequested, Func<string, Task> onReleaseArmyHoldRequested, Func<string, string, string, Task> onWarfrontAssaultRequested, Func<string, string, string, Task> onGarrisonStrikeRequested, Action onRefreshDeskRequested)
         {
             headline = root.Q<Label>("placeholder-headline-value");
             copy = root.Q<Label>("placeholder-copy-value");
@@ -89,6 +92,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             holdPostureField = root.Q<DropdownField>("warfront-manage-hold-posture-field");
             assignHoldButton = root.Q<Button>("warfront-manage-hold-assign-button");
             releaseHoldButton = root.Q<Button>("warfront-manage-hold-release-button");
+            dispatchHeroField = root.Q<DropdownField>("warfront-manage-dispatch-hero-field");
             dispatchAssaultButton = root.Q<Button>("warfront-manage-dispatch-assault-button");
             dispatchGarrisonButton = root.Q<Button>("warfront-manage-dispatch-garrison-button");
             cards = Enumerable.Range(1, 4).Select(i => new InfoCard(root, $"warfront-card-{i}", hasButton: true)).ToArray();
@@ -158,6 +162,20 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 }
 
                 selectedHoldPosture = NormalizeHoldPostureLabel(evt.newValue);
+            });
+
+            dispatchHeroField?.RegisterValueChangedCallback(evt =>
+            {
+                if (suppressManagementEvents)
+                {
+                    return;
+                }
+
+                var index = dispatchHeroField.choices?.IndexOf(evt.newValue) ?? -1;
+                if (index >= 0 && index < dispatchHeroChoiceIds.Count)
+                {
+                    selectedDispatchHeroId = dispatchHeroChoiceIds[index];
+                }
             });
 
             renameInput?.RegisterValueChangedCallback(evt =>
@@ -248,10 +266,12 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 managementArmyChoiceIds.Clear();
                 mergeArmyChoiceIds.Clear();
                 holdRegionChoiceIds.Clear();
+                dispatchHeroChoiceIds.Clear();
                 managementArmyField?.SetEnabled(false);
                 mergeTargetField?.SetEnabled(false);
                 holdRegionField?.SetEnabled(false);
                 holdPostureField?.SetEnabled(false);
+                dispatchHeroField?.SetEnabled(false);
                 renameInput?.SetEnabled(false);
                 splitSizeInput?.SetEnabled(false);
                 splitNameInput?.SetEnabled(false);
@@ -379,6 +399,34 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 suppressManagementEvents = false;
             }
 
+            var idleHeroes = (summary.Heroes ?? new List<HeroSnapshot>()).Where(hero => hero != null && string.Equals(hero.Status, "idle", StringComparison.OrdinalIgnoreCase)).ToList();
+            if (!string.IsNullOrWhiteSpace(selectedDispatchHeroId) && idleHeroes.All(hero => !string.Equals(hero.Id, selectedDispatchHeroId, StringComparison.OrdinalIgnoreCase)))
+            {
+                selectedDispatchHeroId = string.Empty;
+            }
+
+            if (dispatchHeroField != null)
+            {
+                suppressManagementEvents = true;
+                dispatchHeroChoiceIds.Clear();
+                var dispatchChoices = new List<string> { "No explicit hero" };
+                dispatchHeroChoiceIds.Add(string.Empty);
+                foreach (var hero in idleHeroes)
+                {
+                    dispatchHeroChoiceIds.Add(hero.Id);
+                    dispatchChoices.Add(BuildHeroChoiceLabel(hero));
+                }
+                dispatchHeroField.choices = dispatchChoices;
+                var heroIndex = Math.Max(0, dispatchHeroChoiceIds.FindIndex(id => string.Equals(id, selectedDispatchHeroId, StringComparison.OrdinalIgnoreCase)));
+                if (heroIndex >= dispatchHeroChoiceIds.Count)
+                {
+                    heroIndex = 0;
+                }
+                dispatchHeroField.SetValueWithoutNotify(dispatchChoices[heroIndex]);
+                dispatchHeroField.SetEnabled(!summaryState.IsActionBusy && dispatchChoices.Count > 0);
+                suppressManagementEvents = false;
+            }
+
             suppressManagementEvents = true;
             renameInput?.SetValueWithoutNotify(renameDraft);
             splitSizeInput?.SetValueWithoutNotify(splitSizeDraft);
@@ -391,10 +439,11 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var canSplit = !summaryState.IsActionBusy && idle && onSplitArmyRequested != null && splitSize >= 40 && splitSize <= maxSplit;
             var canMerge = !summaryState.IsActionBusy && idle && onMergeArmyRequested != null && !string.IsNullOrWhiteSpace(selectedMergeArmyId);
             var canDisband = !summaryState.IsActionBusy && idle && onDisbandArmyRequested != null && armies.Count > 1;
+            var hasSelectedDispatchHero = !string.IsNullOrWhiteSpace(selectedDispatchHeroId);
             var canAssignHold = !summaryState.IsActionBusy && idle && onAssignArmyHoldRequested != null && !string.IsNullOrWhiteSpace(selectedHoldRegionId);
             var canReleaseHold = !summaryState.IsActionBusy && holding && onReleaseArmyHoldRequested != null;
             var canDispatchAssault = !summaryState.IsActionBusy && idle && onWarfrontAssaultRequested != null && !string.IsNullOrWhiteSpace(selectedHoldRegionId);
-            var canDispatchGarrison = !summaryState.IsActionBusy && idle && onGarrisonStrikeRequested != null && !string.IsNullOrWhiteSpace(selectedHoldRegionId);
+            var canDispatchGarrison = !summaryState.IsActionBusy && idle && onGarrisonStrikeRequested != null && !string.IsNullOrWhiteSpace(selectedHoldRegionId) && (hasSelectedDispatchHero || idleHeroes.Count > 0);
 
             renameInput?.SetEnabled(!summaryState.IsActionBusy && idle);
             splitSizeInput?.SetEnabled(!summaryState.IsActionBusy && idle);
@@ -449,7 +498,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             {
                 var mergeTarget = mergeCandidates.FirstOrDefault(army => string.Equals(army.Id, selectedMergeArmyId, StringComparison.OrdinalIgnoreCase));
                 var holdLabel = holdRegions.FirstOrDefault(option => string.Equals(option.RegionId, selectedHoldRegionId, StringComparison.OrdinalIgnoreCase)).Label;
-                managementNote.text = BuildFormationManagementNote(selectedArmy, splitSize, maxSplit, mergeTarget, armies.Count, selectedHoldRegionId, selectedHoldPosture, holdLabel);
+                var dispatchHero = idleHeroes.FirstOrDefault(hero => string.Equals(hero.Id, selectedDispatchHeroId, StringComparison.OrdinalIgnoreCase));
+                managementNote.text = BuildFormationManagementNote(selectedArmy, splitSize, maxSplit, mergeTarget, armies.Count, selectedHoldRegionId, selectedHoldPosture, holdLabel, dispatchHero, idleHeroes.Count);
             }
         }
 
@@ -526,7 +576,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 return;
             }
 
-            _ = onWarfrontAssaultRequested.Invoke(selectedHoldRegionId.Trim(), selectedArmyId.Trim());
+            _ = onWarfrontAssaultRequested.Invoke(selectedHoldRegionId.Trim(), selectedArmyId.Trim(), selectedDispatchHeroId?.Trim() ?? string.Empty);
         }
 
         private void TriggerGarrisonStrike()
@@ -536,7 +586,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 return;
             }
 
-            _ = onGarrisonStrikeRequested.Invoke(selectedHoldRegionId.Trim(), selectedArmyId.Trim());
+            _ = onGarrisonStrikeRequested.Invoke(selectedHoldRegionId.Trim(), selectedArmyId.Trim(), selectedDispatchHeroId?.Trim() ?? string.Empty);
         }
 
         private List<CardView> BuildCards(ShellSummarySnapshot summary, List<ArmySnapshot> rankedArmies, List<CityTimerEntrySnapshot> windows, MissionSnapshot activeMission, string primaryWarning, List<WarfrontSignalSnapshot> signalPairs, ArmyReinforcementSnapshot reinforceState, CityTimerEntrySnapshot reinforceTimer, OperationSnapshot reinforceOp)
@@ -979,7 +1029,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             }
         }
 
-        private static string BuildFormationManagementNote(ArmySnapshot army, int splitSize, int maxSplit, ArmySnapshot mergeTarget, int formationCount, string holdRegionId, string holdPosture, string holdRegionLabel)
+        private static string BuildFormationManagementNote(ArmySnapshot army, int splitSize, int maxSplit, ArmySnapshot mergeTarget, int formationCount, string holdRegionId, string holdPosture, string holdRegionLabel, HeroSnapshot dispatchHero, int idleHeroCount)
         {
             if (string.Equals(army.Status, "holding", StringComparison.OrdinalIgnoreCase))
             {
@@ -1015,10 +1065,31 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             parts.Add(string.IsNullOrWhiteSpace(holdRegionId)
                 ? "Choose a region and posture before assigning a hold line or dispatching a frontline action."
                 : $"Region desk: {(string.IsNullOrWhiteSpace(holdRegionLabel) ? holdRegionId : holdRegionLabel)} as {HumanizeKey(holdPosture)} duty, or dispatch {army.Name} there directly.");
+            if (dispatchHero != null)
+            {
+                parts.Add($"Dispatch hero: {dispatchHero.Name} • {BuildHeroDispatchLore(dispatchHero)}.");
+            }
+            else if (idleHeroCount > 0)
+            {
+                parts.Add($"Dispatch hero is unset. {idleHeroCount} idle hero{(idleHeroCount == 1 ? string.Empty : "es")} can be assigned explicitly before frontline actions.");
+            }
+            else
+            {
+                parts.Add("No idle hero is visible right now, so garrison strike will stay parked until one stands free.");
+            }
             parts.Add(formationCount > 1
                 ? "Disband removes the selected idle formation and trims upkeep without refunding field investment directly."
                 : "You must keep at least one formation on the roster, so disband is parked right now.");
             return string.Join(" ", parts.Where(part => !string.IsNullOrWhiteSpace(part)));
+        }
+
+        private static string BuildHeroDispatchLore(HeroSnapshot hero)
+        {
+            var roleText = string.IsNullOrWhiteSpace(hero.Role) ? "field support" : HumanizeKey(hero.Role);
+            var responseText = hero.ResponseRoles != null && hero.ResponseRoles.Count > 0
+                ? string.Join("/", hero.ResponseRoles.Select(HumanizeKey))
+                : "frontline support";
+            return $"{roleText} • {responseText}";
         }
 
         private static string BuildSplitDraftSummary(int splitSize, ArmySnapshot army)
@@ -1150,6 +1221,16 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var sizeText = army.Size.HasValue ? $"{army.Size.Value:0} troops" : "troops unknown";
             var powerText = army.Power.HasValue ? $"{army.Power.Value:0} power" : "power unknown";
             return $"{army.Name} • {typeLabel} • {sizeText} • {powerText}";
+        }
+
+        private static string BuildHeroChoiceLabel(HeroSnapshot hero)
+        {
+            var roleText = string.IsNullOrWhiteSpace(hero.Role) ? "hero" : HumanizeKey(hero.Role);
+            var levelText = hero.Level.HasValue ? $"L{hero.Level.Value:0}" : "level unknown";
+            var responseText = hero.ResponseRoles != null && hero.ResponseRoles.Count > 0
+                ? string.Join("/", hero.ResponseRoles.Select(HumanizeKey))
+                : "frontline support";
+            return $"{hero.Name} • {roleText} • {levelText} • {responseText}";
         }
 
         private static string BuildSuggestedSplitSize(ArmySnapshot army)

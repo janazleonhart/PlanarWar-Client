@@ -164,7 +164,7 @@ namespace PlanarWar.Client.Core
                 : $"Releasing regional hold: {armyId.Trim()}");
         }
 
-        public void BeginFrontlineDispatch(string actionLabel, string regionId, string armyId)
+        public void BeginFrontlineDispatch(string actionLabel, string regionId, string armyId, string heroId = null)
         {
             var label = string.IsNullOrWhiteSpace(actionLabel) ? "Dispatching frontline action..." : $"Dispatching {actionLabel.Trim()}";
             if (!string.IsNullOrWhiteSpace(regionId))
@@ -174,6 +174,10 @@ namespace PlanarWar.Client.Core
             if (!string.IsNullOrWhiteSpace(armyId))
             {
                 label += $" with {armyId.Trim()}";
+            }
+            if (!string.IsNullOrWhiteSpace(heroId))
+            {
+                label += $" under {heroId.Trim()}";
             }
 
             BeginAction(label);

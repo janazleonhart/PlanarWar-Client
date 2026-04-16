@@ -87,10 +87,13 @@ namespace PlanarWar.Client.Core.Mapping
                 }).ToList() ?? new(),
                 Heroes = (summary["heroes"] as JArray)?.OfType<JObject>().Select(h => new HeroSnapshot
                 {
+                    Id = h["id"]?.Read<string>() ?? string.Empty,
                     Name = h["name"]?.Read<string>() ?? "Hero",
+                    Role = h["role"]?.Read<string>() ?? string.Empty,
                     Status = h["status"]?.Read<string>() ?? "-",
                     Level = h["level"]?.Read<double?>(),
-                    AttachmentCount = (h["attachments"] as JArray)?.Count ?? 0
+                    AttachmentCount = (h["attachments"] as JArray)?.Count ?? 0,
+                    ResponseRoles = (h["responseRoles"] as JArray)?.Select(role => role?.Read<string>()).Where(role => !string.IsNullOrWhiteSpace(role)).ToList() ?? new List<string>()
                 }).ToList() ?? new(),
                 Armies = (summary["armies"] as JArray)?.OfType<JObject>().Select(a => new ArmySnapshot
                 {

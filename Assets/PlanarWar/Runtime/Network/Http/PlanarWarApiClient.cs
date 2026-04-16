@@ -254,7 +254,7 @@ namespace PlanarWar.Client.Network
             return PostJsonAsync(BuildUrl("/api/armies/hold"), body, includeBearerToken: true);
         }
 
-        public Task<JObject> StartWarfrontAssaultAsync(string regionId, string armyId = null)
+        public Task<JObject> StartWarfrontAssaultAsync(string regionId, string armyId = null, string heroId = null)
         {
             if (string.IsNullOrWhiteSpace(regionId))
             {
@@ -269,12 +269,17 @@ namespace PlanarWar.Client.Network
             if (!string.IsNullOrWhiteSpace(armyId))
             {
                 body["armyId"] = armyId.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(heroId))
+            {
+                body["heroId"] = heroId.Trim();
             }
 
             return PostJsonAsync(BuildUrl("/api/warfront/assault"), body, includeBearerToken: true);
         }
 
-        public Task<JObject> StartGarrisonStrikeAsync(string regionId, string armyId = null)
+        public Task<JObject> StartGarrisonStrikeAsync(string regionId, string armyId = null, string heroId = null)
         {
             if (string.IsNullOrWhiteSpace(regionId))
             {
@@ -289,6 +294,11 @@ namespace PlanarWar.Client.Network
             if (!string.IsNullOrWhiteSpace(armyId))
             {
                 body["armyId"] = armyId.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(heroId))
+            {
+                body["heroId"] = heroId.Trim();
             }
 
             return PostJsonAsync(BuildUrl("/api/garrisons/strike"), body, includeBearerToken: true);
