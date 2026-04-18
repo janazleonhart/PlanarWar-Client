@@ -39,6 +39,12 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private readonly Label pressureDemandTitle;
         private readonly Label pressureDemandValue;
         private readonly Label pressureDemandNote;
+        private readonly Label pressureHandoffTitle;
+        private readonly Label pressureHandoffValue;
+        private readonly Label pressureHandoffNote;
+        private readonly Label pressureConsequenceTitle;
+        private readonly Label pressureConsequenceValue;
+        private readonly Label pressureConsequenceNote;
         private readonly Label pressureOperationsCopy;
         private readonly Label pressureOperationsCountBadge;
         private readonly VisualElement pressureOperationsStrip;
@@ -77,6 +83,12 @@ namespace PlanarWar.Client.UI.Screens.Summary
             pressureDemandTitle = root.Q<Label>("pressure-demand-title");
             pressureDemandValue = root.Q<Label>("pressure-demand-value");
             pressureDemandNote = root.Q<Label>("pressure-demand-note");
+            pressureHandoffTitle = root.Q<Label>("pressure-handoff-title");
+            pressureHandoffValue = root.Q<Label>("pressure-handoff-value");
+            pressureHandoffNote = root.Q<Label>("pressure-handoff-note");
+            pressureConsequenceTitle = root.Q<Label>("pressure-consequence-title");
+            pressureConsequenceValue = root.Q<Label>("pressure-consequence-value");
+            pressureConsequenceNote = root.Q<Label>("pressure-consequence-note");
             pressureOperationsCopy = root.Q<Label>("pressure-operations-copy-value");
             pressureOperationsCountBadge = root.Q<Label>("pressure-operations-count-badge-value");
             pressureOperationsStrip = root.Q<VisualElement>("pressure-operations-strip");
@@ -126,26 +138,33 @@ namespace PlanarWar.Client.UI.Screens.Summary
                     answerNote: "Civic desks will surface relief / repair / investigation. Shadow desks will surface covert / deniable / counterfeit answers.",
                     demandTitle: "Demand bend",
                     demandValue: "No supply signal yet.",
-                    demandNote: "Production, reserve, and exchange drag need a live settlement payload before the desk can summarize them honestly.");
+                    demandNote: "Production, reserve, and exchange drag need a live settlement payload before the desk can summarize them honestly.",
+                    handoffTitle: "Desk / strip handoff",
+                    handoffValue: "No live action handoff.",
+                    handoffNote: "Once a settlement is real, the desk and top fast option will point at the same lead answer instead of drifting apart.",
+                    consequenceTitle: "Consequence hint",
+                    consequenceValue: "No live consequence hint yet.",
+                    consequenceNote: "Impact preview stays blank until an actual opening operation is surfaced.");
                 RenderOperationStrip(summary, lane: null);
                 return;
             }
 
             var lane = NormalizeLane(summary.City.SettlementLane);
-            var primaryOp = SelectPrimaryOperation(summary.OpeningOperations);
+            var stripOperations = SelectOperationStrip(summary, lane);
+            var primaryOp = stripOperations.FirstOrDefault() ?? SelectPrimaryOperation(summary.OpeningOperations);
 
             if (lane == "black_market")
             {
-                RenderShadowPressureDesk(summary, primaryOp);
-                RenderOperationStrip(summary, lane);
+                RenderShadowPressureDesk(summary, primaryOp, lane);
+                RenderOperationStrip(summary, lane, stripOperations);
                 return;
             }
 
-            RenderCivicPressureDesk(summary, primaryOp);
-            RenderOperationStrip(summary, lane);
+            RenderCivicPressureDesk(summary, primaryOp, lane);
+            RenderOperationStrip(summary, lane, stripOperations);
         }
 
-        private void RenderCivicPressureDesk(ShellSummarySnapshot summary, OperationSnapshot primaryOp)
+        private void RenderCivicPressureDesk(ShellSummarySnapshot summary, OperationSnapshot primaryOp, string lane)
         {
             var surface = summary.PublicBackbonePressureConvergence;
             var front = SelectPrimaryCivicFront(surface);
@@ -178,10 +197,16 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 answerNote: answerNote,
                 demandTitle: "Supply / reserve bend",
                 demandValue: demandValue,
-                demandNote: demandNote);
+                demandNote: demandNote,
+                handoffTitle: "Desk / strip handoff",
+                handoffValue: BuildLeadOperationHandoffValue(primaryOp),
+                handoffNote: BuildLeadOperationHandoffNote(primaryOp, summary, lane),
+                consequenceTitle: "Consequence hint",
+                consequenceValue: BuildLeadOperationConsequenceValue(primaryOp),
+                consequenceNote: BuildLeadOperationConsequenceNote(primaryOp));
         }
 
-        private void RenderShadowPressureDesk(ShellSummarySnapshot summary, OperationSnapshot primaryOp)
+        private void RenderShadowPressureDesk(ShellSummarySnapshot summary, OperationSnapshot primaryOp, string lane)
         {
             var runtime = summary.BlackMarketRuntimeTruth;
             var active = summary.BlackMarketActiveOperation;
@@ -215,10 +240,16 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 answerNote: answerNote,
                 demandTitle: "Pressure / payoff bend",
                 demandValue: demandValue,
-                demandNote: demandNote);
+                demandNote: demandNote,
+                handoffTitle: "Desk / strip handoff",
+                handoffValue: BuildLeadOperationHandoffValue(primaryOp),
+                handoffNote: BuildLeadOperationHandoffNote(primaryOp, summary, lane),
+                consequenceTitle: "Consequence hint",
+                consequenceValue: BuildLeadOperationConsequenceValue(primaryOp),
+                consequenceNote: BuildLeadOperationConsequenceNote(primaryOp));
         }
 
-        private void RenderOperationStrip(ShellSummarySnapshot summary, string lane)
+        private void RenderOperationStrip(ShellSummarySnapshot summary, string lane, List<OperationSnapshot> selectedOperations = null)
         {
             if (pressureOperationsStrip == null)
             {
@@ -227,7 +258,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             pressureOperationsStrip.Clear();
 
-            var operations = SelectOperationStrip(summary, lane);
+            var operations = selectedOperations ?? SelectOperationStrip(summary, lane);
             SetPressureOperationsMeta(BuildOperationStripBadge(operations), BuildOperationStripCopy(summary, lane, operations));
             if (operations.Count == 0)
             {
@@ -339,6 +370,24 @@ namespace PlanarWar.Client.UI.Screens.Summary
             whyValue.AddToClassList("metric-subvalue--wrap");
             card.Add(whyValue);
 
+            var handoffTitle = new Label(BuildOperationHandoffTitle(operation));
+            handoffTitle.AddToClassList("eyebrow");
+            card.Add(handoffTitle);
+
+            var handoffValue = new Label(BuildOperationHandoff(operation, index == 0));
+            handoffValue.AddToClassList("metric-subvalue");
+            handoffValue.AddToClassList("metric-subvalue--wrap");
+            card.Add(handoffValue);
+
+            var consequenceTitle = new Label("Consequence hint");
+            consequenceTitle.AddToClassList("eyebrow");
+            card.Add(consequenceTitle);
+
+            var consequenceValue = new Label(BuildOperationConsequenceValue(operation));
+            consequenceValue.AddToClassList("metric-subvalue");
+            consequenceValue.AddToClassList("metric-subvalue--wrap");
+            card.Add(consequenceValue);
+
             var cta = new Label(FirstNonBlank(operation?.CtaLabel, DefaultOperationCta(operation)));
             cta.AddToClassList("pressure-op-card__cta");
             card.Add(cta);
@@ -444,6 +493,135 @@ namespace PlanarWar.Client.UI.Screens.Summary
         {
             if (pressureOperationsCountBadge != null) pressureOperationsCountBadge.text = badge;
             if (pressureOperationsCopy != null) pressureOperationsCopy.text = copy;
+        }
+
+
+        private static string BuildOperationHandoffTitle(OperationSnapshot operation)
+        {
+            switch ((operation?.Readiness ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case "ready_now":
+                    return "Action handoff";
+                case "prepare_soon":
+                    return "Prep gate";
+                case "blocked":
+                    return "Blocker";
+                default:
+                    return "Desk handoff";
+            }
+        }
+
+        private static string BuildOperationHandoff(OperationSnapshot operation, bool isLead)
+        {
+            var detail = CompactSingleLine(FirstNonBlank(operation?.Risk, operation?.Detail, operation?.Summary, operation?.WhyNow));
+            switch ((operation?.Readiness ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case "ready_now":
+                    return isLead
+                        ? FirstNonBlank(
+                            CompactSingleLine($"Lead with {FirstNonBlank(operation?.CtaLabel, DefaultOperationCta(operation)).ToLowerInvariant()} while this is still the cleanest live answer."),
+                            "Lead with this now while the seam is still asking for it.")
+                        : FirstNonBlank(
+                            CompactSingleLine($"Keep this in hand as the next clean answer if the lead option slips."),
+                            "Keep this ready as the next clean answer.");
+                case "prepare_soon":
+                    return !string.IsNullOrWhiteSpace(detail)
+                        ? $"Prep this next: {detail}"
+                        : "Prep this next so it can take point before the seam hardens.";
+                case "blocked":
+                    return !string.IsNullOrWhiteSpace(detail)
+                        ? $"Blocked: {detail}"
+                        : "Blocked right now; review the gate before spending a turn on it.";
+                default:
+                    return !string.IsNullOrWhiteSpace(detail)
+                        ? $"Desk handoff: {detail}"
+                        : "Desk handoff is still settling on the cleanest next answer.";
+            }
+        }
+
+        private static string BuildOperationConsequenceValue(OperationSnapshot operation)
+        {
+            if (operation?.ImpactPreview != null)
+            {
+                foreach (var preview in operation.ImpactPreview)
+                {
+                    var compact = CompactSingleLine(preview);
+                    if (!string.IsNullOrWhiteSpace(compact))
+                    {
+                        return compact;
+                    }
+                }
+            }
+
+            switch ((operation?.Readiness ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case "blocked":
+                    return FirstNonBlank(CompactSingleLine(operation?.Risk), CompactSingleLine(operation?.Detail), "No unblock consequence surfaced yet.");
+                case "prepare_soon":
+                    return FirstNonBlank(CompactSingleLine(operation?.Payoff), CompactSingleLine(operation?.Summary), "This line is still forming, so the consequence stays soft until it clears.");
+                default:
+                    return FirstNonBlank(CompactSingleLine(operation?.Payoff), CompactSingleLine(operation?.Summary), CompactSingleLine(operation?.Risk), "No consequence hint surfaced.");
+            }
+        }
+
+        private static string BuildLeadOperationHandoffValue(OperationSnapshot operation)
+        {
+            if (operation == null)
+            {
+                return "No lead action surfaced.";
+            }
+
+            return $"{HumanizeOperationReadiness(operation.Readiness)} • {FirstNonBlank(operation.Title, operation.FocusLabel, "Lead operation")}";
+        }
+
+        private static string BuildLeadOperationHandoffNote(OperationSnapshot operation, ShellSummarySnapshot summary, string lane)
+        {
+            return operation == null
+                ? "The desk will bind to the strongest fast option once the strip has a real lead action."
+                : BuildOperationHandoff(operation, isLead: true);
+        }
+
+        private static string BuildLeadOperationConsequenceValue(OperationSnapshot operation)
+        {
+            return operation == null
+                ? "No lead consequence surfaced."
+                : BuildOperationConsequenceValue(operation);
+        }
+
+        private static string BuildLeadOperationConsequenceNote(OperationSnapshot operation)
+        {
+            if (operation?.ImpactPreview != null)
+            {
+                foreach (var preview in operation.ImpactPreview.Skip(1))
+                {
+                    var compact = CompactSingleLine(preview);
+                    if (!string.IsNullOrWhiteSpace(compact))
+                    {
+                        return compact;
+                    }
+                }
+            }
+
+            if (operation == null)
+            {
+                return "Impact preview stays blank until an opening operation exposes a real outcome hint.";
+            }
+
+            return FirstNonBlank(
+                CompactSingleLine(operation.Risk),
+                CompactSingleLine(operation.Payoff),
+                CompactSingleLine(operation.Detail),
+                "The lead line did not ship a second consequence note, so the desk stays restrained.");
+        }
+
+        private static string CompactSingleLine(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            return string.Join(" ", value.Split(new[] { '\r', '\n', '\t' }, StringSplitOptions.RemoveEmptyEntries)).Trim();
         }
 
         private static string BuildOperationStripBadge(List<OperationSnapshot> operations)
@@ -842,7 +1020,13 @@ namespace PlanarWar.Client.UI.Screens.Summary
             string answerNote,
             string demandTitle,
             string demandValue,
-            string demandNote)
+            string demandNote,
+            string handoffTitle,
+            string handoffValue,
+            string handoffNote,
+            string consequenceTitle,
+            string consequenceValue,
+            string consequenceNote)
         {
             if (pressureDeskBadge != null) pressureDeskBadge.text = badge;
             if (pressureDeskHeadline != null) pressureDeskHeadline.text = headline;
@@ -859,6 +1043,12 @@ namespace PlanarWar.Client.UI.Screens.Summary
             if (pressureDemandTitle != null) pressureDemandTitle.text = demandTitle;
             if (pressureDemandValue != null) pressureDemandValue.text = demandValue;
             if (pressureDemandNote != null) pressureDemandNote.text = demandNote;
+            if (pressureHandoffTitle != null) pressureHandoffTitle.text = handoffTitle;
+            if (pressureHandoffValue != null) pressureHandoffValue.text = handoffValue;
+            if (pressureHandoffNote != null) pressureHandoffNote.text = handoffNote;
+            if (pressureConsequenceTitle != null) pressureConsequenceTitle.text = consequenceTitle;
+            if (pressureConsequenceValue != null) pressureConsequenceValue.text = consequenceValue;
+            if (pressureConsequenceNote != null) pressureConsequenceNote.text = consequenceNote;
         }
 
         private static string NormalizeLane(string lane)
