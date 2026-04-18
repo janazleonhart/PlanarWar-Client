@@ -42,9 +42,17 @@ namespace PlanarWar.Client.Core.Mapping
                 city?["cityTimers"],
                 city?["city_timers"],
                 city?["timers"]);
-            var openingOps = FirstArray(city?["settlementOpeningOperations"], city?["settlement_opening_operations"]);
+            var openingOps = FirstArray(
+                summary["settlementOpeningOperations"],
+                summary["settlement_opening_operations"],
+                summary["openingOperations"],
+                summary["opening_operations"],
+                city?["settlementOpeningOperations"],
+                city?["settlement_opening_operations"],
+                city?["openingOperations"],
+                city?["opening_operations"]);
 
-            return new ShellSummarySnapshot
+            var mapped = new ShellSummarySnapshot
             {
                 Username = summary["username"]?.Read<string>() ?? "Anon",
                 FounderMode = summary["founderMode"]?.Read<bool>() ?? false,
@@ -52,84 +60,160 @@ namespace PlanarWar.Client.Core.Mapping
                 City = new CitySummarySnapshot
                 {
                     Name = city?["name"]?.Read<string>() ?? "-",
-                    SettlementLane = city?["settlementLane"]?.Read<string>() ?? "-",
-                    SettlementLaneLabel = city?["settlementLaneProfile"]?["label"]?.Read<string>() ?? city?["settlementLane"]?.Read<string>() ?? "-",
+                    SettlementLane = city?["settlementLane"]?.Read<string>() ?? city?["settlement_lane"]?.Read<string>() ?? "-",
+                    SettlementLaneLabel = city?["settlementLaneProfile"]?["label"]?.Read<string>() ?? city?["settlement_lane_profile"]?["label"]?.Read<string>() ?? city?["settlementLane"]?.Read<string>() ?? city?["settlement_lane"]?.Read<string>() ?? "-",
                     Tier = city?["tier"]?.Read<int?>()
                 },
                 Resources = MapResource(summary["resources"] as JObject),
                 ProductionPerTick = MapResource(city?["production"] as JObject, true),
                 ResourceTickTiming = MapTimer(resourceTickTiming),
-                ActiveResearch = MapResearch(summary["activeResearch"] as JObject),
+                ActiveResearch = MapResearch(summary["activeResearch"] as JObject ?? summary["active_research"] as JObject),
                 AvailableTechs = availableTechs?.OfType<JObject>().Select(MapTech).Where(t => t != null).ToList() ?? new List<TechOptionSnapshot>(),
                 CityTimers = cityTimers?.OfType<JObject>().Select(MapCityTimer).Where(t => t != null).ToList() ?? new List<CityTimerEntrySnapshot>(),
-                ThreatWarnings = (summary["threatWarnings"] as JArray)?.OfType<JObject>().Select(w => new ThreatWarningSnapshot { Headline = w["headline"]?.Read<string>() ?? w["title"]?.Read<string>() ?? w["summary"]?.Read<string>() ?? "Warning" }).ToList() ?? new(),
-                OpeningOperations = openingOps?.OfType<JObject>().Select(MapOperation).Where(o => o != null).ToList() ?? new(),
-                ActiveMissions = activeMissions?.OfType<JObject>().Select(m => new MissionSnapshot
-                {
-                    Id = m["mission"]?["id"]?.Read<string>() ?? "mission",
-                    Title = m["mission"]?["title"]?.Read<string>() ?? m["mission"]?["id"]?.Read<string>() ?? "Mission",
-                    InstanceId = m["instanceId"]?.Read<string>() ?? m["instance_id"]?.Read<string>() ?? string.Empty,
-                    RegionId = m["mission"]?["regionId"]?.Read<string>() ?? m["mission"]?["region_id"]?.Read<string>() ?? string.Empty,
-                    AssignedArmyId = m["assignedArmyId"]?.Read<string>() ?? m["assigned_army_id"]?.Read<string>() ?? string.Empty,
-                    AssignedHeroId = m["assignedHeroId"]?.Read<string>() ?? m["assigned_hero_id"]?.Read<string>() ?? string.Empty,
-                    FinishesAtUtc = ParseUtc(
-                        m["finishesAt"]
-                        ?? m["finishes_at"]
-                        ?? m["finishAt"]
-                        ?? m["finish_at"]
-                        ?? m["endsAt"]
-                        ?? m["ends_at"]
-                        ?? m["deadlineAt"]
-                        ?? m["deadline_at"]
-                        ?? m["timing"]?["finishesAt"]
-                        ?? m["timing"]?["finishes_at"]
-                        ?? m["timing"]?["finishAt"]
-                        ?? m["timing"]?["finish_at"]
-                        ?? m["timing"]?["endsAt"]
-                        ?? m["timing"]?["ends_at"])
-                }).ToList() ?? new(),
-                Heroes = (summary["heroes"] as JArray)?.OfType<JObject>().Select(h => new HeroSnapshot
-                {
-                    Id = h["id"]?.Read<string>() ?? string.Empty,
-                    Name = h["name"]?.Read<string>() ?? "Hero",
-                    Role = h["role"]?.Read<string>() ?? string.Empty,
-                    Status = h["status"]?.Read<string>() ?? "-",
-                    Level = h["level"]?.Read<double?>(),
-                    AttachmentCount = (h["attachments"] as JArray)?.Count ?? 0,
-                    ResponseRoles = (h["responseRoles"] as JArray)?.Select(role => role?.Read<string>()).Where(role => !string.IsNullOrWhiteSpace(role)).ToList() ?? new List<string>()
-                }).ToList() ?? new(),
-                Armies = (summary["armies"] as JArray)?.OfType<JObject>().Select(a => new ArmySnapshot
-                {
-                    Id = a["id"]?.Read<string>() ?? string.Empty,
-                    Name = a["name"]?.Read<string>() ?? "Army",
-                    Type = a["type"]?.Read<string>() ?? string.Empty,
-                    Status = a["status"]?.Read<string>() ?? "-",
-                    Readiness = a["readiness"]?.Read<double?>(),
-                    Power = a["power"]?.Read<double?>(),
-                    Size = a["size"]?.Read<double?>(),
-                    HoldRegionId = a["hold"]?["regionId"]?.Read<string>() ?? a["hold"]?["region_id"]?.Read<string>() ?? string.Empty,
-                    HoldPosture = a["hold"]?["posture"]?.Read<string>() ?? string.Empty,
-                    Specialties = (a["specialties"] as JArray)?.Select(specialty => specialty?.Read<string>()).Where(specialty => !string.IsNullOrWhiteSpace(specialty)).ToList() ?? new List<string>()
-                }).ToList() ?? new(),
+                ThreatWarnings = FirstArray(summary["threatWarnings"], summary["threat_warnings"])?.OfType<JObject>().Select(MapThreatWarning).Where(w => w != null).ToList() ?? new List<ThreatWarningSnapshot>(),
+                OpeningOperations = openingOps?.OfType<JObject>().Select(MapOperation).Where(o => o != null).ToList() ?? new List<OperationSnapshot>(),
+                ActiveMissions = activeMissions?.OfType<JObject>().Select(MapMission).Where(m => m != null).ToList() ?? new List<MissionSnapshot>(),
+                Heroes = FirstArray(summary["heroes"], summary["Heroes"])?.OfType<JObject>().Select(MapHero).Where(h => h != null).ToList() ?? new List<HeroSnapshot>(),
+                Armies = FirstArray(summary["armies"], summary["Armies"])?.OfType<JObject>().Select(MapArmy).Where(a => a != null).ToList() ?? new List<ArmySnapshot>(),
                 HeroRecruitment = MapHeroRecruitment(summary["heroRecruitment"] as JObject ?? summary["hero_recruitment"] as JObject),
                 ArmyReinforcement = MapArmyReinforcement(summary["armyReinforcement"] as JObject ?? summary["army_reinforcement"] as JObject),
-                WorkshopJobs = (summary["workshopJobs"] as JArray)?.OfType<JObject>().Select(j => new WorkshopJobSnapshot
-                {
-                    Id = j["id"]?.Read<string>() ?? j["jobId"]?.Read<string>() ?? "job",
-                    AttachmentKind = j["attachmentKind"]?.Read<string>() ?? "job",
-                    RecipeId = j["recipeId"]?.Read<string>() ?? string.Empty,
-                    OutputName = j["outputName"]?.Read<string>() ?? string.Empty,
-                    OutputItemId = j["outputItemId"]?.Read<string>() ?? string.Empty,
-                    Completed = j["completed"]?.Read<bool>() ?? false,
-                    CollectedAtUtc = ParseUtc(j["collectedAt"] ?? j["collected_at"]),
-                    FinishesAtUtc = ParseUtc(j["finishesAt"] ?? j["finishes_at"])
-                }).ToList() ?? new(),
+                WorkshopJobs = FirstArray(summary["workshopJobs"], summary["workshop_jobs"])?.OfType<JObject>().Select(MapWorkshopJob).Where(j => j != null).ToList() ?? new List<WorkshopJobSnapshot>(),
                 WarfrontSignals = (summary["warfrontStatus"] as JObject)?.Properties().Select(p => new WarfrontSignalSnapshot { Label = p.Name, Value = p.Value?.ToString() ?? "-" }).ToList()
                     ?? (summary["warfront"] as JObject)?.Properties().Select(p => new WarfrontSignalSnapshot { Label = p.Name, Value = p.Value?.ToString() ?? "-" }).ToList()
-                    ?? new()
+                    ?? new List<WarfrontSignalSnapshot>(),
+                PublicBackbonePressureConvergence = MapPublicBackbonePressureConvergence(summary["publicBackbonePressureConvergenceSurface"] as JObject ?? summary["public_backbone_pressure_convergence_surface"] as JObject),
+                BlackMarketRuntimeTruth = MapBlackMarketRuntimeTruth(summary["blackMarketRuntimeTruthSurface"] as JObject ?? summary["black_market_runtime_truth_surface"] as JObject),
+                BlackMarketActiveOperation = MapBlackMarketActiveOperation(summary["blackMarketActiveOperationSurface"] as JObject ?? summary["black_market_active_operation_surface"] as JObject),
+                BlackMarketPayoffRecovery = MapBlackMarketPayoffRecovery(summary["blackMarketPayoffRecoverySurface"] as JObject ?? summary["black_market_payoff_recovery_surface"] as JObject),
+            };
+
+            ResolveActiveMissionAssignments(mapped);
+            return mapped;
+        }
+
+        private static ThreatWarningSnapshot MapThreatWarning(JObject obj)
+        {
+            if (obj == null) return null;
+            return new ThreatWarningSnapshot
+            {
+                Headline = FirstNonBlank(
+                    obj["headline"]?.Read<string>(),
+                    obj["title"]?.Read<string>(),
+                    obj["summary"]?.Read<string>(),
+                    "Warning")
             };
         }
 
+        private static MissionSnapshot MapMission(JObject obj)
+        {
+            if (obj == null) return null;
+            return new MissionSnapshot
+            {
+                Id = obj["mission"]?["id"]?.Read<string>() ?? obj["id"]?.Read<string>() ?? "mission",
+                Title = obj["mission"]?["title"]?.Read<string>() ?? obj["title"]?.Read<string>() ?? obj["mission"]?["id"]?.Read<string>() ?? "Mission",
+                InstanceId = obj["instanceId"]?.Read<string>() ?? obj["instance_id"]?.Read<string>() ?? string.Empty,
+                RegionId = obj["mission"]?["regionId"]?.Read<string>() ?? obj["mission"]?["region_id"]?.Read<string>() ?? obj["regionId"]?.Read<string>() ?? obj["region_id"]?.Read<string>() ?? string.Empty,
+                AssignedArmyId = obj["assignedArmyId"]?.Read<string>() ?? obj["assigned_army_id"]?.Read<string>() ?? string.Empty,
+                AssignedHeroId = obj["assignedHeroId"]?.Read<string>() ?? obj["assigned_hero_id"]?.Read<string>() ?? string.Empty,
+                ResponsePosture = obj["responsePosture"]?.Read<string>() ?? obj["response_posture"]?.Read<string>() ?? string.Empty,
+                FinishesAtUtc = ParseUtc(
+                    obj["finishesAt"]
+                    ?? obj["finishes_at"]
+                    ?? obj["finishAt"]
+                    ?? obj["finish_at"]
+                    ?? obj["endsAt"]
+                    ?? obj["ends_at"]
+                    ?? obj["deadlineAt"]
+                    ?? obj["deadline_at"]
+                    ?? obj["timing"]?["finishesAt"]
+                    ?? obj["timing"]?["finishes_at"]
+                    ?? obj["timing"]?["finishAt"]
+                    ?? obj["timing"]?["finish_at"]
+                    ?? obj["timing"]?["endsAt"]
+                    ?? obj["timing"]?["ends_at"])
+            };
+        }
+
+        private static HeroSnapshot MapHero(JObject obj)
+        {
+            if (obj == null) return null;
+            return new HeroSnapshot
+            {
+                Id = obj["id"]?.Read<string>() ?? string.Empty,
+                Name = obj["name"]?.Read<string>() ?? "Hero",
+                Status = obj["status"]?.Read<string>() ?? "-",
+                Role = obj["role"]?.Read<string>() ?? string.Empty,
+                ResponseRoles = (obj["responseRoles"] as JArray)?.Select(r => r?.Read<string>()).Where(r => !string.IsNullOrWhiteSpace(r)).ToList()
+                    ?? (obj["response_roles"] as JArray)?.Select(r => r?.Read<string>()).Where(r => !string.IsNullOrWhiteSpace(r)).ToList()
+                    ?? new List<string>(),
+                Level = obj["level"]?.Read<double?>(),
+                AttachmentCount = (obj["attachments"] as JArray)?.Count ?? 0,
+            };
+        }
+
+        private static ArmySnapshot MapArmy(JObject obj)
+        {
+            if (obj == null) return null;
+            return new ArmySnapshot
+            {
+                Id = obj["id"]?.Read<string>() ?? string.Empty,
+                Name = obj["name"]?.Read<string>() ?? "Army",
+                Type = obj["type"]?.Read<string>() ?? string.Empty,
+                Status = obj["status"]?.Read<string>() ?? "-",
+                Readiness = obj["readiness"]?.Read<double?>(),
+                Size = obj["size"]?.Read<double?>(),
+                Power = obj["power"]?.Read<double?>(),
+                Specialties = (obj["specialties"] as JArray)?.Select(s => s?.Read<string>()).Where(s => !string.IsNullOrWhiteSpace(s)).ToList() ?? new List<string>(),
+                HoldRegionId = obj["hold"]?["regionId"]?.Read<string>() ?? obj["hold"]?["region_id"]?.Read<string>() ?? string.Empty,
+                HoldPosture = obj["hold"]?["posture"]?.Read<string>() ?? string.Empty,
+            };
+        }
+
+        private static WorkshopJobSnapshot MapWorkshopJob(JObject obj)
+        {
+            if (obj == null) return null;
+            return new WorkshopJobSnapshot
+            {
+                Id = obj["id"]?.Read<string>() ?? obj["jobId"]?.Read<string>() ?? obj["job_id"]?.Read<string>() ?? "job",
+                AttachmentKind = obj["attachmentKind"]?.Read<string>() ?? obj["attachment_kind"]?.Read<string>() ?? "job",
+                RecipeId = obj["recipeId"]?.Read<string>() ?? obj["recipe_id"]?.Read<string>() ?? string.Empty,
+                OutputName = obj["outputName"]?.Read<string>() ?? obj["output_name"]?.Read<string>() ?? string.Empty,
+                OutputItemId = obj["outputItemId"]?.Read<string>() ?? obj["output_item_id"]?.Read<string>() ?? string.Empty,
+                Completed = obj["completed"]?.Read<bool>() ?? false,
+                CollectedAtUtc = ParseUtc(obj["collectedAt"] ?? obj["collected_at"]),
+                FinishesAtUtc = ParseUtc(obj["finishesAt"] ?? obj["finishes_at"]),
+            };
+        }
+
+        private static void ResolveActiveMissionAssignments(ShellSummarySnapshot summary)
+        {
+            if (summary == null || summary.ActiveMissions == null || summary.ActiveMissions.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var mission in summary.ActiveMissions)
+            {
+                if (mission == null)
+                {
+                    continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(mission.AssignedArmyId) && string.IsNullOrWhiteSpace(mission.AssignedArmyName))
+                {
+                    mission.AssignedArmyName = summary.Armies?
+                        .FirstOrDefault(a => string.Equals(a?.Id, mission.AssignedArmyId, StringComparison.OrdinalIgnoreCase))
+                        ?.Name ?? string.Empty;
+                }
+
+                if (!string.IsNullOrWhiteSpace(mission.AssignedHeroId) && string.IsNullOrWhiteSpace(mission.AssignedHeroName))
+                {
+                    mission.AssignedHeroName = summary.Heroes?
+                        .FirstOrDefault(h => string.Equals(h?.Id, mission.AssignedHeroId, StringComparison.OrdinalIgnoreCase))
+                        ?.Name ?? string.Empty;
+                }
+            }
+        }
 
         private static HeroRecruitmentSnapshot MapHeroRecruitment(JObject obj)
         {
@@ -219,15 +303,28 @@ namespace PlanarWar.Client.Core.Mapping
             var action = obj["action"] as JObject;
             return new OperationSnapshot
             {
+                Id = obj["id"]?.Read<string>() ?? string.Empty,
                 Title = obj["title"]?.Read<string>() ?? "Operation",
+                Summary = obj["summary"]?.Read<string>() ?? string.Empty,
+                Detail = obj["detail"]?.Read<string>() ?? string.Empty,
+                WhyNow = obj["whyNow"]?.Read<string>() ?? obj["why_now"]?.Read<string>() ?? string.Empty,
+                Payoff = obj["payoff"]?.Read<string>() ?? string.Empty,
+                Risk = obj["risk"]?.Read<string>() ?? string.Empty,
+                Lane = obj["lane"]?.Read<string>() ?? string.Empty,
+                Priority = obj["priority"]?.Read<string>() ?? string.Empty,
                 Readiness = obj["readiness"]?.Read<string>() ?? "-",
+                CtaLabel = obj["ctaLabel"]?.Read<string>() ?? obj["cta_label"]?.Read<string>() ?? string.Empty,
+                FocusLabel = obj["focusLabel"]?.Read<string>() ?? obj["focus_label"]?.Read<string>() ?? string.Empty,
+                ImpactPreview = (obj["impactPreview"] as JArray)?.Values<string>().Where(v => !string.IsNullOrWhiteSpace(v)).ToList()
+                    ?? (obj["impact_preview"] as JArray)?.Values<string>().Where(v => !string.IsNullOrWhiteSpace(v)).ToList()
+                    ?? new List<string>(),
                 Kind = action?["kind"]?.Read<string>() ?? string.Empty,
                 Role = action?["role"]?.Read<string>() ?? string.Empty,
-                ArmyId = action?["armyId"]?.Read<string>() ?? string.Empty,
-                HeroId = action?["heroId"]?.Read<string>() ?? string.Empty,
-                MissionId = action?["missionId"]?.Read<string>() ?? string.Empty,
-                ActionId = action?["actionId"]?.Read<string>() ?? string.Empty,
-                ResponsePosture = action?["responsePosture"]?.Read<string>() ?? string.Empty,
+                ArmyId = action?["armyId"]?.Read<string>() ?? action?["army_id"]?.Read<string>() ?? string.Empty,
+                HeroId = action?["heroId"]?.Read<string>() ?? action?["hero_id"]?.Read<string>() ?? string.Empty,
+                MissionId = action?["missionId"]?.Read<string>() ?? action?["mission_id"]?.Read<string>() ?? string.Empty,
+                ActionId = action?["actionId"]?.Read<string>() ?? action?["action_id"]?.Read<string>() ?? string.Empty,
+                ResponsePosture = action?["responsePosture"]?.Read<string>() ?? action?["response_posture"]?.Read<string>() ?? string.Empty,
             };
         }
 
@@ -297,6 +394,166 @@ namespace PlanarWar.Client.Core.Mapping
             };
         }
 
+        private static PublicBackbonePressureConvergenceSurfaceSnapshot MapPublicBackbonePressureConvergence(JObject obj)
+        {
+            if (obj == null) return null;
+            return new PublicBackbonePressureConvergenceSurfaceSnapshot
+            {
+                Lane = obj["lane"]?.Read<string>() ?? "city",
+                Phase = obj["phase"]?.Read<string>() ?? string.Empty,
+                Headline = obj["headline"]?.Read<string>() ?? string.Empty,
+                Detail = obj["detail"]?.Read<string>() ?? string.Empty,
+                RecommendedAction = obj["recommendedAction"]?.Read<string>() ?? obj["recommended_action"]?.Read<string>() ?? string.Empty,
+                TradeWindow = obj["tradeWindow"]?.Read<string>() ?? obj["trade_window"]?.Read<string>() ?? string.Empty,
+                FocusLane = obj["focusLane"]?.Read<string>() ?? obj["focus_lane"]?.Read<string>() ?? string.Empty,
+                ActiveFrontCount = obj["activeFrontCount"]?.Read<int>() ?? obj["active_front_count"]?.Read<int>() ?? 0,
+                Fronts = (obj["fronts"] as JArray)?.OfType<JObject>().Select(MapPublicBackbonePressureFront).Where(f => f != null).ToList() ?? new List<PublicBackbonePressureFrontSnapshot>(),
+                LatestSupportReceipt = MapPublicBackbonePressureReceipt(obj["latestSupportReceipt"] as JObject ?? obj["latest_support_receipt"] as JObject),
+            };
+        }
+
+        private static PublicBackbonePressureFrontSnapshot MapPublicBackbonePressureFront(JObject obj)
+        {
+            if (obj == null) return null;
+            return new PublicBackbonePressureFrontSnapshot
+            {
+                Id = obj["id"]?.Read<string>() ?? string.Empty,
+                Label = obj["label"]?.Read<string>() ?? string.Empty,
+                State = obj["state"]?.Read<string>() ?? string.Empty,
+                Headline = obj["headline"]?.Read<string>() ?? string.Empty,
+                Summary = obj["summary"]?.Read<string>() ?? string.Empty,
+                RecommendedAction = obj["recommendedAction"]?.Read<string>() ?? obj["recommended_action"]?.Read<string>() ?? string.Empty,
+                SourceSurface = obj["sourceSurface"]?.Read<string>() ?? obj["source_surface"]?.Read<string>() ?? string.Empty,
+            };
+        }
+
+        private static PublicBackbonePressureReceiptSnapshot MapPublicBackbonePressureReceipt(JObject obj)
+        {
+            if (obj == null) return null;
+            return new PublicBackbonePressureReceiptSnapshot
+            {
+                Id = obj["id"]?.Read<string>() ?? string.Empty,
+                CreatedAtUtc = ParseUtc(obj["createdAt"] ?? obj["created_at"]),
+                Title = obj["title"]?.Read<string>() ?? string.Empty,
+                Summary = obj["summary"]?.Read<string>() ?? string.Empty,
+                SourceSurface = obj["sourceSurface"]?.Read<string>() ?? obj["source_surface"]?.Read<string>() ?? string.Empty,
+            };
+        }
+
+        private static BlackMarketRuntimeTruthSurfaceSnapshot MapBlackMarketRuntimeTruth(JObject obj)
+        {
+            if (obj == null) return null;
+            return new BlackMarketRuntimeTruthSurfaceSnapshot
+            {
+                Lane = obj["lane"]?.Read<string>() ?? "black_market",
+                RuntimeBand = obj["runtimeBand"]?.Read<string>() ?? obj["runtime_band"]?.Read<string>() ?? string.Empty,
+                Headline = obj["headline"]?.Read<string>() ?? string.Empty,
+                Detail = obj["detail"]?.Read<string>() ?? string.Empty,
+                OperatorFrontSummary = obj["operatorFrontSummary"]?.Read<string>() ?? obj["operator_front_summary"]?.Read<string>() ?? string.Empty,
+                WarningWindow = MapBlackMarketRuntimeLens(obj["warningWindow"] as JObject ?? obj["warning_window"] as JObject),
+                ActiveOperation = MapBlackMarketRuntimeLens(obj["activeOperation"] as JObject ?? obj["active_operation"] as JObject),
+                PayoffWindow = MapBlackMarketRuntimeLens(obj["payoffWindow"] as JObject ?? obj["payoff_window"] as JObject),
+                PublicBackbonePressure = MapBlackMarketPublicPressure(obj["publicBackbonePressure"] as JObject ?? obj["public_backbone_pressure"] as JObject),
+            };
+        }
+
+        private static BlackMarketRuntimeLensSnapshot MapBlackMarketRuntimeLens(JObject obj)
+        {
+            if (obj == null) return new BlackMarketRuntimeLensSnapshot();
+            return new BlackMarketRuntimeLensSnapshot
+            {
+                State = obj["state"]?.Read<string>() ?? string.Empty,
+                Headline = obj["headline"]?.Read<string>() ?? string.Empty,
+                Detail = obj["detail"]?.Read<string>() ?? string.Empty,
+                SourceSurface = obj["sourceSurface"]?.Read<string>() ?? obj["source_surface"]?.Read<string>() ?? string.Empty,
+                ActionIds = (obj["actionIds"] as JArray)?.Values<string>().Where(v => !string.IsNullOrWhiteSpace(v)).ToList()
+                    ?? (obj["action_ids"] as JArray)?.Values<string>().Where(v => !string.IsNullOrWhiteSpace(v)).ToList()
+                    ?? new List<string>(),
+            };
+        }
+
+        private static BlackMarketPublicPressureSnapshot MapBlackMarketPublicPressure(JObject obj)
+        {
+            if (obj == null) return new BlackMarketPublicPressureSnapshot();
+            return new BlackMarketPublicPressureSnapshot
+            {
+                State = obj["state"]?.Read<string>() ?? string.Empty,
+                Headline = obj["headline"]?.Read<string>() ?? string.Empty,
+                Detail = obj["detail"]?.Read<string>() ?? string.Empty,
+                RecommendedAction = obj["recommendedAction"]?.Read<string>() ?? obj["recommended_action"]?.Read<string>() ?? string.Empty,
+                SourceSurface = obj["sourceSurface"]?.Read<string>() ?? obj["source_surface"]?.Read<string>() ?? string.Empty,
+            };
+        }
+
+        private static BlackMarketActiveOperationSurfaceSnapshot MapBlackMarketActiveOperation(JObject obj)
+        {
+            if (obj == null) return null;
+            return new BlackMarketActiveOperationSurfaceSnapshot
+            {
+                Lane = obj["lane"]?.Read<string>() ?? "black_market",
+                Headline = obj["headline"]?.Read<string>() ?? string.Empty,
+                Detail = obj["detail"]?.Read<string>() ?? string.Empty,
+                ActiveCount = obj["activeCount"]?.Read<int>() ?? obj["active_count"]?.Read<int>() ?? 0,
+                FormingCount = obj["formingCount"]?.Read<int>() ?? obj["forming_count"]?.Read<int>() ?? 0,
+                CoolingCount = obj["coolingCount"]?.Read<int>() ?? obj["cooling_count"]?.Read<int>() ?? 0,
+                Cards = (obj["cards"] as JArray)?.OfType<JObject>().Select(MapBlackMarketActiveOperationCard).Where(c => c != null).ToList() ?? new List<BlackMarketActiveOperationCardSnapshot>(),
+            };
+        }
+
+        private static BlackMarketActiveOperationCardSnapshot MapBlackMarketActiveOperationCard(JObject obj)
+        {
+            if (obj == null) return null;
+            return new BlackMarketActiveOperationCardSnapshot
+            {
+                Id = obj["id"]?.Read<string>() ?? string.Empty,
+                Kind = obj["kind"]?.Read<string>() ?? string.Empty,
+                State = obj["state"]?.Read<string>() ?? string.Empty,
+                Headline = obj["headline"]?.Read<string>() ?? string.Empty,
+                Summary = obj["summary"]?.Read<string>() ?? string.Empty,
+                OperatorNote = obj["operatorNote"]?.Read<string>() ?? obj["operator_note"]?.Read<string>() ?? string.Empty,
+                SourceSurface = obj["sourceSurface"]?.Read<string>() ?? obj["source_surface"]?.Read<string>() ?? string.Empty,
+                Risk = obj["risk"]?.Read<string>() ?? string.Empty,
+                ActionIds = (obj["actionIds"] as JArray)?.Values<string>().Where(v => !string.IsNullOrWhiteSpace(v)).ToList()
+                    ?? (obj["action_ids"] as JArray)?.Values<string>().Where(v => !string.IsNullOrWhiteSpace(v)).ToList()
+                    ?? new List<string>(),
+                MissionOfferIds = (obj["missionOfferIds"] as JArray)?.Values<string>().Where(v => !string.IsNullOrWhiteSpace(v)).ToList()
+                    ?? (obj["mission_offer_ids"] as JArray)?.Values<string>().Where(v => !string.IsNullOrWhiteSpace(v)).ToList()
+                    ?? new List<string>(),
+            };
+        }
+
+        private static BlackMarketPayoffRecoverySurfaceSnapshot MapBlackMarketPayoffRecovery(JObject obj)
+        {
+            if (obj == null) return null;
+            return new BlackMarketPayoffRecoverySurfaceSnapshot
+            {
+                Lane = obj["lane"]?.Read<string>() ?? "black_market",
+                Phase = obj["phase"]?.Read<string>() ?? string.Empty,
+                Severity = obj["severity"]?.Read<string>() ?? string.Empty,
+                Headline = obj["headline"]?.Read<string>() ?? string.Empty,
+                Detail = obj["detail"]?.Read<string>() ?? string.Empty,
+                StateReason = obj["stateReason"]?.Read<string>() ?? obj["state_reason"]?.Read<string>() ?? string.Empty,
+                RecommendedAction = obj["recommendedAction"]?.Read<string>() ?? obj["recommended_action"]?.Read<string>() ?? string.Empty,
+                RecentReceipts = (obj["recentReceipts"] as JArray)?.OfType<JObject>().Select(MapBlackMarketPayoffRecoveryReceipt).Where(r => r != null).ToList()
+                    ?? (obj["recent_receipts"] as JArray)?.OfType<JObject>().Select(MapBlackMarketPayoffRecoveryReceipt).Where(r => r != null).ToList()
+                    ?? new List<BlackMarketPayoffRecoveryReceiptSnapshot>(),
+            };
+        }
+
+        private static BlackMarketPayoffRecoveryReceiptSnapshot MapBlackMarketPayoffRecoveryReceipt(JObject obj)
+        {
+            if (obj == null) return null;
+            return new BlackMarketPayoffRecoveryReceiptSnapshot
+            {
+                Id = obj["id"]?.Read<string>() ?? string.Empty,
+                CreatedAtUtc = ParseUtc(obj["createdAt"] ?? obj["created_at"]),
+                Title = obj["title"]?.Read<string>() ?? string.Empty,
+                Summary = obj["summary"]?.Read<string>() ?? string.Empty,
+                Detail = obj["detail"]?.Read<string>() ?? string.Empty,
+                Severity = obj["severity"]?.Read<string>() ?? string.Empty,
+                RuntimeActionId = obj["runtimeActionId"]?.Read<string>() ?? obj["runtime_action_id"]?.Read<string>() ?? string.Empty,
+            };
+        }
 
         private static string FirstNonBlank(params string[] values)
         {
@@ -320,11 +577,11 @@ namespace PlanarWar.Client.Core.Mapping
             if (obj == null) return null;
             return new ResearchSnapshot
             {
-                Id = obj["techId"]?.Read<string>(),
-                Name = obj["name"]?.Read<string>() ?? obj["techId"]?.Read<string>() ?? "Research",
+                Id = obj["techId"]?.Read<string>() ?? obj["tech_id"]?.Read<string>(),
+                Name = obj["name"]?.Read<string>() ?? obj["techId"]?.Read<string>() ?? obj["tech_id"]?.Read<string>() ?? "Research",
                 Progress = obj["progress"]?.Read<double?>(),
                 Cost = obj["cost"]?.Read<double?>(),
-                StartedAtUtc = ParseUtc(obj["startedAt"])
+                StartedAtUtc = ParseUtc(obj["startedAt"] ?? obj["started_at"])
             };
         }
 

@@ -156,6 +156,41 @@
                     </ui:VisualElement>
                 </ui:VisualElement>
 
+                <ui:VisualElement class="summary-card summary-card--full summary-card--action">
+                    <ui:VisualElement class="development-actions-head">
+                        <ui:Label text="Pressure / contract desk" class="eyebrow" />
+                        <ui:Label name="pressure-desk-badge-value" text="No live seam" class="chapter-row__badge" />
+                    </ui:VisualElement>
+                    <ui:Label name="pressure-desk-headline-value" text="Pressure desk waiting on live summary truth." class="rail-note-title" />
+                    <ui:Label name="pressure-desk-detail-value" text="This desk should show the live seam, why the board moved, and the fastest honest next answer without making you dig through three different tabs." class="summary-value summary-value--glance" />
+
+                    <ui:VisualElement class="summary-grid summary-grid--glance">
+                        <ui:VisualElement class="summary-card glance-card">
+                            <ui:Label name="pressure-seam-title" text="Live seam" class="eyebrow" />
+                            <ui:Label name="pressure-seam-value" text="No seam surfaced." class="summary-value summary-value--glance" />
+                            <ui:Label name="pressure-seam-note" text="Continuity and stage are not loaded yet." class="metric-subvalue metric-subvalue--wrap" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card glance-card">
+                            <ui:Label name="pressure-contract-title" text="Why this board moved" class="eyebrow" />
+                            <ui:Label name="pressure-contract-value" text="No contract why-now surfaced." class="summary-value summary-value--glance" />
+                            <ui:Label name="pressure-contract-note" text="Board reasoning will land here." class="metric-subvalue metric-subvalue--wrap" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card glance-card">
+                            <ui:Label name="pressure-answer-title" text="Answer lane" class="eyebrow" />
+                            <ui:Label name="pressure-answer-value" text="No answer lane surfaced." class="summary-value summary-value--glance" />
+                            <ui:Label name="pressure-answer-note" text="Lane-aware answer guidance will land here." class="metric-subvalue metric-subvalue--wrap" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card glance-card">
+                            <ui:Label name="pressure-demand-title" text="Supply / reserve bend" class="eyebrow" />
+                            <ui:Label name="pressure-demand-value" text="No demand bend surfaced." class="summary-value summary-value--glance" />
+                            <ui:Label name="pressure-demand-note" text="Exchange or payoff drag will land here." class="metric-subvalue metric-subvalue--wrap" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
                 <ui:VisualElement class="summary-grid summary-grid--timers">
                     <ui:VisualElement class="summary-card timer-card">
                         <ui:Label text="Research timer" class="eyebrow" />
