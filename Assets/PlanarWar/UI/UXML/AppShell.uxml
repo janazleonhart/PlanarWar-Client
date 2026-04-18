@@ -1,12 +1,14 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
     <ui:Style src="../USS/AppShell.uss" />
     <ui:VisualElement name="root-shell" class="shell-root">
-        <ui:VisualElement name="left-rail" class="panel rail-panel">
-            <ui:Label text="PLANAR WAR" class="eyebrow" />
-            <ui:Label text="Command shell" class="rail-title" />
-            <ui:Label text="Client-first play shell. Pick a chapter, glance the empire, then act." class="rail-copy" />
+        <ui:VisualElement name="left-rail" class="panel rail-panel rail-panel--compact">
+            <ui:ScrollView name="left-rail-scroll" class="rail-scroll" mode="Vertical">
+                <ui:VisualElement class="rail-scroll__content">
+                    <ui:Label text="PLANAR WAR" class="eyebrow" />
+                    <ui:Label text="Command shell" class="rail-title" />
+                    <ui:Label text="Client-first play shell. Pick a chapter, glance the empire, then act." class="rail-copy" />
 
-            <ui:VisualElement class="rail-active-card">
+                    <ui:VisualElement class="rail-active-card">
                 <ui:VisualElement class="rail-active-card__head">
                     <ui:Label text="Active chapter" class="eyebrow" />
                     <ui:Label name="current-chapter-meta" text="Live now" class="rail-active-card__meta" />
@@ -85,6 +87,8 @@
                     <ui:Label text="Route" class="chapter-row__action" />
                 </ui:Button>
             </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:ScrollView>
         </ui:VisualElement>
 
         <ui:VisualElement name="right-column" class="column">

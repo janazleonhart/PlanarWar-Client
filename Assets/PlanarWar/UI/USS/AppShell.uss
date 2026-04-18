@@ -1056,3 +1056,80 @@
     gap: 6px;
     flex-grow: 1;
 }
+
+
+/* Left rail visibility + compact chapter fit v1 */
+.rail-panel {
+    flex-shrink: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.rail-panel--compact {
+    width: 248px;
+    min-width: 248px;
+    gap: 8px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.rail-scroll {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.rail-scroll__content {
+    gap: 8px;
+    padding-right: 4px;
+}
+
+.rail-panel--compact .rail-title {
+    font-size: 20px;
+}
+
+.rail-panel--compact .rail-copy {
+    font-size: 12px;
+}
+
+.rail-panel--compact .rail-active-card,
+.rail-panel--compact .rail-version-card {
+    gap: 4px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.rail-panel--compact .rail-menu,
+.rail-panel--compact .rail-menu--cards {
+    gap: 8px;
+}
+
+.rail-panel--compact .chapter-row {
+    min-height: 84px;
+    gap: 8px;
+    padding-left: 9px;
+    padding-right: 9px;
+    padding-top: 9px;
+    padding-bottom: 9px;
+}
+
+.rail-panel--compact .chapter-row__title {
+    font-size: 17px;
+}
+
+.rail-panel--compact .chapter-row__copy {
+    font-size: 11px;
+}
+
+.rail-panel--compact .chapter-row__body {
+    gap: 3px;
+}
+
+.rail-panel--compact .chapter-row__action {
+    min-width: 36px;
+}
