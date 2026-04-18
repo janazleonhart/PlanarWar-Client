@@ -386,6 +386,92 @@
     margin-bottom: 12px;
 }
 
+.pressure-operations-head {
+    margin-top: 10px;
+}
+
+.pressure-operations-strip {
+    margin-top: 6px;
+    gap: 12px;
+    align-items: stretch;
+}
+
+.pressure-op-card {
+    min-width: 250px;
+    max-width: 32%;
+    min-height: 176px;
+    gap: 8px;
+    justify-content: flex-start;
+    background-color: rgba(17, 28, 58, 0.95);
+}
+
+.pressure-op-card--empty {
+    max-width: 100%;
+    min-height: 132px;
+}
+
+.pressure-op-card__top {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.pressure-op-card__badge {
+    flex-shrink: 0;
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    background-color: rgba(31, 49, 93, 0.95);
+    color: rgb(238, 244, 255);
+    border-top-left-radius: 999px;
+    border-top-right-radius: 999px;
+    border-bottom-left-radius: 999px;
+    border-bottom-right-radius: 999px;
+    font-size: 11px;
+    -unity-font-style: bold;
+}
+
+.pressure-op-card__badge--ready {
+    background-color: rgba(54, 88, 176, 0.98);
+}
+
+.pressure-op-card__badge--forming {
+    background-color: rgba(65, 89, 145, 0.92);
+}
+
+.pressure-op-card__badge--blocked {
+    background-color: rgba(88, 56, 82, 0.92);
+}
+
+.pressure-op-card__badge--queued {
+    background-color: rgba(31, 49, 93, 0.95);
+}
+
+.pressure-op-card .rail-note-title,
+.pressure-op-card .summary-value,
+.pressure-op-card .metric-subvalue {
+    white-space: normal;
+}
+
+.pressure-op-card__cta {
+    margin-top: auto;
+    min-height: 32px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    background-color: rgba(54, 88, 176, 0.32);
+    color: rgb(226, 234, 255);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    -unity-font-style: bold;
+    unity-text-align: middle-center;
+}
+
 
 .warfront-screen-content {
     gap: 14px;
@@ -413,6 +499,10 @@
 
 .summary-screen-content .glance-card {
     min-height: 116px;
+}
+
+.summary-screen-content .pressure-op-card {
+    min-width: 240px;
 }
 
 .summary-grid--desk {

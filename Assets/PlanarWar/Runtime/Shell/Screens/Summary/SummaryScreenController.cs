@@ -39,6 +39,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private readonly Label pressureDemandTitle;
         private readonly Label pressureDemandValue;
         private readonly Label pressureDemandNote;
+        private readonly VisualElement pressureOperationsStrip;
         private int heartbeat;
 
         public SummaryScreenController(VisualElement root)
@@ -74,6 +75,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             pressureDemandTitle = root.Q<Label>("pressure-demand-title");
             pressureDemandValue = root.Q<Label>("pressure-demand-value");
             pressureDemandNote = root.Q<Label>("pressure-demand-note");
+            pressureOperationsStrip = root.Q<VisualElement>("pressure-operations-strip");
         }
 
         public void Render(ShellSummarySnapshot s, bool isSummaryLoaded)
@@ -121,6 +123,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
                     demandTitle: "Demand bend",
                     demandValue: "No supply signal yet.",
                     demandNote: "Production, reserve, and exchange drag need a live settlement payload before the desk can summarize them honestly.");
+                RenderOperationStrip(summary, lane: null);
                 return;
             }
 
@@ -130,10 +133,12 @@ namespace PlanarWar.Client.UI.Screens.Summary
             if (lane == "black_market")
             {
                 RenderShadowPressureDesk(summary, primaryOp);
+                RenderOperationStrip(summary, lane);
                 return;
             }
 
             RenderCivicPressureDesk(summary, primaryOp);
+            RenderOperationStrip(summary, lane);
         }
 
         private void RenderCivicPressureDesk(ShellSummarySnapshot summary, OperationSnapshot primaryOp)
@@ -209,6 +214,343 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 demandNote: demandNote);
         }
 
+        private void RenderOperationStrip(ShellSummarySnapshot summary, string lane)
+        {
+            if (pressureOperationsStrip == null)
+            {
+                return;
+            }
+
+            pressureOperationsStrip.Clear();
+
+            var operations = SelectOperationStrip(summary?.OpeningOperations, lane);
+            if (operations.Count == 0)
+            {
+                pressureOperationsStrip.Add(BuildOperationEmptyCard(summary, lane));
+                return;
+            }
+
+            for (var index = 0; index < operations.Count; index++)
+            {
+                pressureOperationsStrip.Add(BuildOperationCard(operations[index], index, summary, lane));
+            }
+        }
+
+        private VisualElement BuildOperationEmptyCard(ShellSummarySnapshot summary, string lane)
+        {
+            var card = new VisualElement();
+            card.AddToClassList("summary-card");
+            card.AddToClassList("pressure-op-card");
+            card.AddToClassList("pressure-op-card--empty");
+
+            var eyebrow = new Label("Fast options");
+            eyebrow.AddToClassList("eyebrow");
+            card.Add(eyebrow);
+
+            var title = new Label(string.IsNullOrWhiteSpace(lane) ? "No operation strip yet." : $"No {HumanizeWords(lane, "lane").ToLowerInvariant()} options surfaced.");
+            title.AddToClassList("rail-note-title");
+            card.Add(title);
+
+            var detail = new Label(BuildOperationEmptyNote(summary, lane));
+            detail.AddToClassList("metric-subvalue");
+            detail.AddToClassList("metric-subvalue--wrap");
+            card.Add(detail);
+
+            var cta = new Label(summary?.HasCity == true ? "Watch the desk" : "Found a settlement first");
+            cta.AddToClassList("pressure-op-card__cta");
+            card.Add(cta);
+            return card;
+        }
+
+        private static string BuildOperationEmptyNote(ShellSummarySnapshot summary, string lane)
+        {
+            if (summary?.HasCity != true)
+            {
+                return "The quick-decision strip stays empty until /api/me has a real settlement payload.";
+            }
+
+            if (string.Equals(lane, "black_market", StringComparison.OrdinalIgnoreCase))
+            {
+                return FirstNonBlank(
+                    summary.BlackMarketRuntimeTruth?.OperatorFrontSummary,
+                    summary.BlackMarketRuntimeTruth?.Detail,
+                    summary.BlackMarketPayoffRecovery?.Detail,
+                    "No shadow operation is leading right now, so the desk stays honest instead of inventing urgency.");
+            }
+
+            return FirstNonBlank(
+                summary.PublicBackbonePressureConvergence?.Detail,
+                summary.PublicBackbonePressureConvergence?.RecommendedAction,
+                "No civic operation is leading right now, so the desk stays honest instead of inventing urgency.");
+        }
+
+        private VisualElement BuildOperationCard(OperationSnapshot operation, int index, ShellSummarySnapshot summary, string lane)
+        {
+            var card = new VisualElement();
+            card.AddToClassList("summary-card");
+            card.AddToClassList("pressure-op-card");
+
+            var top = new VisualElement();
+            top.AddToClassList("pressure-op-card__top");
+
+            var eyebrow = new Label($"Fast option {index + 1:00}");
+            eyebrow.AddToClassList("eyebrow");
+            top.Add(eyebrow);
+
+            var readiness = new Label(HumanizeOperationReadiness(operation?.Readiness));
+            readiness.AddToClassList("pressure-op-card__badge");
+            readiness.AddToClassList(OperationReadinessBadgeClass(operation?.Readiness));
+            top.Add(readiness);
+            card.Add(top);
+
+            var title = new Label(FirstNonBlank(operation?.Title, operation?.FocusLabel, "Operation"));
+            title.AddToClassList("rail-note-title");
+            card.Add(title);
+
+            var postureTitle = new Label("Lane posture");
+            postureTitle.AddToClassList("eyebrow");
+            card.Add(postureTitle);
+
+            var postureValue = new Label(BuildOperationPosture(operation, summary, lane));
+            postureValue.AddToClassList("summary-value");
+            postureValue.AddToClassList("summary-value--glance");
+            card.Add(postureValue);
+
+            var whyTitle = new Label("Why now");
+            whyTitle.AddToClassList("eyebrow");
+            card.Add(whyTitle);
+
+            var whyValue = new Label(FirstNonBlank(operation?.WhyNow, operation?.Payoff, operation?.Detail, operation?.Summary, "No why-now reason surfaced."));
+            whyValue.AddToClassList("metric-subvalue");
+            whyValue.AddToClassList("metric-subvalue--wrap");
+            card.Add(whyValue);
+
+            var cta = new Label(FirstNonBlank(operation?.CtaLabel, DefaultOperationCta(operation)));
+            cta.AddToClassList("pressure-op-card__cta");
+            card.Add(cta);
+            return card;
+        }
+
+        private static string DefaultOperationCta(OperationSnapshot operation)
+        {
+            switch ((operation?.Readiness ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case "ready_now":
+                    return "Act now";
+                case "prepare_soon":
+                    return "Prep next";
+                case "blocked":
+                    return "Review blocker";
+                default:
+                    return "Review at desk";
+            }
+        }
+
+        private static string HumanizeOperationReadiness(string readiness)
+        {
+            switch ((readiness ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case "ready_now":
+                    return "Ready now";
+                case "prepare_soon":
+                    return "Forming";
+                case "blocked":
+                    return "Blocked";
+                default:
+                    return HumanizeWords(readiness, "Queued");
+            }
+        }
+
+        private static string OperationReadinessBadgeClass(string readiness)
+        {
+            switch ((readiness ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case "ready_now":
+                    return "pressure-op-card__badge--ready";
+                case "prepare_soon":
+                    return "pressure-op-card__badge--forming";
+                case "blocked":
+                    return "pressure-op-card__badge--blocked";
+                default:
+                    return "pressure-op-card__badge--queued";
+            }
+        }
+
+        private static List<OperationSnapshot> SelectOperationStrip(List<OperationSnapshot> operations, string lane)
+        {
+            var filtered = (operations ?? new List<OperationSnapshot>())
+                .Where(operation => operation != null)
+                .Where(operation => OperationMatchesLane(operation, lane))
+                .OrderBy(operation => OperationPriorityOrder(operation.Priority))
+                .ThenBy(operation => OperationReadinessOrder(operation.Readiness))
+                .ThenByDescending(operation => !string.IsNullOrWhiteSpace(operation.WhyNow))
+                .ThenByDescending(operation => !string.IsNullOrWhiteSpace(operation.CtaLabel))
+                .Take(3)
+                .ToList();
+
+            if (filtered.Count > 0 || string.IsNullOrWhiteSpace(lane))
+            {
+                return filtered;
+            }
+
+            return (operations ?? new List<OperationSnapshot>())
+                .Where(operation => operation != null)
+                .OrderBy(operation => OperationPriorityOrder(operation.Priority))
+                .ThenBy(operation => OperationReadinessOrder(operation.Readiness))
+                .ThenByDescending(operation => !string.IsNullOrWhiteSpace(operation.WhyNow))
+                .Take(3)
+                .ToList();
+        }
+
+        private static bool OperationMatchesLane(OperationSnapshot operation, string lane)
+        {
+            if (operation == null || string.IsNullOrWhiteSpace(lane))
+            {
+                return true;
+            }
+
+            var normalizedLane = NormalizeLane(operation.Lane);
+            if (string.Equals(normalizedLane, lane, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (string.Equals(lane, "city", StringComparison.OrdinalIgnoreCase))
+            {
+                return string.IsNullOrWhiteSpace(operation.Lane);
+            }
+
+            return false;
+        }
+
+        private static string BuildOperationPosture(OperationSnapshot operation, ShellSummarySnapshot summary, string lane)
+        {
+            var responsePosture = HumanizeOperationResponsePosture(operation?.ResponsePosture);
+            if (!string.IsNullOrWhiteSpace(responsePosture))
+            {
+                return responsePosture;
+            }
+
+            if (string.Equals(lane, "black_market", StringComparison.OrdinalIgnoreCase))
+            {
+                var shadowKind = ResolveShadowOperationKind(operation, summary);
+                if (!string.IsNullOrWhiteSpace(shadowKind))
+                {
+                    return BuildShadowPostureFromKind(shadowKind);
+                }
+
+                return BuildShadowPostureFromText(operation);
+            }
+
+            return BuildCivicPostureFromText(operation);
+        }
+
+        private static string HumanizeOperationResponsePosture(string responsePosture)
+        {
+            if (string.IsNullOrWhiteSpace(responsePosture))
+            {
+                return string.Empty;
+            }
+
+            switch (responsePosture.Trim().ToLowerInvariant())
+            {
+                case "stabilize_first":
+                case "stabilize":
+                    return "Public relief / repair";
+                case "repair":
+                    return "Public relief / repair";
+                case "investigate":
+                    return "Investigation / service desk";
+                case "exploit":
+                    return "Covert exploit / cash-out";
+                case "containment":
+                case "contain":
+                    return "Cover repair / deniable cleanup";
+                case "counterfeit":
+                    return "Counterfeit / deniable throughput";
+                default:
+                    return HumanizeWords(responsePosture, string.Empty);
+            }
+        }
+
+        private static string ResolveShadowOperationKind(OperationSnapshot operation, ShellSummarySnapshot summary)
+        {
+            if (!string.IsNullOrWhiteSpace(operation?.Kind))
+            {
+                return operation.Kind;
+            }
+
+            if (summary?.BlackMarketActiveOperation?.Cards == null)
+            {
+                return string.Empty;
+            }
+
+            foreach (var card in summary.BlackMarketActiveOperation.Cards)
+            {
+                if (card == null)
+                {
+                    continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(operation?.ActionId) && card.ActionIds?.Any(actionId => string.Equals(actionId, operation.ActionId, StringComparison.OrdinalIgnoreCase)) == true)
+                {
+                    return card.Kind;
+                }
+
+                if (!string.IsNullOrWhiteSpace(operation?.MissionId) && card.MissionOfferIds?.Any(missionId => string.Equals(missionId, operation.MissionId, StringComparison.OrdinalIgnoreCase)) == true)
+                {
+                    return card.Kind;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private static string BuildShadowPostureFromKind(string kind)
+        {
+            switch ((kind ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case "counterfeit_job":
+                    return "Counterfeit / deniable throughput";
+                case "exploit":
+                    return "Covert exploit / cash-out";
+                case "containment":
+                case "cover_repair":
+                    return "Cover repair / deniable cleanup";
+                case "backbone_pressure":
+                case "bribery":
+                case "warning_window":
+                    return "Covert pressure / deniable leverage";
+                default:
+                    return string.Empty;
+            }
+        }
+
+        private static string BuildShadowPostureFromText(OperationSnapshot operation)
+        {
+            var text = string.Join(" ", new[] { operation?.Title, operation?.Summary, operation?.Detail, operation?.WhyNow, operation?.FocusLabel })
+                .Trim()
+                .ToLowerInvariant();
+
+            if (text.Contains("counterfeit")) return "Counterfeit / deniable throughput";
+            if (text.Contains("cover") || text.Contains("cleanup") || text.Contains("contain")) return "Cover repair / deniable cleanup";
+            if (text.Contains("bribe") || text.Contains("pressure") || text.Contains("leverage") || text.Contains("warning")) return "Covert pressure / deniable leverage";
+            if (text.Contains("covert") || text.Contains("exploit") || text.Contains("cash")) return "Covert exploit / cash-out";
+            return "Covert / deniable / counterfeit";
+        }
+
+        private static string BuildCivicPostureFromText(OperationSnapshot operation)
+        {
+            var text = string.Join(" ", new[] { operation?.Title, operation?.Summary, operation?.Detail, operation?.WhyNow, operation?.FocusLabel })
+                .Trim()
+                .ToLowerInvariant();
+
+            if (text.Contains("investig") || text.Contains("counterfeit") || text.Contains("audit") || text.Contains("trace")) return "Investigation / service desk";
+            if (text.Contains("caravan") || text.Contains("supply") || text.Contains("reserve") || text.Contains("depot")) return "Caravan / reserve relief";
+            if (text.Contains("repair") || text.Contains("relief") || text.Contains("stabil") || text.Contains("backbone")) return "Public relief / repair";
+            return "Public relief / repair / investigation";
+        }
+
         private void SetPressureDesk(
             string badge,
             string headline,
@@ -246,7 +588,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private static string NormalizeLane(string lane)
         {
             var normalized = (lane ?? string.Empty).Trim().ToLowerInvariant();
-            if (normalized == "black_market" || normalized == "black market")
+            if (normalized == "black_market" || normalized == "black market" || normalized == "black-market" || normalized == "blackmarket" || normalized == "shadow")
             {
                 return "black_market";
             }
