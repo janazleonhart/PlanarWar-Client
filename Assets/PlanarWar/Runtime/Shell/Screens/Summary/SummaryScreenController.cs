@@ -39,6 +39,8 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private readonly Label pressureDemandTitle;
         private readonly Label pressureDemandValue;
         private readonly Label pressureDemandNote;
+        private readonly Label pressureOperationsCopy;
+        private readonly Label pressureOperationsCountBadge;
         private readonly VisualElement pressureOperationsStrip;
         private int heartbeat;
 
@@ -75,6 +77,8 @@ namespace PlanarWar.Client.UI.Screens.Summary
             pressureDemandTitle = root.Q<Label>("pressure-demand-title");
             pressureDemandValue = root.Q<Label>("pressure-demand-value");
             pressureDemandNote = root.Q<Label>("pressure-demand-note");
+            pressureOperationsCopy = root.Q<Label>("pressure-operations-copy-value");
+            pressureOperationsCountBadge = root.Q<Label>("pressure-operations-count-badge-value");
             pressureOperationsStrip = root.Q<VisualElement>("pressure-operations-strip");
         }
 
@@ -223,7 +227,8 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             pressureOperationsStrip.Clear();
 
-            var operations = SelectOperationStrip(summary?.OpeningOperations, lane);
+            var operations = SelectOperationStrip(summary, lane);
+            SetPressureOperationsMeta(BuildOperationStripBadge(operations), BuildOperationStripCopy(summary, lane, operations));
             if (operations.Count == 0)
             {
                 pressureOperationsStrip.Add(BuildOperationEmptyCard(summary, lane));
@@ -316,6 +321,15 @@ namespace PlanarWar.Client.UI.Screens.Summary
             postureValue.AddToClassList("summary-value--glance");
             card.Add(postureValue);
 
+            var demandTitle = new Label("Demand signal");
+            demandTitle.AddToClassList("eyebrow");
+            card.Add(demandTitle);
+
+            var demandValue = new Label(BuildOperationDemandSignal(operation, summary, lane));
+            demandValue.AddToClassList("metric-subvalue");
+            demandValue.AddToClassList("metric-subvalue--wrap");
+            card.Add(demandValue);
+
             var whyTitle = new Label("Why now");
             whyTitle.AddToClassList("eyebrow");
             card.Add(whyTitle);
@@ -376,12 +390,14 @@ namespace PlanarWar.Client.UI.Screens.Summary
             }
         }
 
-        private static List<OperationSnapshot> SelectOperationStrip(List<OperationSnapshot> operations, string lane)
+        private static List<OperationSnapshot> SelectOperationStrip(ShellSummarySnapshot summary, string lane)
         {
-            var filtered = (operations ?? new List<OperationSnapshot>())
+            var operations = summary?.OpeningOperations ?? new List<OperationSnapshot>();
+            var filtered = operations
                 .Where(operation => operation != null)
                 .Where(operation => OperationMatchesLane(operation, lane))
-                .OrderBy(operation => OperationPriorityOrder(operation.Priority))
+                .OrderByDescending(operation => OperationDemandScore(operation, summary, lane))
+                .ThenBy(operation => OperationPriorityOrder(operation.Priority))
                 .ThenBy(operation => OperationReadinessOrder(operation.Readiness))
                 .ThenByDescending(operation => !string.IsNullOrWhiteSpace(operation.WhyNow))
                 .ThenByDescending(operation => !string.IsNullOrWhiteSpace(operation.CtaLabel))
@@ -393,9 +409,10 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 return filtered;
             }
 
-            return (operations ?? new List<OperationSnapshot>())
+            return operations
                 .Where(operation => operation != null)
-                .OrderBy(operation => OperationPriorityOrder(operation.Priority))
+                .OrderByDescending(operation => OperationDemandScore(operation, summary, lane: null))
+                .ThenBy(operation => OperationPriorityOrder(operation.Priority))
                 .ThenBy(operation => OperationReadinessOrder(operation.Readiness))
                 .ThenByDescending(operation => !string.IsNullOrWhiteSpace(operation.WhyNow))
                 .Take(3)
@@ -418,6 +435,265 @@ namespace PlanarWar.Client.UI.Screens.Summary
             if (string.Equals(lane, "city", StringComparison.OrdinalIgnoreCase))
             {
                 return string.IsNullOrWhiteSpace(operation.Lane);
+            }
+
+            return false;
+        }
+
+        private void SetPressureOperationsMeta(string badge, string copy)
+        {
+            if (pressureOperationsCountBadge != null) pressureOperationsCountBadge.text = badge;
+            if (pressureOperationsCopy != null) pressureOperationsCopy.text = copy;
+        }
+
+        private static string BuildOperationStripBadge(List<OperationSnapshot> operations)
+        {
+            if (operations == null || operations.Count == 0)
+            {
+                return "No fast calls";
+            }
+
+            var readyNow = operations.Count(operation => string.Equals(operation?.Readiness, "ready_now", StringComparison.OrdinalIgnoreCase));
+            var forming = operations.Count(operation => string.Equals(operation?.Readiness, "prepare_soon", StringComparison.OrdinalIgnoreCase));
+            var blocked = operations.Count(operation => string.Equals(operation?.Readiness, "blocked", StringComparison.OrdinalIgnoreCase));
+            return $"{operations.Count} shaped • {readyNow} ready • {forming} forming • {blocked} blocked";
+        }
+
+        private static string BuildOperationStripCopy(ShellSummarySnapshot summary, string lane, List<OperationSnapshot> operations)
+        {
+            if (summary?.HasCity != true)
+            {
+                return "The fast strip stays empty until the summary has a real settlement, a live seam, and a demand bend worth surfacing.";
+            }
+
+            if (operations == null || operations.Count == 0)
+            {
+                return BuildOperationEmptyNote(summary, lane);
+            }
+
+            if (string.Equals(lane, "black_market", StringComparison.OrdinalIgnoreCase))
+            {
+                return BuildShadowOperationStripCopy(summary, operations);
+            }
+
+            return BuildCivicOperationStripCopy(summary, operations);
+        }
+
+        private static string BuildOperationDemandSignal(OperationSnapshot operation, ShellSummarySnapshot summary, string lane)
+        {
+            if (operation == null)
+            {
+                return "No demand signal surfaced.";
+            }
+
+            if (string.Equals(lane, "black_market", StringComparison.OrdinalIgnoreCase))
+            {
+                return BuildShadowOperationDemandSignal(operation, summary);
+            }
+
+            return BuildCivicOperationDemandSignal(operation, summary);
+        }
+
+        private static int OperationDemandScore(OperationSnapshot operation, ShellSummarySnapshot summary, string lane)
+        {
+            if (operation == null)
+            {
+                return int.MinValue;
+            }
+
+            var score = 0;
+            if (!string.IsNullOrWhiteSpace(operation.WhyNow)) score += 2;
+            if (!string.IsNullOrWhiteSpace(operation.CtaLabel)) score += 1;
+            if (!string.IsNullOrWhiteSpace(operation.FocusLabel)) score += 1;
+            if (!string.IsNullOrWhiteSpace(operation.Payoff)) score += 1;
+
+            if (string.Equals(lane, "black_market", StringComparison.OrdinalIgnoreCase))
+            {
+                score += ScoreShadowDemandShape(operation, summary);
+            }
+            else
+            {
+                score += ScoreCivicDemandShape(operation, summary);
+            }
+
+            return score;
+        }
+
+        private static int ScoreCivicDemandShape(OperationSnapshot operation, ShellSummarySnapshot summary)
+        {
+            var posture = BuildOperationPosture(operation, summary, lane: "city").ToLowerInvariant();
+            var front = SelectPrimaryCivicFront(summary?.PublicBackbonePressureConvergence);
+            var context = string.Join(" ", new[]
+            {
+                summary?.PublicBackbonePressureConvergence?.TradeWindow,
+                summary?.PublicBackbonePressureConvergence?.FocusLane,
+                summary?.PublicBackbonePressureConvergence?.RecommendedAction,
+                summary?.PublicBackbonePressureConvergence?.Detail,
+                summary?.PublicBackbonePressureConvergence?.LatestSupportReceipt?.Title,
+                summary?.PublicBackbonePressureConvergence?.LatestSupportReceipt?.Summary,
+                summary?.PublicBackbonePressureConvergence?.LatestSupportReceipt?.SourceSurface,
+                front?.Id,
+                front?.Headline,
+                front?.Summary,
+                front?.RecommendedAction,
+                operation?.Title,
+                operation?.Summary,
+                operation?.Detail,
+                operation?.WhyNow
+            }).ToLowerInvariant();
+
+            var score = 0;
+            if (posture.Contains("caravan / reserve") && ContainsAny(context, "vendor_trade", "caravan", "reserve", "depot", "supply", "essentials", "hold window", "exchange")) score += 6;
+            if (posture.Contains("investigation") && ContainsAny(context, "npc_city_services", "investig", "audit", "trace", "counterfeit", "records", "registry", "service")) score += 6;
+            if (posture.Contains("public relief / repair") && ContainsAny(context, "public_backbone", "relief", "repair", "stabil", "backbone", "triage", "support floor")) score += 6;
+            if (ContainsAny(context, "latest receipt", "support floor", "reserve", "exchange", "depot")) score += 2;
+            return score;
+        }
+
+        private static int ScoreShadowDemandShape(OperationSnapshot operation, ShellSummarySnapshot summary)
+        {
+            var posture = BuildOperationPosture(operation, summary, lane: "black_market").ToLowerInvariant();
+            var card = SelectPrimaryShadowCard(summary?.BlackMarketActiveOperation);
+            var context = string.Join(" ", new[]
+            {
+                summary?.BlackMarketRuntimeTruth?.RuntimeBand,
+                summary?.BlackMarketRuntimeTruth?.Headline,
+                summary?.BlackMarketRuntimeTruth?.Detail,
+                summary?.BlackMarketRuntimeTruth?.OperatorFrontSummary,
+                summary?.BlackMarketRuntimeTruth?.PublicBackbonePressure?.State,
+                summary?.BlackMarketRuntimeTruth?.PublicBackbonePressure?.RecommendedAction,
+                summary?.BlackMarketRuntimeTruth?.PublicBackbonePressure?.Detail,
+                summary?.BlackMarketPayoffRecovery?.Phase,
+                summary?.BlackMarketPayoffRecovery?.Headline,
+                summary?.BlackMarketPayoffRecovery?.Detail,
+                summary?.BlackMarketPayoffRecovery?.RecommendedAction,
+                summary?.BlackMarketPayoffRecovery?.StateReason,
+                summary?.BlackMarketPayoffRecovery?.RecentReceipts?.FirstOrDefault()?.Title,
+                summary?.BlackMarketPayoffRecovery?.RecentReceipts?.FirstOrDefault()?.Summary,
+                card?.Kind,
+                card?.Headline,
+                card?.Summary,
+                card?.OperatorNote,
+                operation?.Title,
+                operation?.Summary,
+                operation?.Detail,
+                operation?.WhyNow
+            }).ToLowerInvariant();
+
+            var score = 0;
+            if (posture.Contains("counterfeit") && ContainsAny(context, "counterfeit", "permit", "throughput", "script", "window")) score += 6;
+            if (posture.Contains("cover repair") && ContainsAny(context, "cover", "cleanup", "contain", "cooling", "backlash", "repair")) score += 6;
+            if (posture.Contains("covert pressure") && ContainsAny(context, "pressure", "backbone", "warning", "bribe", "leverage")) score += 6;
+            if (posture.Contains("covert exploit") && ContainsAny(context, "exploit", "payoff", "cash", "window", "active")) score += 6;
+            if (ContainsAny(context, "receipt", "backlash", "pressure", "payoff")) score += 2;
+            return score;
+        }
+
+        private static string BuildCivicOperationStripCopy(ShellSummarySnapshot summary, List<OperationSnapshot> operations)
+        {
+            var surface = summary?.PublicBackbonePressureConvergence;
+            var strongest = operations.FirstOrDefault();
+            var strongestPosture = BuildOperationPosture(strongest, summary, lane: "city");
+            var receipt = surface?.LatestSupportReceipt;
+            var bend = BuildCivicDemandValue(surface);
+            var receiptLine = receipt != null ? $"Latest receipt: {receipt.Title}." : string.Empty;
+            return FirstNonBlank(
+                $"Board bend: {bend}. Leading posture: {strongestPosture}. {receiptLine}".Trim(),
+                surface?.RecommendedAction,
+                surface?.Detail,
+                "The fast strip should rank the most demand-shaped civic answers first.");
+        }
+
+        private static string BuildShadowOperationStripCopy(ShellSummarySnapshot summary, List<OperationSnapshot> operations)
+        {
+            var runtime = summary?.BlackMarketRuntimeTruth;
+            var payoff = summary?.BlackMarketPayoffRecovery;
+            var strongest = operations.FirstOrDefault();
+            var strongestPosture = BuildOperationPosture(strongest, summary, lane: "black_market");
+            var receipt = payoff?.RecentReceipts?.FirstOrDefault();
+            var bend = BuildShadowDemandValue(runtime, payoff);
+            var receiptLine = receipt != null ? $"Latest receipt: {receipt.Title}." : string.Empty;
+            return FirstNonBlank(
+                $"Board bend: {bend}. Leading posture: {strongestPosture}. {receiptLine}".Trim(),
+                runtime?.PublicBackbonePressure?.RecommendedAction,
+                payoff?.RecommendedAction,
+                runtime?.Detail,
+                "The fast strip should rank the most demand-shaped shadow answers first.");
+        }
+
+        private static string BuildCivicOperationDemandSignal(OperationSnapshot operation, ShellSummarySnapshot summary)
+        {
+            var surface = summary?.PublicBackbonePressureConvergence;
+            var posture = BuildOperationPosture(operation, summary, lane: "city");
+            var receipt = surface?.LatestSupportReceipt;
+            var bend = BuildCivicDemandValue(surface);
+
+            if (receipt != null && PostureMatchesCivicReceipt(posture, receipt.SourceSurface))
+            {
+                return $"Receipt-led: {receipt.Title} • {HumanizeWords(receipt.SourceSurface, "support surface")}";
+            }
+
+            return $"{bend} • {posture}";
+        }
+
+        private static string BuildShadowOperationDemandSignal(OperationSnapshot operation, ShellSummarySnapshot summary)
+        {
+            var runtime = summary?.BlackMarketRuntimeTruth;
+            var payoff = summary?.BlackMarketPayoffRecovery;
+            var receipt = payoff?.RecentReceipts?.FirstOrDefault();
+            var posture = BuildOperationPosture(operation, summary, lane: "black_market");
+            if (receipt != null && PostureMatchesShadowReceipt(posture, receipt))
+            {
+                return $"Receipt-led: {receipt.Title} • {HumanizeWords(receipt.Severity, "live pressure")}";
+            }
+
+            return $"{BuildShadowDemandValue(runtime, payoff)} • {posture}";
+        }
+
+        private static bool PostureMatchesCivicReceipt(string posture, string sourceSurface)
+        {
+            var postureText = (posture ?? string.Empty).ToLowerInvariant();
+            var source = (sourceSurface ?? string.Empty).Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(source))
+            {
+                return false;
+            }
+
+            if (source == "vendor_trade") return postureText.Contains("caravan / reserve");
+            if (source == "npc_city_services") return postureText.Contains("investigation");
+            if (source == "public_backbone") return postureText.Contains("public relief / repair");
+            return false;
+        }
+
+        private static bool PostureMatchesShadowReceipt(string posture, BlackMarketPayoffRecoveryReceiptSnapshot receipt)
+        {
+            var postureText = (posture ?? string.Empty).ToLowerInvariant();
+            var text = string.Join(" ", new[] { receipt?.Title, receipt?.Summary, receipt?.Detail, receipt?.RuntimeActionId, receipt?.Severity }).ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return false;
+            }
+
+            if (postureText.Contains("counterfeit")) return ContainsAny(text, "counterfeit", "throughput", "script", "permit");
+            if (postureText.Contains("cover repair")) return ContainsAny(text, "cover", "cleanup", "contain", "repair", "backlash");
+            if (postureText.Contains("covert pressure")) return ContainsAny(text, "pressure", "warning", "bribe", "leverage");
+            if (postureText.Contains("covert exploit")) return ContainsAny(text, "exploit", "payoff", "cash");
+            return false;
+        }
+
+        private static bool ContainsAny(string text, params string[] needles)
+        {
+            if (string.IsNullOrWhiteSpace(text) || needles == null || needles.Length == 0)
+            {
+                return false;
+            }
+
+            foreach (var needle in needles)
+            {
+                if (!string.IsNullOrWhiteSpace(needle) && text.IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return true;
+                }
             }
 
             return false;
