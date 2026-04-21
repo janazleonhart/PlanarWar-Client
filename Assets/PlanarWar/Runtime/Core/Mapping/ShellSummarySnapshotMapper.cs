@@ -9,6 +9,16 @@ namespace PlanarWar.Client.Core.Mapping
 {
     public static class ShellSummarySnapshotMapper
     {
+        public static ShellSummarySnapshot Map(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return ShellSummarySnapshot.Empty;
+            }
+
+            return Map(JObject.Parse(json));
+        }
+
         public static ShellSummarySnapshot Map(JObject summary)
         {
             if (summary == null) return ShellSummarySnapshot.Empty;
@@ -84,6 +94,7 @@ namespace PlanarWar.Client.Core.Mapping
                 PublicBackbonePressureConvergence = MapPublicBackbonePressureConvergence(summary["publicBackbonePressureConvergenceSurface"] as JObject ?? summary["public_backbone_pressure_convergence_surface"] as JObject),
                 BlackMarketRuntimeTruth = MapBlackMarketRuntimeTruth(summary["blackMarketRuntimeTruthSurface"] as JObject ?? summary["black_market_runtime_truth_surface"] as JObject),
                 BlackMarketActiveOperation = MapBlackMarketActiveOperation(summary["blackMarketActiveOperationSurface"] as JObject ?? summary["black_market_active_operation_surface"] as JObject),
+                BlackMarketBackbonePressure = MapBlackMarketBackbonePressure(summary["blackMarketBackbonePressureSurface"] as JObject ?? summary["black_market_backbone_pressure_surface"] as JObject),
                 BlackMarketPayoffRecovery = MapBlackMarketPayoffRecovery(summary["blackMarketPayoffRecoverySurface"] as JObject ?? summary["black_market_payoff_recovery_surface"] as JObject),
             };
 
@@ -409,6 +420,8 @@ namespace PlanarWar.Client.Core.Mapping
                 ActiveFrontCount = obj["activeFrontCount"]?.Read<int>() ?? obj["active_front_count"]?.Read<int>() ?? 0,
                 Fronts = (obj["fronts"] as JArray)?.OfType<JObject>().Select(MapPublicBackbonePressureFront).Where(f => f != null).ToList() ?? new List<PublicBackbonePressureFrontSnapshot>(),
                 LatestSupportReceipt = MapPublicBackbonePressureReceipt(obj["latestSupportReceipt"] as JObject ?? obj["latest_support_receipt"] as JObject),
+                ContractFollowThrough = MapContractFollowThrough(obj["contractFollowThrough"] as JObject ?? obj["contract_follow_through"] as JObject),
+                ContractEffects = MapPublicBackboneContractEffects(obj["contractEffects"] as JObject ?? obj["contract_effects"] as JObject),
             };
         }
 
@@ -436,6 +449,63 @@ namespace PlanarWar.Client.Core.Mapping
                 CreatedAtUtc = ParseUtc(obj["createdAt"] ?? obj["created_at"]),
                 Title = obj["title"]?.Read<string>() ?? string.Empty,
                 Summary = obj["summary"]?.Read<string>() ?? string.Empty,
+                SourceSurface = obj["sourceSurface"]?.Read<string>() ?? obj["source_surface"]?.Read<string>() ?? string.Empty,
+            };
+        }
+
+        private static ContractFollowThroughSnapshot MapContractFollowThrough(JObject obj)
+        {
+            if (obj == null) return null;
+            return new ContractFollowThroughSnapshot
+            {
+                Lane = obj["lane"]?.Read<string>() ?? string.Empty,
+                State = obj["state"]?.Read<string>() ?? string.Empty,
+                ContractId = obj["contractId"]?.Read<string>() ?? obj["contract_id"]?.Read<string>() ?? string.Empty,
+                ContractTitle = obj["contractTitle"]?.Read<string>() ?? obj["contract_title"]?.Read<string>() ?? string.Empty,
+                ContractKind = obj["contractKind"]?.Read<string>() ?? obj["contract_kind"]?.Read<string>() ?? string.Empty,
+                ActiveMissionInstanceId = obj["activeMissionInstanceId"]?.Read<string>() ?? obj["active_mission_instance_id"]?.Read<string>() ?? string.Empty,
+                ActiveMissionFinishesAtUtc = ParseUtc(obj["activeMissionFinishesAt"] ?? obj["active_mission_finishes_at"]),
+                LatestReceiptId = obj["latestReceiptId"]?.Read<string>() ?? obj["latest_receipt_id"]?.Read<string>() ?? string.Empty,
+                LatestReceiptAtUtc = ParseUtc(obj["latestReceiptAt"] ?? obj["latest_receipt_at"]),
+                SourceMissionId = obj["sourceMissionId"]?.Read<string>() ?? obj["source_mission_id"]?.Read<string>() ?? string.Empty,
+                SourceSurface = obj["sourceSurface"]?.Read<string>() ?? obj["source_surface"]?.Read<string>() ?? string.Empty,
+                Note = obj["note"]?.Read<string>() ?? string.Empty,
+            };
+        }
+
+        private static PublicBackboneContractEffectsSnapshot MapPublicBackboneContractEffects(JObject obj)
+        {
+            if (obj == null) return null;
+            return new PublicBackboneContractEffectsSnapshot
+            {
+                Lane = obj["lane"]?.Read<string>() ?? "city",
+                State = obj["state"]?.Read<string>() ?? string.Empty,
+                ContractId = obj["contractId"]?.Read<string>() ?? obj["contract_id"]?.Read<string>() ?? string.Empty,
+                ContractTitle = obj["contractTitle"]?.Read<string>() ?? obj["contract_title"]?.Read<string>() ?? string.Empty,
+                ContractKind = obj["contractKind"]?.Read<string>() ?? obj["contract_kind"]?.Read<string>() ?? string.Empty,
+                QueueEffect = obj["queueEffect"]?.Read<string>() ?? obj["queue_effect"]?.Read<string>() ?? string.Empty,
+                TrustEffect = obj["trustEffect"]?.Read<string>() ?? obj["trust_effect"]?.Read<string>() ?? string.Empty,
+                ServiceEffect = obj["serviceEffect"]?.Read<string>() ?? obj["service_effect"]?.Read<string>() ?? string.Empty,
+                Note = obj["note"]?.Read<string>() ?? string.Empty,
+                SourceSurface = obj["sourceSurface"]?.Read<string>() ?? obj["source_surface"]?.Read<string>() ?? string.Empty,
+            };
+        }
+
+        private static ShadowContractEffectsSnapshot MapShadowContractEffects(JObject obj)
+        {
+            if (obj == null) return null;
+            return new ShadowContractEffectsSnapshot
+            {
+                Lane = obj["lane"]?.Read<string>() ?? "black_market",
+                State = obj["state"]?.Read<string>() ?? string.Empty,
+                ContractId = obj["contractId"]?.Read<string>() ?? obj["contract_id"]?.Read<string>() ?? string.Empty,
+                ContractTitle = obj["contractTitle"]?.Read<string>() ?? obj["contract_title"]?.Read<string>() ?? string.Empty,
+                ContractKind = obj["contractKind"]?.Read<string>() ?? obj["contract_kind"]?.Read<string>() ?? string.Empty,
+                ReceiptChainState = obj["receiptChainState"]?.Read<string>() ?? obj["receipt_chain_state"]?.Read<string>() ?? string.Empty,
+                CovertCarryState = obj["covertCarryState"]?.Read<string>() ?? obj["covert_carry_state"]?.Read<string>() ?? string.Empty,
+                LinkedReceiptId = obj["linkedReceiptId"]?.Read<string>() ?? obj["linked_receipt_id"]?.Read<string>() ?? string.Empty,
+                LinkedReceiptTitle = obj["linkedReceiptTitle"]?.Read<string>() ?? obj["linked_receipt_title"]?.Read<string>() ?? string.Empty,
+                Note = obj["note"]?.Read<string>() ?? string.Empty,
                 SourceSurface = obj["sourceSurface"]?.Read<string>() ?? obj["source_surface"]?.Read<string>() ?? string.Empty,
             };
         }
@@ -519,6 +589,25 @@ namespace PlanarWar.Client.Core.Mapping
                 MissionOfferIds = (obj["missionOfferIds"] as JArray)?.Values<string>().Where(v => !string.IsNullOrWhiteSpace(v)).ToList()
                     ?? (obj["mission_offer_ids"] as JArray)?.Values<string>().Where(v => !string.IsNullOrWhiteSpace(v)).ToList()
                     ?? new List<string>(),
+            };
+        }
+
+        private static BlackMarketBackbonePressureSurfaceSnapshot MapBlackMarketBackbonePressure(JObject obj)
+        {
+            if (obj == null) return null;
+            return new BlackMarketBackbonePressureSurfaceSnapshot
+            {
+                Lane = obj["lane"]?.Read<string>() ?? "black_market",
+                PressureState = obj["pressureState"]?.Read<string>() ?? obj["pressure_state"]?.Read<string>() ?? string.Empty,
+                LeverageWindow = obj["leverageWindow"]?.Read<string>() ?? obj["leverage_window"]?.Read<string>() ?? string.Empty,
+                Headline = obj["headline"]?.Read<string>() ?? string.Empty,
+                Detail = obj["detail"]?.Read<string>() ?? string.Empty,
+                RecommendedAction = obj["recommendedAction"]?.Read<string>() ?? obj["recommended_action"]?.Read<string>() ?? string.Empty,
+                ActiveActionIds = (obj["activeActionIds"] as JArray)?.Values<string>().Where(v => !string.IsNullOrWhiteSpace(v)).ToList()
+                    ?? (obj["active_action_ids"] as JArray)?.Values<string>().Where(v => !string.IsNullOrWhiteSpace(v)).ToList()
+                    ?? new List<string>(),
+                ContractFollowThrough = MapContractFollowThrough(obj["contractFollowThrough"] as JObject ?? obj["contract_follow_through"] as JObject),
+                ContractEffects = MapShadowContractEffects(obj["contractEffects"] as JObject ?? obj["contract_effects"] as JObject),
             };
         }
 
