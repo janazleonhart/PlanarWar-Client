@@ -169,41 +169,31 @@ namespace PlanarWar.Client.UI.Screens.Summary
         {
             var surface = summary.PublicBackbonePressureConvergence;
             var front = SelectPrimaryCivicFront(surface);
-            var followThrough = surface?.ContractFollowThrough;
-            var effects = surface?.ContractEffects;
             var phase = HumanizeStage(MapCivicStage(surface, front));
-            var continuity = ContractTruthText.BuildContractSeamValue(followThrough, front != null ? $"{front.Label} • {front.Id}" : "Public backbone continuity");
-            var recommended = FirstNonBlank(primaryOp?.WhyNow, followThrough?.Note, front?.RecommendedAction, surface?.RecommendedAction, "No civic why-now reason surfaced.");
-            var deskHeadline = effects != null && !string.IsNullOrWhiteSpace(effects.ContractTitle)
-                ? effects.State == "cooling"
-                    ? $"{effects.ContractTitle} is cooling civic effects"
-                    : $"{effects.ContractTitle} is shaping civic effects"
-                : followThrough != null && !string.IsNullOrWhiteSpace(followThrough.ContractTitle)
-                    ? $"{followThrough.ContractTitle} • {ContractTruthText.HumanizeLifecycle(followThrough.State)}"
-                    : FirstNonBlank(primaryOp?.FocusLabel, front?.Headline, surface?.Headline, primaryOp?.Title, "Civic pressure desk is quiet enough to stay backgrounded.");
-            var deskDetail = FirstNonBlank(effects?.Note, followThrough?.Note, primaryOp?.Summary, surface?.Detail, front?.Summary, primaryOp?.Detail, "No civic convergence detail surfaced.");
-            var answerValue = ContractTruthText.BuildCivicEffectsValue(effects, BuildCivicAnswerValue(front, primaryOp));
-            var answerNote = ContractTruthText.BuildCivicEffectsNote(effects, followThrough, BuildCivicAnswerNote(surface, front, primaryOp));
+            var continuity = front != null ? $"{front.Label} • {front.Id}" : "Public backbone continuity";
+            var recommended = FirstNonBlank(primaryOp?.WhyNow, front?.RecommendedAction, surface?.RecommendedAction, "No civic why-now reason surfaced.");
+            var deskHeadline = FirstNonBlank(primaryOp?.FocusLabel, front?.Headline, surface?.Headline, primaryOp?.Title, "Civic pressure desk is quiet enough to stay backgrounded.");
+            var deskDetail = FirstNonBlank(primaryOp?.Summary, surface?.Detail, front?.Summary, primaryOp?.Detail, "No civic convergence detail surfaced.");
+            var answerValue = BuildCivicAnswerValue(front, primaryOp);
+            var answerNote = BuildCivicAnswerNote(surface, front, primaryOp);
             var demandValue = BuildCivicDemandValue(surface);
             var demandNote = BuildCivicDemandNote(surface, primaryOp);
-            var contractValue = ContractTruthText.BuildContractLifecycleValue(followThrough, FirstNonBlank(primaryOp?.Title, primaryOp?.FocusLabel, "No civic contract is currently leading."));
-            var contractNote = FirstNonBlank(followThrough?.Note, primaryOp?.WhyNow, primaryOp?.Payoff, recommended);
+            var contractValue = FirstNonBlank(primaryOp?.Title, primaryOp?.FocusLabel, "No civic contract is currently leading.");
+            var contractNote = FirstNonBlank(primaryOp?.WhyNow, primaryOp?.Payoff, recommended);
 
             SetPressureDesk(
                 badge: $"City seam • {phase}",
                 headline: deskHeadline,
                 detail: deskDetail,
-                seamTitle: followThrough != null ? "Grounded contract" : "Live seam",
+                seamTitle: "Live seam",
                 seamValue: continuity,
-                seamNote: followThrough != null
-                    ? followThrough.Note
-                    : front != null
-                        ? $"{phase} • {FirstNonBlank(front.Headline, front.Summary)}"
-                        : FirstNonBlank(surface?.Headline, "No explicit civic seam card surfaced."),
-                contractTitle: followThrough != null ? "Lifecycle" : "Why this board moved",
+                seamNote: front != null
+                    ? $"{phase} • {FirstNonBlank(front.Headline, front.Summary)}"
+                    : FirstNonBlank(surface?.Headline, "No explicit civic seam card surfaced."),
+                contractTitle: "Why this board moved",
                 contractValue: contractValue,
                 contractNote: contractNote,
-                answerTitle: effects != null || followThrough != null ? "Bounded civic effects" : "Answer lane",
+                answerTitle: "Answer lane",
                 answerValue: answerValue,
                 answerNote: answerNote,
                 demandTitle: "Supply / reserve bend",
@@ -221,48 +211,28 @@ namespace PlanarWar.Client.UI.Screens.Summary
         {
             var runtime = summary.BlackMarketRuntimeTruth;
             var active = summary.BlackMarketActiveOperation;
-            var backbone = summary.BlackMarketBackbonePressure;
             var payoff = summary.BlackMarketPayoffRecovery;
             var card = SelectPrimaryShadowCard(active);
-            var followThrough = backbone?.ContractFollowThrough;
-            var effects = backbone?.ContractEffects;
-            var stage = HumanizeStage(MapShadowStage(card, runtime, backbone, payoff));
-            var continuity = ContractTruthText.BuildContractSeamValue(followThrough, card != null ? $"{HumanizeShadowKind(card.Kind)} • {card.Id}" : "Shadow runtime continuity");
-            var deskHeadline = effects != null && !string.IsNullOrWhiteSpace(effects.ContractTitle)
-                ? effects.State == "cooling"
-                    ? $"{effects.ContractTitle} is cooling covert carry"
-                    : $"{effects.ContractTitle} is carrying shadow effects"
-                : followThrough != null && !string.IsNullOrWhiteSpace(followThrough.ContractTitle)
-                    ? $"{followThrough.ContractTitle} • {ContractTruthText.HumanizeLifecycle(followThrough.State)}"
-                    : FirstNonBlank(primaryOp?.FocusLabel, card?.Headline, backbone?.Headline, runtime?.Headline, payoff?.Headline, primaryOp?.Title, "Shadow pressure desk is quiet enough to stay backgrounded.");
-            var deskDetail = FirstNonBlank(effects?.Note, followThrough?.Note, backbone?.Detail, primaryOp?.Summary, runtime?.Detail, card?.Summary, payoff?.Detail, primaryOp?.Detail, "No shadow convergence detail surfaced.");
-            var contractValue = ContractTruthText.BuildContractLifecycleValue(followThrough, FirstNonBlank(primaryOp?.Title, primaryOp?.FocusLabel, "No shadow contract is currently leading."));
-            var contractNote = FirstNonBlank(followThrough?.Note, primaryOp?.WhyNow, backbone?.RecommendedAction, runtime?.ActiveOperation?.Detail, payoff?.RecommendedAction, card?.OperatorNote, "No shadow why-now reason surfaced.");
-            var answerValue = ContractTruthText.BuildShadowEffectsValue(effects, BuildShadowAnswerValue(card, primaryOp));
-            var answerNote = ContractTruthText.BuildShadowEffectsNote(effects, followThrough, BuildShadowAnswerNote(runtime, active, card));
-            var demandValue = BuildShadowDemandValue(runtime, backbone, payoff);
-            var demandNote = BuildShadowDemandNote(runtime, backbone, payoff, primaryOp);
+            var stage = HumanizeStage(MapShadowStage(card, runtime, payoff));
+            var deskHeadline = FirstNonBlank(primaryOp?.FocusLabel, card?.Headline, runtime?.Headline, payoff?.Headline, primaryOp?.Title, "Shadow pressure desk is quiet enough to stay backgrounded.");
+            var deskDetail = FirstNonBlank(primaryOp?.Summary, runtime?.Detail, card?.Summary, payoff?.Detail, primaryOp?.Detail, "No shadow convergence detail surfaced.");
 
             SetPressureDesk(
                 badge: $"Shadow seam • {stage}",
                 headline: deskHeadline,
                 detail: deskDetail,
-                seamTitle: followThrough != null ? "Grounded contract" : "Live seam",
-                seamValue: continuity,
-                seamNote: followThrough != null
-                    ? followThrough.Note
-                    : card != null
-                        ? $"{stage} • {FirstNonBlank(card.Summary, card.OperatorNote)}"
-                        : FirstNonBlank(backbone?.Headline, runtime?.Headline, payoff?.Headline, "No explicit shadow seam card surfaced."),
-                contractTitle: followThrough != null ? "Lifecycle" : "Why this board moved",
-                contractValue: contractValue,
-                contractNote: contractNote,
-                answerTitle: effects != null || followThrough != null ? "Bounded shadow effects" : "Answer lane",
-                answerValue: answerValue,
-                answerNote: answerNote,
+                seamTitle: "Grounded contract",
+                seamValue: ShadowLaneText.BuildGroundedContractValue(primaryOp, card, runtime, payoff),
+                seamNote: ShadowLaneText.BuildGroundedContractNote(primaryOp, card, runtime, payoff),
+                contractTitle: "Lifecycle",
+                contractValue: ShadowLaneText.BuildLifecycleValue(primaryOp, card, runtime, payoff),
+                contractNote: ShadowLaneText.BuildLifecycleNote(primaryOp, card, runtime, payoff),
+                answerTitle: "Bounded shadow effects",
+                answerValue: ShadowLaneText.BuildEffectsValue(primaryOp, card, runtime, payoff),
+                answerNote: ShadowLaneText.BuildEffectsNote(primaryOp, card, runtime, payoff),
                 demandTitle: "Pressure / payoff bend",
-                demandValue: demandValue,
-                demandNote: demandNote,
+                demandValue: ShadowLaneText.BuildPressureBendValue(runtime, payoff),
+                demandNote: ShadowLaneText.BuildPressureBendNote(primaryOp, runtime, payoff),
                 handoffTitle: "Desk / strip handoff",
                 handoffValue: BuildLeadOperationHandoffValue(primaryOp),
                 handoffNote: BuildLeadOperationHandoffNote(primaryOp, summary, lane),
@@ -330,9 +300,6 @@ namespace PlanarWar.Client.UI.Screens.Summary
             if (string.Equals(lane, "black_market", StringComparison.OrdinalIgnoreCase))
             {
                 return FirstNonBlank(
-                    summary.BlackMarketBackbonePressure?.ContractEffects?.Note,
-                    summary.BlackMarketBackbonePressure?.ContractFollowThrough?.Note,
-                    summary.BlackMarketBackbonePressure?.Detail,
                     summary.BlackMarketRuntimeTruth?.OperatorFrontSummary,
                     summary.BlackMarketRuntimeTruth?.Detail,
                     summary.BlackMarketPayoffRecovery?.Detail,
@@ -340,8 +307,6 @@ namespace PlanarWar.Client.UI.Screens.Summary
             }
 
             return FirstNonBlank(
-                summary.PublicBackbonePressureConvergence?.ContractEffects?.Note,
-                summary.PublicBackbonePressureConvergence?.ContractFollowThrough?.Note,
                 summary.PublicBackbonePressureConvergence?.Detail,
                 summary.PublicBackbonePressureConvergence?.RecommendedAction,
                 "No civic operation is leading right now, so the desk stays honest instead of inventing urgency.");
@@ -737,13 +702,6 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 summary?.PublicBackbonePressureConvergence?.LatestSupportReceipt?.Title,
                 summary?.PublicBackbonePressureConvergence?.LatestSupportReceipt?.Summary,
                 summary?.PublicBackbonePressureConvergence?.LatestSupportReceipt?.SourceSurface,
-                summary?.PublicBackbonePressureConvergence?.ContractFollowThrough?.ContractTitle,
-                summary?.PublicBackbonePressureConvergence?.ContractFollowThrough?.State,
-                summary?.PublicBackbonePressureConvergence?.ContractFollowThrough?.Note,
-                summary?.PublicBackbonePressureConvergence?.ContractEffects?.QueueEffect,
-                summary?.PublicBackbonePressureConvergence?.ContractEffects?.TrustEffect,
-                summary?.PublicBackbonePressureConvergence?.ContractEffects?.ServiceEffect,
-                summary?.PublicBackbonePressureConvergence?.ContractEffects?.Note,
                 front?.Id,
                 front?.Headline,
                 front?.Summary,
@@ -775,16 +733,6 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 summary?.BlackMarketRuntimeTruth?.PublicBackbonePressure?.State,
                 summary?.BlackMarketRuntimeTruth?.PublicBackbonePressure?.RecommendedAction,
                 summary?.BlackMarketRuntimeTruth?.PublicBackbonePressure?.Detail,
-                summary?.BlackMarketBackbonePressure?.PressureState,
-                summary?.BlackMarketBackbonePressure?.LeverageWindow,
-                summary?.BlackMarketBackbonePressure?.RecommendedAction,
-                summary?.BlackMarketBackbonePressure?.ContractFollowThrough?.ContractTitle,
-                summary?.BlackMarketBackbonePressure?.ContractFollowThrough?.State,
-                summary?.BlackMarketBackbonePressure?.ContractFollowThrough?.Note,
-                summary?.BlackMarketBackbonePressure?.ContractEffects?.ReceiptChainState,
-                summary?.BlackMarketBackbonePressure?.ContractEffects?.CovertCarryState,
-                summary?.BlackMarketBackbonePressure?.ContractEffects?.LinkedReceiptTitle,
-                summary?.BlackMarketBackbonePressure?.ContractEffects?.Note,
                 summary?.BlackMarketPayoffRecovery?.Phase,
                 summary?.BlackMarketPayoffRecovery?.Headline,
                 summary?.BlackMarketPayoffRecovery?.Detail,
@@ -803,10 +751,10 @@ namespace PlanarWar.Client.UI.Screens.Summary
             }).ToLowerInvariant();
 
             var score = 0;
-            if (posture.Contains("counterfeit") && ContainsAny(context, "counterfeit", "permit", "throughput", "script", "window")) score += 6;
-            if (posture.Contains("cover repair") && ContainsAny(context, "cover", "cleanup", "contain", "cooling", "backlash", "repair")) score += 6;
-            if (posture.Contains("covert pressure") && ContainsAny(context, "pressure", "backbone", "warning", "bribe", "leverage")) score += 6;
-            if (posture.Contains("covert exploit") && ContainsAny(context, "exploit", "payoff", "cash", "window", "active")) score += 6;
+            if (posture.Contains("receipt-chain routing") && ContainsAny(context, "counterfeit", "permit", "throughput", "script", "window", "receipt", "paper", "ledger")) score += 6;
+            if (posture.Contains("deniable cleanup") && ContainsAny(context, "cover", "cleanup", "contain", "cooling", "backlash", "repair", "wash")) score += 6;
+            if (posture.Contains("heat management") && ContainsAny(context, "pressure", "backbone", "warning", "bribe", "leverage", "heat", "exposure")) score += 6;
+            if (posture.Contains("shadow books") && ContainsAny(context, "exploit", "payoff", "cash", "window", "active", "carry", "route")) score += 6;
             if (ContainsAny(context, "receipt", "backlash", "pressure", "payoff")) score += 2;
             return score;
         }
@@ -817,19 +765,10 @@ namespace PlanarWar.Client.UI.Screens.Summary
             var strongest = operations.FirstOrDefault();
             var strongestPosture = BuildOperationPosture(strongest, summary, lane: "city");
             var receipt = surface?.LatestSupportReceipt;
-            var followThrough = surface?.ContractFollowThrough;
-            var effects = surface?.ContractEffects;
             var bend = BuildCivicDemandValue(surface);
             var receiptLine = receipt != null ? $"Latest receipt: {receipt.Title}." : string.Empty;
-            var contractLine = effects != null
-                ? $"Contract effects: {ContractTruthText.BuildCivicEffectsValue(effects, string.Empty)}."
-                : followThrough != null
-                    ? $"Contract lifecycle: {ContractTruthText.BuildContractSeamValue(followThrough, string.Empty)}."
-                    : string.Empty;
             return FirstNonBlank(
-                $"Board bend: {bend}. {contractLine} Leading posture: {strongestPosture}. {receiptLine}".Trim(),
-                effects?.Note,
-                followThrough?.Note,
+                $"Board bend: {bend}. Leading posture: {strongestPosture}. {receiptLine}".Trim(),
                 surface?.RecommendedAction,
                 surface?.Detail,
                 "The fast strip should rank the most demand-shaped civic answers first.");
@@ -838,23 +777,14 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private static string BuildShadowOperationStripCopy(ShellSummarySnapshot summary, List<OperationSnapshot> operations)
         {
             var runtime = summary?.BlackMarketRuntimeTruth;
-            var backbone = summary?.BlackMarketBackbonePressure;
             var payoff = summary?.BlackMarketPayoffRecovery;
             var strongest = operations.FirstOrDefault();
             var strongestPosture = BuildOperationPosture(strongest, summary, lane: "black_market");
             var receipt = payoff?.RecentReceipts?.FirstOrDefault();
-            var bend = BuildShadowDemandValue(runtime, backbone, payoff);
+            var bend = BuildShadowDemandValue(runtime, payoff);
             var receiptLine = receipt != null ? $"Latest receipt: {receipt.Title}." : string.Empty;
-            var contractLine = backbone?.ContractEffects != null
-                ? $"Contract effects: {ContractTruthText.BuildShadowEffectsValue(backbone.ContractEffects, string.Empty)}."
-                : backbone?.ContractFollowThrough != null
-                    ? $"Contract lifecycle: {ContractTruthText.BuildContractSeamValue(backbone.ContractFollowThrough, string.Empty)}."
-                    : string.Empty;
             return FirstNonBlank(
-                $"Board bend: {bend}. {contractLine} Leading posture: {strongestPosture}. {receiptLine}".Trim(),
-                backbone?.ContractEffects?.Note,
-                backbone?.ContractFollowThrough?.Note,
-                backbone?.RecommendedAction,
+                $"Shadow books: {bend}. Lead posture: {strongestPosture}. {receiptLine}".Trim(),
                 runtime?.PublicBackbonePressure?.RecommendedAction,
                 payoff?.RecommendedAction,
                 runtime?.Detail,
@@ -879,7 +809,6 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private static string BuildShadowOperationDemandSignal(OperationSnapshot operation, ShellSummarySnapshot summary)
         {
             var runtime = summary?.BlackMarketRuntimeTruth;
-            var backbone = summary?.BlackMarketBackbonePressure;
             var payoff = summary?.BlackMarketPayoffRecovery;
             var receipt = payoff?.RecentReceipts?.FirstOrDefault();
             var posture = BuildOperationPosture(operation, summary, lane: "black_market");
@@ -888,7 +817,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 return $"Receipt-led: {receipt.Title} • {HumanizeWords(receipt.Severity, "live pressure")}";
             }
 
-            return $"{BuildShadowDemandValue(runtime, backbone, payoff)} • {posture}";
+            return $"{BuildShadowDemandValue(runtime, payoff)} • {posture}";
         }
 
         private static bool PostureMatchesCivicReceipt(string posture, string sourceSurface)
@@ -915,10 +844,10 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 return false;
             }
 
-            if (postureText.Contains("counterfeit")) return ContainsAny(text, "counterfeit", "throughput", "script", "permit");
-            if (postureText.Contains("cover repair")) return ContainsAny(text, "cover", "cleanup", "contain", "repair", "backlash");
-            if (postureText.Contains("covert pressure")) return ContainsAny(text, "pressure", "warning", "bribe", "leverage");
-            if (postureText.Contains("covert exploit")) return ContainsAny(text, "exploit", "payoff", "cash");
+            if (postureText.Contains("receipt-chain routing")) return ContainsAny(text, "counterfeit", "throughput", "script", "permit", "receipt", "paper", "ledger");
+            if (postureText.Contains("deniable cleanup")) return ContainsAny(text, "cover", "cleanup", "contain", "repair", "backlash", "wash", "cool");
+            if (postureText.Contains("heat management")) return ContainsAny(text, "pressure", "warning", "bribe", "leverage", "heat", "exposure");
+            if (postureText.Contains("shadow books")) return ContainsAny(text, "exploit", "payoff", "cash", "carry", "route");
             return false;
         }
 
@@ -979,12 +908,12 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 case "investigate":
                     return "Investigation / service desk";
                 case "exploit":
-                    return "Covert exploit / cash-out";
+                    return "Shadow books / covert cash-out";
                 case "containment":
                 case "contain":
-                    return "Cover repair / deniable cleanup";
+                    return "Deniable cleanup / route cooling";
                 case "counterfeit":
-                    return "Counterfeit / deniable throughput";
+                    return "Receipt-chain routing / forged paper";
                 default:
                     return HumanizeWords(responsePosture, string.Empty);
             }
@@ -1025,35 +954,12 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
         private static string BuildShadowPostureFromKind(string kind)
         {
-            switch ((kind ?? string.Empty).Trim().ToLowerInvariant())
-            {
-                case "counterfeit_job":
-                    return "Counterfeit / deniable throughput";
-                case "exploit":
-                    return "Covert exploit / cash-out";
-                case "containment":
-                case "cover_repair":
-                    return "Cover repair / deniable cleanup";
-                case "backbone_pressure":
-                case "bribery":
-                case "warning_window":
-                    return "Covert pressure / deniable leverage";
-                default:
-                    return string.Empty;
-            }
+            return ShadowLaneText.BuildOperationPostureFromKind(kind);
         }
 
         private static string BuildShadowPostureFromText(OperationSnapshot operation)
         {
-            var text = string.Join(" ", new[] { operation?.Title, operation?.Summary, operation?.Detail, operation?.WhyNow, operation?.FocusLabel })
-                .Trim()
-                .ToLowerInvariant();
-
-            if (text.Contains("counterfeit")) return "Counterfeit / deniable throughput";
-            if (text.Contains("cover") || text.Contains("cleanup") || text.Contains("contain")) return "Cover repair / deniable cleanup";
-            if (text.Contains("bribe") || text.Contains("pressure") || text.Contains("leverage") || text.Contains("warning")) return "Covert pressure / deniable leverage";
-            if (text.Contains("covert") || text.Contains("exploit") || text.Contains("cash")) return "Covert exploit / cash-out";
-            return "Covert / deniable / counterfeit";
+            return ShadowLaneText.BuildOperationPostureFromText(operation);
         }
 
         private static string BuildCivicPostureFromText(OperationSnapshot operation)
@@ -1256,15 +1162,6 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
         private static string MapCivicStage(PublicBackbonePressureConvergenceSurfaceSnapshot surface, PublicBackbonePressureFrontSnapshot front)
         {
-            var contractEffectsState = (surface?.ContractEffects?.State ?? string.Empty).Trim().ToLowerInvariant();
-            if (contractEffectsState == "cooling") return "cooling";
-            if (contractEffectsState == "active") return "engaged";
-
-            var lifecycleState = (surface?.ContractFollowThrough?.State ?? string.Empty).Trim().ToLowerInvariant();
-            if (lifecycleState == "committed" || lifecycleState == "answered") return "engaged";
-            if (lifecycleState == "available") return "forming";
-            if (lifecycleState == "cooling") return "cooling";
-
             var state = (front?.State ?? string.Empty).Trim().ToLowerInvariant();
             if (state == "active") return "engaged";
             if (state == "watch") return "forming";
@@ -1277,17 +1174,8 @@ namespace PlanarWar.Client.UI.Screens.Summary
             return "quiet";
         }
 
-        private static string MapShadowStage(BlackMarketActiveOperationCardSnapshot card, BlackMarketRuntimeTruthSurfaceSnapshot runtime, BlackMarketBackbonePressureSurfaceSnapshot backbone, BlackMarketPayoffRecoverySurfaceSnapshot payoff)
+        private static string MapShadowStage(BlackMarketActiveOperationCardSnapshot card, BlackMarketRuntimeTruthSurfaceSnapshot runtime, BlackMarketPayoffRecoverySurfaceSnapshot payoff)
         {
-            var contractEffectsState = (backbone?.ContractEffects?.State ?? string.Empty).Trim().ToLowerInvariant();
-            if (contractEffectsState == "cooling") return "cooling";
-            if (contractEffectsState == "active") return "live";
-
-            var lifecycleState = (backbone?.ContractFollowThrough?.State ?? string.Empty).Trim().ToLowerInvariant();
-            if (lifecycleState == "committed" || lifecycleState == "answered") return "live";
-            if (lifecycleState == "available") return "forming";
-            if (lifecycleState == "cooling") return "cooling";
-
             var state = (card?.State ?? string.Empty).Trim().ToLowerInvariant();
             if (state == "live" || state == "forming" || state == "cooling")
             {
@@ -1369,17 +1257,9 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
         private static string BuildShadowAnswerValue(BlackMarketActiveOperationCardSnapshot card, OperationSnapshot primaryOp)
         {
-            var kind = (card?.Kind ?? string.Empty).Trim().ToLowerInvariant();
-            if (kind == "counterfeit_job") return "Counterfeit / deniable throughput";
-            if (kind == "exploit") return "Covert exploit / cash-out";
-            if (kind == "containment" || kind == "cover_repair") return "Cover repair / deniable cleanup";
-            if (kind == "bribery" || kind == "backbone_pressure" || kind == "warning_window") return "Covert pressure / deniable leverage";
-
-            var title = (primaryOp?.Title ?? string.Empty).ToLowerInvariant();
-            if (title.Contains("counterfeit")) return "Counterfeit / deniable throughput";
-            if (title.Contains("covert") || title.Contains("exploit")) return "Covert exploit / cash-out";
-            if (title.Contains("cover") || title.Contains("contain")) return "Cover repair / deniable cleanup";
-            return "Covert / deniable / counterfeit";
+            return ShadowLaneText.BuildOperationPostureFromKind(card?.Kind) != string.Empty
+                ? ShadowLaneText.BuildOperationPostureFromKind(card?.Kind)
+                : ShadowLaneText.BuildOperationPostureFromText(primaryOp);
         }
 
         private static string BuildShadowAnswerNote(BlackMarketRuntimeTruthSurfaceSnapshot runtime, BlackMarketActiveOperationSurfaceSnapshot active, BlackMarketActiveOperationCardSnapshot card)
@@ -1392,53 +1272,19 @@ namespace PlanarWar.Client.UI.Screens.Summary
             return FirstNonBlank(runtime?.ActiveOperation?.Detail, active?.Detail, runtime?.OperatorFrontSummary, "The shadow desk should keep covert, counterfeit, and cleanup answers distinct instead of flattening them into generic warning sludge.");
         }
 
-        private static string BuildShadowDemandValue(BlackMarketRuntimeTruthSurfaceSnapshot runtime, BlackMarketBackbonePressureSurfaceSnapshot backbone, BlackMarketPayoffRecoverySurfaceSnapshot payoff)
+        private static string BuildShadowDemandValue(BlackMarketRuntimeTruthSurfaceSnapshot runtime, BlackMarketPayoffRecoverySurfaceSnapshot payoff)
         {
-            if (backbone != null)
-            {
-                var pressureState = HumanizeWords(backbone.PressureState, "quiet pressure");
-                var leverageWindow = HumanizeWords(backbone.LeverageWindow, "closed window");
-                return $"{pressureState} • {leverageWindow}";
-            }
-
-            var runtimePressureState = HumanizeWords(runtime?.PublicBackbonePressure?.State, "quiet public pressure");
-            var payoffPhase = HumanizeWords(payoff?.Phase, "quiet payoff");
-            return $"{runtimePressureState} • {payoffPhase}";
+            return ShadowLaneText.BuildPressureBendValue(runtime, payoff);
         }
 
-        private static string BuildShadowDemandNote(BlackMarketRuntimeTruthSurfaceSnapshot runtime, BlackMarketBackbonePressureSurfaceSnapshot backbone, BlackMarketPayoffRecoverySurfaceSnapshot payoff, OperationSnapshot primaryOp)
+        private static string BuildShadowDemandNote(BlackMarketRuntimeTruthSurfaceSnapshot runtime, BlackMarketPayoffRecoverySurfaceSnapshot payoff, OperationSnapshot primaryOp)
         {
-            if (payoff?.RecentReceipts != null && payoff.RecentReceipts.Count > 0)
-            {
-                var receipt = payoff.RecentReceipts[0];
-                return $"Latest receipt: {receipt.Title} • {receipt.Summary}";
-            }
-
-            return FirstNonBlank(
-                backbone?.ContractEffects?.Note,
-                backbone?.ContractFollowThrough?.Note,
-                backbone?.RecommendedAction,
-                runtime?.PublicBackbonePressure?.RecommendedAction,
-                payoff?.RecommendedAction,
-                primaryOp?.WhyNow,
-                backbone?.Detail,
-                runtime?.PublicBackbonePressure?.Detail,
-                "Public desks, vendor lanes, and permit memory are not materially bending the shadow board right now.");
+            return ShadowLaneText.BuildPressureBendNote(primaryOp, runtime, payoff);
         }
 
         private static string HumanizeShadowKind(string kind)
         {
-            switch ((kind ?? string.Empty).Trim().ToLowerInvariant())
-            {
-                case "counterfeit_job": return "Counterfeit job";
-                case "backbone_pressure": return "Backbone pressure";
-                case "cover_repair": return "Cover repair";
-                case "warning_window": return "Warning window";
-                case "containment": return "Containment";
-                case "bribery": return "Bribery";
-                case "exploit": return "Exploit";
-                default: return HumanizeWords(kind, "Shadow seam");
-            }
+            return ShadowLaneText.HumanizeShadowKind(kind);
         }
 
         private static string HumanizeWords(string raw, string fallback)

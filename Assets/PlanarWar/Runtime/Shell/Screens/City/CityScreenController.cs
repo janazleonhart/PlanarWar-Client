@@ -1,5 +1,6 @@
 using PlanarWar.Client.Core;
 using PlanarWar.Client.Core.Contracts;
+using PlanarWar.Client.Core.Presentation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -120,6 +121,7 @@ namespace PlanarWar.Client.UI.Screens.City
         public void Render(ShellSummarySnapshot s, SummaryState summaryState)
         {
             var recipeCount = summaryState?.WorkshopRecipes?.Count ?? 0;
+            var isBlackMarket = IsBlackMarketLane(s);
 
             if (!s.HasCity)
             {
@@ -127,26 +129,28 @@ namespace PlanarWar.Client.UI.Screens.City
                 return;
             }
 
-            headline.text = $"{s.City.Name} • Development";
-            copy.text = $"Tier {(s.City.Tier ?? 0)} {HumanizeLane(s.City.SettlementLaneLabel)} desk. Review research, queues, and growth posture without leaving the city shell.";
+            headline.text = isBlackMarket ? ShadowLaneText.DescribeDevelopmentHeadline(s.City) : $"{s.City.Name} • Development";
+            copy.text = isBlackMarket
+                ? ShadowLaneText.DescribeDevelopmentCopy(s.City)
+                : $"Tier {(s.City.Tier ?? 0)} {HumanizeLane(s.City.SettlementLaneLabel)} desk. Review research, queues, and growth posture without leaving the city shell.";
 
-            card1Title.text = "Research lane";
+            card1Title.text = isBlackMarket ? "Shadow books" : "Research lane";
             card1Value.text = s.ActiveResearch != null
                 ? $"{s.ActiveResearch.Name} • {FormatProgress(s.ActiveResearch.Progress, s.ActiveResearch.Cost)}"
                 : s.AvailableTechs.Count > 0
                     ? $"{s.AvailableTechs.Count} tech option{(s.AvailableTechs.Count == 1 ? string.Empty : "s")} ready"
                     : "No active research or tech options surfaced.";
-            card2Title.text = "Workshop lane";
+            card2Title.text = isBlackMarket ? "Covert supply" : "Workshop lane";
             card2Value.text = DescribeWorkshopLane(s, recipeCount);
-            card3Title.text = "Growth lane";
-            card3Value.text = DescribeGrowthLane(s);
+            card3Title.text = isBlackMarket ? "Carry lane" : "Growth lane";
+            card3Value.text = DescribeGrowthLane(s, isBlackMarket);
 
-            researchFocusValue.text = s.ActiveResearch?.Name ?? "No active research focus.";
-            nextTechValue.text = s.AvailableTechs.FirstOrDefault()?.Name ?? "No available tech surfaced.";
+            researchFocusValue.text = s.ActiveResearch?.Name ?? (isBlackMarket ? "No active shadow-book focus." : "No active research focus.");
+            nextTechValue.text = s.AvailableTechs.FirstOrDefault()?.Name ?? (isBlackMarket ? "No quiet leverage unlock surfaced." : "No available tech surfaced.");
             workshopValue.text = DescribeWorkshopLane(s, recipeCount);
-            growthValue.text = DescribeGrowthLane(s);
-            supportValue.text = DescribeSupport(s);
-            noteValue.text = BuildDeskNote(s, summaryState);
+            growthValue.text = DescribeGrowthLane(s, isBlackMarket);
+            supportValue.text = DescribeSupport(s, isBlackMarket);
+            noteValue.text = BuildDeskNote(s, summaryState, isBlackMarket);
             if (startSuggestedResearchButton != null)
             {
                 var suggestedTech = GetSuggestedTech(s);
@@ -193,9 +197,10 @@ namespace PlanarWar.Client.UI.Screens.City
 
         private void RenderResearchLane(ShellSummarySnapshot s)
         {
-            laneTitle.text = activeLane == DevelopmentLane.Research ? "Research lane" : laneTitle.text;
+            var isBlackMarket = IsBlackMarketLane(s);
+            laneTitle.text = activeLane == DevelopmentLane.Research ? (isBlackMarket ? ShadowLaneText.BuildResearchLaneTitle() : "Research lane") : laneTitle.text;
             laneCopy.text = activeLane == DevelopmentLane.Research
-                ? "Research keeps the current tech, next unlocks, and readiness posture visible in one place so you can judge the next order before mutation wiring lands."
+                ? (isBlackMarket ? ShadowLaneText.BuildResearchLaneCopy() : "Research keeps the current tech, next unlocks, and readiness posture visible in one place so you can judge the next order before mutation wiring lands.")
                 : laneCopy.text;
 
             var cards = new List<CardView>();
@@ -235,9 +240,10 @@ namespace PlanarWar.Client.UI.Screens.City
 
         private void RenderWorkshopLane(ShellSummarySnapshot s)
         {
-            laneTitle.text = activeLane == DevelopmentLane.Workshop ? "Workshop lane" : laneTitle.text;
+            var isBlackMarket = IsBlackMarketLane(s);
+            laneTitle.text = activeLane == DevelopmentLane.Workshop ? (isBlackMarket ? ShadowLaneText.BuildWorkshopLaneTitle() : "Workshop lane") : laneTitle.text;
             laneCopy.text = activeLane == DevelopmentLane.Workshop
-                ? "Workshop keeps active jobs, ready pickups, real recipe cards, and queue posture visible in one place."
+                ? (isBlackMarket ? ShadowLaneText.BuildWorkshopLaneCopy() : "Workshop keeps active jobs, ready pickups, real recipe cards, and queue posture visible in one place.")
                 : laneCopy.text;
 
             var cards = new List<CardView>();
@@ -309,9 +315,10 @@ namespace PlanarWar.Client.UI.Screens.City
 
         private void RenderGrowthLane(ShellSummarySnapshot s)
         {
-            laneTitle.text = activeLane == DevelopmentLane.Growth ? "Growth lane" : laneTitle.text;
+            var isBlackMarket = IsBlackMarketLane(s);
+            laneTitle.text = activeLane == DevelopmentLane.Growth ? (isBlackMarket ? ShadowLaneText.BuildGrowthLaneTitle() : "Growth lane") : laneTitle.text;
             laneCopy.text = activeLane == DevelopmentLane.Growth
-                ? "Growth keeps cadence, staffing, and support posture visible so you can read the city’s pacing without drilling into mutations."
+                ? (isBlackMarket ? ShadowLaneText.BuildGrowthLaneCopy() : "Growth keeps cadence, staffing, and support posture visible so you can read the city’s pacing without drilling into mutations.")
                 : laneCopy.text;
 
             var nowUtc = DateTime.UtcNow;
@@ -423,8 +430,8 @@ namespace PlanarWar.Client.UI.Screens.City
             {
                 cards.Add(new CardView(
                     family: "Support posture",
-                    title: DescribeSupportTitle(s),
-                    lore: DescribeSupport(s),
+                    title: DescribeSupportTitle(s, isBlackMarket),
+                    lore: DescribeSupport(s, isBlackMarket),
                     note: s.OpeningOperations.Count > 0 ? $"Opening operations visible: {string.Join(" • ", s.OpeningOperations.Take(2).Select(o => o.Title))}" : "No extra opening operation pressure is surfaced right now."));
             }
 
@@ -678,8 +685,13 @@ namespace PlanarWar.Client.UI.Screens.City
             return string.Join(" • ", parts.Where(part => !string.IsNullOrWhiteSpace(part)));
         }
 
-        private static string BuildDeskNote(ShellSummarySnapshot s, SummaryState summaryState)
+        private static string BuildDeskNote(ShellSummarySnapshot s, SummaryState summaryState, bool isBlackMarket)
         {
+            if (isBlackMarket)
+            {
+                return ShadowLaneText.BuildDeskNote(s, summaryState?.ActionStatus);
+            }
+
             if (!string.IsNullOrWhiteSpace(summaryState?.ActionStatus))
             {
                 return summaryState.ActionStatus;
@@ -757,8 +769,13 @@ namespace PlanarWar.Client.UI.Screens.City
             return workshopTimers > 0 ? $"{workshopTimers} workshop timer(s) visible." : "No workshop queue visible.";
         }
 
-        private static string DescribeGrowthLane(ShellSummarySnapshot s)
+        private static string DescribeGrowthLane(ShellSummarySnapshot s, bool isBlackMarket)
         {
+            if (isBlackMarket)
+            {
+                return ShadowLaneText.DescribeGrowth(s.ResourceTickTiming, s.CityTimers);
+            }
+
             var liveTimers = s.CityTimers.Count;
             if (s.ResourceTickTiming.NextTickAtUtc.HasValue)
             {
@@ -768,8 +785,13 @@ namespace PlanarWar.Client.UI.Screens.City
             return liveTimers > 0 ? $"{liveTimers} live timer(s) visible; cadence is readable." : "Growth cadence unavailable.";
         }
 
-        private static string DescribeSupport(ShellSummarySnapshot s)
+        private static string DescribeSupport(ShellSummarySnapshot s, bool isBlackMarket)
         {
+            if (isBlackMarket)
+            {
+                return ShadowLaneText.DescribeSupport(s);
+            }
+
             if (s.ThreatWarnings.Count > 0)
             {
                 return s.ThreatWarnings[0].Headline;
@@ -783,11 +805,23 @@ namespace PlanarWar.Client.UI.Screens.City
             return "No extra support pressure is visible right now.";
         }
 
-        private static string DescribeSupportTitle(ShellSummarySnapshot s)
+        private static string DescribeSupportTitle(ShellSummarySnapshot s, bool isBlackMarket)
         {
+            if (isBlackMarket)
+            {
+                return ShadowLaneText.DescribeSupportTitle(s);
+            }
+
             if (s.ThreatWarnings.Count > 0) return "Warning posture";
             if (s.OpeningOperations.Count > 0) return "Opening posture";
             return "Support posture";
+        }
+
+
+        private static bool IsBlackMarketLane(ShellSummarySnapshot s)
+        {
+            var lane = (s?.City?.SettlementLane ?? s?.City?.SettlementLaneLabel ?? string.Empty).Trim().ToLowerInvariant();
+            return lane == "black_market" || lane == "black market" || lane == "black-market" || lane == "blackmarket" || lane == "shadow";
         }
 
         private static string FormatProgress(double? progress, double? cost)
