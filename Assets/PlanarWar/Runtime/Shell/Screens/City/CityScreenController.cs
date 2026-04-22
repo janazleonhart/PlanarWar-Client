@@ -134,20 +134,24 @@ namespace PlanarWar.Client.UI.Screens.City
                 ? ShadowLaneText.DescribeDevelopmentCopy(s.City)
                 : $"Tier {(s.City.Tier ?? 0)} {HumanizeLane(s.City.SettlementLaneLabel)} desk. Review research, queues, and growth posture without leaving the city shell.";
 
-            card1Title.text = isBlackMarket ? "Shadow books" : "Research lane";
+            card1Title.text = isBlackMarket ? ShadowLaneText.BuildResearchLaneTitle() : "Research lane";
             card1Value.text = s.ActiveResearch != null
                 ? $"{s.ActiveResearch.Name} • {FormatProgress(s.ActiveResearch.Progress, s.ActiveResearch.Cost)}"
                 : s.AvailableTechs.Count > 0
-                    ? $"{s.AvailableTechs.Count} tech option{(s.AvailableTechs.Count == 1 ? string.Empty : "s")} ready"
-                    : "No active research or tech options surfaced.";
-            card2Title.text = isBlackMarket ? "Covert supply" : "Workshop lane";
-            card2Value.text = DescribeWorkshopLane(s, recipeCount);
-            card3Title.text = isBlackMarket ? "Carry lane" : "Growth lane";
+                    ? isBlackMarket
+                        ? $"{s.AvailableTechs.Count} shadow-book/front option{(s.AvailableTechs.Count == 1 ? string.Empty : "s")} ready"
+                        : $"{s.AvailableTechs.Count} tech option{(s.AvailableTechs.Count == 1 ? string.Empty : "s")} ready"
+                    : isBlackMarket
+                        ? "No active shadow-book or front option surfaced."
+                        : "No active research or tech options surfaced.";
+            card2Title.text = isBlackMarket ? ShadowLaneText.BuildWorkshopLaneTitle() : "Workshop lane";
+            card2Value.text = DescribeWorkshopLane(s, recipeCount, isBlackMarket);
+            card3Title.text = isBlackMarket ? ShadowLaneText.BuildGrowthLaneTitle() : "Growth lane";
             card3Value.text = DescribeGrowthLane(s, isBlackMarket);
 
             researchFocusValue.text = s.ActiveResearch?.Name ?? (isBlackMarket ? "No active shadow-book focus." : "No active research focus.");
             nextTechValue.text = s.AvailableTechs.FirstOrDefault()?.Name ?? (isBlackMarket ? "No quiet leverage unlock surfaced." : "No available tech surfaced.");
-            workshopValue.text = DescribeWorkshopLane(s, recipeCount);
+            workshopValue.text = DescribeWorkshopLane(s, recipeCount, isBlackMarket);
             growthValue.text = DescribeGrowthLane(s, isBlackMarket);
             supportValue.text = DescribeSupport(s, isBlackMarket);
             noteValue.text = BuildDeskNote(s, summaryState, isBlackMarket);
@@ -207,33 +211,43 @@ namespace PlanarWar.Client.UI.Screens.City
             if (s.ActiveResearch != null)
             {
                 cards.Add(new CardView(
-                    family: "Active research",
+                    family: isBlackMarket ? "Live front" : "Active research",
                     title: s.ActiveResearch.Name,
-                    lore: $"Progress {FormatProgress(s.ActiveResearch.Progress, s.ActiveResearch.Cost)}",
-                    note: s.ActiveResearch.StartedAtUtc.HasValue ? $"Started {s.ActiveResearch.StartedAtUtc:HH:mm:ss} UTC" : "Live research queue entry from summary payload.",
+                    lore: isBlackMarket
+                        ? $"Shadow-book front • Progress {FormatProgress(s.ActiveResearch.Progress, s.ActiveResearch.Cost)}"
+                        : $"Progress {FormatProgress(s.ActiveResearch.Progress, s.ActiveResearch.Cost)}",
+                    note: s.ActiveResearch.StartedAtUtc.HasValue ? (isBlackMarket ? $"Front opened {s.ActiveResearch.StartedAtUtc:HH:mm:ss} UTC" : $"Started {s.ActiveResearch.StartedAtUtc:HH:mm:ss} UTC") : isBlackMarket ? "Live shadow-book front from summary payload." : "Live research queue entry from summary payload.",
                     buttonText: "Live",
                     buttonEnabled: false));
             }
 
             cards.AddRange(s.AvailableTechs.Take(4 - cards.Count).Select(tech => new CardView(
-                family: string.IsNullOrWhiteSpace(tech.IdentityFamily) ? HumanizeCategory(tech.Category) : tech.IdentityFamily,
+                family: isBlackMarket ? ShadowLaneText.BuildTechFamily(tech) : (string.IsNullOrWhiteSpace(tech.IdentityFamily) ? HumanizeCategory(tech.Category) : tech.IdentityFamily),
                 title: tech.Name,
-                lore: FirstNonBlank(tech.IdentitySummary, tech.Description, tech.UnlockPreview.FirstOrDefault(), "No research summary provided."),
-                note: BuildTechNote(tech),
+                lore: isBlackMarket ? ShadowLaneText.BuildTechLore(tech) : FirstNonBlank(tech.IdentitySummary, tech.Description, tech.UnlockPreview.FirstOrDefault(), "No research summary provided."),
+                note: BuildTechNote(tech, isBlackMarket),
                 buttonText: summaryState.IsActionBusy && string.Equals(summaryState.PendingResearchTechId, tech.Id, StringComparison.OrdinalIgnoreCase) ? "Starting..." : "Start research",
                 buttonEnabled: !summaryState.IsActionBusy && onStartResearchRequested != null,
                 onClick: () => TriggerStartResearch(tech.Id))));
 
             if (cards.Count == 0)
             {
-                cards.Add(new CardView("Research payload", "No tech entry", "The current /api/me payload did not surface availableTechs or an activeResearch entry.", "No mutation wiring is attempted here.", "Read-only", false));
+                cards.Add(new CardView(
+                    isBlackMarket ? "Shadow books" : "Research payload",
+                    isBlackMarket ? "No shadow book entry" : "No tech entry",
+                    isBlackMarket ? "No active book, permit front, or quiet leverage entry is visible in the current payload." : "The current /api/me payload did not surface availableTechs or an activeResearch entry.",
+                    isBlackMarket ? "The desk stays honest instead of inventing a fake underworld ledger." : "No mutation wiring is attempted here.",
+                    "Read-only",
+                    false));
             }
 
-            researchCardsCopyValue.text = s.ActiveResearch != null
-                ? $"Active research plus {Math.Max(0, s.AvailableTechs.Count)} surfaced tech option(s)."
-                : s.AvailableTechs.Count > 0
-                    ? $"Showing {s.AvailableTechs.Count} available tech option(s) from /api/me."
-                    : "No research cards were surfaced in payload.";
+            researchCardsCopyValue.text = isBlackMarket
+                ? ShadowLaneText.DescribeResearchCardsCopy(s)
+                : s.ActiveResearch != null
+                    ? $"Active research plus {Math.Max(0, s.AvailableTechs.Count)} surfaced tech option(s)."
+                    : s.AvailableTechs.Count > 0
+                        ? $"Showing {s.AvailableTechs.Count} available tech option(s) from /api/me."
+                        : "No research cards were surfaced in payload.";
 
             RenderCards(researchCards, cards);
         }
@@ -257,27 +271,29 @@ namespace PlanarWar.Client.UI.Screens.City
                 .ToList();
 
             cards.AddRange(activeJobs.Take(2).Select(job => new CardView(
-                family: "Active job",
+                family: isBlackMarket ? ShadowLaneText.BuildWorkshopJobFamily(ready: false) : "Active job",
                 title: GetWorkshopJobTitle(job),
-                lore: job.FinishesAtUtc.HasValue ? $"Ready in {FormatRemaining(job.FinishesAtUtc.Value - nowUtc)}" : "Job surfaced without a finish anchor.",
-                note: "Queued workshop job from summary payload.",
+                lore: isBlackMarket ? ShadowLaneText.BuildWorkshopJobLore(job, ready: false, nowUtc) : job.FinishesAtUtc.HasValue ? $"Ready in {FormatRemaining(job.FinishesAtUtc.Value - nowUtc)}" : "Job surfaced without a finish anchor.",
+                note: isBlackMarket ? ShadowLaneText.BuildWorkshopJobNote(job, ready: false) : "Queued workshop job from summary payload.",
                 buttonText: "In flight",
                 buttonEnabled: false)));
 
             cards.AddRange(readyJobs.Take(2).Select(job => new CardView(
-                family: "Ready pickup",
+                family: isBlackMarket ? ShadowLaneText.BuildWorkshopJobFamily(ready: true) : "Ready pickup",
                 title: GetWorkshopJobTitle(job),
-                lore: "Crafting time elapsed. Collect to deliver the item into city armory storage.",
-                note: job.Id == "job" ? "Ready workshop item surfaced without a stable job id." : $"Ready job {job.Id} can now be collected into storage.",
+                lore: isBlackMarket ? ShadowLaneText.BuildWorkshopJobLore(job, ready: true, nowUtc) : "Crafting time elapsed. Collect to deliver the item into city armory storage.",
+                note: isBlackMarket
+                    ? ShadowLaneText.BuildWorkshopJobNote(job, ready: true)
+                    : job.Id == "job" ? "Ready workshop item surfaced without a stable job id." : $"Ready job {job.Id} can now be collected into storage.",
                 buttonText: summaryState.IsActionBusy && string.Equals(summaryState.PendingWorkshopJobId, job.Id, StringComparison.OrdinalIgnoreCase) ? "Collecting..." : "Collect",
                 buttonEnabled: !summaryState.IsActionBusy && !string.IsNullOrWhiteSpace(job.Id) && job.Id != "job" && onCollectWorkshopRequested != null,
                 onClick: () => TriggerCollectWorkshop(job.Id))));
 
             cards.AddRange(workshopTimers.Take(4 - cards.Count).Select(timer => new CardView(
-                family: "Workshop timer",
+                family: isBlackMarket ? ShadowLaneText.BuildWorkshopTimerFamily(timer) : "Workshop timer",
                 title: timer.Label,
-                lore: timer.FinishesAtUtc.HasValue ? $"{timer.Status} • {FormatRemaining(timer.FinishesAtUtc.Value - DateTime.UtcNow)}" : timer.Status,
-                note: FirstNonBlank(timer.Detail, "Timer surfaced from cityTimers."))));
+                lore: isBlackMarket ? ShadowLaneText.BuildWorkshopTimerLore(timer, nowUtc) : timer.FinishesAtUtc.HasValue ? $"{timer.Status} • {FormatRemaining(timer.FinishesAtUtc.Value - DateTime.UtcNow)}" : timer.Status,
+                note: isBlackMarket ? ShadowLaneText.BuildWorkshopTimerNote(timer) : FirstNonBlank(timer.Detail, "Timer surfaced from cityTimers."))));
 
             if (cards.Count < 4)
             {
@@ -285,10 +301,10 @@ namespace PlanarWar.Client.UI.Screens.City
                     .Where(r => !string.IsNullOrWhiteSpace(r.RecipeId))
                     .Take(4 - cards.Count)
                     .Select(recipe => new CardView(
-                        family: string.IsNullOrWhiteSpace(recipe.GearFamily) ? "Workshop recipe" : HumanizeKey(recipe.GearFamily),
+                        family: isBlackMarket ? ShadowLaneText.BuildWorkshopRecipeFamily(recipe) : (string.IsNullOrWhiteSpace(recipe.GearFamily) ? "Workshop recipe" : HumanizeKey(recipe.GearFamily)),
                         title: recipe.Name,
-                        lore: FirstNonBlank(recipe.Summary, recipe.ResponseTags.FirstOrDefault(), "Craftable recipe from workshop catalog."),
-                        note: BuildWorkshopRecipeNote(recipe),
+                        lore: isBlackMarket ? ShadowLaneText.BuildWorkshopRecipeLore(recipe) : FirstNonBlank(recipe.Summary, recipe.ResponseTags.FirstOrDefault(), "Craftable recipe from workshop catalog."),
+                        note: BuildWorkshopRecipeNote(recipe, isBlackMarket),
                         buttonText: summaryState.IsActionBusy && string.Equals(summaryState.PendingWorkshopRecipeId, recipe.RecipeId, StringComparison.OrdinalIgnoreCase) ? "Crafting..." : "Craft",
                         buttonEnabled: !summaryState.IsActionBusy && onStartWorkshopCraftRequested != null,
                         onClick: () => TriggerStartWorkshopCraft(recipe.RecipeId)));
@@ -297,18 +313,26 @@ namespace PlanarWar.Client.UI.Screens.City
 
             if (cards.Count == 0)
             {
-                cards.Add(new CardView("Workshop payload", "No workshop entry", "No workshop job, timer, or recipe catalog entry is currently visible.", "The desk stays honest instead of inventing a fake queue.", "Read-only", false));
+                cards.Add(new CardView(
+                    isBlackMarket ? "Covert supply" : "Workshop payload",
+                    isBlackMarket ? "No covert supply front" : "No workshop entry",
+                    isBlackMarket ? "No live front, ready drop, timer, or quiet recipe is visible in the current payload." : "No workshop job, timer, or recipe catalog entry is currently visible.",
+                    isBlackMarket ? "The desk stays honest instead of inventing a fake backroom queue." : "The desk stays honest instead of inventing a fake queue.",
+                    "Read-only",
+                    false));
             }
 
-            workshopCardsCopyValue.text = activeJobs.Count > 0
-                ? $"{activeJobs.Count} active workshop job(s) and {readyJobs.Count} ready pickup(s) are visible."
-                : readyJobs.Count > 0
-                    ? $"{readyJobs.Count} ready pickup(s) visible; collect wiring is now live."
-                    : summaryState.WorkshopRecipes.Count > 0
-                        ? $"Showing {summaryState.WorkshopRecipes.Count} craft recipe(s) from /api/workshop/recipes."
-                        : workshopTimers.Count > 0
-                            ? $"Workshop timing is coming through cityTimers even though no job body is active."
-                            : "No workshop queue, timer, or recipe catalog is visible right now.";
+            workshopCardsCopyValue.text = isBlackMarket
+                ? ShadowLaneText.DescribeWorkshopCardsCopy(activeJobs.Count, readyJobs.Count, summaryState.WorkshopRecipes.Count, workshopTimers.Count)
+                : activeJobs.Count > 0
+                    ? $"{activeJobs.Count} active workshop job(s) and {readyJobs.Count} ready pickup(s) are visible."
+                    : readyJobs.Count > 0
+                        ? $"{readyJobs.Count} ready pickup(s) visible; collect wiring is now live."
+                        : summaryState.WorkshopRecipes.Count > 0
+                            ? $"Showing {summaryState.WorkshopRecipes.Count} craft recipe(s) from /api/workshop/recipes."
+                            : workshopTimers.Count > 0
+                                ? $"Workshop timing is coming through cityTimers even though no job body is active."
+                                : "No workshop queue, timer, or recipe catalog is visible right now.";
 
             RenderCards(workshopCards, cards);
         }
@@ -324,13 +348,14 @@ namespace PlanarWar.Client.UI.Screens.City
             var nowUtc = DateTime.UtcNow;
             var cards = new List<CardView>();
             cards.Add(new CardView(
-                family: "Production",
-                title: "Per-tick output",
+                family: isBlackMarket ? ShadowLaneText.BuildProductionFamily() : "Production",
+                title: isBlackMarket ? ShadowLaneText.BuildProductionTitle() : "Per-tick output",
                 lore: FormatProduction(s.ProductionPerTick),
-                note: s.ResourceTickTiming.NextTickAtUtc.HasValue ? $"Next resource tick in {FormatRemaining(s.ResourceTickTiming.NextTickAtUtc.Value - nowUtc)}" : "Resource cadence is visible without a live anchor."));
+                note: isBlackMarket ? ShadowLaneText.BuildProductionNote(s.ResourceTickTiming, nowUtc) : s.ResourceTickTiming.NextTickAtUtc.HasValue ? $"Next resource tick in {FormatRemaining(s.ResourceTickTiming.NextTickAtUtc.Value - nowUtc)}" : "Resource cadence is visible without a live anchor."));
 
             var heroRecruitment = s.HeroRecruitment;
             var recruitTimer = s.CityTimers.FirstOrDefault(t => string.Equals(t.Category, "operator_recruit", StringComparison.OrdinalIgnoreCase));
+            var recruitOp = s.OpeningOperations.FirstOrDefault(o => string.Equals(o.Kind, "recruit_hero", StringComparison.OrdinalIgnoreCase) && string.Equals(o.Readiness, "ready_now", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(o.Role));
             if (heroRecruitment != null && string.Equals(heroRecruitment.Status, "candidates_ready", StringComparison.OrdinalIgnoreCase) && heroRecruitment.Candidates.Count > 0)
             {
                 cards.Clear();
@@ -403,7 +428,6 @@ namespace PlanarWar.Client.UI.Screens.City
             }
             else
             {
-                var recruitOp = s.OpeningOperations.FirstOrDefault(o => string.Equals(o.Kind, "recruit_hero", StringComparison.OrdinalIgnoreCase) && string.Equals(o.Readiness, "ready_now", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(o.Role));
                 if (recruitOp != null)
                 {
                     cards.Add(new CardView(
@@ -429,27 +453,29 @@ namespace PlanarWar.Client.UI.Screens.City
             if (cards.Count < 4)
             {
                 cards.Add(new CardView(
-                    family: "Support posture",
+                    family: isBlackMarket ? "Heat posture" : "Support posture",
                     title: DescribeSupportTitle(s, isBlackMarket),
                     lore: DescribeSupport(s, isBlackMarket),
-                    note: s.OpeningOperations.Count > 0 ? $"Opening operations visible: {string.Join(" • ", s.OpeningOperations.Take(2).Select(o => o.Title))}" : "No extra opening operation pressure is surfaced right now."));
+                    note: isBlackMarket ? ShadowLaneText.BuildSupportCardNote(s) : s.OpeningOperations.Count > 0 ? $"Opening operations visible: {string.Join(" • ", s.OpeningOperations.Take(2).Select(o => o.Title))}" : "No extra opening operation pressure is surfaced right now."));
             }
 
-            growthCardsCopyValue.text = heroRecruitment != null && string.Equals(heroRecruitment.Status, "candidates_ready", StringComparison.OrdinalIgnoreCase)
-                ? $"Candidate review is live with {heroRecruitment.Candidates.Count} hero option(s) ready for selection."
-                : heroRecruitment != null && string.Equals(heroRecruitment.Status, "scouting", StringComparison.OrdinalIgnoreCase)
-                    ? heroRecruitment.FinishesAtUtc.HasValue && heroRecruitment.FinishesAtUtc.Value <= nowUtc
-                        ? "Scouting timer elapsed. Refresh now to load candidate cards from the latest summary payload."
-                        : "Hero recruitment is scouting now and will surface candidate cards when the timer resolves."
-                    : heroRecruitment != null && string.Equals(heroRecruitment.Status, "idle", StringComparison.OrdinalIgnoreCase)
-                        ? heroRecruitment.StartEligible
-                            ? "Hero recruitment can be opened directly from the Growth desk."
-                            : FirstNonBlank(heroRecruitment.BlockedReason, "Hero recruitment is idle but blocked until resource shortfalls clear.")
-                        : recruitTimer != null
-                            ? $"Showing cadence, hero recruit timing, and {s.CityTimers.Count} live timer(s)."
-                            : s.OpeningOperations.Any(o => string.Equals(o.Kind, "recruit_hero", StringComparison.OrdinalIgnoreCase) && string.Equals(o.Readiness, "ready_now", StringComparison.OrdinalIgnoreCase))
-                                ? "Hero recruit opening is visible from settlementOpeningOperations."
-                                : $"Showing cadence, {s.CityTimers.Count} live timer(s), and current support posture from the summary payload.";
+            growthCardsCopyValue.text = isBlackMarket
+                ? ShadowLaneText.DescribeGrowthCardsCopy(heroRecruitment, recruitTimer, recruitOp, s.CityTimers)
+                : heroRecruitment != null && string.Equals(heroRecruitment.Status, "candidates_ready", StringComparison.OrdinalIgnoreCase)
+                    ? $"Candidate review is live with {heroRecruitment.Candidates.Count} hero option(s) ready for selection."
+                    : heroRecruitment != null && string.Equals(heroRecruitment.Status, "scouting", StringComparison.OrdinalIgnoreCase)
+                        ? heroRecruitment.FinishesAtUtc.HasValue && heroRecruitment.FinishesAtUtc.Value <= nowUtc
+                            ? "Scouting timer elapsed. Refresh now to load candidate cards from the latest summary payload."
+                            : "Hero recruitment is scouting now and will surface candidate cards when the timer resolves."
+                        : heroRecruitment != null && string.Equals(heroRecruitment.Status, "idle", StringComparison.OrdinalIgnoreCase)
+                            ? heroRecruitment.StartEligible
+                                ? "Hero recruitment can be opened directly from the Growth desk."
+                                : FirstNonBlank(heroRecruitment.BlockedReason, "Hero recruitment is idle but blocked until resource shortfalls clear.")
+                            : recruitTimer != null
+                                ? $"Showing cadence, hero recruit timing, and {s.CityTimers.Count} live timer(s)."
+                                : s.OpeningOperations.Any(o => string.Equals(o.Kind, "recruit_hero", StringComparison.OrdinalIgnoreCase) && string.Equals(o.Readiness, "ready_now", StringComparison.OrdinalIgnoreCase))
+                                    ? "Hero recruit opening is visible from settlementOpeningOperations."
+                                    : $"Showing cadence, {s.CityTimers.Count} live timer(s), and current support posture from the summary payload.";
             RenderCards(growthCards, cards);
         }
 
@@ -745,12 +771,17 @@ namespace PlanarWar.Client.UI.Screens.City
             }
         }
 
-        private static string DescribeWorkshopLane(ShellSummarySnapshot s, int recipeCount)
+        private static string DescribeWorkshopLane(ShellSummarySnapshot s, int recipeCount, bool isBlackMarket)
         {
             var nowUtc = DateTime.UtcNow;
             var activeJobs = s.WorkshopJobs.Count(j => !IsWorkshopJobCollected(j) && !IsWorkshopJobCollectable(j, nowUtc));
             var readyJobs = s.WorkshopJobs.Count(j => !IsWorkshopJobCollected(j) && IsWorkshopJobCollectable(j, nowUtc));
             var workshopTimers = s.CityTimers.Count(t => string.Equals(t.Category, "workshop_job", StringComparison.OrdinalIgnoreCase));
+            if (isBlackMarket)
+            {
+                return ShadowLaneText.DescribeWorkshopLane(activeJobs, readyJobs, recipeCount, workshopTimers);
+            }
+
             if (activeJobs > 0)
             {
                 return $"{activeJobs} active job(s) • {readyJobs} ready pickup(s)";
@@ -854,8 +885,13 @@ namespace PlanarWar.Client.UI.Screens.City
             }
         }
 
-        private static string BuildWorkshopRecipeNote(WorkshopRecipeSnapshot recipe)
+        private static string BuildWorkshopRecipeNote(WorkshopRecipeSnapshot recipe, bool isBlackMarket)
         {
+            if (isBlackMarket)
+            {
+                return ShadowLaneText.BuildWorkshopRecipeNote(recipe);
+            }
+
             var parts = new List<string>();
             if (recipe.WealthCost.HasValue) parts.Add($"Wealth {recipe.WealthCost.Value:0.#}");
             if (recipe.ManaCost.HasValue) parts.Add($"Mana {recipe.ManaCost.Value:0.#}");
@@ -865,8 +901,13 @@ namespace PlanarWar.Client.UI.Screens.City
             return parts.Count > 0 ? string.Join(" • ", parts) : "Workshop recipe is ready to craft.";
         }
 
-        private static string BuildTechNote(TechOptionSnapshot tech)
+        private static string BuildTechNote(TechOptionSnapshot tech, bool isBlackMarket)
         {
+            if (isBlackMarket)
+            {
+                return ShadowLaneText.BuildTechNote(tech);
+            }
+
             var parts = new List<string>();
             if (tech.Cost.HasValue) parts.Add($"Cost {tech.Cost.Value:0.#}");
             if (!string.IsNullOrWhiteSpace(tech.LaneIdentity) && !string.Equals(tech.LaneIdentity, "neutral", StringComparison.OrdinalIgnoreCase)) parts.Add($"Lane {HumanizeKey(tech.LaneIdentity)}");

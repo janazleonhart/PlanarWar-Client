@@ -7,13 +7,28 @@ namespace PlanarWar.Client.Core.Presentation
 {
     public static class ShadowLaneText
     {
-        public static string BuildGroundedContractValue(OperationSnapshot primaryOp, BlackMarketActiveOperationCardSnapshot card, BlackMarketRuntimeTruthSurfaceSnapshot runtime, BlackMarketPayoffRecoverySurfaceSnapshot payoff)
+        public static string BuildGroundedContractValue(
+            OperationSnapshot primaryOp,
+            BlackMarketActiveOperationCardSnapshot card,
+            BlackMarketRuntimeTruthSurfaceSnapshot runtime,
+            BlackMarketPayoffRecoverySurfaceSnapshot payoff)
         {
-            var title = FirstNonBlank(primaryOp?.Title, primaryOp?.FocusLabel, card?.Headline, runtime?.Headline, payoff?.Headline, "No shadow contract surfaced.");
+            var title = FirstNonBlank(
+                primaryOp?.Title,
+                primaryOp?.FocusLabel,
+                card?.Headline,
+                runtime?.Headline,
+                payoff?.Headline,
+                "No shadow contract surfaced.");
+
             return $"{title} • {BuildLifecycleLead(primaryOp, card, runtime, payoff)}";
         }
 
-        public static string BuildGroundedContractNote(OperationSnapshot primaryOp, BlackMarketActiveOperationCardSnapshot card, BlackMarketRuntimeTruthSurfaceSnapshot runtime, BlackMarketPayoffRecoverySurfaceSnapshot payoff)
+        public static string BuildGroundedContractNote(
+            OperationSnapshot primaryOp,
+            BlackMarketActiveOperationCardSnapshot card,
+            BlackMarketRuntimeTruthSurfaceSnapshot runtime,
+            BlackMarketPayoffRecoverySurfaceSnapshot payoff)
         {
             return FirstNonBlank(
                 CompactSingleLine(primaryOp?.Summary),
@@ -24,12 +39,20 @@ namespace PlanarWar.Client.Core.Presentation
                 "The live shadow seam is grounded on the board and can be worked without inventing fake underworld drama.");
         }
 
-        public static string BuildLifecycleValue(OperationSnapshot primaryOp, BlackMarketActiveOperationCardSnapshot card, BlackMarketRuntimeTruthSurfaceSnapshot runtime, BlackMarketPayoffRecoverySurfaceSnapshot payoff)
+        public static string BuildLifecycleValue(
+            OperationSnapshot primaryOp,
+            BlackMarketActiveOperationCardSnapshot card,
+            BlackMarketRuntimeTruthSurfaceSnapshot runtime,
+            BlackMarketPayoffRecoverySurfaceSnapshot payoff)
         {
             return $"{BuildLifecycleLead(primaryOp, card, runtime, payoff)} • {BuildLifecycleTail(primaryOp, card, runtime, payoff)}";
         }
 
-        public static string BuildLifecycleNote(OperationSnapshot primaryOp, BlackMarketActiveOperationCardSnapshot card, BlackMarketRuntimeTruthSurfaceSnapshot runtime, BlackMarketPayoffRecoverySurfaceSnapshot payoff)
+        public static string BuildLifecycleNote(
+            OperationSnapshot primaryOp,
+            BlackMarketActiveOperationCardSnapshot card,
+            BlackMarketRuntimeTruthSurfaceSnapshot runtime,
+            BlackMarketPayoffRecoverySurfaceSnapshot payoff)
         {
             return FirstNonBlank(
                 CompactSingleLine(card?.OperatorNote),
@@ -40,12 +63,20 @@ namespace PlanarWar.Client.Core.Presentation
                 "Lifecycle stays tied to the live shadow line so the desk can tell whether the route is merely offered, already committed, already answered, or cooling.");
         }
 
-        public static string BuildEffectsValue(OperationSnapshot primaryOp, BlackMarketActiveOperationCardSnapshot card, BlackMarketRuntimeTruthSurfaceSnapshot runtime, BlackMarketPayoffRecoverySurfaceSnapshot payoff)
+        public static string BuildEffectsValue(
+            OperationSnapshot primaryOp,
+            BlackMarketActiveOperationCardSnapshot card,
+            BlackMarketRuntimeTruthSurfaceSnapshot runtime,
+            BlackMarketPayoffRecoverySurfaceSnapshot payoff)
         {
             return $"Receipt chain {ResolveReceiptChainState(primaryOp, card, runtime, payoff)} • Covert carry {ResolveCovertCarryState(primaryOp, card, runtime, payoff)}";
         }
 
-        public static string BuildEffectsNote(OperationSnapshot primaryOp, BlackMarketActiveOperationCardSnapshot card, BlackMarketRuntimeTruthSurfaceSnapshot runtime, BlackMarketPayoffRecoverySurfaceSnapshot payoff)
+        public static string BuildEffectsNote(
+            OperationSnapshot primaryOp,
+            BlackMarketActiveOperationCardSnapshot card,
+            BlackMarketRuntimeTruthSurfaceSnapshot runtime,
+            BlackMarketPayoffRecoverySurfaceSnapshot payoff)
         {
             var receipt = payoff?.RecentReceipts?.FirstOrDefault();
             if (receipt != null)
@@ -61,12 +92,17 @@ namespace PlanarWar.Client.Core.Presentation
                 "Use this line to show what the shadow contract is already carrying: linked receipts, quiet routes, and whether cleanup is holding.");
         }
 
-        public static string BuildPressureBendValue(BlackMarketRuntimeTruthSurfaceSnapshot runtime, BlackMarketPayoffRecoverySurfaceSnapshot payoff)
+        public static string BuildPressureBendValue(
+            BlackMarketRuntimeTruthSurfaceSnapshot runtime,
+            BlackMarketPayoffRecoverySurfaceSnapshot payoff)
         {
             return $"{ResolveHeatState(runtime, payoff)} • {ResolveExposureState(runtime, payoff)}";
         }
 
-        public static string BuildPressureBendNote(OperationSnapshot primaryOp, BlackMarketRuntimeTruthSurfaceSnapshot runtime, BlackMarketPayoffRecoverySurfaceSnapshot payoff)
+        public static string BuildPressureBendNote(
+            OperationSnapshot primaryOp,
+            BlackMarketRuntimeTruthSurfaceSnapshot runtime,
+            BlackMarketPayoffRecoverySurfaceSnapshot payoff)
         {
             var receipt = payoff?.RecentReceipts?.FirstOrDefault();
             if (receipt != null)
@@ -105,10 +141,27 @@ namespace PlanarWar.Client.Core.Presentation
         public static string BuildOperationPostureFromText(OperationSnapshot operation)
         {
             var text = CombinedContext(operation).ToLowerInvariant();
-            if (ContainsAny(text, "counterfeit", "script", "ledger", "paper", "receipt", "book")) return "Receipt-chain routing / forged paper";
-            if (ContainsAny(text, "cover", "cleanup", "contain", "cool", "wash")) return "Deniable cleanup / route cooling";
-            if (ContainsAny(text, "bribe", "pressure", "warning", "heat", "leverage", "exposure")) return "Heat management / quiet leverage";
-            if (ContainsAny(text, "covert", "exploit", "cash", "smuggle", "carry", "route")) return "Shadow books / covert cash-out";
+
+            if (ContainsAny(text, "counterfeit", "script", "ledger", "paper", "receipt", "book"))
+            {
+                return "Receipt-chain routing / forged paper";
+            }
+
+            if (ContainsAny(text, "cover", "cleanup", "contain", "cool", "wash"))
+            {
+                return "Deniable cleanup / route cooling";
+            }
+
+            if (ContainsAny(text, "bribe", "pressure", "warning", "heat", "leverage", "exposure"))
+            {
+                return "Heat management / quiet leverage";
+            }
+
+            if (ContainsAny(text, "covert", "exploit", "cash", "smuggle", "carry", "route"))
+            {
+                return "Shadow books / covert cash-out";
+            }
+
             return "Covert carry / quiet pressure";
         }
 
@@ -116,14 +169,22 @@ namespace PlanarWar.Client.Core.Presentation
         {
             switch ((kind ?? string.Empty).Trim().ToLowerInvariant())
             {
-                case "counterfeit_job": return "Receipt-chain routing";
-                case "backbone_pressure": return "Heat pressure";
-                case "cover_repair": return "Deniable cleanup";
-                case "warning_window": return "Exposure window";
-                case "containment": return "Route containment";
-                case "bribery": return "Quiet leverage";
-                case "exploit": return "Shadow books";
-                default: return HumanizeWords(kind, "Shadow seam");
+                case "counterfeit_job":
+                    return "Receipt-chain routing";
+                case "backbone_pressure":
+                    return "Heat pressure";
+                case "cover_repair":
+                    return "Deniable cleanup";
+                case "warning_window":
+                    return "Exposure window";
+                case "containment":
+                    return "Route containment";
+                case "bribery":
+                    return "Quiet leverage";
+                case "exploit":
+                    return "Shadow books";
+                default:
+                    return HumanizeWords(kind, "Shadow seam");
             }
         }
 
@@ -147,7 +208,9 @@ namespace PlanarWar.Client.Core.Presentation
                 return $"Next carry check in {FormatRemaining(timing.NextTickAtUtc.Value - DateTime.UtcNow)} • {liveTimers} live timer(s).";
             }
 
-            return liveTimers > 0 ? $"{liveTimers} live timer(s) visible; covert cadence is readable." : "Carry cadence unavailable.";
+            return liveTimers > 0
+                ? $"{liveTimers} live timer(s) visible; covert cadence is readable."
+                : "Carry cadence unavailable.";
         }
 
         public static string DescribeSupport(ShellSummarySnapshot summary)
@@ -183,13 +246,332 @@ namespace PlanarWar.Client.Core.Presentation
         }
 
         public static string BuildResearchLaneTitle() => "Shadow books";
-        public static string BuildResearchLaneCopy() => "Shadow books keep permit memory, forged paper, and quiet leverage readable without pretending the lane is just public paperwork.";
-        public static string BuildWorkshopLaneTitle() => "Covert supply";
-        public static string BuildWorkshopLaneCopy() => "Covert supply keeps live fronts, ready pickups, and quiet fabrication visible in one place.";
-        public static string BuildGrowthLaneTitle() => "Carry lane";
-        public static string BuildGrowthLaneCopy() => "Carry lanes keep cadence, staffing, and live heat readable so the Black Market feels like covert logistics instead of a darker civic shell.";
 
-        private static string BuildLifecycleLead(OperationSnapshot primaryOp, BlackMarketActiveOperationCardSnapshot card, BlackMarketRuntimeTruthSurfaceSnapshot runtime, BlackMarketPayoffRecoverySurfaceSnapshot payoff)
+        public static string BuildResearchLaneCopy()
+        {
+            return "Shadow books keep permit memory, forged paper, and quiet leverage readable without pretending the lane is just public paperwork.";
+        }
+
+        public static string BuildWorkshopLaneTitle() => "Covert supply";
+
+        public static string BuildWorkshopLaneCopy()
+        {
+            return "Covert supply keeps live fronts, ready pickups, and quiet fabrication visible in one place.";
+        }
+
+        public static string BuildGrowthLaneTitle() => "Carry lane";
+
+        public static string BuildGrowthLaneCopy()
+        {
+            return "Carry lanes keep cadence, staffing, and live heat readable so the Black Market feels like covert logistics instead of a darker civic shell.";
+        }
+
+
+        public static string BuildTechFamily(TechOptionSnapshot tech)
+        {
+            var text = JoinNonBlank(
+                tech?.Name,
+                tech?.Description,
+                tech?.Category,
+                tech?.IdentityFamily,
+                tech?.IdentitySummary,
+                tech?.LaneIdentity,
+                tech?.UnlockPreview != null ? string.Join(" ", tech.UnlockPreview) : string.Empty).ToLowerInvariant();
+
+            if (ContainsAny(text, "charter", "registry", "ledger", "permit", "seal", "paper", "record"))
+            {
+                return "Paper front";
+            }
+
+            if (ContainsAny(text, "road", "route", "bridge", "calendar", "caravan", "convoy", "traffic"))
+            {
+                return "Carry route";
+            }
+
+            if (ContainsAny(text, "granary", "reserve", "stock", "warehouse", "stash", "husbandry", "breeding"))
+            {
+                return "Quiet stock";
+            }
+
+            if (ContainsAny(text, "forge", "craft", "recipe", "workshop", "fabrication"))
+            {
+                return "Supply front";
+            }
+
+            return "Shadow front";
+        }
+
+        public static string BuildTechLore(TechOptionSnapshot tech)
+        {
+            return FirstNonBlank(
+                CompactSingleLine(tech?.IdentitySummary),
+                CompactSingleLine(tech?.Description),
+                tech?.UnlockPreview?.FirstOrDefault(),
+                "Quiet leverage from the current book.");
+        }
+
+        public static string BuildTechNote(TechOptionSnapshot tech)
+        {
+            var parts = new List<string>();
+
+            if (tech?.Cost.HasValue == true)
+            {
+                parts.Add($"Cost {tech.Cost.Value:0.#}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(tech?.OperatorNote))
+            {
+                parts.Add(CompactSingleLine(tech.OperatorNote));
+            }
+
+            var preview = tech?.UnlockPreview?.FirstOrDefault();
+            if (!string.IsNullOrWhiteSpace(preview))
+            {
+                parts.Add(CompactSingleLine(preview));
+            }
+
+            if (!string.IsNullOrWhiteSpace(tech?.LaneIdentity) && !string.Equals(tech.LaneIdentity, "neutral", StringComparison.OrdinalIgnoreCase))
+            {
+                parts.Add($"Lane {HumanizeWords(tech.LaneIdentity, "Shadow")}");
+            }
+
+            return parts.Count > 0
+                ? string.Join(" • ", parts)
+                : "Quiet leverage entry from the current shadow book.";
+        }
+
+        public static string DescribeResearchCardsCopy(ShellSummarySnapshot summary)
+        {
+            var active = summary?.ActiveResearch != null;
+            var count = summary?.AvailableTechs?.Count ?? 0;
+
+            if (active)
+            {
+                return $"Live front plus {count} shadow book option(s) surfaced.";
+            }
+
+            if (count > 0)
+            {
+                return $"Showing {count} shadow book option(s) from /api/me.";
+            }
+
+            return "No shadow book entry is visible right now.";
+        }
+
+        public static string BuildWorkshopJobFamily(bool ready)
+        {
+            return ready ? "Ready drop" : "Live front";
+        }
+
+        public static string BuildWorkshopJobLore(WorkshopJobSnapshot job, bool ready, DateTime nowUtc)
+        {
+            if (ready)
+            {
+                return !string.IsNullOrWhiteSpace(job?.OutputName)
+                    ? $"{job.OutputName} is ready for pickup."
+                    : "Quiet drop ready for pickup.";
+            }
+
+            if (job?.FinishesAtUtc.HasValue == true)
+            {
+                return $"Ready in {FormatRemaining(job.FinishesAtUtc.Value - nowUtc)}";
+            }
+
+            return !string.IsNullOrWhiteSpace(job?.OutputName)
+                ? $"{job.OutputName} is still moving through the front."
+                : "Covert fabrication is still moving through the front.";
+        }
+
+        public static string BuildWorkshopJobNote(WorkshopJobSnapshot job, bool ready)
+        {
+            if (ready)
+            {
+                return !string.IsNullOrWhiteSpace(job?.OutputName)
+                    ? $"Carry time elapsed. Collect {job.OutputName} while the route is still quiet."
+                    : "Carry time elapsed. Collect the drop before the route heats up.";
+            }
+
+            return !string.IsNullOrWhiteSpace(job?.OutputName)
+                ? $"{job.OutputName} is still moving through the front."
+                : "Covert fabrication is still moving through the front.";
+        }
+
+        public static string BuildWorkshopTimerFamily(CityTimerEntrySnapshot timer)
+        {
+            var text = JoinNonBlank(timer?.Category, timer?.Label, timer?.Detail).ToLowerInvariant();
+
+            if (ContainsAny(text, "ready", "pickup", "collect"))
+            {
+                return "Ready timer";
+            }
+
+            return "Carry timer";
+        }
+
+        public static string BuildWorkshopTimerLore(CityTimerEntrySnapshot timer, DateTime nowUtc)
+        {
+            if (timer?.FinishesAtUtc.HasValue == true)
+            {
+                return $"{HumanizeWords(timer.Status, "Active")} • {FormatRemaining(timer.FinishesAtUtc.Value - nowUtc)}";
+            }
+
+            return FirstNonBlank(HumanizeWords(timer?.Status, string.Empty), "Carry watch");
+        }
+
+        public static string BuildWorkshopTimerNote(CityTimerEntrySnapshot timer)
+        {
+            return FirstNonBlank(
+                CompactSingleLine(timer?.Detail),
+                "Workshop cadence is still visible even without a clean job body.");
+        }
+
+        public static string BuildWorkshopRecipeFamily(WorkshopRecipeSnapshot recipe)
+        {
+            var text = JoinNonBlank(
+                recipe?.GearFamily,
+                recipe?.Name,
+                recipe?.Summary,
+                recipe?.ResponseTags != null ? string.Join(" ", recipe.ResponseTags) : string.Empty).ToLowerInvariant();
+
+            if (ContainsAny(text, "armor", "weapon", "gear", "blade", "bow", "staff"))
+            {
+                return "Quiet gear";
+            }
+
+            if (ContainsAny(text, "food", "meal", "supply", "kit", "pack", "crate"))
+            {
+                return "Covert supply";
+            }
+
+            return "Shadow recipe";
+        }
+
+        public static string BuildWorkshopRecipeLore(WorkshopRecipeSnapshot recipe)
+        {
+            return FirstNonBlank(
+                CompactSingleLine(recipe?.Summary),
+                recipe?.ResponseTags?.FirstOrDefault(),
+                !string.IsNullOrWhiteSpace(recipe?.GearFamily) ? HumanizeWords(recipe.GearFamily, string.Empty) : string.Empty,
+                "Quiet fabrication recipe from the current book.");
+        }
+
+        public static string BuildWorkshopRecipeNote(WorkshopRecipeSnapshot recipe)
+        {
+            var parts = new List<string>();
+
+            if (recipe?.WealthCost.HasValue == true) parts.Add($"Wealth {recipe.WealthCost.Value:0.#}");
+            if (recipe?.ManaCost.HasValue == true) parts.Add($"Mana {recipe.ManaCost.Value:0.#}");
+            if (recipe?.MaterialsCost.HasValue == true) parts.Add($"Materials {recipe.MaterialsCost.Value:0.#}");
+            if (recipe?.CraftMinutes.HasValue == true) parts.Add($"Time {FormatMinutes(recipe.CraftMinutes.Value)}");
+            if (recipe?.ResponseTags?.Count > 0) parts.Add(string.Join("/", recipe.ResponseTags.Take(2).Select(t => HumanizeWords(t, t))));
+
+            return parts.Count > 0
+                ? string.Join(" • ", parts)
+                : "Quiet fabrication recipe is ready to run.";
+        }
+
+        public static string DescribeWorkshopCardsCopy(int activeJobs, int readyJobs, int recipeCount, int workshopTimers)
+        {
+            if (activeJobs > 0 || readyJobs > 0)
+            {
+                return $"{activeJobs} live front(s) • {readyJobs} ready drop(s)";
+            }
+
+            if (recipeCount > 0)
+            {
+                return $"{recipeCount} covert recipe(s) ready.";
+            }
+
+            if (workshopTimers > 0)
+            {
+                return $"{workshopTimers} carry timer(s) visible.";
+            }
+
+            return "No covert supply front is visible right now.";
+        }
+
+        public static string DescribeWorkshopLane(int activeJobs, int readyJobs, int recipeCount, int workshopTimers)
+        {
+            return DescribeWorkshopCardsCopy(activeJobs, readyJobs, recipeCount, workshopTimers);
+        }
+
+        public static string BuildProductionFamily() => "Throughput";
+
+        public static string BuildProductionTitle() => "Per-tick throughput";
+
+        public static string BuildProductionNote(TimerSnapshot timing, DateTime nowUtc)
+        {
+            if (timing?.NextTickAtUtc.HasValue == true)
+            {
+                return $"Next carry check in {FormatRemaining(timing.NextTickAtUtc.Value - nowUtc)}";
+            }
+
+            return "Throughput cadence is visible without a live anchor.";
+        }
+
+        public static string BuildSupportCardNote(ShellSummarySnapshot summary)
+        {
+            if (summary?.OpeningOperations?.Count > 0)
+            {
+                return $"Opening lines visible: {string.Join(" • ", summary.OpeningOperations.Take(2).Select(o => FirstNonBlank(o?.Title, "Shadow line")))}";
+            }
+
+            if (summary?.ThreatWarnings?.Count > 0)
+            {
+                return $"Heat warning visible: {summary.ThreatWarnings[0].Headline}";
+            }
+
+            return "No extra heat or opening line is surfaced right now.";
+        }
+
+        public static string DescribeGrowthCardsCopy(
+            HeroRecruitmentSnapshot heroRecruitment,
+            CityTimerEntrySnapshot recruitTimer,
+            OperationSnapshot recruitOp,
+            IReadOnlyList<CityTimerEntrySnapshot> cityTimers)
+        {
+            var liveTimers = cityTimers?.Count ?? 0;
+
+            if (heroRecruitment != null && string.Equals(heroRecruitment.Status, "candidates_ready", StringComparison.OrdinalIgnoreCase))
+            {
+                return $"Shadow candidate review is live with {heroRecruitment.Candidates.Count} option(s) ready for pickup.";
+            }
+
+            if (heroRecruitment != null && string.Equals(heroRecruitment.Status, "scouting", StringComparison.OrdinalIgnoreCase))
+            {
+                if (heroRecruitment.FinishesAtUtc.HasValue && heroRecruitment.FinishesAtUtc.Value <= DateTime.UtcNow)
+                {
+                    return "Scout window elapsed. Refresh now to load fresh candidate cards.";
+                }
+
+                return "Scout front is live and will resolve into recruitable candidates when the timer closes.";
+            }
+
+            if (heroRecruitment != null && string.Equals(heroRecruitment.Status, "idle", StringComparison.OrdinalIgnoreCase))
+            {
+                return heroRecruitment.StartEligible
+                    ? "Hero recruitment can be opened directly from the carry lane."
+                    : FirstNonBlank(heroRecruitment.BlockedReason, "Recruitment is idle but blocked until shortfalls clear.");
+            }
+
+            if (recruitTimer != null)
+            {
+                return $"Showing carry cadence, scout timer, and {liveTimers} live timer(s).";
+            }
+
+            if (recruitOp != null)
+            {
+                return "Scout opening is visible from the current shadow books.";
+            }
+
+            return $"Showing carry cadence, {liveTimers} live timer(s), and current heat posture from the summary payload.";
+        }
+
+        private static string BuildLifecycleLead(
+            OperationSnapshot primaryOp,
+            BlackMarketActiveOperationCardSnapshot card,
+            BlackMarketRuntimeTruthSurfaceSnapshot runtime,
+            BlackMarketPayoffRecoverySurfaceSnapshot payoff)
         {
             var readiness = (primaryOp?.Readiness ?? string.Empty).Trim().ToLowerInvariant();
             if (readiness == "ready_now") return "Available";
@@ -207,10 +589,15 @@ namespace PlanarWar.Client.Core.Presentation
 
             var band = (runtime?.RuntimeBand ?? string.Empty).Trim().ToLowerInvariant();
             if (band == "hot" || band == "active") return "Committed";
+
             return "Available";
         }
 
-        private static string BuildLifecycleTail(OperationSnapshot primaryOp, BlackMarketActiveOperationCardSnapshot card, BlackMarketRuntimeTruthSurfaceSnapshot runtime, BlackMarketPayoffRecoverySurfaceSnapshot payoff)
+        private static string BuildLifecycleTail(
+            OperationSnapshot primaryOp,
+            BlackMarketActiveOperationCardSnapshot card,
+            BlackMarketRuntimeTruthSurfaceSnapshot runtime,
+            BlackMarketPayoffRecoverySurfaceSnapshot payoff)
         {
             var readiness = (primaryOp?.Readiness ?? string.Empty).Trim().ToLowerInvariant();
             if (readiness == "ready_now") return "Current offers";
@@ -235,54 +622,131 @@ namespace PlanarWar.Client.Core.Presentation
             return "Current offers";
         }
 
-        private static string ResolveReceiptChainState(OperationSnapshot primaryOp, BlackMarketActiveOperationCardSnapshot card, BlackMarketRuntimeTruthSurfaceSnapshot runtime, BlackMarketPayoffRecoverySurfaceSnapshot payoff)
+        private static string ResolveReceiptChainState(
+            OperationSnapshot primaryOp,
+            BlackMarketActiveOperationCardSnapshot card,
+            BlackMarketRuntimeTruthSurfaceSnapshot runtime,
+            BlackMarketPayoffRecoverySurfaceSnapshot payoff)
         {
             var text = CombinedContext(primaryOp, card, runtime, payoff).ToLowerInvariant();
-            if (ContainsAny(text, "cooling", "cool", "cleanup", "washed")) return "cooling";
-            if (ContainsAny(text, "trace", "traced", "audit", "expose", "exposed")) return "traced";
-            if (ContainsAny(text, "counterfeit", "receipt", "script", "paper", "ledger", "book")) return "linked";
-            if (IsLiveOrHot(card, runtime, payoff)) return "linked";
+
+            if (ContainsAny(text, "cooling", "cool", "cleanup", "washed"))
+            {
+                return "cooling";
+            }
+
+            if (ContainsAny(text, "trace", "traced", "audit", "expose", "exposed"))
+            {
+                return "traced";
+            }
+
+            if (ContainsAny(text, "counterfeit", "receipt", "script", "paper", "ledger", "book"))
+            {
+                return "linked";
+            }
+
+            if (IsLiveOrHot(card, runtime, payoff))
+            {
+                return "linked";
+            }
+
             return "staged";
         }
 
-        private static string ResolveCovertCarryState(OperationSnapshot primaryOp, BlackMarketActiveOperationCardSnapshot card, BlackMarketRuntimeTruthSurfaceSnapshot runtime, BlackMarketPayoffRecoverySurfaceSnapshot payoff)
+        private static string ResolveCovertCarryState(
+            OperationSnapshot primaryOp,
+            BlackMarketActiveOperationCardSnapshot card,
+            BlackMarketRuntimeTruthSurfaceSnapshot runtime,
+            BlackMarketPayoffRecoverySurfaceSnapshot payoff)
         {
             var text = CombinedContext(primaryOp, card, runtime, payoff).ToLowerInvariant();
-            if (ContainsAny(text, "cooling", "cool", "contain", "cleanup", "cover repair")) return "cooling";
-            if (ContainsAny(text, "hot", "heat", "expose", "backlash")) return "hot";
-            if (ContainsAny(text, "carry", "covert", "route", "window", "smuggle", "quiet")) return "carried";
-            if (IsLiveOrHot(card, runtime, payoff)) return "carried";
+
+            if (ContainsAny(text, "cooling", "cool", "contain", "cleanup", "cover repair"))
+            {
+                return "cooling";
+            }
+
+            if (ContainsAny(text, "hot", "heat", "expose", "backlash"))
+            {
+                return "hot";
+            }
+
+            if (ContainsAny(text, "carry", "covert", "route", "window", "smuggle", "quiet"))
+            {
+                return "carried";
+            }
+
+            if (IsLiveOrHot(card, runtime, payoff))
+            {
+                return "carried";
+            }
+
             return "staged";
         }
 
-        private static string ResolveHeatState(BlackMarketRuntimeTruthSurfaceSnapshot runtime, BlackMarketPayoffRecoverySurfaceSnapshot payoff)
+        private static string ResolveHeatState(
+            BlackMarketRuntimeTruthSurfaceSnapshot runtime,
+            BlackMarketPayoffRecoverySurfaceSnapshot payoff)
         {
-            var state = (runtime?.PublicBackbonePressure?.State ?? string.Empty).Trim().ToLowerInvariant();
-            if (state == "hot" || state == "active" || state == "live") return "Heat rising";
-            if (state == "watch") return "Heat building";
-            if (state == "cooling") return "Heat cooling";
+            var pressureState = (runtime?.PublicBackbonePressure?.State ?? string.Empty).Trim().ToLowerInvariant();
+            if (pressureState == "hot" || pressureState == "critical")
+            {
+                return "Heat rising";
+            }
 
-            var band = (runtime?.RuntimeBand ?? string.Empty).Trim().ToLowerInvariant();
-            if (band == "hot" || band == "active") return "Heat rising";
-            if (band == "watch") return "Heat building";
-            if (string.Equals((payoff?.Severity ?? string.Empty).Trim(), "critical", StringComparison.OrdinalIgnoreCase)) return "Heat rising";
-            return "Heat low";
+            var severity = (payoff?.Severity ?? string.Empty).Trim().ToLowerInvariant();
+            if (severity == "critical" || severity == "high")
+            {
+                return "Heat rising";
+            }
+
+            if (string.Equals((runtime?.RuntimeBand ?? string.Empty).Trim(), "hot", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Heat rising";
+            }
+
+            if (string.Equals((runtime?.RuntimeBand ?? string.Empty).Trim(), "watch", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Heat watch";
+            }
+
+            return "Heat steady";
         }
 
-        private static string ResolveExposureState(BlackMarketRuntimeTruthSurfaceSnapshot runtime, BlackMarketPayoffRecoverySurfaceSnapshot payoff)
+        private static string ResolveExposureState(
+            BlackMarketRuntimeTruthSurfaceSnapshot runtime,
+            BlackMarketPayoffRecoverySurfaceSnapshot payoff)
         {
             var phase = (payoff?.Phase ?? string.Empty).Trim().ToLowerInvariant();
-            if (phase == "backlash_live") return "Exposure live";
-            if (phase == "payoff_live") return "Carry open";
-            if (phase == "cooling") return "Route cooling";
+            if (phase == "backlash_live")
+            {
+                return "Exposure live";
+            }
 
-            var text = CombinedContext(runtime, payoff).ToLowerInvariant();
-            if (ContainsAny(text, "expose", "backlash", "trace")) return "Exposure live";
-            if (ContainsAny(text, "carry", "route", "covert")) return "Carry open";
-            return "Quiet payoff";
+            if (phase == "cooling")
+            {
+                return "Exposure cooling";
+            }
+
+            var warning = (runtime?.WarningWindow?.State ?? string.Empty).Trim().ToLowerInvariant();
+            if (warning == "open" || warning == "live" || warning == "hot")
+            {
+                return "Exposure live";
+            }
+
+            var pressureState = (runtime?.PublicBackbonePressure?.State ?? string.Empty).Trim().ToLowerInvariant();
+            if (pressureState == "hostile" || pressureState == "critical")
+            {
+                return "Exposure live";
+            }
+
+            return "Exposure manageable";
         }
 
-        private static bool IsLiveOrHot(BlackMarketActiveOperationCardSnapshot card, BlackMarketRuntimeTruthSurfaceSnapshot runtime, BlackMarketPayoffRecoverySurfaceSnapshot payoff)
+        private static bool IsLiveOrHot(
+            BlackMarketActiveOperationCardSnapshot card,
+            BlackMarketRuntimeTruthSurfaceSnapshot runtime,
+            BlackMarketPayoffRecoverySurfaceSnapshot payoff)
         {
             var cardState = (card?.State ?? string.Empty).Trim().ToLowerInvariant();
             if (cardState == "live" || cardState == "forming")
@@ -290,8 +754,8 @@ namespace PlanarWar.Client.Core.Presentation
                 return true;
             }
 
-            var band = (runtime?.RuntimeBand ?? string.Empty).Trim().ToLowerInvariant();
-            if (band == "hot" || band == "active")
+            var runtimeBand = (runtime?.RuntimeBand ?? string.Empty).Trim().ToLowerInvariant();
+            if (runtimeBand == "hot" || runtimeBand == "active")
             {
                 return true;
             }
@@ -300,48 +764,69 @@ namespace PlanarWar.Client.Core.Presentation
             return phase == "payoff_live" || phase == "backlash_live";
         }
 
-        private static string CombinedContext(params object[] values)
+        private static string CombinedContext(OperationSnapshot operation)
         {
-            var chunks = new List<string>();
-            foreach (var value in values)
-            {
-                if (value == null)
-                {
-                    continue;
-                }
+            return JoinNonBlank(
+                operation?.Title,
+                operation?.Summary,
+                operation?.Detail,
+                operation?.WhyNow,
+                operation?.Payoff,
+                operation?.Risk,
+                operation?.FocusLabel,
+                operation?.Kind,
+                operation?.ResponsePosture);
+        }
 
-                var operation = value as OperationSnapshot;
-                if (operation != null)
-                {
-                    chunks.AddRange(new[] { operation.Title, operation.Summary, operation.Detail, operation.WhyNow, operation.FocusLabel, operation.Payoff, operation.Kind });
-                    continue;
-                }
+        private static string CombinedContext(
+            OperationSnapshot operation,
+            BlackMarketActiveOperationCardSnapshot card,
+            BlackMarketRuntimeTruthSurfaceSnapshot runtime,
+            BlackMarketPayoffRecoverySurfaceSnapshot payoff)
+        {
+            return JoinNonBlank(
+                operation?.Title,
+                operation?.Summary,
+                operation?.Detail,
+                operation?.WhyNow,
+                operation?.Payoff,
+                operation?.Risk,
+                operation?.FocusLabel,
+                operation?.Kind,
+                operation?.ResponsePosture,
+                card?.Headline,
+                card?.Summary,
+                card?.OperatorNote,
+                card?.Risk,
+                card?.Kind,
+                card?.State,
+                runtime?.Headline,
+                runtime?.Detail,
+                runtime?.OperatorFrontSummary,
+                runtime?.RuntimeBand,
+                runtime?.WarningWindow?.Headline,
+                runtime?.WarningWindow?.Detail,
+                runtime?.ActiveOperation?.Headline,
+                runtime?.ActiveOperation?.Detail,
+                runtime?.PayoffWindow?.Headline,
+                runtime?.PayoffWindow?.Detail,
+                runtime?.PublicBackbonePressure?.Headline,
+                runtime?.PublicBackbonePressure?.Detail,
+                runtime?.PublicBackbonePressure?.RecommendedAction,
+                payoff?.Headline,
+                payoff?.Detail,
+                payoff?.StateReason,
+                payoff?.RecommendedAction,
+                payoff?.Phase,
+                payoff?.Severity,
+                payoff?.RecentReceipts?.FirstOrDefault()?.Title,
+                payoff?.RecentReceipts?.FirstOrDefault()?.Summary,
+                payoff?.RecentReceipts?.FirstOrDefault()?.Detail);
+        }
 
-                var card = value as BlackMarketActiveOperationCardSnapshot;
-                if (card != null)
-                {
-                    chunks.AddRange(new[] { card.Kind, card.State, card.Headline, card.Summary, card.OperatorNote, card.Risk });
-                    continue;
-                }
-
-                var runtime = value as BlackMarketRuntimeTruthSurfaceSnapshot;
-                if (runtime != null)
-                {
-                    chunks.AddRange(new[] { runtime.RuntimeBand, runtime.Headline, runtime.Detail, runtime.OperatorFrontSummary, runtime.PublicBackbonePressure?.State, runtime.PublicBackbonePressure?.Headline, runtime.PublicBackbonePressure?.Detail, runtime.PublicBackbonePressure?.RecommendedAction, runtime.ActiveOperation?.State, runtime.ActiveOperation?.Headline, runtime.ActiveOperation?.Detail });
-                    continue;
-                }
-
-                var payoff = value as BlackMarketPayoffRecoverySurfaceSnapshot;
-                if (payoff != null)
-                {
-                    chunks.AddRange(new[] { payoff.Phase, payoff.Severity, payoff.Headline, payoff.Detail, payoff.StateReason, payoff.RecommendedAction, payoff.RecentReceipts?.FirstOrDefault()?.Title, payoff.RecentReceipts?.FirstOrDefault()?.Summary, payoff.RecentReceipts?.FirstOrDefault()?.Detail });
-                    continue;
-                }
-
-                chunks.Add(value.ToString());
-            }
-
-            return string.Join(" ", chunks.Where(chunk => !string.IsNullOrWhiteSpace(chunk)));
+        private static string JoinNonBlank(params string[] values)
+        {
+            return string.Join(" ", values.Where(v => !string.IsNullOrWhiteSpace(v)).Select(v => v.Trim()));
         }
 
         private static bool ContainsAny(string text, params string[] needles)
@@ -351,25 +836,7 @@ namespace PlanarWar.Client.Core.Presentation
                 return false;
             }
 
-            foreach (var needle in needles)
-            {
-                if (!string.IsNullOrWhiteSpace(needle) && text.IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static string CompactSingleLine(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return string.Empty;
-            }
-
-            return string.Join(" ", value.Split(new[] { '\r', '\n', '\t' }, StringSplitOptions.RemoveEmptyEntries)).Trim();
+            return needles.Any(n => !string.IsNullOrWhiteSpace(n) && text.Contains(n, StringComparison.OrdinalIgnoreCase));
         }
 
         private static string FirstNonBlank(params string[] values)
@@ -390,6 +857,16 @@ namespace PlanarWar.Client.Core.Presentation
             return string.Empty;
         }
 
+        private static string CompactSingleLine(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            return string.Join(" ", value.Split(new[] { '\r', '\n', '\t' }, StringSplitOptions.RemoveEmptyEntries)).Trim();
+        }
+
         private static string HumanizeWords(string raw, string fallback)
         {
             if (string.IsNullOrWhiteSpace(raw))
@@ -397,18 +874,40 @@ namespace PlanarWar.Client.Core.Presentation
                 return fallback;
             }
 
-            var words = raw.Trim().Replace("_", " ").Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            return string.Join(" ", words.Select(word => char.ToUpperInvariant(word[0]) + word.Substring(1)));
+            var normalized = raw.Replace("_", " ").Replace("-", " ").Trim();
+            if (normalized.Length == 0)
+            {
+                return fallback;
+            }
+
+            return char.ToUpperInvariant(normalized[0]) + normalized.Substring(1);
         }
 
-        private static string FormatRemaining(TimeSpan span)
+        private static string FormatMinutes(double minutes)
         {
-            if (span <= TimeSpan.Zero)
+            if (minutes <= 0) return "now";
+            var span = TimeSpan.FromMinutes(minutes);
+            return span.TotalHours >= 1 ? span.ToString(@"hh\:mm") : span.ToString(@"mm\:ss");
+        }
+
+        private static string FormatRemaining(TimeSpan remaining)
+        {
+            if (remaining.TotalSeconds <= 0)
             {
                 return "now";
             }
 
-            return span.ToString(span.TotalHours >= 1 ? @"hh\:mm\:ss" : @"mm\:ss");
+            if (remaining.TotalHours >= 1)
+            {
+                return $"{(int)remaining.TotalHours}h {remaining.Minutes}m";
+            }
+
+            if (remaining.TotalMinutes >= 1)
+            {
+                return $"{(int)remaining.TotalMinutes}m {remaining.Seconds}s";
+            }
+
+            return $"{Math.Max(1, remaining.Seconds)}s";
         }
     }
 }
