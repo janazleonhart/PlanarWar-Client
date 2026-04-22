@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using System.Collections.Generic;
 using PlanarWar.Client.Core.Contracts;
 using PlanarWar.Client.Core.Presentation;
 
@@ -45,6 +46,34 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(
                 ContractTruthText.BuildShadowEffectsValue(shadowEffects, "fallback"),
                 Is.EqualTo("Receipt chain linked • Covert carry carried"));
+        }
+
+        [Test]
+        public void Shadow_lane_formatter_keeps_black_market_development_wording_specific()
+        {
+            var tech = new TechOptionSnapshot
+            {
+                Name = "Charter Registry",
+                Description = "Turn early expansion into a visible charter machine instead of loose growth.",
+                Cost = 100
+            };
+
+            var summary = new ShellSummarySnapshot
+            {
+                OpeningOperations = new List<OperationSnapshot>
+                {
+                    new OperationSnapshot
+                    {
+                        Title = "Trace Counterfeit Routes"
+                    }
+                }
+            };
+
+            Assert.That(ShadowLaneText.BuildTechFamily(tech), Is.EqualTo("Paper front"));
+            Assert.That(ShadowLaneText.BuildResearchLaneTitle(), Is.EqualTo("Shadow books"));
+            Assert.That(ShadowLaneText.DescribeWorkshopLane(2, 1, 0, 0), Is.EqualTo("2 live front(s) • 1 ready drop(s)"));
+            Assert.That(ShadowLaneText.BuildProductionTitle(), Is.EqualTo("Per-tick throughput"));
+            Assert.That(ShadowLaneText.BuildSupportCardNote(summary), Does.Contain("Trace Counterfeit Routes"));
         }
     }
 }

@@ -303,11 +303,23 @@ namespace PlanarWar.Client.Core.Presentation
 
         public static string BuildTechLore(TechOptionSnapshot tech)
         {
-            return FirstNonBlank(
-                CompactSingleLine(tech?.IdentitySummary),
-                CompactSingleLine(tech?.Description),
-                tech?.UnlockPreview?.FirstOrDefault(),
-                "Quiet leverage from the current book.");
+            switch (BuildTechFamily(tech))
+            {
+                case "Paper front":
+                    return "Keep permits, ledgers, and registry memory usable as cover before the public desk owns the whole record.";
+                case "Carry route":
+                    return "Hold roads, bridges, and traffic as quiet carry infrastructure before open pressure turns the route loud.";
+                case "Quiet stock":
+                    return "Keep reserves, storehouses, and animal lines ready as deniable stock before scarcity starts reading the shelves.";
+                case "Supply front":
+                    return "Use workshops and fabrication as quiet fronts for covert supply, staged pickup, and later shadow response.";
+                default:
+                    return FirstNonBlank(
+                        CompactSingleLine(tech?.IdentitySummary),
+                        CompactSingleLine(tech?.Description),
+                        tech?.UnlockPreview?.FirstOrDefault(),
+                        "Quiet leverage from the current book.");
+            }
         }
 
         public static string BuildTechNote(TechOptionSnapshot tech)
@@ -319,25 +331,74 @@ namespace PlanarWar.Client.Core.Presentation
                 parts.Add($"Cost {tech.Cost.Value:0.#}");
             }
 
-            if (!string.IsNullOrWhiteSpace(tech?.OperatorNote))
+            parts.Add(DescribeTechCover(tech));
+
+            var cue = DescribeTechOperatorCue(tech);
+            if (!string.IsNullOrWhiteSpace(cue))
             {
-                parts.Add(CompactSingleLine(tech.OperatorNote));
+                parts.Add(cue);
+            }
+
+            return string.Join(" • ", parts.Where(part => !string.IsNullOrWhiteSpace(part)));
+        }
+
+        private static string DescribeTechCover(TechOptionSnapshot tech)
+        {
+            switch (BuildTechFamily(tech))
+            {
+                case "Paper front":
+                    return "Paper cover";
+                case "Carry route":
+                    return "Quiet carry route";
+                case "Quiet stock":
+                    return "Quiet stockpile";
+                case "Supply front":
+                    return "Supply front";
+                default:
+                    return "Shadow front";
+            }
+        }
+
+        private static string DescribeTechOperatorCue(TechOptionSnapshot tech)
+        {
+            var text = JoinNonBlank(
+                tech?.Name,
+                tech?.Description,
+                tech?.OperatorNote,
+                tech?.UnlockPreview != null ? string.Join(" ", tech.UnlockPreview) : string.Empty).ToLowerInvariant();
+
+            if (ContainsAny(text, "charter", "registry", "ledger", "permit", "record", "ward book"))
+            {
+                return "Get the books in place before the front outruns its permits.";
+            }
+
+            if (ContainsAny(text, "road", "bridge", "route", "traffic", "calendar", "caravan", "convoy"))
+            {
+                return "Keep inside-city movement quiet enough for faster carry.";
+            }
+
+            if (ContainsAny(text, "husbandry", "animal", "breeding", "leather", "draft"))
+            {
+                return "Keep animal lines productive enough for deniable stock buildup.";
+            }
+
+            if (ContainsAny(text, "granary", "reserve", "stock", "warehouse", "harvest", "food"))
+            {
+                return "Seed reserve timing before scarcity starts reading the shelves.";
+            }
+
+            if (ContainsAny(text, "forge", "craft", "fabrication", "workshop", "recipe"))
+            {
+                return "Keep the workshop front ready for quiet fabrication and staged pickup.";
             }
 
             var preview = tech?.UnlockPreview?.FirstOrDefault();
             if (!string.IsNullOrWhiteSpace(preview))
             {
-                parts.Add(CompactSingleLine(preview));
+                return CompactSingleLine(preview);
             }
 
-            if (!string.IsNullOrWhiteSpace(tech?.LaneIdentity) && !string.Equals(tech.LaneIdentity, "neutral", StringComparison.OrdinalIgnoreCase))
-            {
-                parts.Add($"Lane {HumanizeWords(tech.LaneIdentity, "Shadow")}");
-            }
-
-            return parts.Count > 0
-                ? string.Join(" • ", parts)
-                : "Quiet leverage entry from the current shadow book.";
+            return "Quiet leverage entry from the current shadow book.";
         }
 
         public static string DescribeResearchCardsCopy(ShellSummarySnapshot summary)
