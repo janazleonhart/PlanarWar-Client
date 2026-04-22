@@ -139,7 +139,7 @@ namespace PlanarWar.Client.UI.Screens.City
                 ? $"{s.ActiveResearch.Name} • {FormatProgress(s.ActiveResearch.Progress, s.ActiveResearch.Cost)}"
                 : s.AvailableTechs.Count > 0
                     ? isBlackMarket
-                        ? $"{s.AvailableTechs.Count} shadow-book/front option{(s.AvailableTechs.Count == 1 ? string.Empty : "s")} ready"
+                        ? ShadowLaneText.DescribeResearchLaneValue(s.AvailableTechs)
                         : $"{s.AvailableTechs.Count} tech option{(s.AvailableTechs.Count == 1 ? string.Empty : "s")} ready"
                     : isBlackMarket
                         ? "No active shadow-book or front option surfaced."
@@ -150,7 +150,9 @@ namespace PlanarWar.Client.UI.Screens.City
             card3Value.text = DescribeGrowthLane(s, isBlackMarket);
 
             researchFocusValue.text = s.ActiveResearch?.Name ?? (isBlackMarket ? "No active shadow-book focus." : "No active research focus.");
-            nextTechValue.text = s.AvailableTechs.FirstOrDefault()?.Name ?? (isBlackMarket ? "No quiet leverage unlock surfaced." : "No available tech surfaced.");
+            nextTechValue.text = isBlackMarket
+                ? ShadowLaneText.BuildNextTechValue(s.AvailableTechs)
+                : s.AvailableTechs.FirstOrDefault()?.Name ?? "No available tech surfaced.";
             workshopValue.text = DescribeWorkshopLane(s, recipeCount, isBlackMarket);
             growthValue.text = DescribeGrowthLane(s, isBlackMarket);
             supportValue.text = DescribeSupport(s, isBlackMarket);
@@ -323,7 +325,7 @@ namespace PlanarWar.Client.UI.Screens.City
             }
 
             workshopCardsCopyValue.text = isBlackMarket
-                ? ShadowLaneText.DescribeWorkshopCardsCopy(activeJobs.Count, readyJobs.Count, summaryState.WorkshopRecipes.Count, workshopTimers.Count)
+                ? ShadowLaneText.DescribeWorkshopCardsCopy(activeJobs.Count, readyJobs.Count, summaryState.WorkshopRecipes.Count, workshopTimers.Count, summaryState.WorkshopRecipes)
                 : activeJobs.Count > 0
                     ? $"{activeJobs.Count} active workshop job(s) and {readyJobs.Count} ready pickup(s) are visible."
                     : readyJobs.Count > 0

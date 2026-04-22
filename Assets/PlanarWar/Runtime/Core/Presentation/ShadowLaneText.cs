@@ -242,7 +242,11 @@ namespace PlanarWar.Client.Core.Presentation
                 return actionStatus;
             }
 
-            return $"Shadow books: {summary?.AvailableTechs?.Count ?? 0} tech option(s) • fronts {summary?.WorkshopJobs?.Count ?? 0} • {summary?.CityTimers?.Count ?? 0} live timer(s) • {summary?.OpeningOperations?.Count ?? 0} opening line(s).";
+            var firstTech = summary?.AvailableTechs?.FirstOrDefault(tech => tech != null && !string.IsNullOrWhiteSpace(tech.Name))?.Name;
+            var techLead = string.IsNullOrWhiteSpace(firstTech) ? "no front staged" : $"next front {firstTech}";
+            var workshopLead = (summary?.WorkshopJobs?.Count ?? 0) > 0 ? "live front visible" : "no live front surfaced";
+
+            return $"Shadow books: {summary?.AvailableTechs?.Count ?? 0} tech option(s) • {techLead} • covert supply {summary?.WorkshopJobs?.Count ?? 0} live front(s) • {workshopLead} • {summary?.CityTimers?.Count ?? 0} live timer(s) • {summary?.OpeningOperations?.Count ?? 0} opening line(s).";
         }
 
         public static string BuildResearchLaneTitle() => "Shadow books";
@@ -264,6 +268,29 @@ namespace PlanarWar.Client.Core.Presentation
         public static string BuildGrowthLaneCopy()
         {
             return "Carry lanes keep cadence, staffing, and live heat readable so the Black Market feels like covert logistics instead of a darker civic shell.";
+        }
+
+        public static string DescribeResearchLaneValue(IReadOnlyList<TechOptionSnapshot> techs)
+        {
+            var list = techs?.Where(tech => tech != null).ToList() ?? new List<TechOptionSnapshot>();
+            if (list.Count == 0)
+            {
+                return "No active shadow-book or front option surfaced.";
+            }
+
+            var preview = BuildFrontPreview(list.Select(tech => tech.Name), 2);
+            return $"{list.Count} shadow-book/front option{(list.Count == 1 ? string.Empty : "s")} ready{preview}";
+        }
+
+        public static string BuildNextTechValue(IReadOnlyList<TechOptionSnapshot> techs)
+        {
+            var first = techs?.FirstOrDefault(tech => tech != null && !string.IsNullOrWhiteSpace(tech.Name));
+            if (first == null)
+            {
+                return "No quiet leverage unlock surfaced.";
+            }
+
+            return $"{first.Name} • {BuildTechFamily(first)}";
         }
 
 
@@ -303,23 +330,11 @@ namespace PlanarWar.Client.Core.Presentation
 
         public static string BuildTechLore(TechOptionSnapshot tech)
         {
-            switch (BuildTechFamily(tech))
-            {
-                case "Paper front":
-                    return "Keep permits, ledgers, and registry memory usable as cover before the public desk owns the whole record.";
-                case "Carry route":
-                    return "Hold roads, bridges, and traffic as quiet carry infrastructure before open pressure turns the route loud.";
-                case "Quiet stock":
-                    return "Keep reserves, storehouses, and animal lines ready as deniable stock before scarcity starts reading the shelves.";
-                case "Supply front":
-                    return "Use workshops and fabrication as quiet fronts for covert supply, staged pickup, and later shadow response.";
-                default:
-                    return FirstNonBlank(
-                        CompactSingleLine(tech?.IdentitySummary),
-                        CompactSingleLine(tech?.Description),
-                        tech?.UnlockPreview?.FirstOrDefault(),
-                        "Quiet leverage from the current book.");
-            }
+            return FirstNonBlank(
+                CompactSingleLine(tech?.IdentitySummary),
+                CompactSingleLine(tech?.Description),
+                tech?.UnlockPreview?.FirstOrDefault(),
+                "Quiet leverage from the current book.");
         }
 
         public static string BuildTechNote(TechOptionSnapshot tech)
@@ -331,89 +346,46 @@ namespace PlanarWar.Client.Core.Presentation
                 parts.Add($"Cost {tech.Cost.Value:0.#}");
             }
 
-            parts.Add(DescribeTechCover(tech));
-
-            var cue = DescribeTechOperatorCue(tech);
-            if (!string.IsNullOrWhiteSpace(cue))
+            if (!string.IsNullOrWhiteSpace(tech?.OperatorNote))
             {
-                parts.Add(cue);
-            }
-
-            return string.Join(" • ", parts.Where(part => !string.IsNullOrWhiteSpace(part)));
-        }
-
-        private static string DescribeTechCover(TechOptionSnapshot tech)
-        {
-            switch (BuildTechFamily(tech))
-            {
-                case "Paper front":
-                    return "Paper cover";
-                case "Carry route":
-                    return "Quiet carry route";
-                case "Quiet stock":
-                    return "Quiet stockpile";
-                case "Supply front":
-                    return "Supply front";
-                default:
-                    return "Shadow front";
-            }
-        }
-
-        private static string DescribeTechOperatorCue(TechOptionSnapshot tech)
-        {
-            var text = JoinNonBlank(
-                tech?.Name,
-                tech?.Description,
-                tech?.OperatorNote,
-                tech?.UnlockPreview != null ? string.Join(" ", tech.UnlockPreview) : string.Empty).ToLowerInvariant();
-
-            if (ContainsAny(text, "charter", "registry", "ledger", "permit", "record", "ward book"))
-            {
-                return "Get the books in place before the front outruns its permits.";
-            }
-
-            if (ContainsAny(text, "road", "bridge", "route", "traffic", "calendar", "caravan", "convoy"))
-            {
-                return "Keep inside-city movement quiet enough for faster carry.";
-            }
-
-            if (ContainsAny(text, "husbandry", "animal", "breeding", "leather", "draft"))
-            {
-                return "Keep animal lines productive enough for deniable stock buildup.";
-            }
-
-            if (ContainsAny(text, "granary", "reserve", "stock", "warehouse", "harvest", "food"))
-            {
-                return "Seed reserve timing before scarcity starts reading the shelves.";
-            }
-
-            if (ContainsAny(text, "forge", "craft", "fabrication", "workshop", "recipe"))
-            {
-                return "Keep the workshop front ready for quiet fabrication and staged pickup.";
+                parts.Add(CompactSingleLine(tech.OperatorNote));
             }
 
             var preview = tech?.UnlockPreview?.FirstOrDefault();
             if (!string.IsNullOrWhiteSpace(preview))
             {
-                return CompactSingleLine(preview);
+                parts.Add(CompactSingleLine(preview));
             }
 
-            return "Quiet leverage entry from the current shadow book.";
+            if (!string.IsNullOrWhiteSpace(tech?.LaneIdentity) && !string.Equals(tech.LaneIdentity, "neutral", StringComparison.OrdinalIgnoreCase))
+            {
+                parts.Add($"Lane {HumanizeWords(tech.LaneIdentity, "Shadow")}");
+            }
+
+            return parts.Count > 0
+                ? string.Join(" • ", parts)
+                : "Quiet leverage entry from the current shadow book.";
         }
 
         public static string DescribeResearchCardsCopy(ShellSummarySnapshot summary)
         {
             var active = summary?.ActiveResearch != null;
-            var count = summary?.AvailableTechs?.Count ?? 0;
+            var techs = summary?.AvailableTechs?.Where(tech => tech != null).ToList() ?? new List<TechOptionSnapshot>();
+            var count = techs.Count;
+            var visibleSlots = Math.Max(0, 4 - (active ? 1 : 0));
+            var hiddenPreview = BuildFrontPreview(techs.Skip(visibleSlots).Select(tech => tech.Name), 2);
 
             if (active)
             {
-                return $"Live front plus {count} shadow book option(s) surfaced.";
+                return count > 0
+                    ? $"Live front plus {count} shadow book option(s) surfaced{hiddenPreview}"
+                    : "Live front is active; no extra shadow book entry is visible right now.";
             }
 
             if (count > 0)
             {
-                return $"Showing {count} shadow book option(s) from /api/me.";
+                var frontPreview = BuildFrontPreview(techs.Select(tech => tech.Name), 2);
+                return $"Showing {count} shadow book option(s) from /api/me{frontPreview}";
             }
 
             return "No shadow book entry is visible right now.";
@@ -533,14 +505,21 @@ namespace PlanarWar.Client.Core.Presentation
 
         public static string DescribeWorkshopCardsCopy(int activeJobs, int readyJobs, int recipeCount, int workshopTimers)
         {
+            return DescribeWorkshopCardsCopy(activeJobs, readyJobs, recipeCount, workshopTimers, null);
+        }
+
+        public static string DescribeWorkshopCardsCopy(int activeJobs, int readyJobs, int recipeCount, int workshopTimers, IReadOnlyList<WorkshopRecipeSnapshot> recipes)
+        {
             if (activeJobs > 0 || readyJobs > 0)
             {
-                return $"{activeJobs} live front(s) • {readyJobs} ready drop(s)";
+                var suffix = recipeCount > 0 ? $" • {recipeCount} covert recipe(s) staged" : string.Empty;
+                return $"{activeJobs} live front(s) • {readyJobs} ready drop(s){suffix}";
             }
 
             if (recipeCount > 0)
             {
-                return $"{recipeCount} covert recipe(s) ready.";
+                var preview = BuildFrontPreview((recipes ?? Array.Empty<WorkshopRecipeSnapshot>()).Select(recipe => recipe?.Name), 2);
+                return $"{recipeCount} covert recipe(s) ready{preview}";
             }
 
             if (workshopTimers > 0)
@@ -554,6 +533,11 @@ namespace PlanarWar.Client.Core.Presentation
         public static string DescribeWorkshopLane(int activeJobs, int readyJobs, int recipeCount, int workshopTimers)
         {
             return DescribeWorkshopCardsCopy(activeJobs, readyJobs, recipeCount, workshopTimers);
+        }
+
+        public static string DescribeWorkshopLane(int activeJobs, int readyJobs, IReadOnlyList<WorkshopRecipeSnapshot> recipes, int workshopTimers)
+        {
+            return DescribeWorkshopCardsCopy(activeJobs, readyJobs, recipes?.Count ?? 0, workshopTimers, recipes);
         }
 
         public static string BuildProductionFamily() => "Throughput";
@@ -883,6 +867,36 @@ namespace PlanarWar.Client.Core.Presentation
                 payoff?.RecentReceipts?.FirstOrDefault()?.Title,
                 payoff?.RecentReceipts?.FirstOrDefault()?.Summary,
                 payoff?.RecentReceipts?.FirstOrDefault()?.Detail);
+        }
+
+        private static string BuildFrontPreview(IEnumerable<string> names, int maxCount)
+        {
+            if (names == null)
+            {
+                return string.Empty;
+            }
+
+            var cleaned = names
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Select(name => name.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (cleaned.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            var shown = cleaned.Take(Math.Max(1, maxCount)).ToList();
+            var hidden = Math.Max(0, cleaned.Count - shown.Count);
+
+            var preview = $" • {string.Join(" • ", shown)}";
+            if (hidden > 0)
+            {
+                preview += $" • +{hidden} more";
+            }
+
+            return preview;
         }
 
         private static string JoinNonBlank(params string[] values)
