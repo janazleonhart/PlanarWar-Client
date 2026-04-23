@@ -46,5 +46,36 @@ namespace PlanarWar.Client.Tests.EditMode
                 ContractTruthText.BuildShadowEffectsValue(shadowEffects, "fallback"),
                 Is.EqualTo("Receipt chain linked • Covert carry carried"));
         }
+
+        [Test]
+        public void Shadow_lane_formatter_hides_routine_lane_tags_and_internal_copy()
+        {
+            var tech = new TechOptionSnapshot
+            {
+                Name = "Front Ledger",
+                Cost = 100,
+                LaneIdentity = "black_market",
+                OperatorNote = "Best opened when you want permit memory online.",
+                UnlockPreview = new System.Collections.Generic.List<string> { "Quiet ledger office" }
+            };
+
+            var summary = new ShellSummarySnapshot
+            {
+                AvailableTechs = new System.Collections.Generic.List<TechOptionSnapshot>
+                {
+                    new TechOptionSnapshot { Name = "Front Ledger" },
+                    new TechOptionSnapshot { Name = "Quiet Routes I" },
+                    new TechOptionSnapshot { Name = "Quiet Stockpiles" }
+                }
+            };
+
+            var note = ShadowLaneText.BuildTechNote(tech);
+            var copy = ShadowLaneText.DescribeResearchCardsCopy(summary);
+
+            Assert.That(note, Does.Not.Contain("Lane Black market"));
+            Assert.That(note, Does.Not.Contain("Lane City"));
+            Assert.That(copy, Does.Not.Contain("/api/me"));
+            Assert.That(copy, Does.Contain("Front Ledger"));
+        }
     }
 }

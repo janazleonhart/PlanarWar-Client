@@ -357,7 +357,10 @@ namespace PlanarWar.Client.Core.Presentation
                 parts.Add(CompactSingleLine(preview));
             }
 
-            if (!string.IsNullOrWhiteSpace(tech?.LaneIdentity) && !string.Equals(tech.LaneIdentity, "neutral", StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrWhiteSpace(tech?.LaneIdentity)
+                && !string.Equals(tech.LaneIdentity, "neutral", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(tech.LaneIdentity, "city", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(tech.LaneIdentity, "black_market", StringComparison.OrdinalIgnoreCase))
             {
                 parts.Add($"Lane {HumanizeWords(tech.LaneIdentity, "Shadow")}");
             }
@@ -385,7 +388,7 @@ namespace PlanarWar.Client.Core.Presentation
             if (count > 0)
             {
                 var frontPreview = BuildFrontPreview(techs.Select(tech => tech.Name), 2);
-                return $"Showing {count} shadow book option(s) from /api/me{frontPreview}";
+                return $"Showing {count} shadow-book/front option(s) ready{frontPreview}";
             }
 
             return "No shadow book entry is visible right now.";
