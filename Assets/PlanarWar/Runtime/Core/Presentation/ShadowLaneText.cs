@@ -202,10 +202,24 @@ namespace PlanarWar.Client.Core.Presentation
 
         public static string DescribeGrowth(TimerSnapshot timing, IReadOnlyList<CityTimerEntrySnapshot> timers)
         {
+            return DescribeGrowth(timing, timers, null);
+        }
+
+        public static string DescribeGrowth(TimerSnapshot timing, IReadOnlyList<CityTimerEntrySnapshot> timers, IReadOnlyList<BuildingSnapshot> buildings)
+        {
             var liveTimers = timers?.Count ?? 0;
+            var frontCount = buildings?.Count ?? 0;
+            var frontPreview = BuildFrontPreview((buildings ?? Array.Empty<BuildingSnapshot>()).Select(b => b?.Name), 2);
             if (timing?.NextTickAtUtc.HasValue == true)
             {
-                return $"Next carry check in {FormatRemaining(timing.NextTickAtUtc.Value - DateTime.UtcNow)} • {liveTimers} live timer(s).";
+                return frontCount > 0
+                    ? $"Next carry check in {FormatRemaining(timing.NextTickAtUtc.Value - DateTime.UtcNow)} • {frontCount} live front(s){frontPreview}"
+                    : $"Next carry check in {FormatRemaining(timing.NextTickAtUtc.Value - DateTime.UtcNow)} • {liveTimers} live timer(s).";
+            }
+
+            if (frontCount > 0)
+            {
+                return $"{frontCount} live front(s){frontPreview}";
             }
 
             return liveTimers > 0
@@ -245,8 +259,12 @@ namespace PlanarWar.Client.Core.Presentation
             var firstTech = summary?.AvailableTechs?.FirstOrDefault(tech => tech != null && !string.IsNullOrWhiteSpace(tech.Name))?.Name;
             var techLead = string.IsNullOrWhiteSpace(firstTech) ? "no front staged" : $"next front {firstTech}";
             var workshopLead = (summary?.WorkshopJobs?.Count ?? 0) > 0 ? "live front visible" : "no live front surfaced";
+            var frontLead = BuildFrontPreview(summary?.City?.Buildings?.Select(building => building?.Name), 2);
+            var frontSummary = (summary?.City?.Buildings?.Count ?? 0) > 0
+                ? $"operator fronts {summary.City.Buildings.Count}{frontLead}"
+                : "no operator front surfaced";
 
-            return $"Shadow books: {summary?.AvailableTechs?.Count ?? 0} tech option(s) • {techLead} • covert supply {summary?.WorkshopJobs?.Count ?? 0} live front(s) • {workshopLead} • {summary?.CityTimers?.Count ?? 0} live timer(s) • {summary?.OpeningOperations?.Count ?? 0} opening line(s).";
+            return $"Shadow books: {summary?.AvailableTechs?.Count ?? 0} tech option(s) • {techLead} • covert supply {summary?.WorkshopJobs?.Count ?? 0} live front(s) • {workshopLead} • {frontSummary} • {summary?.CityTimers?.Count ?? 0} live timer(s) • {summary?.OpeningOperations?.Count ?? 0} opening line(s).";
         }
 
         public static string BuildResearchLaneTitle() => "Shadow books";
@@ -293,6 +311,65 @@ namespace PlanarWar.Client.Core.Presentation
             return $"{first.Name} • {BuildTechFamily(first)}";
         }
 
+
+        public static string BuildBuildingFamily(BuildingSnapshot building)
+        {
+            var text = JoinNonBlank(building?.Kind, building?.Name, building?.SpecializationHookLabel).ToLowerInvariant();
+
+            if (ContainsAny(text, "front_house", "front house", "ledger", "front ledger", "paper"))
+            {
+                return "Paper front";
+            }
+
+            if (ContainsAny(text, "debt", "route", "relay", "traffic", "carry"))
+            {
+                return "Carry front";
+            }
+
+            if (ContainsAny(text, "cutout", "occult", "stock", "stash", "warehouse"))
+            {
+                return "Quiet stock";
+            }
+
+            return "Operator front";
+        }
+
+        public static string BuildBuildingLore(BuildingSnapshot building)
+        {
+            var kind = (building?.Kind ?? string.Empty).Trim().ToLowerInvariant();
+            if (kind == "front_house")
+            {
+                return "Front-office cover, paper memory, and quiet handoff stay anchored here instead of drifting back into respectable clutter.";
+            }
+
+            if (kind == "debt_house")
+            {
+                return "Debt pressure, quiet leverage, and route discipline stay staged here so the carry lane can move without noisy panic.";
+            }
+
+            if (kind == "cutout_bureau")
+            {
+                return "Cutout work keeps deniable handling real once the lane needs distance between the paper trail and the payoff window.";
+            }
+
+            if (kind == "occult_relay")
+            {
+                return "Occult relay depth keeps the quiet route coordinated when pressure windows and shadow timing start to stack.";
+            }
+
+            return FirstNonBlank(
+                !string.IsNullOrWhiteSpace(building?.SpecializationHookLabel) ? $"{building.SpecializationHookLabel} is the current front specialization." : string.Empty,
+                "Live operator front surfaced from city building truth.");
+        }
+
+        public static string BuildBuildingNote(BuildingSnapshot building)
+        {
+            var parts = new List<string>();
+            if (building?.Level.HasValue == true) parts.Add($"Level {building.Level.Value}");
+            if (!string.IsNullOrWhiteSpace(building?.RoutingPreference)) parts.Add($"Routing {HumanizeWords(building.RoutingPreference, "Balanced")}");
+            if (!string.IsNullOrWhiteSpace(building?.SpecializationHookLabel)) parts.Add(building.SpecializationHookLabel);
+            return parts.Count > 0 ? string.Join(" • ", parts) : "Live front surfaced from settlement building truth.";
+        }
 
         public static string BuildTechFamily(TechOptionSnapshot tech)
         {
@@ -578,7 +655,19 @@ namespace PlanarWar.Client.Core.Presentation
             OperationSnapshot recruitOp,
             IReadOnlyList<CityTimerEntrySnapshot> cityTimers)
         {
+            return DescribeGrowthCardsCopy(heroRecruitment, recruitTimer, recruitOp, cityTimers, null);
+        }
+
+        public static string DescribeGrowthCardsCopy(
+            HeroRecruitmentSnapshot heroRecruitment,
+            CityTimerEntrySnapshot recruitTimer,
+            OperationSnapshot recruitOp,
+            IReadOnlyList<CityTimerEntrySnapshot> cityTimers,
+            IReadOnlyList<BuildingSnapshot> buildings)
+        {
             var liveTimers = cityTimers?.Count ?? 0;
+            var frontCount = buildings?.Count ?? 0;
+            var frontPreview = BuildFrontPreview((buildings ?? Array.Empty<BuildingSnapshot>()).Select(building => building?.Name), 2);
 
             if (heroRecruitment != null && string.Equals(heroRecruitment.Status, "candidates_ready", StringComparison.OrdinalIgnoreCase))
             {
@@ -598,18 +687,29 @@ namespace PlanarWar.Client.Core.Presentation
             if (heroRecruitment != null && string.Equals(heroRecruitment.Status, "idle", StringComparison.OrdinalIgnoreCase))
             {
                 return heroRecruitment.StartEligible
-                    ? "Hero recruitment can be opened directly from the carry lane."
+                    ? frontCount > 0
+                        ? $"Hero recruitment can open directly from the carry lane while {frontCount} operator front(s){frontPreview} stay live."
+                        : "Hero recruitment can be opened directly from the carry lane."
                     : FirstNonBlank(heroRecruitment.BlockedReason, "Recruitment is idle but blocked until shortfalls clear.");
             }
 
             if (recruitTimer != null)
             {
-                return $"Showing carry cadence, scout timer, and {liveTimers} live timer(s).";
+                return frontCount > 0
+                    ? $"Showing carry cadence, scout timer, and {frontCount} operator front(s){frontPreview}."
+                    : $"Showing carry cadence, scout timer, and {liveTimers} live timer(s).";
             }
 
             if (recruitOp != null)
             {
-                return "Scout opening is visible from the current shadow books.";
+                return frontCount > 0
+                    ? $"Scout opening is visible while {frontCount} operator front(s){frontPreview} stay live."
+                    : "Scout opening is visible from the current shadow books.";
+            }
+
+            if (frontCount > 0)
+            {
+                return $"Showing carry cadence, {frontCount} operator front(s){frontPreview}, and current heat posture from the summary payload.";
             }
 
             return $"Showing carry cadence, {liveTimers} live timer(s), and current heat posture from the summary payload.";

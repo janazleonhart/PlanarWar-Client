@@ -443,6 +443,20 @@ namespace PlanarWar.Client.UI.Screens.City
                 }
             }
 
+            if (isBlackMarket && s.City?.Buildings != null && s.City.Buildings.Count > 0 && cards.Count < 4)
+            {
+                foreach (var building in s.City.Buildings.Where(building => building != null).Take(Math.Max(0, 4 - cards.Count)))
+                {
+                    cards.Add(new CardView(
+                        family: ShadowLaneText.BuildBuildingFamily(building),
+                        title: building.Name,
+                        lore: ShadowLaneText.BuildBuildingLore(building),
+                        note: ShadowLaneText.BuildBuildingNote(building),
+                        buttonText: "Live",
+                        buttonEnabled: false));
+                }
+            }
+
             cards.AddRange(s.CityTimers
                 .Where(t => !string.Equals(t.Category, "resource_tick", StringComparison.OrdinalIgnoreCase) && !string.Equals(t.Category, "workshop_job", StringComparison.OrdinalIgnoreCase) && !string.Equals(t.Category, "operator_recruit", StringComparison.OrdinalIgnoreCase))
                 .Take(Math.Max(0, 3 - cards.Count))
@@ -462,7 +476,7 @@ namespace PlanarWar.Client.UI.Screens.City
             }
 
             growthCardsCopyValue.text = isBlackMarket
-                ? ShadowLaneText.DescribeGrowthCardsCopy(heroRecruitment, recruitTimer, recruitOp, s.CityTimers)
+                ? ShadowLaneText.DescribeGrowthCardsCopy(heroRecruitment, recruitTimer, recruitOp, s.CityTimers, s.City?.Buildings)
                 : heroRecruitment != null && string.Equals(heroRecruitment.Status, "candidates_ready", StringComparison.OrdinalIgnoreCase)
                     ? $"Candidate review is live with {heroRecruitment.Candidates.Count} hero option(s) ready for selection."
                     : heroRecruitment != null && string.Equals(heroRecruitment.Status, "scouting", StringComparison.OrdinalIgnoreCase)
@@ -806,7 +820,7 @@ namespace PlanarWar.Client.UI.Screens.City
         {
             if (isBlackMarket)
             {
-                return ShadowLaneText.DescribeGrowth(s.ResourceTickTiming, s.CityTimers);
+                return ShadowLaneText.DescribeGrowth(s.ResourceTickTiming, s.CityTimers, s.City?.Buildings);
             }
 
             var liveTimers = s.CityTimers.Count;

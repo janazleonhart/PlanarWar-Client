@@ -77,5 +77,37 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(copy, Does.Not.Contain("/api/me"));
             Assert.That(copy, Does.Contain("Front Ledger"));
         }
+
+        [Test]
+        public void Shadow_lane_formatter_surfaces_operator_front_visibility_without_city_leaks()
+        {
+            var buildings = new System.Collections.Generic.List<BuildingSnapshot>
+            {
+                new BuildingSnapshot { Name = "Front House", Kind = "front_house", Level = 1 },
+                new BuildingSnapshot { Name = "Debt House", Kind = "debt_house", Level = 1 },
+                new BuildingSnapshot { Name = "Cutout Bureau", Kind = "cutout_bureau", Level = 1 }
+            };
+
+            var growth = ShadowLaneText.DescribeGrowth(new TimerSnapshot(), new System.Collections.Generic.List<CityTimerEntrySnapshot>(), buildings);
+            var copy = ShadowLaneText.DescribeGrowthCardsCopy(
+                null,
+                null,
+                null,
+                new System.Collections.Generic.List<CityTimerEntrySnapshot>(),
+                buildings);
+            var note = ShadowLaneText.BuildDeskNote(
+                new ShellSummarySnapshot
+                {
+                    City = new CitySummarySnapshot { Buildings = buildings },
+                    AvailableTechs = new System.Collections.Generic.List<TechOptionSnapshot> { new TechOptionSnapshot { Name = "Front Ledger" } }
+                },
+                string.Empty);
+
+            Assert.That(growth, Does.Contain("live front"));
+            Assert.That(copy, Does.Contain("operator front"));
+            Assert.That(note, Does.Contain("operator fronts"));
+            Assert.That(note, Does.Contain("Front House"));
+            Assert.That(note, Does.Not.Contain("Lane City"));
+        }
     }
 }

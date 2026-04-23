@@ -72,7 +72,10 @@ namespace PlanarWar.Client.Core.Mapping
                     Name = city?["name"]?.Read<string>() ?? "-",
                     SettlementLane = city?["settlementLane"]?.Read<string>() ?? city?["settlement_lane"]?.Read<string>() ?? "-",
                     SettlementLaneLabel = city?["settlementLaneProfile"]?["label"]?.Read<string>() ?? city?["settlement_lane_profile"]?["label"]?.Read<string>() ?? city?["settlementLane"]?.Read<string>() ?? city?["settlement_lane"]?.Read<string>() ?? "-",
-                    Tier = city?["tier"]?.Read<int?>()
+                    Tier = city?["tier"]?.Read<int?>(),
+                    BuildingSlotsUsed = city?["buildingSlotsUsed"]?.Read<int>() ?? city?["building_slots_used"]?.Read<int>() ?? 0,
+                    BuildingSlotsMax = city?["buildingSlotsMax"]?.Read<int>() ?? city?["building_slots_max"]?.Read<int>() ?? 0,
+                    Buildings = FirstArray(city?["buildings"], city?["Buildings"])?.OfType<JObject>().Select(MapBuilding).Where(b => b != null).ToList() ?? new List<BuildingSnapshot>()
                 },
                 Resources = MapResource(summary["resources"] as JObject),
                 ProductionPerTick = MapResource(city?["production"] as JObject, true),
@@ -177,6 +180,35 @@ namespace PlanarWar.Client.Core.Mapping
                 Specialties = (obj["specialties"] as JArray)?.Select(s => s?.Read<string>()).Where(s => !string.IsNullOrWhiteSpace(s)).ToList() ?? new List<string>(),
                 HoldRegionId = obj["hold"]?["regionId"]?.Read<string>() ?? obj["hold"]?["region_id"]?.Read<string>() ?? string.Empty,
                 HoldPosture = obj["hold"]?["posture"]?.Read<string>() ?? string.Empty,
+            };
+        }
+
+        private static BuildingSnapshot MapBuilding(JObject obj)
+        {
+            if (obj == null) return null;
+
+            var specializationHook = FirstObject(
+                obj["specializationHook"],
+                obj["specialization_hook"]);
+
+            return new BuildingSnapshot
+            {
+                Id = obj["id"]?.Read<string>() ?? string.Empty,
+                Kind = obj["kind"]?.Read<string>() ?? string.Empty,
+                Name = obj["name"]?.Read<string>() ?? obj["kind"]?.Read<string>() ?? "Building",
+                Level = obj["level"]?.Read<int?>(),
+                RoutingPreference = obj["routingPreference"]?.Read<string>() ?? obj["routing_preference"]?.Read<string>() ?? string.Empty,
+                SpecializationHookId =
+                    obj["specializationHookId"]?.Read<string>()
+                    ?? obj["specialization_hook_id"]?.Read<string>()
+                    ?? specializationHook?["id"]?.Read<string>()
+                    ?? string.Empty,
+                SpecializationHookLabel =
+                    specializationHook?["label"]?.Read<string>()
+                    ?? specializationHook?["name"]?.Read<string>()
+                    ?? obj["specializationHook"]?.Read<string>()
+                    ?? obj["specialization_hook"]?.Read<string>()
+                    ?? string.Empty,
             };
         }
 

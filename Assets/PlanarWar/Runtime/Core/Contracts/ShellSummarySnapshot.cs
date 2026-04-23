@@ -34,7 +34,8 @@ namespace PlanarWar.Client.Core.Contracts
         public BlackMarketPayoffRecoverySurfaceSnapshot BlackMarketPayoffRecovery { get; set; }
     }
 
-    [Serializable] public sealed class CitySummarySnapshot { public string Name { get; set; } = "-"; public string SettlementLane { get; set; } = "-"; public string SettlementLaneLabel { get; set; } = "-"; public int? Tier { get; set; } }
+    [Serializable] public sealed class CitySummarySnapshot { public string Name { get; set; } = "-"; public string SettlementLane { get; set; } = "-"; public string SettlementLaneLabel { get; set; } = "-"; public int? Tier { get; set; } public int BuildingSlotsUsed { get; set; } public int BuildingSlotsMax { get; set; } public List<BuildingSnapshot> Buildings { get; set; } = new(); }
+    [Serializable] public sealed class BuildingSnapshot { public string Id { get; set; } = string.Empty; public string Kind { get; set; } = string.Empty; public string Name { get; set; } = "Building"; public int? Level { get; set; } public string RoutingPreference { get; set; } = string.Empty; public string SpecializationHookId { get; set; } = string.Empty; public string SpecializationHookLabel { get; set; } = string.Empty; }
     [Serializable] public sealed class ResourceSnapshot { public double? Food { get; set; } public double? Materials { get; set; } public double? Wealth { get; set; } public double? Mana { get; set; } public double? Knowledge { get; set; } public double? Unity { get; set; } }
     [Serializable] public sealed class TimerSnapshot { public double? TickMs { get; set; } public DateTime? LastTickAtUtc { get; set; } public DateTime? NextTickAtUtc { get; set; } }
     [Serializable] public sealed class ResearchSnapshot { public string Id { get; set; } public string Name { get; set; } public double? Progress { get; set; } public double? Cost { get; set; } public DateTime? StartedAtUtc { get; set; } }
