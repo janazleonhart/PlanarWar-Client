@@ -306,7 +306,7 @@ namespace PlanarWar.Client.UI.Screens.City
                         family: isBlackMarket ? ShadowLaneText.BuildWorkshopRecipeFamily(recipe) : (string.IsNullOrWhiteSpace(recipe.GearFamily) ? "Workshop recipe" : HumanizeKey(recipe.GearFamily)),
                         title: recipe.Name,
                         lore: isBlackMarket ? ShadowLaneText.BuildWorkshopRecipeLore(recipe) : FirstNonBlank(recipe.Summary, recipe.ResponseTags.FirstOrDefault(), "Craftable recipe from workshop catalog."),
-                        note: BuildWorkshopRecipeNote(recipe, isBlackMarket),
+                        note: BuildWorkshopRecipeNote(recipe, isBlackMarket, s.ResourceLabels),
                         buttonText: summaryState.IsActionBusy && string.Equals(summaryState.PendingWorkshopRecipeId, recipe.RecipeId, StringComparison.OrdinalIgnoreCase) ? "Crafting..." : "Craft",
                         buttonEnabled: !summaryState.IsActionBusy && onStartWorkshopCraftRequested != null,
                         onClick: () => TriggerStartWorkshopCraft(recipe.RecipeId)));
@@ -352,7 +352,7 @@ namespace PlanarWar.Client.UI.Screens.City
             cards.Add(new CardView(
                 family: isBlackMarket ? ShadowLaneText.BuildProductionFamily() : "Production",
                 title: isBlackMarket ? ShadowLaneText.BuildProductionTitle() : "Per-tick output",
-                lore: FormatProduction(s.ProductionPerTick),
+                lore: FormatProduction(s.ProductionPerTick, s.ResourceLabels),
                 note: isBlackMarket ? ShadowLaneText.BuildProductionNote(s.ResourceTickTiming, nowUtc) : s.ResourceTickTiming.NextTickAtUtc.HasValue ? $"Next resource tick in {FormatRemaining(s.ResourceTickTiming.NextTickAtUtc.Value - nowUtc)}" : "Resource cadence is visible without a live anchor."));
 
             var heroRecruitment = s.HeroRecruitment;
@@ -443,20 +443,6 @@ namespace PlanarWar.Client.UI.Screens.City
                 }
             }
 
-            if (isBlackMarket && s.City?.Buildings != null && s.City.Buildings.Count > 0 && cards.Count < 4)
-            {
-                foreach (var building in s.City.Buildings.Where(building => building != null).Take(Math.Max(0, 4 - cards.Count)))
-                {
-                    cards.Add(new CardView(
-                        family: ShadowLaneText.BuildBuildingFamily(building),
-                        title: building.Name,
-                        lore: ShadowLaneText.BuildBuildingLore(building),
-                        note: ShadowLaneText.BuildBuildingNote(building),
-                        buttonText: "Live",
-                        buttonEnabled: false));
-                }
-            }
-
             cards.AddRange(s.CityTimers
                 .Where(t => !string.Equals(t.Category, "resource_tick", StringComparison.OrdinalIgnoreCase) && !string.Equals(t.Category, "workshop_job", StringComparison.OrdinalIgnoreCase) && !string.Equals(t.Category, "operator_recruit", StringComparison.OrdinalIgnoreCase))
                 .Take(Math.Max(0, 3 - cards.Count))
@@ -476,7 +462,7 @@ namespace PlanarWar.Client.UI.Screens.City
             }
 
             growthCardsCopyValue.text = isBlackMarket
-                ? ShadowLaneText.DescribeGrowthCardsCopy(heroRecruitment, recruitTimer, recruitOp, s.CityTimers, s.City?.Buildings)
+                ? ShadowLaneText.DescribeGrowthCardsCopy(heroRecruitment, recruitTimer, recruitOp, s.CityTimers)
                 : heroRecruitment != null && string.Equals(heroRecruitment.Status, "candidates_ready", StringComparison.OrdinalIgnoreCase)
                     ? $"Candidate review is live with {heroRecruitment.Candidates.Count} hero option(s) ready for selection."
                     : heroRecruitment != null && string.Equals(heroRecruitment.Status, "scouting", StringComparison.OrdinalIgnoreCase)
@@ -648,10 +634,11 @@ namespace PlanarWar.Client.UI.Screens.City
 
             if (candidate.WealthCost.HasValue || candidate.UnityCost.HasValue)
             {
+                var labels = ResourcePresentationText.DefaultForLane(candidate.Lane);
                 var costParts = new List<string>();
-                if (candidate.WealthCost.HasValue) costParts.Add($"Wealth {candidate.WealthCost.Value:0.#}");
-                if (candidate.UnityCost.HasValue) costParts.Add($"Unity {candidate.UnityCost.Value:0.#}");
-                parts.Add(string.Join(" • ", costParts));
+                if (candidate.WealthCost.HasValue) costParts.Add(ResourcePresentationText.Cost(labels, "wealth", candidate.WealthCost));
+                if (candidate.UnityCost.HasValue) costParts.Add(ResourcePresentationText.Cost(labels, "unity", candidate.UnityCost));
+                parts.Add(string.Join(" • ", costParts.Where(part => !string.IsNullOrWhiteSpace(part))));
             }
 
             return parts.Count > 0 ? string.Join(" • ", parts) : "Recruit candidate is ready for selection.";
@@ -700,22 +687,24 @@ namespace PlanarWar.Client.UI.Screens.City
 
         private static string BuildHeroRecruitmentScoutingNote(HeroRecruitmentSnapshot recruitment)
         {
+            var labels = ResourcePresentationText.DefaultForLane(recruitment?.Lane);
             var parts = new List<string>();
             if (!string.IsNullOrWhiteSpace(recruitment.Role)) parts.Add($"Role {HumanizeKey(recruitment.Role)}");
-            if (recruitment.WealthCost.HasValue) parts.Add($"Wealth {recruitment.WealthCost.Value:0.#}");
-            if (recruitment.UnityCost.HasValue) parts.Add($"Unity {recruitment.UnityCost.Value:0.#}");
-            return parts.Count > 0 ? string.Join(" • ", parts) : "Recruitment scouting is in progress.";
+            if (recruitment.WealthCost.HasValue) parts.Add(ResourcePresentationText.Cost(labels, "wealth", recruitment.WealthCost));
+            if (recruitment.UnityCost.HasValue) parts.Add(ResourcePresentationText.Cost(labels, "unity", recruitment.UnityCost));
+            return parts.Where(part => !string.IsNullOrWhiteSpace(part)).Any() ? string.Join(" • ", parts.Where(part => !string.IsNullOrWhiteSpace(part))) : "Recruitment scouting is in progress.";
         }
 
         private static string BuildHeroRecruitmentIdleLore(HeroRecruitmentSnapshot recruitment)
         {
+            var labels = ResourcePresentationText.DefaultForLane(recruitment?.Lane);
             var parts = new List<string>();
             var startRole = FirstNonBlank(recruitment?.StartRole, recruitment?.Role);
             if (!string.IsNullOrWhiteSpace(startRole)) parts.Add($"Role {HumanizeKey(startRole)}");
             if (!string.IsNullOrWhiteSpace(recruitment?.Lane)) parts.Add(HumanizeKey(recruitment.Lane));
-            if (recruitment?.WealthCost.HasValue == true) parts.Add($"Wealth {recruitment.WealthCost.Value:0.#}");
-            if (recruitment?.UnityCost.HasValue == true) parts.Add($"Unity {recruitment.UnityCost.Value:0.#}");
-            return parts.Count > 0 ? string.Join(" • ", parts) : "Hero recruitment can open from the Growth desk.";
+            if (recruitment?.WealthCost.HasValue == true) parts.Add(ResourcePresentationText.Cost(labels, "wealth", recruitment.WealthCost));
+            if (recruitment?.UnityCost.HasValue == true) parts.Add(ResourcePresentationText.Cost(labels, "unity", recruitment.UnityCost));
+            return parts.Where(part => !string.IsNullOrWhiteSpace(part)).Any() ? string.Join(" • ", parts.Where(part => !string.IsNullOrWhiteSpace(part))) : "Hero recruitment can open from the Growth desk.";
         }
 
         private static string BuildHeroRecruitmentIdleNote(HeroRecruitmentSnapshot recruitment)
@@ -820,7 +809,7 @@ namespace PlanarWar.Client.UI.Screens.City
         {
             if (isBlackMarket)
             {
-                return ShadowLaneText.DescribeGrowth(s.ResourceTickTiming, s.CityTimers, s.City?.Buildings);
+                return ShadowLaneText.DescribeGrowth(s.ResourceTickTiming, s.CityTimers);
             }
 
             var liveTimers = s.CityTimers.Count;
@@ -881,31 +870,23 @@ namespace PlanarWar.Client.UI.Screens.City
             return progress.HasValue ? $"{progress.Value:0.#}" : "progress unknown";
         }
 
-        private static string FormatProduction(ResourceSnapshot resource)
+        private static string FormatProduction(ResourceSnapshot resource, ResourcePresentationSnapshot labels)
         {
             var chunks = new List<string>();
-            AppendResource(chunks, "Food", resource.Food);
-            AppendResource(chunks, "Materials", resource.Materials);
-            AppendResource(chunks, "Wealth", resource.Wealth);
-            AppendResource(chunks, "Mana", resource.Mana);
-            AppendResource(chunks, "Knowledge", resource.Knowledge);
-            AppendResource(chunks, "Unity", resource.Unity);
+            ResourcePresentationText.AppendResource(chunks, labels, "food", resource.Food, "/tick");
+            ResourcePresentationText.AppendResource(chunks, labels, "materials", resource.Materials, "/tick");
+            ResourcePresentationText.AppendResource(chunks, labels, "wealth", resource.Wealth, "/tick");
+            ResourcePresentationText.AppendResource(chunks, labels, "mana", resource.Mana, "/tick");
+            ResourcePresentationText.AppendResource(chunks, labels, "knowledge", resource.Knowledge, "/tick");
+            ResourcePresentationText.AppendResource(chunks, labels, "unity", resource.Unity, "/tick");
             return chunks.Count == 0 ? "No production snapshot surfaced." : string.Join(" • ", chunks);
         }
 
-        private static void AppendResource(List<string> chunks, string label, double? value)
-        {
-            if (value.HasValue)
-            {
-                chunks.Add($"{label} {value.Value:0.#}/tick");
-            }
-        }
-
-        private static string BuildWorkshopRecipeNote(WorkshopRecipeSnapshot recipe, bool isBlackMarket)
+        private static string BuildWorkshopRecipeNote(WorkshopRecipeSnapshot recipe, bool isBlackMarket, ResourcePresentationSnapshot labels)
         {
             if (isBlackMarket)
             {
-                return ShadowLaneText.BuildWorkshopRecipeNote(recipe);
+                return ShadowLaneText.BuildWorkshopRecipeNote(recipe, labels);
             }
 
             var parts = new List<string>();

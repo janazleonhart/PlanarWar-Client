@@ -72,12 +72,10 @@ namespace PlanarWar.Client.Core.Mapping
                     Name = city?["name"]?.Read<string>() ?? "-",
                     SettlementLane = city?["settlementLane"]?.Read<string>() ?? city?["settlement_lane"]?.Read<string>() ?? "-",
                     SettlementLaneLabel = city?["settlementLaneProfile"]?["label"]?.Read<string>() ?? city?["settlement_lane_profile"]?["label"]?.Read<string>() ?? city?["settlementLane"]?.Read<string>() ?? city?["settlement_lane"]?.Read<string>() ?? "-",
-                    Tier = city?["tier"]?.Read<int?>(),
-                    BuildingSlotsUsed = city?["buildingSlotsUsed"]?.Read<int>() ?? city?["building_slots_used"]?.Read<int>() ?? 0,
-                    BuildingSlotsMax = city?["buildingSlotsMax"]?.Read<int>() ?? city?["building_slots_max"]?.Read<int>() ?? 0,
-                    Buildings = FirstArray(city?["buildings"], city?["Buildings"])?.OfType<JObject>().Select(MapBuilding).Where(b => b != null).ToList() ?? new List<BuildingSnapshot>()
+                    Tier = city?["tier"]?.Read<int?>()
                 },
                 Resources = MapResource(summary["resources"] as JObject),
+                ResourceLabels = MapResourcePresentation(FirstObject(summary["resourceLabels"], summary["resource_labels"]), city?["settlementLane"]?.Read<string>() ?? city?["settlement_lane"]?.Read<string>()),
                 ProductionPerTick = MapResource(city?["production"] as JObject, true),
                 ResourceTickTiming = MapTimer(resourceTickTiming),
                 ActiveResearch = MapResearch(summary["activeResearch"] as JObject ?? summary["active_research"] as JObject),
@@ -180,35 +178,6 @@ namespace PlanarWar.Client.Core.Mapping
                 Specialties = (obj["specialties"] as JArray)?.Select(s => s?.Read<string>()).Where(s => !string.IsNullOrWhiteSpace(s)).ToList() ?? new List<string>(),
                 HoldRegionId = obj["hold"]?["regionId"]?.Read<string>() ?? obj["hold"]?["region_id"]?.Read<string>() ?? string.Empty,
                 HoldPosture = obj["hold"]?["posture"]?.Read<string>() ?? string.Empty,
-            };
-        }
-
-        private static BuildingSnapshot MapBuilding(JObject obj)
-        {
-            if (obj == null) return null;
-
-            var specializationHook = FirstObject(
-                obj["specializationHook"],
-                obj["specialization_hook"]);
-
-            return new BuildingSnapshot
-            {
-                Id = obj["id"]?.Read<string>() ?? string.Empty,
-                Kind = obj["kind"]?.Read<string>() ?? string.Empty,
-                Name = obj["name"]?.Read<string>() ?? obj["kind"]?.Read<string>() ?? "Building",
-                Level = obj["level"]?.Read<int?>(),
-                RoutingPreference = obj["routingPreference"]?.Read<string>() ?? obj["routing_preference"]?.Read<string>() ?? string.Empty,
-                SpecializationHookId =
-                    obj["specializationHookId"]?.Read<string>()
-                    ?? obj["specialization_hook_id"]?.Read<string>()
-                    ?? specializationHook?["id"]?.Read<string>()
-                    ?? string.Empty,
-                SpecializationHookLabel =
-                    specializationHook?["label"]?.Read<string>()
-                    ?? specializationHook?["name"]?.Read<string>()
-                    ?? obj["specializationHook"]?.Read<string>()
-                    ?? obj["specialization_hook"]?.Read<string>()
-                    ?? string.Empty,
             };
         }
 
@@ -382,6 +351,23 @@ namespace PlanarWar.Client.Core.Mapping
                 Mana = obj[perTick ? "manaPerTick" : "mana"]?.Read<double?>(),
                 Knowledge = obj[perTick ? "knowledgePerTick" : "knowledge"]?.Read<double?>(),
                 Unity = obj[perTick ? "unityPerTick" : "unity"]?.Read<double?>(),
+            };
+        }
+
+        private static ResourcePresentationSnapshot MapResourcePresentation(JObject obj, string lane)
+        {
+            var isBlackMarket = string.Equals((lane ?? string.Empty).Trim(), "black_market", StringComparison.OrdinalIgnoreCase)
+                || string.Equals((lane ?? string.Empty).Trim(), "black market", StringComparison.OrdinalIgnoreCase)
+                || string.Equals((lane ?? string.Empty).Trim(), "black-market", StringComparison.OrdinalIgnoreCase);
+
+            return new ResourcePresentationSnapshot
+            {
+                Food = obj?["food"]?.Read<string>() ?? obj?["foodLabel"]?.Read<string>() ?? (isBlackMarket ? "Provisions" : "Food"),
+                Materials = obj?["materials"]?.Read<string>() ?? obj?["materialsLabel"]?.Read<string>() ?? (isBlackMarket ? "Supplies" : "Materials"),
+                Wealth = obj?["wealth"]?.Read<string>() ?? obj?["wealthLabel"]?.Read<string>() ?? (isBlackMarket ? "Cashflow" : "Wealth"),
+                Mana = obj?["mana"]?.Read<string>() ?? obj?["manaLabel"]?.Read<string>() ?? (isBlackMarket ? "Arcana" : "Mana"),
+                Knowledge = obj?["knowledge"]?.Read<string>() ?? obj?["knowledgeLabel"]?.Read<string>() ?? (isBlackMarket ? "Intel" : "Knowledge"),
+                Unity = obj?["unity"]?.Read<string>() ?? obj?["unityLabel"]?.Read<string>() ?? (isBlackMarket ? "Loyalty" : "Unity"),
             };
         }
 

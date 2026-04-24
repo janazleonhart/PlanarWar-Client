@@ -1,5 +1,6 @@
 using PlanarWar.Client.Core;
 using PlanarWar.Client.Core.Contracts;
+using PlanarWar.Client.Core.Presentation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -925,8 +926,9 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var parts = new List<string>();
             if (!string.IsNullOrWhiteSpace(reinforceState.ArmyType)) parts.Add(HumanizeKey(reinforceState.ArmyType));
             if (reinforceState.ArmyReadiness.HasValue) parts.Add($"Readiness {reinforceState.ArmyReadiness.Value:0.#}");
-            if (reinforceState.MaterialsCost.HasValue) parts.Add($"Materials {reinforceState.MaterialsCost.Value:0.#}");
-            if (reinforceState.WealthCost.HasValue) parts.Add($"Wealth {reinforceState.WealthCost.Value:0.#}");
+            var labels = ResourcePresentationText.DefaultForLane("black_market");
+            if (reinforceState.MaterialsCost.HasValue) parts.Add(ResourcePresentationText.Cost(labels, "materials", reinforceState.MaterialsCost));
+            if (reinforceState.WealthCost.HasValue) parts.Add(ResourcePresentationText.Cost(labels, "wealth", reinforceState.WealthCost));
             return parts.Count > 0 ? string.Join(" • ", parts) : "Army reinforcement is available from the Warfront desk.";
         }
 
@@ -947,8 +949,9 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             if (reinforceState.SizeDelta.HasValue) parts.Add($"+{reinforceState.SizeDelta.Value:0.#} troops");
             if (reinforceState.PowerDelta.HasValue) parts.Add($"+{reinforceState.PowerDelta.Value:0.#} power");
             if (reinforceState.ReadinessDelta.HasValue) parts.Add($"+{reinforceState.ReadinessDelta.Value:0.#} readiness");
-            if (reinforceState.MaterialsCost.HasValue) parts.Add($"Materials {reinforceState.MaterialsCost.Value:0.#}");
-            if (reinforceState.WealthCost.HasValue) parts.Add($"Wealth {reinforceState.WealthCost.Value:0.#}");
+            var labels = ResourcePresentationText.DefaultForLane("black_market");
+            if (reinforceState.MaterialsCost.HasValue) parts.Add(ResourcePresentationText.Cost(labels, "materials", reinforceState.MaterialsCost));
+            if (reinforceState.WealthCost.HasValue) parts.Add(ResourcePresentationText.Cost(labels, "wealth", reinforceState.WealthCost));
             if (parts.Count == 0 && !string.IsNullOrWhiteSpace(reinforceTimer?.Detail)) parts.Add(reinforceTimer.Detail);
             return parts.Count > 0 ? string.Join(" • ", parts) : "Army reinforcement timer surfaced from /api/me.";
         }

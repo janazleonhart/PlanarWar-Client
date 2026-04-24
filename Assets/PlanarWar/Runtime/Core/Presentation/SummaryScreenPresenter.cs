@@ -29,8 +29,8 @@ namespace PlanarWar.Client.Core.Presentation
         public void Render(ShellSummarySnapshot s)
         {
             statusHeadline.text = s.HasCity ? $"{s.City.Name} • {s.City.SettlementLaneLabel}" : (s.FounderMode ? "Founder mode active." : "No settlement loaded.");
-            resources.text = FormatResource(s.Resources, "No resources loaded.");
-            production.text = FormatResource(s.ProductionPerTick, s.HasCity ? "No production snapshot." : "Found a city to unlock production.", "/tick");
+            resources.text = FormatResource(s.Resources, s.ResourceLabels, "No resources loaded.");
+            production.text = FormatResource(s.ProductionPerTick, s.ResourceLabels, s.HasCity ? "No production snapshot." : "Found a city to unlock production.", "/tick");
             research.text = s.ActiveResearch == null ? "No active research." : $"{s.ActiveResearch.Name} • {s.ActiveResearch.Progress.GetValueOrDefault():0.#}/{s.ActiveResearch.Cost.GetValueOrDefault():0.#}";
             warnings.text = s.ThreatWarnings.Count == 0 ? "No active threat warnings." : s.ThreatWarnings[0].Headline;
             readyOps.text = s.OpeningOperations.Count == 0 ? "No opening operations surfaced." : $"{s.OpeningOperations.Count(o => string.Equals(o.Readiness, "ready_now", StringComparison.OrdinalIgnoreCase))} ready now";
@@ -49,13 +49,13 @@ namespace PlanarWar.Client.Core.Presentation
             resourceTick.text = !s.ResourceTickTiming.TickMs.HasValue ? "Tick timing unavailable." : $"every {TimeSpan.FromMilliseconds(s.ResourceTickTiming.TickMs.Value):mm\\:ss}";
         }
 
-        private static string FormatResource(ResourceSnapshot r, string fallback, string suffix = "")
+        private static string FormatResource(ResourceSnapshot r, ResourcePresentationSnapshot labels, string fallback, string suffix = "")
         {
-            var chunks = new[] { Pair("Food", r.Food, suffix), Pair("Materials", r.Materials, suffix), Pair("Wealth", r.Wealth, suffix), Pair("Mana", r.Mana, suffix), Pair("Knowledge", r.Knowledge, suffix), Pair("Unity", r.Unity, suffix) }.Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
+            var chunks = new[] { Pair(labels, "food", r.Food, suffix), Pair(labels, "materials", r.Materials, suffix), Pair(labels, "wealth", r.Wealth, suffix), Pair(labels, "mana", r.Mana, suffix), Pair(labels, "knowledge", r.Knowledge, suffix), Pair(labels, "unity", r.Unity, suffix) }.Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
             return chunks.Length == 0 ? fallback : string.Join(" • ", chunks);
         }
 
-        private static string Pair(string name, double? value, string suffix) => value.HasValue ? $"{name} {value.Value:0.#}{suffix}" : null;
+        private static string Pair(ResourcePresentationSnapshot labels, string key, double? value, string suffix) => value.HasValue ? $"{ResourcePresentationText.Label(labels, key)} {value.Value:0.#}{suffix}" : null;
 
 
         private static string BuildMissionDeskSummary(ShellSummarySnapshot summary)
