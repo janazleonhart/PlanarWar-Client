@@ -20,6 +20,7 @@ namespace PlanarWar.Client.Core.Contracts
         public ResearchSnapshot ActiveResearch { get; set; }
         public List<ResearchSnapshot> ActiveResearches { get; set; } = new();
         public List<TechOptionSnapshot> AvailableTechs { get; set; } = new();
+        public List<string> ResearchedTechIds { get; set; } = new();
         public List<CityTimerEntrySnapshot> CityTimers { get; set; } = new();
         public List<ThreatWarningSnapshot> ThreatWarnings { get; set; } = new();
         public List<OperationSnapshot> OpeningOperations { get; set; } = new();

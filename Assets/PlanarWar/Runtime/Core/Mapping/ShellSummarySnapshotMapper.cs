@@ -45,6 +45,15 @@ namespace PlanarWar.Client.Core.Mapping
                 summary["available_techs"],
                 city?["availableTechs"],
                 city?["available_techs"]);
+            var researchedTechIds = FirstArray(
+                summary["researchedTechIds"],
+                summary["researched_tech_ids"],
+                summary["completedTechIds"],
+                summary["completed_tech_ids"],
+                city?["researchedTechIds"],
+                city?["researched_tech_ids"],
+                city?["completedTechIds"],
+                city?["completed_tech_ids"]);
             var cityTimers = FirstArray(
                 summary["cityTimers"],
                 summary["city_timers"],
@@ -126,6 +135,7 @@ namespace PlanarWar.Client.Core.Mapping
                 ActiveResearch = activeResearches.FirstOrDefault(),
                 ActiveResearches = activeResearches,
                 AvailableTechs = availableTechs?.OfType<JObject>().Select(MapTech).Where(t => t != null).ToList() ?? new List<TechOptionSnapshot>(),
+                ResearchedTechIds = MapStringArray(researchedTechIds),
                 CityTimers = mappedCityTimers,
                 ThreatWarnings = FirstArray(summary["threatWarnings"], summary["threat_warnings"])?.OfType<JObject>().Select(MapThreatWarning).Where(w => w != null).ToList() ?? new List<ThreatWarningSnapshot>(),
                 OpeningOperations = openingOps?.OfType<JObject>().Select(MapOperation).Where(o => o != null).ToList() ?? new List<OperationSnapshot>(),
@@ -849,6 +859,16 @@ namespace PlanarWar.Client.Core.Mapping
 
         private static JObject FirstObject(params JToken[] tokens) => tokens?.OfType<JObject>().FirstOrDefault();
         private static JArray FirstArray(params JToken[] tokens) => tokens?.OfType<JArray>().FirstOrDefault();
+
+        private static List<string> MapStringArray(JArray array)
+        {
+            return array?.Values<string>()
+                       .Where(value => !string.IsNullOrWhiteSpace(value))
+                       .Select(value => value.Trim())
+                       .Distinct(StringComparer.OrdinalIgnoreCase)
+                       .ToList()
+                   ?? new List<string>();
+        }
 
         private static List<JObject> ObjectsFromArrays(params JToken[] tokens)
         {

@@ -160,7 +160,9 @@ namespace PlanarWar.Client.UI.Screens.City
                 ? FormatResearchOverview(activeResearches, isBlackMarket, nowUtc)
                 : summaryState?.HasRecentResearchStartGuard(nowUtc) == true
                     ? $"Accepted {HumanizeKey(summaryState.RecentStartedResearchTechId)}; waiting for canonical timer."
-                    : (isBlackMarket ? "No active shadow-book focus." : "No active research focus.");
+                    : summaryState?.HasRecentResearchCompletionNotice(nowUtc) == true
+                        ? $"Completed {HumanizeKey(summaryState.RecentCompletedResearchTechId)}; no active timer remains."
+                        : (isBlackMarket ? "No active shadow-book focus." : "No active research focus.");
             nextTechValue.text = isBlackMarket
                 ? ShadowLaneText.BuildNextTechValue(s.AvailableTechs)
                 : s.AvailableTechs.FirstOrDefault()?.Name ?? "No available tech surfaced.";
@@ -247,6 +249,16 @@ namespace PlanarWar.Client.UI.Screens.City
                         ? "Start buttons stay locked because canonical ETA truth is still missing from the summary payload."
                         : "Start buttons stay locked so the desk cannot stack duplicate research by accident.",
                     "Awaiting canonical timer",
+                    false));
+            }
+            else if (cards.Count == 0 && summaryState?.HasRecentResearchCompletionNotice(nowUtc) == true)
+            {
+                cards.Add(new CardView(
+                    isBlackMarket ? "Shadow book completed" : "Research completed",
+                    HumanizeKey(summaryState.RecentCompletedResearchTechId),
+                    "The accepted research is no longer active because the refreshed summary shows it has already resolved or left the available research list.",
+                    "No fake countdown is shown after completion; the desk returns to the next real available unlock.",
+                    "Completed",
                     false));
             }
 

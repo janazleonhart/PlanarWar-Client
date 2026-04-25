@@ -156,6 +156,62 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
         [Test]
+        public void Mapper_captures_researched_tech_ids_for_completion_reconciliation()
+        {
+            const string payload = @"{
+                ""researchedTechIds"": [""militia_training_1"", ""urban_planning_1""],
+                ""availableTechs"": [
+                    { ""id"": ""district_roads_1"", ""name"": ""District Roads I"" }
+                ]
+            }";
+
+            var summary = ShellSummarySnapshotMapper.Map(payload);
+
+            Assert.That(summary.ResearchedTechIds, Does.Contain("militia_training_1"));
+            Assert.That(summary.ResearchedTechIds, Does.Contain("urban_planning_1"));
+        }
+
+        [Test]
+        public void Research_start_guard_clears_when_accepted_tech_is_completed_before_timer_can_display()
+        {
+            var state = new SummaryState();
+            var startedAt = DateTime.UtcNow;
+            state.MarkResearchStartAccepted("militia_training_1");
+
+            state.ReconcileRecentResearchStartWithSnapshot(new ShellSummarySnapshot
+            {
+                ResearchedTechIds = new List<string> { "militia_training_1" },
+                AvailableTechs = new List<TechOptionSnapshot>
+                {
+                    new TechOptionSnapshot { Id = "district_watch", Name = "District Watch" }
+                }
+            }, startedAt.AddSeconds(2));
+
+            Assert.That(state.HasRecentResearchStartGuard(startedAt.AddSeconds(2)), Is.False);
+            Assert.That(state.HasRecentResearchCompletionNotice(startedAt.AddSeconds(2)), Is.True);
+            Assert.That(state.RecentCompletedResearchTechId, Is.EqualTo("militia_training_1"));
+        }
+
+        [Test]
+        public void Research_start_guard_clears_when_accepted_tech_leaves_available_options_without_active_timer()
+        {
+            var state = new SummaryState();
+            var startedAt = DateTime.UtcNow;
+            state.MarkResearchStartAccepted("militia_training_1");
+
+            state.ReconcileRecentResearchStartWithSnapshot(new ShellSummarySnapshot
+            {
+                AvailableTechs = new List<TechOptionSnapshot>
+                {
+                    new TechOptionSnapshot { Id = "district_watch", Name = "District Watch" }
+                }
+            }, startedAt.AddSeconds(2));
+
+            Assert.That(state.HasRecentResearchStartGuard(startedAt.AddSeconds(2)), Is.False);
+            Assert.That(state.HasRecentResearchCompletionNotice(startedAt.AddSeconds(2)), Is.True);
+        }
+
+        [Test]
         public void Research_start_guard_persists_until_canonical_research_truth_arrives()
         {
             var state = new SummaryState();

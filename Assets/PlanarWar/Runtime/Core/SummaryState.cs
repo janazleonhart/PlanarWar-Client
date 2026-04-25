@@ -24,6 +24,8 @@ namespace PlanarWar.Client.Core
         public string PendingResearchTechId { get; private set; } = string.Empty;
         public string RecentStartedResearchTechId { get; private set; } = string.Empty;
         public DateTime? RecentStartedResearchAtUtc { get; private set; }
+        public string RecentCompletedResearchTechId { get; private set; } = string.Empty;
+        public DateTime? RecentCompletedResearchAtUtc { get; private set; }
         public string PendingWorkshopJobId { get; private set; } = string.Empty;
         public string PendingWorkshopRecipeId { get; private set; } = string.Empty;
         public string PendingMissionInstanceId { get; private set; } = string.Empty;
@@ -70,6 +72,16 @@ namespace PlanarWar.Client.Core
             Changed?.Invoke();
         }
 
+        public bool HasRecentResearchCompletionNotice(DateTime nowUtc, double noticeSeconds = 30)
+        {
+            if (!RecentCompletedResearchAtUtc.HasValue || string.IsNullOrWhiteSpace(RecentCompletedResearchTechId))
+            {
+                return false;
+            }
+
+            return nowUtc - RecentCompletedResearchAtUtc.Value < TimeSpan.FromSeconds(Math.Max(1, noticeSeconds));
+        }
+
         public bool HasRecentResearchStartGuard(DateTime nowUtc, double guardSeconds = 0)
         {
             if (!RecentStartedResearchAtUtc.HasValue || string.IsNullOrWhiteSpace(RecentStartedResearchTechId))
@@ -99,13 +111,21 @@ namespace PlanarWar.Client.Core
                 return;
             }
 
-            if (!SnapshotHasCanonicalResearch(snapshot))
+            var acceptedTechId = RecentStartedResearchTechId;
+            var hasCanonicalResearch = SnapshotHasCanonicalResearch(snapshot);
+            var acceptedResearchCompleted = SnapshotShowsAcceptedResearchCompleted(snapshot, acceptedTechId);
+            if (!hasCanonicalResearch && !acceptedResearchCompleted)
             {
                 return;
             }
 
             RecentStartedResearchTechId = string.Empty;
             RecentStartedResearchAtUtc = null;
+            if (acceptedResearchCompleted && !hasCanonicalResearch)
+            {
+                RecentCompletedResearchTechId = acceptedTechId;
+                RecentCompletedResearchAtUtc = nowUtc;
+            }
             if (notify)
             {
                 Changed?.Invoke();
@@ -130,6 +150,27 @@ namespace PlanarWar.Client.Core
             }
 
             return snapshot.CityTimers != null && snapshot.CityTimers.Any(IsResearchTimer);
+        }
+
+        private static bool SnapshotShowsAcceptedResearchCompleted(ShellSummarySnapshot snapshot, string acceptedTechId)
+        {
+            if (snapshot == null || string.IsNullOrWhiteSpace(acceptedTechId))
+            {
+                return false;
+            }
+
+            if (snapshot.ResearchedTechIds != null
+                && snapshot.ResearchedTechIds.Any(id => string.Equals(id, acceptedTechId, StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;
+            }
+
+            if (snapshot.AvailableTechs == null || snapshot.AvailableTechs.Count == 0)
+            {
+                return false;
+            }
+
+            return !snapshot.AvailableTechs.Any(tech => string.Equals(tech?.Id, acceptedTechId, StringComparison.OrdinalIgnoreCase));
         }
 
         private static bool HasResearchIdentity(ResearchSnapshot research)
