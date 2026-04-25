@@ -1029,13 +1029,15 @@ namespace PlanarWar.Client.UI.Screens.City
             var buildings = SelectLaneBuildings(s, isBlackMarket);
             var buildTimers = SelectBuildTimers(s, isBlackMarket);
             var ready = buildings.Count(b => IsBuildingReady(b, nowUtc)) + buildTimers.Count(t => t.FinishesAtUtc.HasValue && t.FinishesAtUtc.Value <= nowUtc);
-            var active = buildings.Count(b => IsActiveStatus(b.Status) && !IsBuildingReady(b, nowUtc)) + buildTimers.Count(t => !t.FinishesAtUtc.HasValue || t.FinishesAtUtc.Value > nowUtc);
+            var timed = buildings.Count(HasBuildingTimingAnchor) + buildTimers.Count(t => !t.FinishesAtUtc.HasValue || t.FinishesAtUtc.Value > nowUtc);
+            var standing = buildings.Count(b => !IsBuildingReady(b, nowUtc) && !HasBuildingTimingAnchor(b));
 
             if (buildings.Count > 0 || buildTimers.Count > 0)
             {
                 var label = isBlackMarket ? "front" : "building";
                 var timerLabel = isBlackMarket ? "front timer" : "build timer";
-                return $"{buildings.Count} {label} card(s) • {buildTimers.Count} {timerLabel}(s) • {active} active • {ready} ready";
+                var standingLabel = isBlackMarket ? "front live" : "standing";
+                return $"{buildings.Count} {label} card(s) • {buildTimers.Count} {timerLabel}(s) • {standing} {standingLabel} • {timed} timed • {ready} ready";
             }
 
             var liveTimers = s.CityTimers?.Count ?? 0;
@@ -1063,7 +1065,7 @@ namespace PlanarWar.Client.UI.Screens.City
                     title: FormatBuildingTitle(building, isBlackMarket),
                     lore: BuildBuildingLore(building, nowUtc),
                     note: BuildBuildingNote(building, isBlackMarket, nowUtc),
-                    buttonText: IsBuildingReady(building, nowUtc) ? "Ready" : IsActiveStatus(building.Status) ? "Active" : "Visible",
+                    buttonText: BuildBuildingStatusButtonText(building, isBlackMarket, nowUtc),
                     buttonEnabled: false));
             }
 
@@ -1086,7 +1088,8 @@ namespace PlanarWar.Client.UI.Screens.City
             var buildings = SelectLaneBuildings(s, isBlackMarket);
             var timers = SelectBuildTimers(s, isBlackMarket);
             var ready = buildings.Count(b => IsBuildingReady(b, nowUtc)) + timers.Count(t => t.FinishesAtUtc.HasValue && t.FinishesAtUtc.Value <= nowUtc);
-            var active = buildings.Count(b => IsActiveStatus(b.Status) && !IsBuildingReady(b, nowUtc)) + timers.Count(t => !t.FinishesAtUtc.HasValue || t.FinishesAtUtc.Value > nowUtc);
+            var timed = buildings.Count(HasBuildingTimingAnchor) + timers.Count(t => !t.FinishesAtUtc.HasValue || t.FinishesAtUtc.Value > nowUtc);
+            var standing = buildings.Count(b => !IsBuildingReady(b, nowUtc) && !HasBuildingTimingAnchor(b));
             var label = isBlackMarket ? "operator-front" : "building";
 
             var timerLabel = isBlackMarket ? "front timer" : "build timer";
@@ -1095,7 +1098,8 @@ namespace PlanarWar.Client.UI.Screens.City
                 return $"No {label} card or {timerLabel} is visible in the current summary payload.";
             }
 
-            return $"Showing {buildings.Count} {label} card(s), {timers.Count} {timerLabel}(s), {active} active, and {ready} ready/finished state(s).";
+            var standingLabel = isBlackMarket ? "front live" : "standing";
+            return $"Showing {buildings.Count} {label} card(s), {timers.Count} {timerLabel}(s), {standing} {standingLabel}, {timed} timed, and {ready} ready/finished state(s).";
         }
 
         private static List<BuildingSnapshot> SelectLaneBuildings(ShellSummarySnapshot s, bool isBlackMarket)
@@ -1107,9 +1111,54 @@ namespace PlanarWar.Client.UI.Screens.City
 
         private static List<CityTimerEntrySnapshot> SelectBuildTimers(ShellSummarySnapshot s, bool isBlackMarket)
         {
+            var buildings = SelectLaneBuildings(s, isBlackMarket);
             return (s?.CityTimers ?? new List<CityTimerEntrySnapshot>())
                 .Where(t => t != null && (IsBuildTimer(t) || (isBlackMarket && IsFrontTimer(t))) && (!isBlackMarket || ContainsShadowLane(t.Category) || ContainsShadowLane(t.Label) || ContainsShadowLane(t.Detail) || IsBlackMarketLane(s)))
+                .Where(t => !TimerMatchesActiveBuilding(t, buildings))
                 .ToList();
+        }
+
+        private static bool TimerMatchesActiveBuilding(CityTimerEntrySnapshot timer, List<BuildingSnapshot> buildings)
+        {
+            if (timer == null || buildings == null || buildings.Count == 0) return false;
+            var timerId = NormalizeIdentity(timer.Id);
+            var timerLabel = NormalizeIdentity(timer.Label);
+            if (string.IsNullOrWhiteSpace(timerId) && string.IsNullOrWhiteSpace(timerLabel)) return false;
+
+            foreach (var building in buildings)
+            {
+                if (building == null) continue;
+                if (!building.StartedAtUtc.HasValue && !building.FinishesAtUtc.HasValue) continue;
+
+                var ids = new[]
+                {
+                    NormalizeIdentity(building.Id),
+                    NormalizeIdentity(building.BuildingId),
+                    NormalizeIdentity(building.Name),
+                    NormalizeIdentity($"construct {building.Name}"),
+                    NormalizeIdentity($"upgrade {building.Name}"),
+                };
+
+                if (ids.Any(id => !string.IsNullOrWhiteSpace(id) && (id == timerId || id == timerLabel)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static string NormalizeIdentity(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
+            var value = raw.Trim();
+            if (value.StartsWith("research:", StringComparison.OrdinalIgnoreCase)) value = value.Substring("research:".Length);
+            if (value.StartsWith("build:", StringComparison.OrdinalIgnoreCase)) value = value.Substring("build:".Length);
+            if (value.StartsWith("construction:", StringComparison.OrdinalIgnoreCase)) value = value.Substring("construction:".Length);
+            if (value.StartsWith("upgrade:", StringComparison.OrdinalIgnoreCase)) value = value.Substring("upgrade:".Length);
+            value = value.Replace('_', ' ').Replace('-', ' ');
+            while (value.IndexOf("  ", StringComparison.Ordinal) >= 0) value = value.Replace("  ", " ");
+            return value.ToLowerInvariant();
         }
 
 
@@ -1172,6 +1221,29 @@ namespace PlanarWar.Client.UI.Screens.City
                 || value.Equals("running", StringComparison.OrdinalIgnoreCase);
         }
 
+        private static bool HasBuildingTimingAnchor(BuildingSnapshot building)
+        {
+            return building?.StartedAtUtc.HasValue == true || building?.FinishesAtUtc.HasValue == true;
+        }
+
+        private static bool IsConstructingStatus(string status)
+        {
+            var value = (status ?? string.Empty).Trim();
+            return value.Equals("build", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("building", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("construct", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("constructing", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("construction", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("in_progress", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsUpgradingStatus(string status)
+        {
+            var value = (status ?? string.Empty).Trim();
+            return value.Equals("upgrade", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("upgrading", StringComparison.OrdinalIgnoreCase);
+        }
+
         private static bool IsReadyStatus(string status)
         {
             var value = (status ?? string.Empty).Trim();
@@ -1201,10 +1273,21 @@ namespace PlanarWar.Client.UI.Screens.City
             return name + suffix;
         }
 
+        private static string BuildBuildingStatusButtonText(BuildingSnapshot building, bool isBlackMarket, DateTime nowUtc)
+        {
+            if (IsBuildingReady(building, nowUtc)) return "Ready";
+            if (IsUpgradingStatus(building?.Status)) return "Upgrading";
+            if (IsConstructingStatus(building?.Status) && HasBuildingTimingAnchor(building)) return isBlackMarket ? "Opening" : "Building";
+            if (HasBuildingTimingAnchor(building)) return isBlackMarket ? "Front timer" : "Build timer";
+            if (IsActiveStatus(building?.Status)) return isBlackMarket ? "Front live" : "Built";
+            return "Visible";
+        }
+
         private static string BuildBuildingLore(BuildingSnapshot building, DateTime nowUtc)
         {
             var parts = new List<string>();
-            if (!string.IsNullOrWhiteSpace(building?.Status)) parts.Add(HumanizeKey(building.Status));
+            var statusLabel = BuildBuildingLifecycleLabel(building, nowUtc);
+            if (!string.IsNullOrWhiteSpace(statusLabel)) parts.Add(statusLabel);
             if (building?.FinishesAtUtc.HasValue == true) parts.Add(FormatRemaining(building.FinishesAtUtc.Value - nowUtc));
             if (building?.ProductionPerTick != null)
             {
@@ -1212,6 +1295,17 @@ namespace PlanarWar.Client.UI.Screens.City
                 if (!production.StartsWith("No production", StringComparison.OrdinalIgnoreCase)) parts.Add(production);
             }
             return parts.Count > 0 ? string.Join(" • ", parts) : "Building card surfaced from summary payload.";
+        }
+
+        private static string BuildBuildingLifecycleLabel(BuildingSnapshot building, DateTime nowUtc)
+        {
+            if (building == null) return string.Empty;
+            if (IsBuildingReady(building, nowUtc)) return "Ready";
+            if (IsUpgradingStatus(building.Status)) return "Upgrading";
+            if (IsConstructingStatus(building.Status) && HasBuildingTimingAnchor(building)) return "Building";
+            if (HasBuildingTimingAnchor(building)) return "Timed";
+            if (IsActiveStatus(building.Status)) return "Operational";
+            return HumanizeKey(building.Status);
         }
 
         private static string BuildBuildingNote(BuildingSnapshot building, bool isBlackMarket, DateTime nowUtc)

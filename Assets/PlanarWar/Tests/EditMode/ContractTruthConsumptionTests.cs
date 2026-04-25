@@ -293,6 +293,91 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(visible[0].Id, Is.EqualTo("hush_routes_1"));
         }
 
+
+        [Test]
+        public void Mapper_promotes_singular_active_build_into_building_snapshot()
+        {
+            const string payload = @"{
+                ""hasCity"": true,
+                ""city"": { ""name"": ""City Tester"", ""settlementLane"": ""city"", ""settlementLaneProfile"": { ""label"": ""City"" } },
+                ""activeBuild"": {
+                    ""id"": ""build_123"",
+                    ""action"": ""construct"",
+                    ""kind"": ""housing"",
+                    ""name"": ""Charter Ward 1"",
+                    ""buildingId"": ""bld_123"",
+                    ""targetLevel"": 1,
+                    ""startedAt"": ""2026-04-25T15:00:00Z"",
+                    ""finishesAt"": ""2026-04-25T15:05:00Z""
+                }
+            }";
+
+            var summary = ShellSummarySnapshotMapper.Map(payload);
+
+            Assert.That(summary.Buildings, Has.Count.EqualTo(1));
+            Assert.That(summary.Buildings[0].Id, Is.EqualTo("build_123"));
+            Assert.That(summary.Buildings[0].BuildingId, Is.EqualTo("bld_123"));
+            Assert.That(summary.Buildings[0].Name, Is.EqualTo("Charter Ward 1"));
+            Assert.That(summary.Buildings[0].Type, Is.EqualTo("housing"));
+            Assert.That(summary.Buildings[0].Status, Is.EqualTo("construct"));
+            Assert.That(summary.Buildings[0].Level, Is.EqualTo(1));
+            Assert.That(summary.Buildings[0].FinishesAtUtc, Is.EqualTo(new DateTime(2026, 4, 25, 15, 5, 0, DateTimeKind.Utc)));
+        }
+
+        [Test]
+        public void Development_build_lane_dedupes_timer_that_matches_active_building_project()
+        {
+            var selector = typeof(CityScreenController).GetMethod("SelectBuildTimers", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(selector, Is.Not.Null);
+
+            var summary = new ShellSummarySnapshot
+            {
+                HasCity = true,
+                City = new CitySummarySnapshot
+                {
+                    Name = "City Tester",
+                    SettlementLane = "city",
+                    SettlementLaneLabel = "City"
+                },
+                Buildings = new List<BuildingSnapshot>
+                {
+                    new BuildingSnapshot
+                    {
+                        Id = "build_123",
+                        BuildingId = "bld_123",
+                        Name = "Charter Ward 1",
+                        Lane = "city",
+                        Status = "construct",
+                        StartedAtUtc = DateTime.UtcNow.AddMinutes(-1),
+                        FinishesAtUtc = DateTime.UtcNow.AddMinutes(4)
+                    }
+                },
+                CityTimers = new List<CityTimerEntrySnapshot>
+                {
+                    new CityTimerEntrySnapshot
+                    {
+                        Id = "build_123",
+                        Category = "build",
+                        Label = "Construct Charter Ward 1",
+                        Status = "active",
+                        FinishesAtUtc = DateTime.UtcNow.AddMinutes(4)
+                    },
+                    new CityTimerEntrySnapshot
+                    {
+                        Id = "expansion_1",
+                        Category = "expansion",
+                        Label = "Expand to tier 2",
+                        Status = "active",
+                        FinishesAtUtc = DateTime.UtcNow.AddMinutes(8)
+                    }
+                }
+            };
+
+            var cityTimers = (List<CityTimerEntrySnapshot>)selector.Invoke(null, new object[] { summary, false });
+
+            Assert.That(cityTimers, Is.Empty);
+        }
+
         [Test]
         public void Development_desk_note_suppresses_stale_research_started_status_when_canonical_research_is_active()
         {
@@ -365,6 +450,55 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(note, Does.Contain("Shadow books:"));
             Assert.That(note, Does.Not.Contain("Research started: caravan_trails_1"));
         }
+
+        [Test]
+        public void Development_building_card_labels_standing_buildings_as_built_not_active_action()
+        {
+            var builder = typeof(CityScreenController).GetMethod("BuildBuildingStatusButtonText", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(builder, Is.Not.Null);
+
+            var building = new BuildingSnapshot
+            {
+                Id = "low_quarter",
+                Name = "Low Quarter",
+                Lane = "city",
+                Status = "active",
+                Level = 1
+            };
+
+            var label = (string)builder.Invoke(null, new object[] { building, false, DateTime.UtcNow });
+
+            Assert.That(label, Is.EqualTo("Built"));
+        }
+
+        [Test]
+        public void Development_building_lane_copy_distinguishes_standing_cards_from_timed_builds()
+        {
+            var builder = typeof(CityScreenController).GetMethod("DescribeBuildingLane", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(builder, Is.Not.Null);
+
+            var summary = new ShellSummarySnapshot
+            {
+                HasCity = true,
+                City = new CitySummarySnapshot
+                {
+                    Name = "City Tester",
+                    SettlementLane = "city",
+                    SettlementLaneLabel = "City"
+                },
+                Buildings = new List<BuildingSnapshot>
+                {
+                    new BuildingSnapshot { Id = "low_quarter", Name = "Low Quarter", Lane = "city", Status = "active" },
+                    new BuildingSnapshot { Id = "farmlands", Name = "Outer Farmlands", Lane = "city", Status = "active" }
+                }
+            };
+
+            var text = (string)builder.Invoke(null, new object[] { summary, false });
+
+            Assert.That(text, Does.Contain("2 standing"));
+            Assert.That(text, Does.Not.Contain("2 active"));
+        }
+
 
     }
 }
