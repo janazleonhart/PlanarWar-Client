@@ -122,6 +122,10 @@ namespace PlanarWar.Client.UI.Screens.City
         {
             var recipeCount = summaryState?.WorkshopRecipes?.Count ?? 0;
             var isBlackMarket = IsBlackMarketLane(s);
+            if (growthLaneButton != null)
+            {
+                growthLaneButton.text = isBlackMarket ? "Fronts" : "Buildings";
+            }
 
             if (!s.HasCity)
             {
@@ -132,7 +136,7 @@ namespace PlanarWar.Client.UI.Screens.City
             headline.text = isBlackMarket ? ShadowLaneText.DescribeDevelopmentHeadline(s.City) : $"{s.City.Name} • Development";
             copy.text = isBlackMarket
                 ? ShadowLaneText.DescribeDevelopmentCopy(s.City)
-                : $"Tier {(s.City.Tier ?? 0)} {HumanizeLane(s.City.SettlementLaneLabel)} desk. Review research, queues, and growth posture without leaving the city shell.";
+                : $"Tier {(s.City.Tier ?? 0)} {HumanizeLane(s.City.SettlementLaneLabel)} desk. Review research, queues, buildings, and timing without leaving the city shell.";
 
             card1Title.text = isBlackMarket ? ShadowLaneText.BuildResearchLaneTitle() : "Research lane";
             card1Value.text = s.ActiveResearch != null
@@ -146,15 +150,15 @@ namespace PlanarWar.Client.UI.Screens.City
                         : "No active research or tech options surfaced.";
             card2Title.text = isBlackMarket ? ShadowLaneText.BuildWorkshopLaneTitle() : "Workshop lane";
             card2Value.text = DescribeWorkshopLane(s, recipeCount, isBlackMarket);
-            card3Title.text = isBlackMarket ? ShadowLaneText.BuildGrowthLaneTitle() : "Growth lane";
-            card3Value.text = DescribeGrowthLane(s, isBlackMarket);
+            card3Title.text = isBlackMarket ? "Front lane" : "Building lane";
+            card3Value.text = DescribeBuildingLane(s, isBlackMarket);
 
             researchFocusValue.text = s.ActiveResearch?.Name ?? (isBlackMarket ? "No active shadow-book focus." : "No active research focus.");
             nextTechValue.text = isBlackMarket
                 ? ShadowLaneText.BuildNextTechValue(s.AvailableTechs)
                 : s.AvailableTechs.FirstOrDefault()?.Name ?? "No available tech surfaced.";
             workshopValue.text = DescribeWorkshopLane(s, recipeCount, isBlackMarket);
-            growthValue.text = DescribeGrowthLane(s, isBlackMarket);
+            growthValue.text = DescribeBuildingLane(s, isBlackMarket);
             supportValue.text = DescribeSupport(s, isBlackMarket);
             noteValue.text = BuildDeskNote(s, summaryState, isBlackMarket);
             if (startSuggestedResearchButton != null)
@@ -182,17 +186,17 @@ namespace PlanarWar.Client.UI.Screens.City
             card1Value.text = "Found a city to unlock tech posture.";
             card2Title.text = "Workshop lane";
             card2Value.text = "Found a city to unlock workshop queues.";
-            card3Title.text = "Growth lane";
-            card3Value.text = "Found a city to unlock cadence and support posture.";
+            card3Title.text = "Building lane";
+            card3Value.text = "Found a city to unlock building and cadence posture.";
             researchFocusValue.text = "No research lane loaded.";
             nextTechValue.text = "No suggested unlock surfaced.";
             workshopValue.text = "No workshop queue visible.";
-            growthValue.text = "Growth cadence unavailable.";
+            growthValue.text = "Building cadence unavailable.";
             supportValue.text = "Support posture unavailable.";
             noteValue.text = "Development Desk v1 stays honest: no city snapshot means no desk truth.";
             researchCardsCopyValue.text = "No research cards without a city payload.";
             workshopCardsCopyValue.text = "No workshop cards without a city payload.";
-            growthCardsCopyValue.text = "No growth cards without a city payload.";
+            growthCardsCopyValue.text = "No building cards without a city payload.";
             foreach (var card in researchCards.Concat(workshopCards).Concat(growthCards))
             {
                 card.RenderHidden();
@@ -215,11 +219,9 @@ namespace PlanarWar.Client.UI.Screens.City
                 cards.Add(new CardView(
                     family: isBlackMarket ? "Live front" : "Active research",
                     title: s.ActiveResearch.Name,
-                    lore: isBlackMarket
-                        ? $"Shadow-book front • Progress {FormatProgress(s.ActiveResearch.Progress, s.ActiveResearch.Cost)}"
-                        : $"Progress {FormatProgress(s.ActiveResearch.Progress, s.ActiveResearch.Cost)}",
-                    note: s.ActiveResearch.StartedAtUtc.HasValue ? (isBlackMarket ? $"Front opened {s.ActiveResearch.StartedAtUtc:HH:mm:ss} UTC" : $"Started {s.ActiveResearch.StartedAtUtc:HH:mm:ss} UTC") : isBlackMarket ? "Live shadow-book front from summary payload." : "Live research queue entry from summary payload.",
-                    buttonText: "Live",
+                    lore: BuildResearchLore(s.ActiveResearch, isBlackMarket, DateTime.UtcNow),
+                    note: BuildResearchNote(s.ActiveResearch, isBlackMarket, DateTime.UtcNow),
+                    buttonText: s.ActiveResearch.FinishesAtUtc.HasValue && s.ActiveResearch.FinishesAtUtc.Value <= DateTime.UtcNow ? "Ready" : "Live",
                     buttonEnabled: false));
             }
 
@@ -342,9 +344,9 @@ namespace PlanarWar.Client.UI.Screens.City
         private void RenderGrowthLane(ShellSummarySnapshot s)
         {
             var isBlackMarket = IsBlackMarketLane(s);
-            laneTitle.text = activeLane == DevelopmentLane.Growth ? (isBlackMarket ? ShadowLaneText.BuildGrowthLaneTitle() : "Growth lane") : laneTitle.text;
+            laneTitle.text = activeLane == DevelopmentLane.Growth ? (isBlackMarket ? "Front lane" : "Building lane") : laneTitle.text;
             laneCopy.text = activeLane == DevelopmentLane.Growth
-                ? (isBlackMarket ? ShadowLaneText.BuildGrowthLaneCopy() : "Growth keeps cadence, staffing, and support posture visible so you can read the city’s pacing without drilling into mutations.")
+                ? (isBlackMarket ? "Front lane keeps operator-front cards, build clocks, cadence, and support posture visible without inventing fake backroom progress." : "Building lane keeps real building cards, construction clocks, cadence, and support posture visible without inventing a fake queue.")
                 : laneCopy.text;
 
             var nowUtc = DateTime.UtcNow;
@@ -354,6 +356,9 @@ namespace PlanarWar.Client.UI.Screens.City
                 title: isBlackMarket ? ShadowLaneText.BuildProductionTitle() : "Per-tick output",
                 lore: FormatProduction(s.ProductionPerTick, s.ResourceLabels),
                 note: isBlackMarket ? ShadowLaneText.BuildProductionNote(s.ResourceTickTiming, nowUtc) : s.ResourceTickTiming.NextTickAtUtc.HasValue ? $"Next resource tick in {FormatRemaining(s.ResourceTickTiming.NextTickAtUtc.Value - nowUtc)}" : "Resource cadence is visible without a live anchor."));
+
+            var buildingCards = BuildBuildingCards(s, isBlackMarket, nowUtc, 2);
+            cards.AddRange(buildingCards);
 
             var heroRecruitment = s.HeroRecruitment;
             var recruitTimer = s.CityTimers.FirstOrDefault(t => string.Equals(t.Category, "operator_recruit", StringComparison.OrdinalIgnoreCase));
@@ -444,7 +449,7 @@ namespace PlanarWar.Client.UI.Screens.City
             }
 
             cards.AddRange(s.CityTimers
-                .Where(t => !string.Equals(t.Category, "resource_tick", StringComparison.OrdinalIgnoreCase) && !string.Equals(t.Category, "workshop_job", StringComparison.OrdinalIgnoreCase) && !string.Equals(t.Category, "operator_recruit", StringComparison.OrdinalIgnoreCase))
+                .Where(t => !string.Equals(t.Category, "resource_tick", StringComparison.OrdinalIgnoreCase) && !string.Equals(t.Category, "workshop_job", StringComparison.OrdinalIgnoreCase) && !string.Equals(t.Category, "operator_recruit", StringComparison.OrdinalIgnoreCase) && !IsBuildTimer(t))
                 .Take(Math.Max(0, 3 - cards.Count))
                 .Select(timer => new CardView(
                     family: isBlackMarket ? HumanizeBlackMarketTimerCategory(timer.Category) : HumanizeCategory(timer.Category),
@@ -461,7 +466,10 @@ namespace PlanarWar.Client.UI.Screens.City
                     note: isBlackMarket ? ShadowLaneText.BuildSupportCardNote(s) : s.OpeningOperations.Count > 0 ? $"Opening operations visible: {string.Join(" • ", s.OpeningOperations.Take(2).Select(o => o.Title))}" : "No extra opening operation pressure is surfaced right now."));
             }
 
-            growthCardsCopyValue.text = isBlackMarket
+            var buildingCardsCopy = BuildBuildingCardsCopy(s, isBlackMarket, nowUtc);
+            growthCardsCopyValue.text = buildingCards.Count > 0
+                ? buildingCardsCopy
+                : isBlackMarket
                 ? ShadowLaneText.DescribeGrowthCardsCopy(heroRecruitment, recruitTimer, recruitOp, s.CityTimers)
                 : heroRecruitment != null && string.Equals(heroRecruitment.Status, "candidates_ready", StringComparison.OrdinalIgnoreCase)
                     ? $"Candidate review is live with {heroRecruitment.Candidates.Count} hero option(s) ready for selection."
@@ -805,20 +813,199 @@ namespace PlanarWar.Client.UI.Screens.City
             return workshopTimers > 0 ? $"{workshopTimers} workshop timer(s) visible." : "No workshop queue visible.";
         }
 
-        private static string DescribeGrowthLane(ShellSummarySnapshot s, bool isBlackMarket)
+        private static string DescribeBuildingLane(ShellSummarySnapshot s, bool isBlackMarket)
         {
-            if (isBlackMarket)
+            var nowUtc = DateTime.UtcNow;
+            var buildings = SelectLaneBuildings(s, isBlackMarket);
+            var buildTimers = SelectBuildTimers(s, isBlackMarket);
+            var ready = buildings.Count(b => IsBuildingReady(b, nowUtc)) + buildTimers.Count(t => t.FinishesAtUtc.HasValue && t.FinishesAtUtc.Value <= nowUtc);
+            var active = buildings.Count(b => IsActiveStatus(b.Status) && !IsBuildingReady(b, nowUtc)) + buildTimers.Count(t => !t.FinishesAtUtc.HasValue || t.FinishesAtUtc.Value > nowUtc);
+
+            if (buildings.Count > 0 || buildTimers.Count > 0)
             {
-                return ShadowLaneText.DescribeGrowth(s.ResourceTickTiming, s.CityTimers);
+                var label = isBlackMarket ? "front" : "building";
+                return $"{buildings.Count} {label} card(s) • {active} active • {ready} ready";
             }
 
-            var liveTimers = s.CityTimers.Count;
+            var liveTimers = s.CityTimers?.Count ?? 0;
             if (s.ResourceTickTiming.NextTickAtUtc.HasValue)
             {
-                return $"Next tick in {FormatRemaining(s.ResourceTickTiming.NextTickAtUtc.Value - DateTime.UtcNow)} • {liveTimers} live timer(s).";
+                return $"Next tick in {FormatRemaining(s.ResourceTickTiming.NextTickAtUtc.Value - nowUtc)} • no {(isBlackMarket ? "front" : "building")} payload yet.";
             }
 
-            return liveTimers > 0 ? $"{liveTimers} live timer(s) visible; cadence is readable." : "Growth cadence unavailable.";
+            return liveTimers > 0 ? $"{liveTimers} live timer(s) visible; no {(isBlackMarket ? "front" : "building")} cards surfaced." : $"No {(isBlackMarket ? "front" : "building")} payload surfaced.";
+        }
+
+        private static List<CardView> BuildBuildingCards(ShellSummarySnapshot s, bool isBlackMarket, DateTime nowUtc, int maxCards)
+        {
+            var cards = new List<CardView>();
+            foreach (var building in SelectLaneBuildings(s, isBlackMarket).Take(Math.Max(0, maxCards)))
+            {
+                cards.Add(new CardView(
+                    family: isBlackMarket ? "Operator front" : "Building",
+                    title: FormatBuildingTitle(building, isBlackMarket),
+                    lore: BuildBuildingLore(building, nowUtc),
+                    note: BuildBuildingNote(building, isBlackMarket, nowUtc),
+                    buttonText: IsBuildingReady(building, nowUtc) ? "Ready" : IsActiveStatus(building.Status) ? "Active" : "Visible",
+                    buttonEnabled: false));
+            }
+
+            if (cards.Count < maxCards)
+            {
+                foreach (var timer in SelectBuildTimers(s, isBlackMarket).Take(Math.Max(0, maxCards - cards.Count)))
+                {
+                    cards.Add(new CardView(
+                        family: isBlackMarket ? "Front timer" : "Build timer",
+                        title: isBlackMarket ? NormalizeBlackMarketTimerLabel(timer.Label, timer.Category) : FirstNonBlank(timer.Label, HumanizeCategory(timer.Category)),
+                        lore: FormatTimerState(timer.Status, timer.FinishesAtUtc, nowUtc),
+                        note: FirstNonBlank(timer.Detail, isBlackMarket ? "Operator-front timing is visible from cityTimers." : "Construction timing is visible from cityTimers."),
+                        buttonText: timer.FinishesAtUtc.HasValue && timer.FinishesAtUtc.Value <= nowUtc ? "Ready" : "Timed",
+                        buttonEnabled: false));
+                }
+            }
+
+            return cards;
+        }
+
+        private static string BuildBuildingCardsCopy(ShellSummarySnapshot s, bool isBlackMarket, DateTime nowUtc)
+        {
+            var buildings = SelectLaneBuildings(s, isBlackMarket);
+            var timers = SelectBuildTimers(s, isBlackMarket);
+            var ready = buildings.Count(b => IsBuildingReady(b, nowUtc)) + timers.Count(t => t.FinishesAtUtc.HasValue && t.FinishesAtUtc.Value <= nowUtc);
+            var active = buildings.Count(b => IsActiveStatus(b.Status) && !IsBuildingReady(b, nowUtc)) + timers.Count(t => !t.FinishesAtUtc.HasValue || t.FinishesAtUtc.Value > nowUtc);
+            var label = isBlackMarket ? "operator-front" : "building";
+
+            if (buildings.Count == 0 && timers.Count == 0)
+            {
+                return $"No {label} card or construction timer is visible in the current summary payload.";
+            }
+
+            return $"Showing {buildings.Count} {label} card(s), {timers.Count} build timer(s), {active} active, and {ready} ready/finished state(s).";
+        }
+
+        private static List<BuildingSnapshot> SelectLaneBuildings(ShellSummarySnapshot s, bool isBlackMarket)
+        {
+            return (s?.Buildings ?? new List<BuildingSnapshot>())
+                .Where(b => b != null && BuildingBelongsToLane(b, isBlackMarket))
+                .ToList();
+        }
+
+        private static List<CityTimerEntrySnapshot> SelectBuildTimers(ShellSummarySnapshot s, bool isBlackMarket)
+        {
+            return (s?.CityTimers ?? new List<CityTimerEntrySnapshot>())
+                .Where(t => t != null && IsBuildTimer(t) && (!isBlackMarket || ContainsShadowLane(t.Category) || ContainsShadowLane(t.Label) || ContainsShadowLane(t.Detail) || IsBlackMarketLane(s)))
+                .ToList();
+        }
+
+        private static bool BuildingBelongsToLane(BuildingSnapshot building, bool isBlackMarket)
+        {
+            var lane = FirstNonBlank(building.Lane, building.Type, building.BuildingId, building.Name);
+            var isShadow = ContainsShadowLane(lane) || ContainsShadowLane(building.Detail) || ContainsShadowLane(building.EffectSummary);
+            return isBlackMarket ? isShadow || string.IsNullOrWhiteSpace(building.Lane) : !isShadow;
+        }
+
+        private static bool IsBuildTimer(CityTimerEntrySnapshot timer)
+        {
+            var category = timer?.Category ?? string.Empty;
+            var label = timer?.Label ?? string.Empty;
+            var detail = timer?.Detail ?? string.Empty;
+            return category.IndexOf("build", StringComparison.OrdinalIgnoreCase) >= 0
+                || category.IndexOf("construction", StringComparison.OrdinalIgnoreCase) >= 0
+                || category.IndexOf("upgrade", StringComparison.OrdinalIgnoreCase) >= 0
+                || label.IndexOf("build", StringComparison.OrdinalIgnoreCase) >= 0
+                || label.IndexOf("construction", StringComparison.OrdinalIgnoreCase) >= 0
+                || detail.IndexOf("construction", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool IsBuildingReady(BuildingSnapshot building, DateTime nowUtc)
+        {
+            return IsReadyStatus(building?.Status) || (building?.FinishesAtUtc.HasValue == true && building.FinishesAtUtc.Value <= nowUtc);
+        }
+
+        private static bool IsActiveStatus(string status)
+        {
+            var value = (status ?? string.Empty).Trim();
+            return value.Length == 0
+                || value.Equals("active", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("building", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("constructing", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("upgrading", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("in_progress", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("running", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsReadyStatus(string status)
+        {
+            var value = (status ?? string.Empty).Trim();
+            return value.Equals("ready", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("complete", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("completed", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("finished", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("done", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool ContainsShadowLane(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return false;
+            var value = raw.Trim();
+            return value.IndexOf("black_market", StringComparison.OrdinalIgnoreCase) >= 0
+                || value.IndexOf("black market", StringComparison.OrdinalIgnoreCase) >= 0
+                || value.IndexOf("black-market", StringComparison.OrdinalIgnoreCase) >= 0
+                || value.IndexOf("shadow", StringComparison.OrdinalIgnoreCase) >= 0
+                || value.IndexOf("front", StringComparison.OrdinalIgnoreCase) >= 0
+                || value.IndexOf("operator", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static string FormatBuildingTitle(BuildingSnapshot building, bool isBlackMarket)
+        {
+            var name = FirstNonBlank(building?.Name, building?.BuildingId, isBlackMarket ? "Operator front" : "Building");
+            var suffix = building?.Level.HasValue == true ? $" Lv {building.Level.Value}" : string.Empty;
+            return name + suffix;
+        }
+
+        private static string BuildBuildingLore(BuildingSnapshot building, DateTime nowUtc)
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(building?.Status)) parts.Add(HumanizeKey(building.Status));
+            if (building?.FinishesAtUtc.HasValue == true) parts.Add(FormatRemaining(building.FinishesAtUtc.Value - nowUtc));
+            if (building?.ProductionPerTick != null)
+            {
+                var production = FormatProduction(building.ProductionPerTick, new ResourcePresentationSnapshot());
+                if (!production.StartsWith("No production", StringComparison.OrdinalIgnoreCase)) parts.Add(production);
+            }
+            return parts.Count > 0 ? string.Join(" • ", parts) : "Building card surfaced from summary payload.";
+        }
+
+        private static string BuildBuildingNote(BuildingSnapshot building, bool isBlackMarket, DateTime nowUtc)
+        {
+            if (IsBuildingReady(building, nowUtc)) return isBlackMarket ? "Front timer elapsed; refresh or claim flow can surface next." : "Build timer elapsed; refresh or claim flow can surface next.";
+            if (!string.IsNullOrWhiteSpace(building?.EffectSummary)) return building.EffectSummary;
+            if (!string.IsNullOrWhiteSpace(building?.Detail)) return building.Detail;
+            if (building?.StartedAtUtc.HasValue == true) return isBlackMarket ? $"Front opened {building.StartedAtUtc.Value:HH:mm:ss} UTC." : $"Construction started {building.StartedAtUtc.Value:HH:mm:ss} UTC.";
+            return isBlackMarket ? "Operator-front truth is visible without fake covert simulation." : "Building truth is visible without fake construction simulation.";
+        }
+
+        private static string BuildResearchLore(ResearchSnapshot research, bool isBlackMarket, DateTime nowUtc)
+        {
+            var prefix = isBlackMarket ? "Shadow-book front" : "Research";
+            var parts = new List<string> { $"{prefix} • {FormatProgress(research?.Progress, research?.Cost)}" };
+            if (research?.FinishesAtUtc.HasValue == true) parts.Add(FormatRemaining(research.FinishesAtUtc.Value - nowUtc));
+            if (!string.IsNullOrWhiteSpace(research?.Status)) parts.Add(HumanizeKey(research.Status));
+            return string.Join(" • ", parts);
+        }
+
+        private static string BuildResearchNote(ResearchSnapshot research, bool isBlackMarket, DateTime nowUtc)
+        {
+            if (research?.FinishesAtUtc.HasValue == true && research.FinishesAtUtc.Value <= nowUtc) return isBlackMarket ? "Research timer elapsed locally; refresh to load the resolved shadow-book state." : "Research timer elapsed locally; refresh to load the resolved tech state.";
+            if (research?.FinishesAtUtc.HasValue == true) return isBlackMarket ? $"Front resolves in {FormatRemaining(research.FinishesAtUtc.Value - nowUtc)}." : $"Research completes in {FormatRemaining(research.FinishesAtUtc.Value - nowUtc)}.";
+            if (research?.StartedAtUtc.HasValue == true) return isBlackMarket ? $"Front opened {research.StartedAtUtc.Value:HH:mm:ss} UTC." : $"Started {research.StartedAtUtc.Value:HH:mm:ss} UTC.";
+            return isBlackMarket ? "Live shadow-book front from summary payload." : "Live research queue entry from summary payload.";
+        }
+
+        private static string FormatTimerState(string status, DateTime? finishesAtUtc, DateTime nowUtc)
+        {
+            var state = FirstNonBlank(status, "active");
+            return finishesAtUtc.HasValue ? $"{HumanizeKey(state)} • {FormatRemaining(finishesAtUtc.Value - nowUtc)}" : HumanizeKey(state);
         }
 
         private static string DescribeSupport(ShellSummarySnapshot s, bool isBlackMarket)

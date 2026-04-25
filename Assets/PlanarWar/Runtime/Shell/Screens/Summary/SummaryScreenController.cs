@@ -103,13 +103,13 @@ namespace PlanarWar.Client.UI.Screens.Summary
             statusHeadline.text = s.HasCity ? $"{s.City.Name} • {s.City.SettlementLaneLabel}" : (s.FounderMode ? "Founder mode active." : "No settlement loaded.");
             resources.text = FormatResource(s.Resources, s.ResourceLabels, "No resources loaded.");
             production.text = FormatResource(s.ProductionPerTick, s.ResourceLabels, s.HasCity ? "No production snapshot." : "Found a city to unlock production.", "/tick");
-            research.text = s.ActiveResearch == null ? "No active research." : $"{s.ActiveResearch.Name} • {FormatProgress(s.ActiveResearch.Progress, s.ActiveResearch.Cost)}";
+            research.text = FormatResearchSummary(s.ActiveResearch, nowUtc);
             warnings.text = s.ThreatWarnings.Count == 0 ? "No active threat warnings." : s.ThreatWarnings[0].Headline;
             readyOps.text = s.OpeningOperations.Count == 0 ? "No opening operations surfaced." : BuildReadyOpsSummary(s.OpeningOperations);
             heroes.text = s.Heroes.Count == 0 ? (s.HasCity ? "No officer corps visible." : "Found a city to unlock officers.") : $"{s.Heroes.Count(h => h.Status == "idle")}/{s.Heroes.Count} idle • {s.Heroes.Count(h => h.AttachmentCount > 0)} geared";
             armies.text = s.Armies.Count == 0 ? (s.HasCity ? "No formations visible." : "Found a city to unlock formations.") : $"{s.Armies.Count(a => (a.Readiness ?? 0) >= 70)}/{s.Armies.Count} ready";
-            researchTimer.text = s.ActiveResearch?.StartedAtUtc == null ? "No active research timer." : $"Running {FormatRemaining(nowUtc - s.ActiveResearch.StartedAtUtc.Value)}";
-            workshopTimer.text = FormatWorkshop(s.WorkshopJobs);
+            researchTimer.text = FormatResearchTimer(s.ActiveResearch, nowUtc);
+            workshopTimer.text = FormatWorkshopAndBuild(s, nowUtc);
             missionTimer.text = FormatMission(s.ActiveMissions);
             resourceTick.text = FormatTick(s.ResourceTickTiming);
             timerDiagNow.text = $"Live UI clock {nowUtc:HH:mm:ss} UTC";
@@ -1328,6 +1328,89 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private static string Pair(ResourcePresentationSnapshot labels, string key, double? value, string suffix) => value.HasValue ? $"{ResourcePresentationText.Label(labels, key)} {value.Value:0.#}{suffix}" : null;
         private static string FormatProgress(double? p, double? c) => c.GetValueOrDefault() > 0 ? $"{p.GetValueOrDefault():0.#}/{c.Value:0.#}" : $"{p.GetValueOrDefault():0.#}";
         private static string FormatRemaining(TimeSpan span) => span <= TimeSpan.Zero ? "now" : span.ToString(span.TotalHours >= 1 ? @"hh\:mm\:ss" : @"mm\:ss");
+
+        private static string FormatResearchSummary(ResearchSnapshot research, DateTime nowUtc)
+        {
+            if (research == null) return "No active research.";
+            var timer = research.FinishesAtUtc.HasValue ? $" • {FormatRemaining(research.FinishesAtUtc.Value - nowUtc)}" : string.Empty;
+            var status = string.IsNullOrWhiteSpace(research.Status) ? string.Empty : $" • {HumanizeWords(research.Status, "Active")}";
+            return $"{research.Name} • {FormatProgress(research.Progress, research.Cost)}{timer}{status}";
+        }
+
+        private static string FormatResearchTimer(ResearchSnapshot research, DateTime nowUtc)
+        {
+            if (research == null) return "No active research timer.";
+            if (research.FinishesAtUtc.HasValue)
+            {
+                return research.FinishesAtUtc.Value <= nowUtc
+                    ? $"{research.Name} • ready / refresh for result"
+                    : $"{research.Name} • completes in {FormatRemaining(research.FinishesAtUtc.Value - nowUtc)}";
+            }
+
+            return research.StartedAtUtc.HasValue
+                ? $"{research.Name} • running {FormatRemaining(nowUtc - research.StartedAtUtc.Value)}"
+                : $"{research.Name} • active, ETA unavailable";
+        }
+
+        private static string FormatWorkshopAndBuild(ShellSummarySnapshot s, DateTime nowUtc)
+        {
+            var buildReady = (s.Buildings ?? new List<BuildingSnapshot>()).FirstOrDefault(b => b != null && (IsReadyStatus(b.Status) || (b.FinishesAtUtc.HasValue && b.FinishesAtUtc.Value <= nowUtc)));
+            if (buildReady != null)
+            {
+                return $"{FirstNonBlank(buildReady.Name, buildReady.BuildingId, "Building")} • ready/finished";
+            }
+
+            var buildActive = (s.Buildings ?? new List<BuildingSnapshot>()).FirstOrDefault(b => b != null && IsActiveStatus(b.Status) && b.FinishesAtUtc.HasValue);
+            if (buildActive != null)
+            {
+                return $"{FirstNonBlank(buildActive.Name, buildActive.BuildingId, "Building")} • {FormatRemaining(buildActive.FinishesAtUtc.Value - nowUtc)}";
+            }
+
+            var buildTimer = (s.CityTimers ?? new List<CityTimerEntrySnapshot>()).FirstOrDefault(IsBuildTimer);
+            if (buildTimer != null)
+            {
+                return buildTimer.FinishesAtUtc.HasValue
+                    ? $"{FirstNonBlank(buildTimer.Label, HumanizeWords(buildTimer.Category, "Build timer"))} • {FormatRemaining(buildTimer.FinishesAtUtc.Value - nowUtc)}"
+                    : $"{FirstNonBlank(buildTimer.Label, HumanizeWords(buildTimer.Category, "Build timer"))} • {FirstNonBlank(buildTimer.Status, "timed")}";
+            }
+
+            return FormatWorkshop(s.WorkshopJobs);
+        }
+
+        private static bool IsBuildTimer(CityTimerEntrySnapshot timer)
+        {
+            var category = timer?.Category ?? string.Empty;
+            var label = timer?.Label ?? string.Empty;
+            var detail = timer?.Detail ?? string.Empty;
+            return category.IndexOf("build", StringComparison.OrdinalIgnoreCase) >= 0
+                || category.IndexOf("construction", StringComparison.OrdinalIgnoreCase) >= 0
+                || category.IndexOf("upgrade", StringComparison.OrdinalIgnoreCase) >= 0
+                || label.IndexOf("build", StringComparison.OrdinalIgnoreCase) >= 0
+                || label.IndexOf("construction", StringComparison.OrdinalIgnoreCase) >= 0
+                || detail.IndexOf("construction", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool IsActiveStatus(string status)
+        {
+            var value = (status ?? string.Empty).Trim();
+            return value.Length == 0
+                || value.Equals("active", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("building", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("constructing", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("upgrading", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("in_progress", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("running", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsReadyStatus(string status)
+        {
+            var value = (status ?? string.Empty).Trim();
+            return value.Equals("ready", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("complete", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("completed", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("finished", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("done", StringComparison.OrdinalIgnoreCase);
+        }
 
         private static string FormatWorkshop(List<WorkshopJobSnapshot> jobs)
         {

@@ -61,6 +61,29 @@ namespace PlanarWar.Client.Core.Mapping
                 city?["settlement_opening_operations"],
                 city?["openingOperations"],
                 city?["opening_operations"]);
+            var buildingObjects = ObjectsFromArrays(
+                summary["buildings"],
+                summary["cityBuildings"],
+                summary["city_buildings"],
+                summary["buildingCards"],
+                summary["building_cards"],
+                summary["construction"],
+                summary["constructions"],
+                summary["blackMarketFronts"],
+                summary["black_market_fronts"],
+                summary["operatorFronts"],
+                summary["operator_fronts"],
+                city?["buildings"],
+                city?["cityBuildings"],
+                city?["city_buildings"],
+                city?["buildingCards"],
+                city?["building_cards"],
+                city?["construction"],
+                city?["constructions"],
+                city?["blackMarketFronts"],
+                city?["black_market_fronts"],
+                city?["operatorFronts"],
+                city?["operator_fronts"]);
 
             var mapped = new ShellSummarySnapshot
             {
@@ -74,11 +97,12 @@ namespace PlanarWar.Client.Core.Mapping
                     SettlementLaneLabel = city?["settlementLaneProfile"]?["label"]?.Read<string>() ?? city?["settlement_lane_profile"]?["label"]?.Read<string>() ?? city?["settlementLane"]?.Read<string>() ?? city?["settlement_lane"]?.Read<string>() ?? "-",
                     Tier = city?["tier"]?.Read<int?>()
                 },
+                Buildings = buildingObjects.Select(MapBuilding).Where(b => b != null).ToList(),
                 Resources = MapResource(summary["resources"] as JObject),
                 ResourceLabels = MapResourcePresentation(FirstObject(summary["resourceLabels"], summary["resource_labels"]), city?["settlementLane"]?.Read<string>() ?? city?["settlement_lane"]?.Read<string>()),
                 ProductionPerTick = MapResource(city?["production"] as JObject, true),
                 ResourceTickTiming = MapTimer(resourceTickTiming),
-                ActiveResearch = MapResearch(summary["activeResearch"] as JObject ?? summary["active_research"] as JObject),
+                ActiveResearch = MapResearch(summary["activeResearch"] as JObject ?? summary["active_research"] as JObject ?? summary["research"]?["active"] as JObject ?? summary["research"]?["activeResearch"] as JObject ?? summary["research"]?["active_research"] as JObject ?? city?["activeResearch"] as JObject ?? city?["active_research"] as JObject),
                 AvailableTechs = availableTechs?.OfType<JObject>().Select(MapTech).Where(t => t != null).ToList() ?? new List<TechOptionSnapshot>(),
                 CityTimers = cityTimers?.OfType<JObject>().Select(MapCityTimer).Where(t => t != null).ToList() ?? new List<CityTimerEntrySnapshot>(),
                 ThreatWarnings = FirstArray(summary["threatWarnings"], summary["threat_warnings"])?.OfType<JObject>().Select(MapThreatWarning).Where(w => w != null).ToList() ?? new List<ThreatWarningSnapshot>(),
@@ -194,6 +218,61 @@ namespace PlanarWar.Client.Core.Mapping
                 Completed = obj["completed"]?.Read<bool>() ?? false,
                 CollectedAtUtc = ParseUtc(obj["collectedAt"] ?? obj["collected_at"]),
                 FinishesAtUtc = ParseUtc(obj["finishesAt"] ?? obj["finishes_at"]),
+            };
+        }
+
+        private static BuildingSnapshot MapBuilding(JObject obj)
+        {
+            if (obj == null) return null;
+
+            var definition = obj["building"] as JObject ?? obj["definition"] as JObject ?? obj["template"] as JObject ?? obj["front"] as JObject;
+            var production = FirstObject(
+                obj["production"],
+                obj["productionPerTick"],
+                obj["production_per_tick"],
+                obj["effects"]?["production"],
+                definition?["production"],
+                definition?["productionPerTick"],
+                definition?["production_per_tick"]);
+            var id = FirstNonBlank(
+                obj["id"]?.Read<string>(),
+                obj["instanceId"]?.Read<string>(),
+                obj["instance_id"]?.Read<string>(),
+                obj["buildingId"]?.Read<string>(),
+                obj["building_id"]?.Read<string>(),
+                definition?["id"]?.Read<string>());
+            var buildingId = FirstNonBlank(
+                obj["buildingId"]?.Read<string>(),
+                obj["building_id"]?.Read<string>(),
+                obj["type"]?.Read<string>(),
+                obj["kind"]?.Read<string>(),
+                definition?["id"]?.Read<string>(),
+                definition?["type"]?.Read<string>(),
+                id);
+            var name = FirstNonBlank(
+                obj["name"]?.Read<string>(),
+                obj["label"]?.Read<string>(),
+                obj["title"]?.Read<string>(),
+                definition?["name"]?.Read<string>(),
+                definition?["label"]?.Read<string>(),
+                buildingId,
+                "Building");
+
+            return new BuildingSnapshot
+            {
+                Id = id,
+                BuildingId = buildingId,
+                Type = FirstNonBlank(obj["type"]?.Read<string>(), obj["kind"]?.Read<string>(), definition?["type"]?.Read<string>(), definition?["kind"]?.Read<string>(), buildingId),
+                Name = name,
+                Lane = FirstNonBlank(obj["lane"]?.Read<string>(), obj["settlementLane"]?.Read<string>(), obj["settlement_lane"]?.Read<string>(), definition?["lane"]?.Read<string>()),
+                Status = FirstNonBlank(obj["status"]?.Read<string>(), obj["state"]?.Read<string>(), obj["phase"]?.Read<string>(), "active"),
+                Level = obj["level"]?.Read<int?>() ?? obj["rank"]?.Read<int?>() ?? obj["tier"]?.Read<int?>(),
+                Slot = obj["slot"]?.Read<int?>() ?? obj["slotIndex"]?.Read<int?>() ?? obj["slot_index"]?.Read<int?>(),
+                StartedAtUtc = ParseUtc(obj["startedAt"] ?? obj["started_at"] ?? obj["constructionStartedAt"] ?? obj["construction_started_at"] ?? obj["upgradingStartedAt"] ?? obj["upgrading_started_at"]),
+                FinishesAtUtc = ParseUtc(obj["finishesAt"] ?? obj["finishes_at"] ?? obj["readyAt"] ?? obj["ready_at"] ?? obj["completedAt"] ?? obj["completed_at"] ?? obj["constructionFinishesAt"] ?? obj["construction_finishes_at"] ?? obj["upgradeFinishesAt"] ?? obj["upgrade_finishes_at"]),
+                Detail = FirstNonBlank(obj["detail"]?.Read<string>(), obj["summary"]?.Read<string>(), obj["description"]?.Read<string>(), definition?["summary"]?.Read<string>(), definition?["description"]?.Read<string>()),
+                EffectSummary = FirstNonBlank(obj["effectSummary"]?.Read<string>(), obj["effect_summary"]?.Read<string>(), obj["effect"]?.Read<string>(), definition?["effectSummary"]?.Read<string>(), definition?["effect_summary"]?.Read<string>(), definition?["effect"]?.Read<string>()),
+                ProductionPerTick = MapResource(production, true),
             };
         }
 
@@ -345,13 +424,24 @@ namespace PlanarWar.Client.Core.Mapping
             if (obj == null) return new ResourceSnapshot();
             return new ResourceSnapshot
             {
-                Food = obj[perTick ? "foodPerTick" : "food"]?.Read<double?>(),
-                Materials = obj[perTick ? "materialsPerTick" : "materials"]?.Read<double?>(),
-                Wealth = obj[perTick ? "wealthPerTick" : "wealth"]?.Read<double?>(),
-                Mana = obj[perTick ? "manaPerTick" : "mana"]?.Read<double?>(),
-                Knowledge = obj[perTick ? "knowledgePerTick" : "knowledge"]?.Read<double?>(),
-                Unity = obj[perTick ? "unityPerTick" : "unity"]?.Read<double?>(),
+                Food = ReadResourceAmount(obj, "food", perTick),
+                Materials = ReadResourceAmount(obj, "materials", perTick),
+                Wealth = ReadResourceAmount(obj, "wealth", perTick),
+                Mana = ReadResourceAmount(obj, "mana", perTick),
+                Knowledge = ReadResourceAmount(obj, "knowledge", perTick),
+                Unity = ReadResourceAmount(obj, "unity", perTick),
             };
+        }
+
+        private static double? ReadResourceAmount(JObject obj, string key, bool perTick)
+        {
+            if (obj == null || string.IsNullOrWhiteSpace(key)) return null;
+
+            var camel = perTick ? key + "PerTick" : key;
+            var snake = perTick ? key + "_per_tick" : key;
+            return obj[camel]?.Read<double?>()
+                ?? obj[snake]?.Read<double?>()
+                ?? obj[key]?.Read<double?>();
         }
 
         private static ResourcePresentationSnapshot MapResourcePresentation(JObject obj, string lane)
@@ -679,16 +769,38 @@ namespace PlanarWar.Client.Core.Mapping
         private static JObject FirstObject(params JToken[] tokens) => tokens?.OfType<JObject>().FirstOrDefault();
         private static JArray FirstArray(params JToken[] tokens) => tokens?.OfType<JArray>().FirstOrDefault();
 
+        private static List<JObject> ObjectsFromArrays(params JToken[] tokens)
+        {
+            var objects = new List<JObject>();
+            if (tokens == null) return objects;
+
+            foreach (var token in tokens)
+            {
+                if (token is JArray array)
+                {
+                    objects.AddRange(array.OfType<JObject>());
+                }
+                else if (token is JObject obj)
+                {
+                    objects.Add(obj);
+                }
+            }
+
+            return objects;
+        }
+
         private static ResearchSnapshot MapResearch(JObject obj)
         {
             if (obj == null) return null;
             return new ResearchSnapshot
             {
-                Id = obj["techId"]?.Read<string>() ?? obj["tech_id"]?.Read<string>(),
-                Name = obj["name"]?.Read<string>() ?? obj["techId"]?.Read<string>() ?? obj["tech_id"]?.Read<string>() ?? "Research",
+                Id = obj["techId"]?.Read<string>() ?? obj["tech_id"]?.Read<string>() ?? obj["id"]?.Read<string>(),
+                Name = obj["name"]?.Read<string>() ?? obj["title"]?.Read<string>() ?? obj["techId"]?.Read<string>() ?? obj["tech_id"]?.Read<string>() ?? obj["id"]?.Read<string>() ?? "Research",
+                Status = FirstNonBlank(obj["status"]?.Read<string>(), obj["state"]?.Read<string>(), obj["phase"]?.Read<string>()),
                 Progress = obj["progress"]?.Read<double?>(),
-                Cost = obj["cost"]?.Read<double?>(),
-                StartedAtUtc = ParseUtc(obj["startedAt"] ?? obj["started_at"])
+                Cost = obj["cost"]?.Read<double?>() ?? obj["required"]?.Read<double?>() ?? obj["requiredProgress"]?.Read<double?>() ?? obj["required_progress"]?.Read<double?>(),
+                StartedAtUtc = ParseUtc(obj["startedAt"] ?? obj["started_at"] ?? obj["researchStartedAt"] ?? obj["research_started_at"]),
+                FinishesAtUtc = ParseUtc(obj["finishesAt"] ?? obj["finishes_at"] ?? obj["readyAt"] ?? obj["ready_at"] ?? obj["completedAt"] ?? obj["completed_at"] ?? obj["researchFinishesAt"] ?? obj["research_finishes_at"]),
             };
         }
 

@@ -230,6 +230,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var signalPairs = summary.WarfrontSignals.Take(2).ToList();
             var targetArmyId = FirstNonBlank(reinforceState?.ArmyId, reinforceOp?.ArmyId);
             var rankedArmies = RankArmies(summary.Armies, targetArmyId);
+            var frontBuildings = SelectFrontBuildings(summary);
+            var frontTimers = SelectFrontTimers(summary);
 
             headline.text = warfrontWindows.Count > 0 ? "Operations desk" : summary.WarfrontSignals.Count > 0 ? "Operations snapshot" : "Operations review";
             copy.text = warfrontWindows.Count > 0
@@ -237,12 +239,12 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 : summary.WarfrontSignals.Count > 0
                     ? "Operations posture is visible from the current summary payload."
                     : "No active operations snapshot is visible in the current payload.";
-            note.text = $"Lane {summary.City.SettlementLaneLabel} • windows {warfrontWindows.Count} • timers {warfrontTimers.Count} • cells {summary.Armies.Count}";
-            cardsCopy.text = BuildCardsCopy(summary.Armies, reinforceState, reinforceTimer, reinforceOp, warfrontWindows.Count, otherWarfrontTimers.Count);
+            note.text = $"Lane {summary.City.SettlementLaneLabel} • windows {warfrontWindows.Count} • timers {warfrontTimers.Count} • fronts {frontBuildings.Count} • front timers {frontTimers.Count} • cells {summary.Armies.Count}";
+            cardsCopy.text = BuildCardsCopy(summary.Armies, reinforceState, reinforceTimer, reinforceOp, warfrontWindows.Count, otherWarfrontTimers.Count) + " • " + BuildFrontCardsCopy(frontBuildings, frontTimers, nowUtc);
 
             windowsValue.text = warfrontWindows.Count > 0 ? $"{warfrontWindows.Count} open • {string.Join(" • ", warfrontWindows.Take(2).Select(window => HumanizeStatus(window.Status)))}" : "No active operations window.";
             readinessValue.text = BuildForceReadinessSummary(summary.Armies, reinforceState, reinforceOp);
-            signalValue.text = signalPairs.Count > 0 ? CompactSignalSummary(signalPairs) : "No operations status signals.";
+            signalValue.text = signalPairs.Count > 0 ? CompactSignalSummary(signalPairs) : frontBuildings.Count > 0 ? BuildFrontSignalSummary(frontBuildings, frontTimers, nowUtc) : "No operations status signals.";
             missionValue.text = activeMission != null ? $"{activeMission.Title} • {(activeMission.FinishesAtUtc.HasValue ? FormatRemaining(activeMission.FinishesAtUtc.Value - nowUtc) : "anchor missing")}" : "No active support operation.";
             pressureValue.text = !string.IsNullOrWhiteSpace(primaryWarning) ? Truncate(primaryWarning, 96) : warfrontWindows.Count > 0 ? "Operations windows are open; no extra warning headline is active." : "No extra route-pressure warning surfaced.";
             noteValue.text = BuildReinforcementDeskNote(summary.Armies, reinforceState, reinforceTimer, reinforceOp, warfrontWindows.Count > 0);
@@ -663,6 +665,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                     onClick: () => TriggerReinforceArmy(reinforceOp.ArmyId)));
             }
 
+            cards.AddRange(BuildFrontCards(summary, nowUtc).Take(Math.Max(0, 3 - cards.Count)));
+
             var formationSlots = cards.Count == 0 ? 2 : Math.Min(2, Math.Max(0, 3 - cards.Count));
             foreach (var army in rankedArmies.Take(formationSlots))
             {
@@ -703,6 +707,129 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             }
 
             return cards;
+        }
+
+        private static List<CardView> BuildFrontCards(ShellSummarySnapshot summary, DateTime nowUtc)
+        {
+            var cards = new List<CardView>();
+            foreach (var front in SelectFrontBuildings(summary).Take(2))
+            {
+                cards.Add(new CardView(
+                    family: "Operator front",
+                    title: FirstNonBlank(front.Name, front.BuildingId, "Operator front"),
+                    lore: BuildFrontLore(front, nowUtc),
+                    note: Truncate(FirstNonBlank(front.EffectSummary, front.Detail, "Front/building truth is visible without fake covert simulation."), 96)));
+            }
+
+            if (cards.Count < 2)
+            {
+                foreach (var timer in SelectFrontTimers(summary).Take(2 - cards.Count))
+                {
+                    cards.Add(new CardView(
+                        family: "Front timer",
+                        title: FirstNonBlank(timer.Label, HumanizeStatus(timer.Category), "Front timer"),
+                        lore: timer.FinishesAtUtc.HasValue ? $"{HumanizeStatus(timer.Status)} • {FormatRemaining(timer.FinishesAtUtc.Value - nowUtc)}" : HumanizeStatus(timer.Status),
+                        note: Truncate(FirstNonBlank(timer.Detail, "Operator-front timing is visible from cityTimers."), 96)));
+                }
+            }
+
+            return cards;
+        }
+
+        private static string BuildFrontCardsCopy(List<BuildingSnapshot> fronts, List<CityTimerEntrySnapshot> timers, DateTime nowUtc)
+        {
+            var ready = fronts.Count(front => IsFrontReady(front, nowUtc)) + timers.Count(timer => timer.FinishesAtUtc.HasValue && timer.FinishesAtUtc.Value <= nowUtc);
+            if (fronts.Count == 0 && timers.Count == 0)
+            {
+                return "No operator-front building cards or front build timers surfaced.";
+            }
+
+            return $"Fronts {fronts.Count} • front timers {timers.Count} • ready {ready}";
+        }
+
+        private static string BuildFrontSignalSummary(List<BuildingSnapshot> fronts, List<CityTimerEntrySnapshot> timers, DateTime nowUtc)
+        {
+            var firstReady = fronts.FirstOrDefault(front => IsFrontReady(front, nowUtc));
+            if (firstReady != null)
+            {
+                return $"{FirstNonBlank(firstReady.Name, firstReady.BuildingId, "Front")} ready/finished";
+            }
+
+            var firstTimed = fronts.FirstOrDefault(front => front?.FinishesAtUtc.HasValue == true)
+                ?? null;
+            if (firstTimed != null)
+            {
+                return $"{FirstNonBlank(firstTimed.Name, firstTimed.BuildingId, "Front")} • {FormatRemaining(firstTimed.FinishesAtUtc.Value - nowUtc)}";
+            }
+
+            var timer = timers.FirstOrDefault();
+            if (timer != null)
+            {
+                return timer.FinishesAtUtc.HasValue ? $"{FirstNonBlank(timer.Label, "Front timer")} • {FormatRemaining(timer.FinishesAtUtc.Value - nowUtc)}" : FirstNonBlank(timer.Label, "Front timer visible");
+            }
+
+            return "No operations status signals.";
+        }
+
+        private static List<BuildingSnapshot> SelectFrontBuildings(ShellSummarySnapshot summary)
+        {
+            return (summary?.Buildings ?? new List<BuildingSnapshot>())
+                .Where(front => front != null && (ContainsFrontText(front.Lane) || ContainsFrontText(front.Type) || ContainsFrontText(front.BuildingId) || ContainsFrontText(front.Name) || ContainsFrontText(front.Detail) || ContainsFrontText(front.EffectSummary) || IsBlackMarketLane(summary)))
+                .ToList();
+        }
+
+        private static List<CityTimerEntrySnapshot> SelectFrontTimers(ShellSummarySnapshot summary)
+        {
+            return (summary?.CityTimers ?? new List<CityTimerEntrySnapshot>())
+                .Where(timer => timer != null && IsFrontTimer(timer))
+                .ToList();
+        }
+
+        private static bool IsFrontTimer(CityTimerEntrySnapshot timer)
+        {
+            return ContainsFrontText(timer?.Category) || ContainsFrontText(timer?.Label) || ContainsFrontText(timer?.Detail);
+        }
+
+        private static bool ContainsFrontText(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return false;
+            return raw.IndexOf("front", StringComparison.OrdinalIgnoreCase) >= 0
+                || raw.IndexOf("operator", StringComparison.OrdinalIgnoreCase) >= 0
+                || raw.IndexOf("black_market", StringComparison.OrdinalIgnoreCase) >= 0
+                || raw.IndexOf("black market", StringComparison.OrdinalIgnoreCase) >= 0
+                || raw.IndexOf("shadow", StringComparison.OrdinalIgnoreCase) >= 0
+                || raw.IndexOf("build", StringComparison.OrdinalIgnoreCase) >= 0
+                || raw.IndexOf("construction", StringComparison.OrdinalIgnoreCase) >= 0
+                || raw.IndexOf("upgrade", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool IsFrontReady(BuildingSnapshot front, DateTime nowUtc)
+        {
+            var status = (front?.Status ?? string.Empty).Trim();
+            return status.Equals("ready", StringComparison.OrdinalIgnoreCase)
+                || status.Equals("complete", StringComparison.OrdinalIgnoreCase)
+                || status.Equals("completed", StringComparison.OrdinalIgnoreCase)
+                || status.Equals("finished", StringComparison.OrdinalIgnoreCase)
+                || status.Equals("done", StringComparison.OrdinalIgnoreCase)
+                || (front?.FinishesAtUtc.HasValue == true && front.FinishesAtUtc.Value <= nowUtc);
+        }
+
+        private static string BuildFrontLore(BuildingSnapshot front, DateTime nowUtc)
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(front?.Status)) parts.Add(HumanizeStatus(front.Status));
+            if (front?.Level.HasValue == true) parts.Add($"level {front.Level.Value}");
+            if (front?.FinishesAtUtc.HasValue == true) parts.Add(FormatRemaining(front.FinishesAtUtc.Value - nowUtc));
+            return parts.Count > 0 ? string.Join(" • ", parts) : "Front card surfaced from summary payload.";
+        }
+
+        private static bool IsBlackMarketLane(ShellSummarySnapshot summary)
+        {
+            var lane = (summary?.City?.SettlementLane ?? summary?.City?.SettlementLaneLabel ?? string.Empty).Trim();
+            return lane.Equals("black_market", StringComparison.OrdinalIgnoreCase)
+                || lane.Equals("black market", StringComparison.OrdinalIgnoreCase)
+                || lane.Equals("black-market", StringComparison.OrdinalIgnoreCase)
+                || lane.Equals("shadow", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string NormalizeOperationsTimerLabel(string label)
