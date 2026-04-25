@@ -171,7 +171,7 @@ namespace PlanarWar.Client.UI
             {
                 ShellScreen.Summary => ("Summary", "Command floor", "This rail stays menu-owned. Use Home to scan the empire, then jump into a desk when something needs action."),
                 ShellScreen.City => ("Development", "Growth desk", "Research, workshop, and growth cadence stay grouped here as a read-only planning desk."),
-                ShellScreen.BlackMarket => ("Warfront", "Field doctrine", "Field windows, readiness, holds, and frontline dispatch stay visible here before deeper theater wiring lands."),
+                ShellScreen.BlackMarket => ("Operations", "Operations doctrine", "Routes, readiness, holds, and covert deployment stay visible here before deeper operations wiring lands."),
                 ShellScreen.Social => ("Social", "Shared comms", "Room state, recent lines, and channel posture stay honest here without inventing a full social stack."),
                 _ => ("Summary", "Command floor", "This rail stays menu-owned.")
             };

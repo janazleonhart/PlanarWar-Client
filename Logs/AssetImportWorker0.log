@@ -1,11 +1,11 @@
 [Licensing::Module] Trying to connect to existing licensing client channel...
 Built from '6000.3/staging' branch; Version is '6000.3.13f1 (8c4f11e4fb20) revision 9195281'; Using compiler version '194234433'; Build Type 'Release'
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-Janaz" at "2026-04-25T08:04:27.1992956Z"
 OS: 'Windows 11  (10.0.26100) Core' Language: 'en' Physical Memory: 65396 MB
-[Licensing::IpcConnector] Successfully connected to: "LicenseClient-Janaz" at "2026-04-23T20:57:07.540671Z"
 BatchMode: 1, IsHumanControllingUs: 0, StartBugReporterOnCrash: 0, Is64bit: 1
 System  architecture: x64
 Process architecture: x64
-Date: 2026-04-23T20:57:07Z
+Date: 2026-04-25T08:04:27Z
 
 COMMAND LINE ARGUMENTS:
 D:\Programing\Unity Editors\2020\6000.3.13f1\Editor\Unity.exe
@@ -19,7 +19,7 @@ C:/Games/PWFC/PlanarWar-FullClient
 -logFile
 Logs/AssetImportWorker0.log
 -srvPort
-53786
+62203
 -licensingIpc
 LicenseClient-Janaz
 -job-worker-count
@@ -67,16 +67,14 @@ C:/Games/PWFC/PlanarWar-FullClient
     "memorysetup-job-temp-allocator-block-size-background=1048576"
     "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
     "memorysetup-temp-allocator-size-cloud-worker=32768"
-Player connection [66076]  Target information:
+Player connection [22608]  Target information:
 
-Player connection [66076]  * "[IP] 192.168.0.208 [Port] 0 [Flags] 2 [Guid] 3190152457 [EditorId] 3190152457 [Version] 1048832 [Id] WindowsEditor(7,CommanderPC) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+Player connection [22608]  * "[IP] 192.168.0.208 [Port] 0 [Flags] 2 [Guid] 3600678248 [EditorId] 3600678248 [Version] 1048832 [Id] WindowsEditor(7,CommanderPC) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
 
-Player connection [66076]  * "[IP] 192.168.56.1 [Port] 0 [Flags] 2 [Guid] 3190152457 [EditorId] 3190152457 [Version] 1048832 [Id] WindowsEditor(7,CommanderPC) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
+Player connection [22608]  * "[IP] 192.168.56.1 [Port] 0 [Flags] 2 [Guid] 3600678248 [EditorId] 3600678248 [Version] 1048832 [Id] WindowsEditor(7,CommanderPC) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
 
-Player connection [66076]  * "[IP] 172.31.112.1 [Port] 0 [Flags] 2 [Guid] 3190152457 [EditorId] 3190152457 [Version] 1048832 [Id] WindowsEditor(7,CommanderPC) [Debug] 1 [PackageName] WindowsEditor [ProjectName] Editor" 
-
-Player connection [66076] Host joined multi-casting on [225.0.0.222:54997]...
-Player connection [66076] Host joined alternative multi-casting on [225.0.0.222:34997]...
+Player connection [22608] Host joined multi-casting on [225.0.0.222:54997]...
+Player connection [22608] Host joined alternative multi-casting on [225.0.0.222:34997]...
 JobSystem: Creating JobQueue using job-worker-count value 3
 Input System module state changed to: Initialized.
 [Physics::Module] Initialized fallback backend.
@@ -104,7 +102,7 @@ Initialize mono
 Mono path[0] = 'D:/Programing/Unity Editors/2020/6000.3.13f1/Editor/Data/Managed'
 Mono path[1] = 'D:/Programing/Unity Editors/2020/6000.3.13f1/Editor/Data/MonoBleedingEdge/lib/mono/unityjit-win32'
 Mono config path = 'D:/Programing/Unity Editors/2020/6000.3.13f1/Editor/Data/MonoBleedingEdge/etc'
-Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56736
+Using monoOptions --debugger-agent=transport=dt_socket,embedding=1,server=y,suspend=n,address=127.0.0.1:56992
 Begin MonoManager ReloadAssembly
 Registering precompiled unity dll's ...
 Register platform support module: D:/Programing/Unity Editors/2020/6000.3.13f1/Editor/Data/PlaybackEngines/WebGLSupport/UnityEditor.WebGL.Extensions.dll
@@ -115,17 +113,17 @@ Register platform support module: D:/Programing/Unity Editors/2020/6000.3.13f1/E
 	ResponseStatus: Unsupported protocol version '1.18.1'.
 [Licensing::Module] Error: Failed to handshake to channel: "LicenseClient-Janaz"
 [Licensing::IpcConnector] LicenseClient-Janaz channel disconnected successfully.
-[Licensing::IpcConnector] Successfully connected to: "LicenseClient-Janaz-6000.3.13" at "2026-04-23T20:57:09.7714462Z"
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-Janaz-6000.3.13" at "2026-04-25T08:04:29.2392634Z"
 [Licensing::Client] Handshaking with LicensingClient:
   Version:                 1.18.1+9fbee8e
-  Session Id:              247c82433b064aa2a8ede8b10b081260
-  Correlation Id:          5bcb5b4212ccd6890afe105f54196bd8
-  External correlation Id: 996267363948130384
+  Session Id:              4c0121eee1e84c229342744207ed4c14
+  Correlation Id:          cc1cc16d4e1a3a03643172b0125dddf6
+  External correlation Id: 3426379004164047408
   Machine Id:              HUS3k1hqZ0xSRYXRwaGCcj9qMyg=
-[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-Janaz-6000.3.13" (connect: 0.00s, validation: 0.00s, handshake: 3.18s)
-[Licensing::IpcConnector] Successfully connected to: "LicenseClient-Janaz-6000.3.13-notifications" at "2026-04-23T20:57:12.9507197Z"
-[Licensing::Module] Licensing Background thread has ended after 5.41s
-[Licensing::Module] Licensing is initialized (took 3.85s).
+[Licensing::Module] Successfully connected to LicensingClient on channel: "LicenseClient-Janaz-6000.3.13" (connect: 0.00s, validation: 0.00s, handshake: 1.92s)
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-Janaz-6000.3.13-notifications" at "2026-04-25T08:04:31.1605443Z"
+[Licensing::Module] Licensing Background thread has ended after 3.96s
+[Licensing::Module] Licensing is initialized (took 2.75s).
 [Licensing::Client] Successfully resolved entitlement details
 [Licensing::Module] License group:
   Id: F4-45DF-KJCT-UAKB-PYJY-XXXX
@@ -163,8 +161,8 @@ Register platform support module: D:/Programing/Unity Editors/2020/6000.3.13f1/E
   Expiration: Unlimited
 Register platform support module: D:/Programing/Unity Editors/2020/6000.3.13f1/Editor/Data/PlaybackEngines/iOSSupport/UnityEditor.iOS.Extensions.dll
 Register platform support module: D:/Programing/Unity Editors/2020/6000.3.13f1/Editor/Data/PlaybackEngines/LinuxStandaloneSupport/UnityEditor.LinuxStandalone.Extensions.dll
-Registered in 3.864543 seconds.
-- Loaded All Assemblies, in  4.297 seconds
+Registered in 2.755759 seconds.
+- Loaded All Assemblies, in  3.133 seconds
 Native extension for LinuxStandalone target not found
 [usbmuxd] Start listen thread
 [usbmuxd] Listen thread started
@@ -182,35 +180,35 @@ Package Manager log level set to [2]
 [Package Manager] Cannot connect to Unity Package Manager local server
 ScheduleIndexationOnStartup MainProcess:False IndexOnStartup:True
 Mono: successfully reloaded assembly
-- Finished resetting the current domain, in  0.394 seconds
-Domain Reload Profiling: 4691ms
-	BeginReloadAssembly (138ms)
+- Finished resetting the current domain, in  0.370 seconds
+Domain Reload Profiling: 3503ms
+	BeginReloadAssembly (111ms)
 		ExecutionOrderSort (0ms)
 		DisableScriptedObjects (0ms)
 		BackupInstance (0ms)
 		ReleaseScriptingObjects (0ms)
 		CreateAndSetChildDomain (1ms)
-	RebuildCommonClasses (36ms)
-	RebuildNativeTypeToScriptingClass (13ms)
-	initialDomainReloadingComplete (3905ms)
-	LoadAllAssembliesAndSetupDomain (204ms)
-		LoadAssemblies (138ms)
+	RebuildCommonClasses (33ms)
+	RebuildNativeTypeToScriptingClass (12ms)
+	initialDomainReloadingComplete (2799ms)
+	LoadAllAssembliesAndSetupDomain (177ms)
+		LoadAssemblies (112ms)
 		RebuildTransferFunctionScriptingTraits (0ms)
-		AnalyzeDomain (200ms)
-			TypeCache.Refresh (198ms)
-				TypeCache.ScanAssembly (184ms)
+		AnalyzeDomain (172ms)
+			TypeCache.Refresh (170ms)
+				TypeCache.ScanAssembly (157ms)
 			BuildScriptInfoCaches (0ms)
 			ResolveRequiredComponents (0ms)
-	FinalizeReload (394ms)
+	FinalizeReload (371ms)
 		ReleaseScriptCaches (0ms)
 		RebuildScriptCaches (0ms)
-		SetupLoadedEditorAssemblies (346ms)
+		SetupLoadedEditorAssemblies (339ms)
 			LogAssemblyErrors (0ms)
-			InitializePlatformSupportModulesInManaged (68ms)
-			SetLoadedEditorAssemblies (3ms)
-			BeforeProcessingInitializeOnLoad (75ms)
+			InitializePlatformSupportModulesInManaged (64ms)
+			SetLoadedEditorAssemblies (4ms)
+			BeforeProcessingInitializeOnLoad (80ms)
 			ProcessInitializeOnLoadAttributes (121ms)
-			ProcessInitializeOnLoadMethodAttributes (78ms)
+			ProcessInitializeOnLoadMethodAttributes (71ms)
 			AfterProcessingInitializeOnLoad (0ms)
 			EditorAssembliesLoaded (0ms)
 		ExecutionOrderSort2 (0ms)
@@ -231,7 +229,7 @@ Begin MonoManager ReloadAssembly
   Type: Assigned
   Expiration: Unlimited
 Symbol file LoadedFromMemory is not a mono symbol file
-- Loaded All Assemblies, in  0.436 seconds
+- Loaded All Assemblies, in  0.367 seconds
 Refreshing native plugins compatible for Editor in 0.00 ms, found 0 plugins.
 Native extension for LinuxStandalone target not found
 Native extension for iOS target not found
@@ -244,233 +242,53 @@ Native extension for WebGL target not found
 [Package Manager] Cannot connect to Unity Package Manager local server
 ScheduleIndexationOnStartup MainProcess:False IndexOnStartup:True
 Mono: successfully reloaded assembly
-- Finished resetting the current domain, in  0.334 seconds
-Domain Reload Profiling: 770ms
-	BeginReloadAssembly (167ms)
+- Finished resetting the current domain, in  0.311 seconds
+Domain Reload Profiling: 678ms
+	BeginReloadAssembly (161ms)
 		ExecutionOrderSort (0ms)
 		DisableScriptedObjects (5ms)
 		BackupInstance (0ms)
 		ReleaseScriptingObjects (0ms)
-		CreateAndSetChildDomain (29ms)
-	RebuildCommonClasses (34ms)
+		CreateAndSetChildDomain (28ms)
+	RebuildCommonClasses (33ms)
 	RebuildNativeTypeToScriptingClass (11ms)
-	initialDomainReloadingComplete (29ms)
-	LoadAllAssembliesAndSetupDomain (195ms)
-		LoadAssemblies (242ms)
+	initialDomainReloadingComplete (28ms)
+	LoadAllAssembliesAndSetupDomain (134ms)
+		LoadAssemblies (185ms)
 		RebuildTransferFunctionScriptingTraits (0ms)
-		AnalyzeDomain (46ms)
-			TypeCache.Refresh (39ms)
-				TypeCache.ScanAssembly (26ms)
+		AnalyzeDomain (38ms)
+			TypeCache.Refresh (31ms)
+				TypeCache.ScanAssembly (20ms)
 			BuildScriptInfoCaches (5ms)
 			ResolveRequiredComponents (0ms)
-	FinalizeReload (335ms)
+	FinalizeReload (311ms)
 		ReleaseScriptCaches (0ms)
 		RebuildScriptCaches (0ms)
-		SetupLoadedEditorAssemblies (228ms)
+		SetupLoadedEditorAssemblies (224ms)
 			LogAssemblyErrors (0ms)
-			InitializePlatformSupportModulesInManaged (11ms)
-			SetLoadedEditorAssemblies (3ms)
-			BeforeProcessingInitializeOnLoad (80ms)
-			ProcessInitializeOnLoadAttributes (98ms)
-			ProcessInitializeOnLoadMethodAttributes (34ms)
+			InitializePlatformSupportModulesInManaged (10ms)
+			SetLoadedEditorAssemblies (4ms)
+			BeforeProcessingInitializeOnLoad (78ms)
+			ProcessInitializeOnLoadAttributes (95ms)
+			ProcessInitializeOnLoadMethodAttributes (35ms)
 			AfterProcessingInitializeOnLoad (2ms)
 			EditorAssembliesLoaded (0ms)
 		ExecutionOrderSort2 (0ms)
 		AwakeInstancesAfterBackupRestoration (6ms)
-Launched and connected shader compiler UnityShaderCompiler.exe after 0.02 seconds
+Launched and connected shader compiler UnityShaderCompiler.exe after 0.01 seconds
 Refreshing native plugins compatible for Editor in 0.00 ms, found 0 plugins.
 Preloading 0 native plugins for Editor in 0.00 ms.
 Unloading 0 Unused Serialized files (Serialized files now loaded: 0)
-Unloading 481 unused Assets / (146.2 KB). Loaded Objects now: 1071.
-Memory consumption went from 66.9 MB to 66.8 MB.
-Total: 4.943700 ms (FindLiveObjects: 0.427000 ms CreateObjectMapping: 0.040300 ms MarkObjects: 4.309500 ms  DeleteObjects: 0.165800 ms)
+Unloading 481 unused Assets / (66.7 KB). Loaded Objects now: 1071.
+Memory consumption went from 66.9 MB to 66.9 MB.
+Total: 3.530900 ms (FindLiveObjects: 0.072800 ms CreateObjectMapping: 0.027900 ms MarkObjects: 3.273500 ms  DeleteObjects: 0.155300 ms)
 
 ========================================================================
 Received Import Request.
-  Time since last request: 4169273.801175 seconds.
-  path: Assets/PlanarWar/Runtime/Core/Presentation/ShadowLaneText.cs
-  artifactKey: Guid(101d2d33f4974010bd2bebf564d2d7f5) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
-Start importing Assets/PlanarWar/Runtime/Core/Presentation/ShadowLaneText.cs using Guid(101d2d33f4974010bd2bebf564d2d7f5) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (artifact id: 'f5496d116b9f7108ee1a5a6cc2b39f8c') in 0.0911276 seconds
-Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 0
-
-========================================================================
-Received Import Request.
-  Time since last request: 0.000016 seconds.
-  path: Assets/PlanarWar/Runtime/Network/JTokenReadExtensions.cs
-  artifactKey: Guid(0768bd62902be4c409f3a446532b72fa) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
-Start importing Assets/PlanarWar/Runtime/Network/JTokenReadExtensions.cs using Guid(0768bd62902be4c409f3a446532b72fa) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (artifact id: '85c05081b200028f39ff2ca5ef1075ff') in 0.008943 seconds
-Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 0
-
-========================================================================
-Received Import Request.
-  Time since last request: 0.000085 seconds.
+  Time since last request: 6577.751586 seconds.
   path: Assets/PlanarWar/Runtime/Shell/Screens/BlackMarket/BlackMarketScreenController.cs
-  artifactKey: Guid(fe7d65b590d685845a05b8f089057e18) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
-Start importing Assets/PlanarWar/Runtime/Shell/Screens/BlackMarket/BlackMarketScreenController.cs using Guid(fe7d65b590d685845a05b8f089057e18) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (artifact id: '39c0b71a544753648943d679c9e1198d') in 0.0070418 seconds
-Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 0
-
-========================================================================
-Received Import Request.
-  Time since last request: 0.000031 seconds.
-  path: Assets/Settings/Lit2DSceneTemplate.scenetemplate
-  artifactKey: Guid(d03ed43fc9d8a4f2e9fa70c1c7916eb9) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
-Start importing Assets/Settings/Lit2DSceneTemplate.scenetemplate using Guid(d03ed43fc9d8a4f2e9fa70c1c7916eb9) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (artifact id: 'cbbf81f3fb90e6cb4f3a1d71f2c01dcf') in 0.0573774 seconds
-Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 3
-
-========================================================================
-Received Import Request.
-  Time since last request: 0.000024 seconds.
-  path: Assets/PlanarWar/Tests/EditMode/ContractTruthConsumptionTests.cs
-  artifactKey: Guid(7b4df188970c492c9ee7649411e3cb34) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
-Start importing Assets/PlanarWar/Tests/EditMode/ContractTruthConsumptionTests.cs using Guid(7b4df188970c492c9ee7649411e3cb34) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (artifact id: '1789822faedb603709b3df5bf8057b56') in 0.0068894 seconds
-Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 0
-
-========================================================================
-Received Import Request.
-  Time since last request: 0.000057 seconds.
-  path: Assets/Settings/Scenes/URP2DSceneTemplate.unity
-  artifactKey: Guid(2cda990e2423bbf4892e6590ba056729) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
-Start importing Assets/Settings/Scenes/URP2DSceneTemplate.unity using Guid(2cda990e2423bbf4892e6590ba056729) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (artifact id: 'a5611fbd80c54c56dbdb240c17ea6545') in 0.0072883 seconds
-Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
-
-========================================================================
-Received Import Request.
-  Time since last request: 0.000016 seconds.
-  path: Assets/Settings/UniversalRP.asset
-  artifactKey: Guid(681886c5eb7344803b6206f758bf0b1c) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
-Start importing Assets/Settings/UniversalRP.asset using Guid(681886c5eb7344803b6206f758bf0b1c) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (artifact id: '87b27ba8648a6c3b4789c25e297336b6') in 0.0078168 seconds
-Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
-
-========================================================================
-Received Import Request.
-  Time since last request: 0.000060 seconds.
-  path: Assets/PlanarWar/Runtime/Core/Application/ClientVersionState.cs
-  artifactKey: Guid(e8c1a9d8a34f4478a1d0d2eb6c0db4a1) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
-Start importing Assets/PlanarWar/Runtime/Core/Application/ClientVersionState.cs using Guid(e8c1a9d8a34f4478a1d0d2eb6c0db4a1) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (artifact id: '144ae323d7334cb073bb8ed9c96653c3') in 0.0073155 seconds
-Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 0
-
-========================================================================
-Received Import Request.
-  Time since last request: 0.000047 seconds.
-  path: Assets/PlanarWar/Runtime/Shell/AppShellController.cs
-  artifactKey: Guid(41d4720c29502344db596542700549fa) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
-Start importing Assets/PlanarWar/Runtime/Shell/AppShellController.cs using Guid(41d4720c29502344db596542700549fa) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (artifact id: '4b9ed58369457e87e7543733435fbf4a') in 0.0072635 seconds
-Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 0
-
-========================================================================
-Received Import Request.
-  Time since last request: 0.000127 seconds.
-  path: Assets/PlanarWar/UI/UXML/AppShell.uxml
-  artifactKey: Guid(b20e8b34ad86f654cbe27ec630b3661a) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
-Start importing Assets/PlanarWar/UI/UXML/AppShell.uxml using Guid(b20e8b34ad86f654cbe27ec630b3661a) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (artifact id: 'a9206ae8fa77a6648d7b36a5a5a85561') in 0.067161 seconds
-Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 3
-
-========================================================================
-Received Import Request.
-  Time since last request: 0.000014 seconds.
-  path: Assets/PlanarWar/Runtime/Network/Http/PlanarWarApiClient.cs
-  artifactKey: Guid(2dfc96cc4d6f35649b5c799bd41d8428) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
-Start importing Assets/PlanarWar/Runtime/Network/Http/PlanarWarApiClient.cs using Guid(2dfc96cc4d6f35649b5c799bd41d8428) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (artifact id: '754bad5248d315276a9bbb5d76b1473c') in 0.0070579 seconds
-Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 0
-
-========================================================================
-Received Import Request.
-  Time since last request: 0.000077 seconds.
-  path: Assets/Settings/Renderer2D.asset
-  artifactKey: Guid(424799608f7334c24bf367e4bbfa7f9a) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
-Start importing Assets/Settings/Renderer2D.asset using Guid(424799608f7334c24bf367e4bbfa7f9a) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (artifact id: '6332a3814af941c3a099dd0d58224788') in 0.0084215 seconds
-Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
-
-========================================================================
-Received Import Request.
-  Time since last request: 0.000015 seconds.
-  path: Assets/PlanarWar/Runtime/Core/Application/AuthSessionController.cs
-  artifactKey: Guid(c1f9e2219f48b974898e63c19feea4bc) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
-Start importing Assets/PlanarWar/Runtime/Core/Application/AuthSessionController.cs using Guid(c1f9e2219f48b974898e63c19feea4bc) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (artifact id: '2f3262d5bb99be313607a313462b4b45') in 0.0074209 seconds
-Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 0
-
-========================================================================
-Received Import Request.
-  Time since last request: 0.000062 seconds.
-  path: Assets/PlanarWar/Runtime/Core/Presentation/ResourcePresentationText.cs
-  artifactKey: Guid(1f7a6c4e0c8f4bbdb8b5e7f6301b9a42) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
-Start importing Assets/PlanarWar/Runtime/Core/Presentation/ResourcePresentationText.cs using Guid(1f7a6c4e0c8f4bbdb8b5e7f6301b9a42) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (artifact id: '52ee743b75f71e1e1b9e373ae138dfa6') in 0.008659 seconds
-Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 0
-
-========================================================================
-Received Import Request.
-  Time since last request: 0.000073 seconds.
-  path: Assets/PlanarWar/Runtime/Shell/PlanarWar.Client.UI.asmdef
-  artifactKey: Guid(5949da5bce99e4c4fa7800b11516fb04) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
-Start importing Assets/PlanarWar/Runtime/Shell/PlanarWar.Client.UI.asmdef using Guid(5949da5bce99e4c4fa7800b11516fb04) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (artifact id: '262e6775285db468f0d4abf2f1b93fac') in 0.0098272 seconds
-Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
-
-========================================================================
-Received Import Request.
-  Time since last request: 0.000058 seconds.
-  path: Assets/PlanarWar/Runtime/Core/SessionState.cs
-  artifactKey: Guid(ec7aa3849f2f5f64f81c2bd492eee4c0) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
-Start importing Assets/PlanarWar/Runtime/Core/SessionState.cs using Guid(ec7aa3849f2f5f64f81c2bd492eee4c0) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (artifact id: '88b05085b1b7cc63564c454a0f2505cd') in 0.0080535 seconds
-Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 0
-
-========================================================================
-Received Import Request.
-  Time since last request: 0.000049 seconds.
-  path: Assets/PlanarWar/Runtime/Core/PlanarWar.Client.Core.asmdef
-  artifactKey: Guid(690b62b7aef36a342ad2e41b409fcbc3) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
-Start importing Assets/PlanarWar/Runtime/Core/PlanarWar.Client.Core.asmdef using Guid(690b62b7aef36a342ad2e41b409fcbc3) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (artifact id: '85b12454f87e53cc33c7fba029ba3c04') in 0.006868 seconds
-Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 1
-
-========================================================================
-Received Import Request.
-  Time since last request: 0.000050 seconds.
-  path: Assets/PlanarWar/Runtime/Shell/ConnectionHud.cs
-  artifactKey: Guid(c779789138bdcea49a48e1d0c429d6c7) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
-Start importing Assets/PlanarWar/Runtime/Shell/ConnectionHud.cs using Guid(c779789138bdcea49a48e1d0c429d6c7) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (artifact id: 'e5fcdb91e48317b9d626ab1c6ae8e9cb') in 0.0076822 seconds
-Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 0
-
-========================================================================
-Received Prepare
-Refreshing native plugins compatible for Editor in 0.00 ms, found 0 plugins.
-Preloading 0 native plugins for Editor in 0.00 ms.
-Unloading 0 Unused Serialized files (Serialized files now loaded: 0)
-Unloading 479 unused Assets / (32.2 KB). Loaded Objects now: 1073.
-Memory consumption went from 68.0 MB to 68.0 MB.
-Total: 5.304500 ms (FindLiveObjects: 0.088700 ms CreateObjectMapping: 0.025900 ms MarkObjects: 4.985500 ms  DeleteObjects: 0.202900 ms)
-
-Prepare: number of updated asset objects reloaded= 0
-========================================================================
-Received Import Request.
-  Time since last request: 7.425589 seconds.
-  path: Assets/PlanarWar/Runtime/Core/Presentation/ShadowLaneText.cs
-  artifactKey: Guid(101d2d33f4974010bd2bebf564d2d7f5) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
-Start importing Assets/PlanarWar/Runtime/Core/Presentation/ShadowLaneText.cs using Guid(101d2d33f4974010bd2bebf564d2d7f5) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (artifact id: '8260aedb709c0a52f54185672bbb28e7') in 0.0098481 seconds
-Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 0
-
-========================================================================
-Received Prepare
-Refreshing native plugins compatible for Editor in 0.00 ms, found 0 plugins.
-Preloading 0 native plugins for Editor in 0.00 ms.
-Unloading 0 Unused Serialized files (Serialized files now loaded: 0)
-Unloading 479 unused Assets / (30.8 KB). Loaded Objects now: 1073.
-Memory consumption went from 68.1 MB to 68.0 MB.
-Total: 5.188900 ms (FindLiveObjects: 0.120400 ms CreateObjectMapping: 0.021900 ms MarkObjects: 4.845400 ms  DeleteObjects: 0.199600 ms)
-
-Prepare: number of updated asset objects reloaded= 0
-========================================================================
-Received Import Request.
-  Time since last request: 801.479939 seconds.
-  path: Assets/PlanarWar/Runtime/Shell/Screens/City/CityScreenController.cs
-  artifactKey: Guid(0215d73f45528a443be8701f39cf7d5e) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d)
-Start importing Assets/PlanarWar/Runtime/Shell/Screens/City/CityScreenController.cs using Guid(0215d73f45528a443be8701f39cf7d5e) Importer(2089858483,b0f066a214c2f5e87bad3c948f4d605d) (ScriptedImporter) -> (artifact id: '21a324ff29f6b9c898ed3ed08114ecb1') in 0.0089732 seconds
-Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 0
-
-========================================================================
-Received Import Request.
-  Time since last request: 18.426726 seconds.
-  path: Assets/PlanarWar/Runtime/Core/Presentation/ShadowLaneText.cs
-  artifactKey: Guid(101d2d33f4974010bd2bebf564d2d7f5) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
-Start importing Assets/PlanarWar/Runtime/Core/Presentation/ShadowLaneText.cs using Guid(101d2d33f4974010bd2bebf564d2d7f5) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: 'e06fbd35b026ee8723082d5ade478c8a') in 0.0009406 seconds
+  artifactKey: Guid(fe7d65b590d685845a05b8f089057e18) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/PlanarWar/Runtime/Shell/Screens/BlackMarket/BlackMarketScreenController.cs using Guid(fe7d65b590d685845a05b8f089057e18) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: '54361009ece424a5261bb41d216ee16e') in 0.0035827 seconds
 Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 0
 
 ========================================================================
@@ -488,7 +306,7 @@ Begin MonoManager ReloadAssembly
   Type: Assigned
   Expiration: Unlimited
 Symbol file LoadedFromMemory is not a mono symbol file
-- Loaded All Assemblies, in  0.396 seconds
+- Loaded All Assemblies, in  0.357 seconds
 Refreshing native plugins compatible for Editor in 0.00 ms, found 0 plugins.
 Native extension for LinuxStandalone target not found
 Native extension for iOS target not found
@@ -501,35 +319,35 @@ Native extension for WebGL target not found
 [Package Manager] Cannot connect to Unity Package Manager local server
 ScheduleIndexationOnStartup MainProcess:False IndexOnStartup:True
 Mono: successfully reloaded assembly
-- Finished resetting the current domain, in  0.330 seconds
-Domain Reload Profiling: 726ms
-	BeginReloadAssembly (200ms)
+- Finished resetting the current domain, in  0.313 seconds
+Domain Reload Profiling: 669ms
+	BeginReloadAssembly (171ms)
 		ExecutionOrderSort (0ms)
-		DisableScriptedObjects (6ms)
+		DisableScriptedObjects (5ms)
 		BackupInstance (0ms)
 		ReleaseScriptingObjects (0ms)
-		CreateAndSetChildDomain (33ms)
-	RebuildCommonClasses (35ms)
+		CreateAndSetChildDomain (26ms)
+	RebuildCommonClasses (33ms)
 	RebuildNativeTypeToScriptingClass (12ms)
-	initialDomainReloadingComplete (20ms)
-	LoadAllAssembliesAndSetupDomain (128ms)
-		LoadAssemblies (220ms)
+	initialDomainReloadingComplete (18ms)
+	LoadAllAssembliesAndSetupDomain (123ms)
+		LoadAssemblies (194ms)
 		RebuildTransferFunctionScriptingTraits (0ms)
-		AnalyzeDomain (27ms)
-			TypeCache.Refresh (7ms)
-				TypeCache.ScanAssembly (2ms)
-			BuildScriptInfoCaches (17ms)
-			ResolveRequiredComponents (0ms)
-	FinalizeReload (331ms)
+		AnalyzeDomain (28ms)
+			TypeCache.Refresh (6ms)
+				TypeCache.ScanAssembly (1ms)
+			BuildScriptInfoCaches (18ms)
+			ResolveRequiredComponents (1ms)
+	FinalizeReload (313ms)
 		ReleaseScriptCaches (0ms)
 		RebuildScriptCaches (0ms)
-		SetupLoadedEditorAssemblies (238ms)
+		SetupLoadedEditorAssemblies (227ms)
 			LogAssemblyErrors (0ms)
 			InitializePlatformSupportModulesInManaged (10ms)
 			SetLoadedEditorAssemblies (3ms)
-			BeforeProcessingInitializeOnLoad (83ms)
-			ProcessInitializeOnLoadAttributes (104ms)
-			ProcessInitializeOnLoadMethodAttributes (36ms)
+			BeforeProcessingInitializeOnLoad (80ms)
+			ProcessInitializeOnLoadAttributes (96ms)
+			ProcessInitializeOnLoadMethodAttributes (34ms)
 			AfterProcessingInitializeOnLoad (2ms)
 			EditorAssembliesLoaded (0ms)
 		ExecutionOrderSort2 (0ms)
@@ -537,16 +355,66 @@ Domain Reload Profiling: 726ms
 Refreshing native plugins compatible for Editor in 0.00 ms, found 0 plugins.
 Preloading 0 native plugins for Editor in 0.00 ms.
 Unloading 0 Unused Serialized files (Serialized files now loaded: 0)
-Unloading 479 unused Assets / (15.5 KB). Loaded Objects now: 1073.
-Memory consumption went from 67.6 MB to 67.5 MB.
-Total: 3.605500 ms (FindLiveObjects: 0.075800 ms CreateObjectMapping: 0.019800 ms MarkObjects: 3.408500 ms  DeleteObjects: 0.100100 ms)
+Unloading 479 unused Assets / (22.7 KB). Loaded Objects now: 1073.
+Memory consumption went from 67.4 MB to 67.4 MB.
+Total: 4.542100 ms (FindLiveObjects: 0.102500 ms CreateObjectMapping: 0.023900 ms MarkObjects: 4.306700 ms  DeleteObjects: 0.108100 ms)
 
 Prepare: number of updated asset objects reloaded= 0
 ========================================================================
-Received Import Request.
-  Time since last request: 55.351254 seconds.
-  path: Assets/Scenes/Bootstrap/ClientBootstrap.unity
-  artifactKey: Guid(50d1759a9d05a814b9207318a824c841) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
-Start importing Assets/Scenes/Bootstrap/ClientBootstrap.unity using Guid(50d1759a9d05a814b9207318a824c841) Importer(815301076,1909f56bfc062723c751e8b465ee728b) (PreviewImporter) -> (artifact id: '135ac9eac95228c3802995c21837399d') in 0.0017631 seconds
-Number of updated asset objects reloaded before import = 0Number of asset objects unloaded after import = 0
+Received Prepare
+Begin MonoManager ReloadAssembly
+Symbol file LoadedFromMemory is not a mono symbol file
+- Loaded All Assemblies, in  0.342 seconds
+Refreshing native plugins compatible for Editor in 0.00 ms, found 0 plugins.
+Native extension for LinuxStandalone target not found
+Native extension for iOS target not found
+Native extension for Android target not found
+Native extension for UWP target not found
+Native extension for WindowsStandalone target not found
+Native extension for WebGL target not found
+[Package Manager] Failed to launch server process. Reason: Unity was launched with the -noUpm command-line argument
+[Package Manager] Unable to send message (not connected to server process).
+[Package Manager] Cannot connect to Unity Package Manager local server
+ScheduleIndexationOnStartup MainProcess:False IndexOnStartup:True
+Mono: successfully reloaded assembly
+- Finished resetting the current domain, in  0.325 seconds
+Domain Reload Profiling: 667ms
+	BeginReloadAssembly (159ms)
+		ExecutionOrderSort (0ms)
+		DisableScriptedObjects (4ms)
+		BackupInstance (0ms)
+		ReleaseScriptingObjects (0ms)
+		CreateAndSetChildDomain (22ms)
+	RebuildCommonClasses (34ms)
+	RebuildNativeTypeToScriptingClass (11ms)
+	initialDomainReloadingComplete (20ms)
+	LoadAllAssembliesAndSetupDomain (118ms)
+		LoadAssemblies (193ms)
+		RebuildTransferFunctionScriptingTraits (0ms)
+		AnalyzeDomain (21ms)
+			TypeCache.Refresh (4ms)
+				TypeCache.ScanAssembly (0ms)
+			BuildScriptInfoCaches (15ms)
+			ResolveRequiredComponents (0ms)
+	FinalizeReload (325ms)
+		ReleaseScriptCaches (0ms)
+		RebuildScriptCaches (0ms)
+		SetupLoadedEditorAssemblies (226ms)
+			LogAssemblyErrors (0ms)
+			InitializePlatformSupportModulesInManaged (9ms)
+			SetLoadedEditorAssemblies (3ms)
+			BeforeProcessingInitializeOnLoad (80ms)
+			ProcessInitializeOnLoadAttributes (99ms)
+			ProcessInitializeOnLoadMethodAttributes (33ms)
+			AfterProcessingInitializeOnLoad (2ms)
+			EditorAssembliesLoaded (0ms)
+		ExecutionOrderSort2 (0ms)
+		AwakeInstancesAfterBackupRestoration (8ms)
+Refreshing native plugins compatible for Editor in 0.00 ms, found 0 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Unloading 0 Unused Serialized files (Serialized files now loaded: 0)
+Unloading 479 unused Assets / (25.4 KB). Loaded Objects now: 1073.
+Memory consumption went from 67.4 MB to 67.4 MB.
+Total: 3.886200 ms (FindLiveObjects: 0.112700 ms CreateObjectMapping: 0.124600 ms MarkObjects: 3.506700 ms  DeleteObjects: 0.130400 ms)
 
+Prepare: number of updated asset objects reloaded= 0

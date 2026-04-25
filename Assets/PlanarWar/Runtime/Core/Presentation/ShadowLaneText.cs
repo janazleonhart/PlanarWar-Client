@@ -384,7 +384,7 @@ namespace PlanarWar.Client.Core.Presentation
             if (count > 0)
             {
                 var frontPreview = BuildFrontPreview(techs.Select(tech => tech.Name), 2);
-                return $"Showing {count} shadow book option(s) from /api/me{frontPreview}";
+                return $"Showing {count} shadow book option(s) ready{frontPreview}";
             }
 
             return "No shadow book entry is visible right now.";

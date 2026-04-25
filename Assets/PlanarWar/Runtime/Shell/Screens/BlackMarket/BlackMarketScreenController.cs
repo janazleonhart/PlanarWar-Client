@@ -231,20 +231,20 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var targetArmyId = FirstNonBlank(reinforceState?.ArmyId, reinforceOp?.ArmyId);
             var rankedArmies = RankArmies(summary.Armies, targetArmyId);
 
-            headline.text = warfrontWindows.Count > 0 ? "Warfront desk" : summary.WarfrontSignals.Count > 0 ? "Warfront snapshot" : "Warfront review";
+            headline.text = warfrontWindows.Count > 0 ? "Operations desk" : summary.WarfrontSignals.Count > 0 ? "Operations snapshot" : "Operations review";
             copy.text = warfrontWindows.Count > 0
-                ? $"{warfrontWindows.Count} live front window(s) open. Review formations, reinforcement truth, hold posture, and frontline dispatch."
+                ? $"{warfrontWindows.Count} live operations window(s) open. Review cells, reinforcement truth, route posture, and covert deployment."
                 : summary.WarfrontSignals.Count > 0
-                    ? "Warfront posture is visible from the current summary payload."
-                    : "No active warfront snapshot is visible in the current payload.";
-            note.text = $"Lane {summary.City.SettlementLaneLabel} • windows {warfrontWindows.Count} • timers {warfrontTimers.Count} • formations {summary.Armies.Count}";
+                    ? "Operations posture is visible from the current summary payload."
+                    : "No active operations snapshot is visible in the current payload.";
+            note.text = $"Lane {summary.City.SettlementLaneLabel} • windows {warfrontWindows.Count} • timers {warfrontTimers.Count} • cells {summary.Armies.Count}";
             cardsCopy.text = BuildCardsCopy(summary.Armies, reinforceState, reinforceTimer, reinforceOp, warfrontWindows.Count, otherWarfrontTimers.Count);
 
-            windowsValue.text = warfrontWindows.Count > 0 ? $"{warfrontWindows.Count} open • {string.Join(" • ", warfrontWindows.Take(2).Select(window => HumanizeStatus(window.Status)))}" : "No active front window.";
+            windowsValue.text = warfrontWindows.Count > 0 ? $"{warfrontWindows.Count} open • {string.Join(" • ", warfrontWindows.Take(2).Select(window => HumanizeStatus(window.Status)))}" : "No active operations window.";
             readinessValue.text = BuildForceReadinessSummary(summary.Armies, reinforceState, reinforceOp);
-            signalValue.text = signalPairs.Count > 0 ? CompactSignalSummary(signalPairs) : "No warfront status signals.";
-            missionValue.text = activeMission != null ? $"{activeMission.Title} • {(activeMission.FinishesAtUtc.HasValue ? FormatRemaining(activeMission.FinishesAtUtc.Value - nowUtc) : "anchor missing")}" : "No active field support mission.";
-            pressureValue.text = !string.IsNullOrWhiteSpace(primaryWarning) ? Truncate(primaryWarning, 96) : warfrontWindows.Count > 0 ? "Field windows are open; no extra warning headline is active." : "No extra frontline warning surfaced.";
+            signalValue.text = signalPairs.Count > 0 ? CompactSignalSummary(signalPairs) : "No operations status signals.";
+            missionValue.text = activeMission != null ? $"{activeMission.Title} • {(activeMission.FinishesAtUtc.HasValue ? FormatRemaining(activeMission.FinishesAtUtc.Value - nowUtc) : "anchor missing")}" : "No active support operation.";
+            pressureValue.text = !string.IsNullOrWhiteSpace(primaryWarning) ? Truncate(primaryWarning, 96) : warfrontWindows.Count > 0 ? "Operations windows are open; no extra warning headline is active." : "No extra route-pressure warning surfaced.";
             noteValue.text = BuildReinforcementDeskNote(summary.Armies, reinforceState, reinforceTimer, reinforceOp, warfrontWindows.Count > 0);
 
             RenderCards(cards, BuildCards(summary, rankedArmies, warfrontWindows, activeMission, primaryWarning, signalPairs, reinforceState, reinforceTimer, reinforceOp));
@@ -262,8 +262,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var armies = (rankedArmies ?? new List<ArmySnapshot>()).Where(army => army != null).ToList();
             if (armies.Count == 0)
             {
-                if (managementCopy != null) managementCopy.text = "No formation payload is visible yet, so formation controls stay parked.";
-                if (managementNote != null) managementNote.text = "Warfront will unlock rename, split, merge, disband, and hold controls once at least one army is present in /api/me.";
+                if (managementCopy != null) managementCopy.text = "No cell payload is visible yet, so operations controls stay parked.";
+                if (managementNote != null) managementNote.text = "Operations controls unlock once at least one live cell is present in the summary payload.";
                 managementArmyChoiceIds.Clear();
                 mergeArmyChoiceIds.Clear();
                 holdRegionChoiceIds.Clear();
@@ -313,7 +313,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             if (!string.Equals(draftedArmyId, selectedArmy.Id, StringComparison.OrdinalIgnoreCase))
             {
                 draftedArmyId = selectedArmy.Id;
-                renameDraft = selectedArmy.Name;
+                renameDraft = PresentArmyName(selectedArmy.Name);
                 splitSizeDraft = BuildSuggestedSplitSize(selectedArmy);
                 splitNameDraft = BuildSuggestedSplitName(summary.Armies, selectedArmy);
                 selectedHoldRegionId = FirstNonBlank(selectedArmy.HoldRegionId, ResolveDefaultHoldRegionId());
@@ -436,7 +436,12 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
             var splitSize = ParsePositiveInt(splitSizeDraft);
             var maxSplit = Math.Max(0, (int)Math.Round(selectedArmy.Size ?? 0) - 40);
-            var canRename = !summaryState.IsActionBusy && idle && onRenameArmyRequested != null && !string.IsNullOrWhiteSpace(renameDraft?.Trim()) && !string.Equals(renameDraft.Trim(), selectedArmy.Name, StringComparison.OrdinalIgnoreCase);
+            var presentedSelectedArmyName = PresentArmyName(selectedArmy.Name);
+            var canRename = !summaryState.IsActionBusy
+                && idle
+                && onRenameArmyRequested != null
+                && !string.IsNullOrWhiteSpace(renameDraft?.Trim())
+                && !string.Equals(renameDraft.Trim(), presentedSelectedArmyName, StringComparison.OrdinalIgnoreCase);
             var canSplit = !summaryState.IsActionBusy && idle && onSplitArmyRequested != null && splitSize >= 40 && splitSize <= maxSplit;
             var canMerge = !summaryState.IsActionBusy && idle && onMergeArmyRequested != null && !string.IsNullOrWhiteSpace(selectedMergeArmyId);
             var canDisband = !summaryState.IsActionBusy && idle && onDisbandArmyRequested != null && armies.Count > 1;
@@ -451,12 +456,12 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             splitNameInput?.SetEnabled(!summaryState.IsActionBusy && idle);
             if (renameButton != null)
             {
-                renameButton.text = summaryState.IsActionBusy ? "Working..." : "Rename formation";
+                renameButton.text = summaryState.IsActionBusy ? "Working..." : "Rename cell";
                 renameButton.SetEnabled(canRename);
             }
             if (splitButton != null)
             {
-                splitButton.text = summaryState.IsActionBusy ? "Working..." : "Split formation";
+                splitButton.text = summaryState.IsActionBusy ? "Working..." : "Split cell";
                 splitButton.SetEnabled(canSplit);
             }
             if (mergeButton != null)
@@ -466,33 +471,33 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             }
             if (disbandButton != null)
             {
-                disbandButton.text = summaryState.IsActionBusy ? "Working..." : "Disband formation";
+                disbandButton.text = summaryState.IsActionBusy ? "Working..." : "Retire cell";
                 disbandButton.SetEnabled(canDisband);
             }
             if (assignHoldButton != null)
             {
-                assignHoldButton.text = summaryState.IsActionBusy ? "Working..." : "Assign hold";
+                assignHoldButton.text = summaryState.IsActionBusy ? "Working..." : "Assign route";
                 assignHoldButton.SetEnabled(canAssignHold);
             }
             if (releaseHoldButton != null)
             {
-                releaseHoldButton.text = summaryState.IsActionBusy ? "Working..." : "Release hold";
+                releaseHoldButton.text = summaryState.IsActionBusy ? "Working..." : "Release route";
                 releaseHoldButton.SetEnabled(canReleaseHold);
             }
             if (dispatchAssaultButton != null)
             {
-                dispatchAssaultButton.text = summaryState.IsActionBusy ? "Working..." : "Dispatch assault";
+                dispatchAssaultButton.text = summaryState.IsActionBusy ? "Working..." : "Open pressure line";
                 dispatchAssaultButton.SetEnabled(canDispatchAssault);
             }
             if (dispatchGarrisonButton != null)
             {
-                dispatchGarrisonButton.text = summaryState.IsActionBusy ? "Working..." : "Dispatch garrison strike";
+                dispatchGarrisonButton.text = summaryState.IsActionBusy ? "Working..." : "Run disruption action";
                 dispatchGarrisonButton.SetEnabled(canDispatchGarrison);
             }
 
             if (managementCopy != null)
             {
-                managementCopy.text = $"Commander controls stay bounded here: rename, split, merge, disband, assign holds, and dispatch the selected idle formation into frontline actions. Focus: {selectedArmy.Name} • {BuildFormationLore(selectedArmy)}.";
+                managementCopy.text = $"Operations controls stay bounded here: rename, split, merge, retire, assign routes, and dispatch the selected idle cell into live pressure actions. Focus: {PresentArmyName(selectedArmy.Name)} • {BuildFormationLore(selectedArmy)}.";
             }
 
             if (managementNote != null)
@@ -602,8 +607,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 {
                     var reinforcingExpiredLocally = reinforceState.FinishesAtUtc.HasValue && reinforceState.FinishesAtUtc.Value <= nowUtc;
                     cards.Add(new CardView(
-                        family: "Army reinforcement",
-                        title: FirstNonBlank(reinforceState.ArmyName, ResolveArmyName(summary.Armies, reinforceState.ArmyId), "Army reinforcement"),
+                        family: "Cell reinforcement",
+                        title: PresentArmyName(FirstNonBlank(reinforceState.ArmyName, ResolveArmyName(summary.Armies, reinforceState.ArmyId), "Cell reinforcement")),
                         lore: reinforceState.FinishesAtUtc.HasValue
                             ? reinforcingExpiredLocally
                                 ? "ready • refresh now"
@@ -625,11 +630,13 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                             : string.Equals(summaryState.PendingArmyReinforcementId, desiredArmyId, StringComparison.OrdinalIgnoreCase));
 
                     cards.Add(new CardView(
-                        family: "Army reinforce",
-                        title: FirstNonBlank(reinforceState.ArmyName, ResolveArmyName(summary.Armies, desiredArmyId), "Recommended formation"),
+                        family: "Cell reinforce",
+                        title: PresentArmyName(FirstNonBlank(reinforceState.ArmyName, ResolveArmyName(summary.Armies, desiredArmyId), "Recommended cell")),
                         lore: BuildArmyReinforcementIdleLore(reinforceState),
                         note: BuildArmyReinforcementIdleNote(reinforceState),
-                        buttonText: pendingForArmy ? "Reinforcing..." : FirstNonBlank(reinforceState.CtaLabel, "Reinforce formation"),
+                        buttonText: pendingForArmy
+                            ? "Reinforcing..."
+                            : $"Reinforce {PresentArmyName(FirstNonBlank(reinforceState.ArmyName, ResolveArmyName(summary.Armies, desiredArmyId), "cell"))}",
                         buttonEnabled: !summaryState.IsActionBusy && onReinforceArmyRequested != null && reinforceState.StartEligible,
                         onClick: () => TriggerReinforceArmy(desiredArmyId)));
                 }
@@ -637,21 +644,21 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             else if (reinforceTimer != null)
             {
                 cards.Add(new CardView(
-                    family: "Army reinforcement",
-                    title: reinforceTimer.Label,
+                    family: "Cell reinforcement",
+                    title: FirstNonBlank(reinforceTimer.Label, "Reinforcement timer"),
                     lore: reinforceTimer.FinishesAtUtc.HasValue ? $"active • {FormatRemaining(reinforceTimer.FinishesAtUtc.Value - nowUtc)}" : "active",
-                    note: Truncate(FirstNonBlank(reinforceTimer.Detail, "Army reinforcement timer surfaced from /api/me."), 96),
+                    note: Truncate(FirstNonBlank(reinforceTimer.Detail, "Cell reinforcement timer surfaced from the summary payload."), 96),
                     buttonText: summaryState.IsActionBusy && !string.IsNullOrWhiteSpace(summaryState.PendingArmyReinforcementId) ? "Reinforcing..." : "Reinforcing",
                     buttonEnabled: false));
             }
             else if (reinforceOp != null)
             {
                 cards.Add(new CardView(
-                    family: "Army reinforce",
-                    title: $"Reinforce {ResolveArmyName(summary.Armies, reinforceOp.ArmyId)}",
-                    lore: "Warfront support order is ready now.",
-                    note: Truncate(FirstNonBlank(reinforceOp.Title, "A live reinforce order is visible from settlementOpeningOperations."), 96),
-                    buttonText: summaryState.IsActionBusy && string.Equals(summaryState.PendingArmyReinforcementId, reinforceOp.ArmyId, StringComparison.OrdinalIgnoreCase) ? "Reinforcing..." : "Reinforce army",
+                    family: "Cell reinforce",
+                    title: $"Reinforce {PresentArmyName(ResolveArmyName(summary.Armies, reinforceOp.ArmyId))} cell",
+                    lore: "Pressure line is ready now.",
+                    note: Truncate(FirstNonBlank(reinforceOp.Title, "A live reinforcement order is visible from settlement opening operations."), 96),
+                    buttonText: summaryState.IsActionBusy && string.Equals(summaryState.PendingArmyReinforcementId, reinforceOp.ArmyId, StringComparison.OrdinalIgnoreCase) ? "Reinforcing..." : "Reinforce cell",
                     buttonEnabled: !summaryState.IsActionBusy && onReinforceArmyRequested != null,
                     onClick: () => TriggerReinforceArmy(reinforceOp.ArmyId)));
             }
@@ -663,15 +670,15 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             }
 
             cards.AddRange(windows.Take(Math.Max(0, 4 - cards.Count)).Select(timer => new CardView(
-                family: "Warfront window",
-                title: timer.Label,
+                family: "Operations window",
+                title: NormalizeOperationsTimerLabel(timer.Label),
                 lore: $"{HumanizeStatus(timer.Status)} • {FormatRemaining(timer.FinishesAtUtc.HasValue ? timer.FinishesAtUtc.Value - nowUtc : (TimeSpan?)null)}",
-                note: Truncate(FirstNonBlank(timer.Detail, "Live warfront window surfaced from cityTimers."), 96))));
+                note: Truncate(FirstNonBlank(timer.Detail, "Live operations window surfaced from city timers."), 96))));
 
             if (cards.Count < 4 && activeMission != null)
             {
                 cards.Add(new CardView(
-                    family: "Support mission",
+                    family: "Support operation",
                     title: activeMission.Title,
                     lore: activeMission.FinishesAtUtc.HasValue ? $"Mission resolves in {FormatRemaining(activeMission.FinishesAtUtc.Value - nowUtc)}" : "Mission is live without a finish anchor.",
                     note: Truncate(BuildActiveMissionCardNote(activeMission, summary, primaryWarning), 96)));
@@ -683,26 +690,40 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                     family: "Signal posture",
                     title: signalPairs[0].Label,
                     lore: Truncate(signalPairs[0].Value, 72),
-                    note: signalPairs.Count > 1 ? Truncate(string.Join(" • ", signalPairs.Skip(1).Select(FormatSignal)), 96) : "Warfront status comes through the summary signal map."));
+                    note: signalPairs.Count > 1 ? Truncate(string.Join(" • ", signalPairs.Skip(1).Select(FormatSignal)), 96) : "Operations status comes through the summary signal map."));
             }
 
             if (cards.Count == 0)
             {
                 cards.Add(new CardView(
-                    family: "Warfront payload",
-                    title: "No warfront entry",
-                    lore: "No active front window, field timer, or warfront signal is currently visible in the summary payload.",
-                    note: "The desk stays honest instead of inventing a fake frontline."));
+                    family: "Operations payload",
+                    title: "No operations entry",
+                    lore: "No active operations window, route timer, or operations signal is currently visible in the summary payload.",
+                    note: "The desk stays honest instead of inventing a fake battlefield."));
             }
 
             return cards;
         }
 
+        private static string NormalizeOperationsTimerLabel(string label)
+        {
+            var cleaned = FirstNonBlank(label);
+            if (string.IsNullOrWhiteSpace(cleaned))
+            {
+                return "Operations window";
+            }
+
+            cleaned = cleaned.Replace("Warfront window", "Operations window", StringComparison.OrdinalIgnoreCase);
+            cleaned = cleaned.Replace("Warfront Window", "Operations window", StringComparison.OrdinalIgnoreCase);
+            cleaned = cleaned.Replace("warfront window", "operations window", StringComparison.OrdinalIgnoreCase);
+            return cleaned;
+        }
+
         private CardView BuildFormationCard(ArmySnapshot army, bool isTarget)
         {
             return new CardView(
-                family: isTarget ? "Reinforcement target" : "Formation roster",
-                title: army.Name,
+                family: isTarget ? "Deployment target" : "Cell roster",
+                title: PresentArmyName(army.Name),
                 lore: BuildFormationLore(army),
                 note: BuildFormationNote(army));
         }
@@ -736,7 +757,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 return $"{commitment} • {fallbackWarning}";
             }
 
-            return FirstNonBlank(commitment, fallbackWarning, "Active mission pressure remains part of the current warfront posture.");
+            return FirstNonBlank(commitment, fallbackWarning, "Active support pressure remains part of the current operations posture.");
         }
 
         private static string BuildMissionCommitmentSummary(MissionSnapshot mission, IReadOnlyList<ArmySnapshot> armies, IReadOnlyList<HeroSnapshot> heroes)
@@ -756,7 +777,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var armyName = ResolveMissionArmyName(armies, mission.AssignedArmyId);
             if (!string.IsNullOrWhiteSpace(armyName))
             {
-                parts.Add($"Formation: {armyName}");
+                parts.Add($"Cell: {armyName}");
             }
 
             var heroName = ResolveMissionHeroName(heroes, mission.AssignedHeroId);
@@ -775,8 +796,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 return string.Empty;
             }
 
-            return armies.FirstOrDefault(army => string.Equals(army.Id, armyId, StringComparison.OrdinalIgnoreCase))?.Name
-                ?? armyId.Trim();
+            return PresentArmyName(armies.FirstOrDefault(army => string.Equals(army.Id, armyId, StringComparison.OrdinalIgnoreCase))?.Name
+                ?? armyId.Trim());
         }
 
         private static string ResolveMissionHeroName(IReadOnlyList<HeroSnapshot> heroes, string heroId)
@@ -797,26 +818,26 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 if (string.Equals(reinforceState.Status, "reinforcing", StringComparison.OrdinalIgnoreCase))
                 {
                     return reinforceState.FinishesAtUtc.HasValue && reinforceState.FinishesAtUtc.Value <= DateTime.UtcNow
-                        ? $"Army reinforcement timer elapsed for {FirstNonBlank(reinforceState.ArmyName, "the recommended formation")}. Refresh now to load the settled state."
-                        : AppendOptionalDetail($"Army reinforcement is live for {FirstNonBlank(reinforceState.ArmyName, "the recommended formation")}", BuildReinforcementDeltaText(reinforceState), suffix: ".");
+                        ? $"Cell reinforcement timer elapsed for {PresentArmyName(FirstNonBlank(reinforceState.ArmyName, "the recommended cell"))}. Refresh now to load the settled state."
+                        : AppendOptionalDetail($"Cell reinforcement is live for {PresentArmyName(FirstNonBlank(reinforceState.ArmyName, "the recommended cell"))}", BuildReinforcementDeltaText(reinforceState), suffix: ".");
                 }
 
                 if (string.Equals(reinforceState.Status, "idle", StringComparison.OrdinalIgnoreCase))
                 {
                     return reinforceState.StartEligible
-                        ? AppendOptionalDetail($"Reinforcement can open directly for {FirstNonBlank(reinforceState.ArmyName, "the recommended formation")}", BuildReinforcementDeltaText(reinforceState), suffix: ".")
+                        ? AppendOptionalDetail($"Reinforcement can open directly for {PresentArmyName(FirstNonBlank(reinforceState.ArmyName, "the recommended cell"))}", BuildReinforcementDeltaText(reinforceState), suffix: ".")
                         : FirstNonBlank(reinforceState.BlockedReason, reinforceState.Shortfall, "Reinforcement is idle but currently blocked by resource shortfalls.");
                 }
             }
 
             if (reinforceTimer != null)
             {
-                return $"Army reinforcement is live alongside {windowCount} front window(s).";
+                return $"Cell reinforcement is live alongside {windowCount} operations window(s).";
             }
 
             if (reinforceOp != null)
             {
-                return !string.IsNullOrWhiteSpace(reinforceOp.ArmyId) ? $"Reinforce order ready for {ResolveArmyName(armies, reinforceOp.ArmyId)}." : "A reinforce order is ready now.";
+                return !string.IsNullOrWhiteSpace(reinforceOp.ArmyId) ? $"Reinforcement order ready for {PresentArmyName(ResolveArmyName(armies, reinforceOp.ArmyId))}." : "A reinforcement order is ready now.";
             }
 
             if (armies.Count > 0)
@@ -824,22 +845,22 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 var readyCount = armies.Count(army => (army.Readiness ?? 0) >= 70);
                 var totals = BuildArmyTotals(armies);
                 return string.IsNullOrWhiteSpace(totals)
-                    ? $"Formation watch: {readyCount}/{armies.Count} ready"
-                    : $"Formation watch: {readyCount}/{armies.Count} ready • {totals}";
+                    ? $"Cell watch: {readyCount}/{armies.Count} ready"
+                    : $"Cell watch: {readyCount}/{armies.Count} ready • {totals}";
             }
 
             return windowCount > 0
-                ? $"Showing {windowCount} front window(s) and {otherTimerCount} field timer(s)."
+                ? $"Showing {windowCount} operations window(s) and {otherTimerCount} route timer(s)."
                 : otherTimerCount > 0
-                    ? $"{otherTimerCount} field timer(s) visible without an open front window."
-                    : "No active front windows are visible right now.";
+                    ? $"{otherTimerCount} route timer(s) visible without an open operations window."
+                    : "No active operations windows are visible right now.";
         }
 
         private static string BuildForceReadinessSummary(IReadOnlyList<ArmySnapshot> armies, ArmyReinforcementSnapshot reinforceState, OperationSnapshot reinforceOp)
         {
             if (armies.Count == 0 && reinforceState == null)
             {
-                return "No formations visible in payload.";
+                return "No cells visible in payload.";
             }
 
             var readyCount = armies.Count(army => (army.Readiness ?? 0) >= 70);
@@ -858,7 +879,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var targetArmy = RankArmies(armies, targetArmyId).FirstOrDefault();
             if (targetArmy != null)
             {
-                parts.Add($"focus {targetArmy.Name}{FormatArmyReadinessSuffix(targetArmy.Readiness)}");
+                parts.Add($"focus {PresentArmyName(targetArmy.Name)}{FormatArmyReadinessSuffix(targetArmy.Readiness)}");
             }
 
             if (reinforceState != null)
@@ -867,18 +888,18 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 if (string.Equals(reinforceState.Status, "reinforcing", StringComparison.OrdinalIgnoreCase))
                 {
                     parts.Add(string.IsNullOrWhiteSpace(deltaText)
-                        ? $"reinforcing {FirstNonBlank(reinforceState.ArmyName, targetArmy?.Name)}"
-                        : $"reinforcing {FirstNonBlank(reinforceState.ArmyName, targetArmy?.Name)} {deltaText}");
+                        ? $"reinforcing {PresentArmyName(FirstNonBlank(reinforceState.ArmyName, targetArmy?.Name))}"
+                        : $"reinforcing {PresentArmyName(FirstNonBlank(reinforceState.ArmyName, targetArmy?.Name))} {deltaText}");
                 }
                 else if (string.Equals(reinforceState.Status, "idle", StringComparison.OrdinalIgnoreCase) && reinforceState.StartEligible)
                 {
                     parts.Add(string.IsNullOrWhiteSpace(deltaText)
-                        ? $"next reinforce {FirstNonBlank(reinforceState.ArmyName, targetArmy?.Name)}"
-                        : $"next reinforce {FirstNonBlank(reinforceState.ArmyName, targetArmy?.Name)} {deltaText}");
+                        ? $"next reinforce {PresentArmyName(FirstNonBlank(reinforceState.ArmyName, targetArmy?.Name))}"
+                        : $"next reinforce {PresentArmyName(FirstNonBlank(reinforceState.ArmyName, targetArmy?.Name))} {deltaText}");
                 }
             }
 
-            return parts.Count == 0 ? "No formations visible in payload." : string.Join(" • ", parts.Where(part => !string.IsNullOrWhiteSpace(part)));
+            return parts.Count == 0 ? "No cells visible in payload." : string.Join(" • ", parts.Where(part => !string.IsNullOrWhiteSpace(part)));
         }
 
         private static string BuildReinforcementDeskNote(IReadOnlyList<ArmySnapshot> armies, ArmyReinforcementSnapshot reinforceState, CityTimerEntrySnapshot reinforceTimer, OperationSnapshot reinforceOp, bool hasWarfrontWindows)
@@ -888,9 +909,9 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 if (string.Equals(reinforceState.Status, "reinforcing", StringComparison.OrdinalIgnoreCase))
                 {
                     return reinforceState.FinishesAtUtc.HasValue && reinforceState.FinishesAtUtc.Value <= DateTime.UtcNow
-                        ? "Army reinforcement timer elapsed locally. Refresh now to load the settled payload state."
+                        ? "Cell reinforcement timer elapsed locally. Refresh now to load the settled payload state."
                         : AppendOptionalDetail(
-                            $"Reinforcing {FirstNonBlank(reinforceState.ArmyName, ResolveArmyName(armies, reinforceState.ArmyId), "the target formation")}",
+                            $"Reinforcing {PresentArmyName(FirstNonBlank(reinforceState.ArmyName, ResolveArmyName(armies, reinforceState.ArmyId), "the target cell"))}",
                             BuildReinforcementDeltaText(reinforceState),
                             suffix: ". Fresh reinforce orders stay parked until the current build clears.");
                 }
@@ -899,43 +920,43 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 {
                     return reinforceState.StartEligible
                         ? AppendOptionalDetail(
-                            $"Target formation: {FirstNonBlank(reinforceState.ArmyName, ResolveArmyName(armies, reinforceState.ArmyId), "recommended formation")}",
+                            $"Target cell: {PresentArmyName(FirstNonBlank(reinforceState.ArmyName, ResolveArmyName(armies, reinforceState.ArmyId), "recommended cell"))}",
                             BuildReinforcementDeltaText(reinforceState),
                             suffix: ".")
-                        : FirstNonBlank(reinforceState.BlockedReason, reinforceState.Shortfall, "Army reinforcement is idle but blocked until resource shortfalls clear.");
+                        : FirstNonBlank(reinforceState.BlockedReason, reinforceState.Shortfall, "Cell reinforcement is idle but blocked until resource shortfalls clear.");
                 }
             }
 
             if (reinforceTimer != null)
             {
-                return "Army reinforcement timer is live here. Fresh reinforce orders stay parked until the current build clears.";
+                return "Cell reinforcement timer is live here. Fresh reinforce orders stay parked until the current build clears.";
             }
 
             if (reinforceOp != null)
             {
-                return $"A live reinforce-army opening is visible for {ResolveArmyName(armies, reinforceOp.ArmyId)}.";
+                return $"A live reinforcement opening is visible for {PresentArmyName(ResolveArmyName(armies, reinforceOp.ArmyId))}.";
             }
 
             return hasWarfrontWindows
-                ? "Warfront truth is live here. Reinforce buttons only appear when the payload exposes a ready-now order."
-                : "No reinforce order is currently exposed in the payload.";
+                ? "Operations truth is live here. Reinforce buttons only appear when the payload exposes a ready-now order."
+                : "No reinforcement order is currently exposed in the payload.";
         }
 
         private static string BuildArmyReinforcementIdleLore(ArmyReinforcementSnapshot reinforceState)
         {
             var parts = new List<string>();
-            if (!string.IsNullOrWhiteSpace(reinforceState.ArmyType)) parts.Add(HumanizeKey(reinforceState.ArmyType));
+            if (!string.IsNullOrWhiteSpace(reinforceState.ArmyType)) parts.Add(HumanizeArmyTypeLabel(reinforceState.ArmyType));
             if (reinforceState.ArmyReadiness.HasValue) parts.Add($"Readiness {reinforceState.ArmyReadiness.Value:0.#}");
             var labels = ResourcePresentationText.DefaultForLane("black_market");
             if (reinforceState.MaterialsCost.HasValue) parts.Add(ResourcePresentationText.Cost(labels, "materials", reinforceState.MaterialsCost));
             if (reinforceState.WealthCost.HasValue) parts.Add(ResourcePresentationText.Cost(labels, "wealth", reinforceState.WealthCost));
-            return parts.Count > 0 ? string.Join(" • ", parts) : "Army reinforcement is available from the Warfront desk.";
+            return parts.Count > 0 ? string.Join(" • ", parts) : "Cell reinforcement is available from the operations desk.";
         }
 
         private static string BuildArmyReinforcementIdleNote(ArmyReinforcementSnapshot reinforceState)
         {
             var parts = new List<string>();
-            if (reinforceState.SizeDelta.HasValue) parts.Add($"+{reinforceState.SizeDelta.Value:0.#} troops");
+            if (reinforceState.SizeDelta.HasValue) parts.Add($"+{reinforceState.SizeDelta.Value:0.#} agents");
             if (reinforceState.PowerDelta.HasValue) parts.Add($"+{reinforceState.PowerDelta.Value:0.#} power");
             if (reinforceState.ReadinessDelta.HasValue) parts.Add($"+{reinforceState.ReadinessDelta.Value:0.#} readiness");
             if (!string.IsNullOrWhiteSpace(reinforceState.BlockedReason)) parts.Add(reinforceState.BlockedReason);
@@ -946,14 +967,14 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private static string BuildArmyReinforcementActiveNote(ArmyReinforcementSnapshot reinforceState, CityTimerEntrySnapshot reinforceTimer)
         {
             var parts = new List<string>();
-            if (reinforceState.SizeDelta.HasValue) parts.Add($"+{reinforceState.SizeDelta.Value:0.#} troops");
+            if (reinforceState.SizeDelta.HasValue) parts.Add($"+{reinforceState.SizeDelta.Value:0.#} agents");
             if (reinforceState.PowerDelta.HasValue) parts.Add($"+{reinforceState.PowerDelta.Value:0.#} power");
             if (reinforceState.ReadinessDelta.HasValue) parts.Add($"+{reinforceState.ReadinessDelta.Value:0.#} readiness");
             var labels = ResourcePresentationText.DefaultForLane("black_market");
             if (reinforceState.MaterialsCost.HasValue) parts.Add(ResourcePresentationText.Cost(labels, "materials", reinforceState.MaterialsCost));
             if (reinforceState.WealthCost.HasValue) parts.Add(ResourcePresentationText.Cost(labels, "wealth", reinforceState.WealthCost));
             if (parts.Count == 0 && !string.IsNullOrWhiteSpace(reinforceTimer?.Detail)) parts.Add(reinforceTimer.Detail);
-            return parts.Count > 0 ? string.Join(" • ", parts) : "Army reinforcement timer surfaced from /api/me.";
+            return parts.Count > 0 ? string.Join(" • ", parts) : "Cell reinforcement timer surfaced from the summary payload.";
         }
 
         private static string BuildFormationLore(ArmySnapshot army)
@@ -961,7 +982,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var parts = new List<string>();
             if (!string.IsNullOrWhiteSpace(army.Type))
             {
-                parts.Add(HumanizeKey(army.Type));
+                parts.Add(HumanizeArmyTypeLabel(army.Type));
             }
 
             if (!string.IsNullOrWhiteSpace(army.Status))
@@ -974,7 +995,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 parts.Add($"readiness {army.Readiness.Value:0.#}");
             }
 
-            return parts.Count == 0 ? "Formation surfaced from the summary payload." : string.Join(" • ", parts);
+            return parts.Count == 0 ? "Cell surfaced from the summary payload." : string.Join(" • ", parts);
         }
 
         private static string BuildFormationNote(ArmySnapshot army)
@@ -982,7 +1003,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var parts = new List<string>();
             if (army.Size.HasValue)
             {
-                parts.Add($"{army.Size.Value:0.#} troops");
+                parts.Add($"{army.Size.Value:0.#} agents");
             }
 
             if (army.Power.HasValue)
@@ -1000,7 +1021,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 parts.Add($"hold {HumanizeKey(army.HoldPosture)}");
             }
 
-            return parts.Count == 0 ? "No extra formation metadata is visible." : Truncate(string.Join(" • ", parts), 96);
+            return parts.Count == 0 ? "No extra cell metadata is visible." : Truncate(string.Join(" • ", parts), 96);
         }
 
         private static string BuildReinforcementDeltaText(ArmyReinforcementSnapshot reinforceState)
@@ -1008,7 +1029,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var parts = new List<string>();
             if (reinforceState.SizeDelta.HasValue)
             {
-                parts.Add($"+{reinforceState.SizeDelta.Value:0.#} troops");
+                parts.Add($"+{reinforceState.SizeDelta.Value:0.#} agents");
             }
 
             if (reinforceState.PowerDelta.HasValue)
@@ -1037,7 +1058,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var sizedArmies = armies.Where(army => army.Size.HasValue).ToList();
             if (sizedArmies.Count > 0)
             {
-                parts.Add($"{sizedArmies.Sum(army => army.Size.Value):0.#} troops");
+                parts.Add($"{sizedArmies.Sum(army => army.Size.Value):0.#} agents");
             }
 
             var poweredArmies = armies.Where(army => army.Power.HasValue).ToList();
@@ -1108,61 +1129,61 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             if (string.Equals(army.Status, "holding", StringComparison.OrdinalIgnoreCase))
             {
                 var holdLine = string.IsNullOrWhiteSpace(army.HoldRegionId) ? "a regional line" : army.HoldRegionId;
-                return $"{army.Name} is currently holding {holdLine} as {HumanizeKey(army.HoldPosture)} duty. Release the hold before reassigning region/posture, renaming, splitting, merging, or disbanding.";
+                return $"{PresentArmyName(army.Name)} is currently holding {holdLine} as {HumanizeKey(army.HoldPosture)} duty. Release the route before reassigning region/posture, renaming, splitting, merging, or retiring the cell.";
             }
 
             if (!string.Equals(army.Status, "idle", StringComparison.OrdinalIgnoreCase))
             {
-                return $"{army.Name} is {HumanizeStatus(army.Status)}. Rename, split, merge, disband, and hold orders stay locked until the formation returns to idle posture.";
+                return $"{PresentArmyName(army.Name)} is {HumanizeStatus(army.Status)}. Rename, split, merge, retire, and route orders stay locked until the cell returns to idle posture.";
             }
 
             var parts = new List<string>();
             if ((army.Size ?? 0) < 80)
             {
-                parts.Add($"{army.Name} is too small to split safely. Keep at least 40 troops on each side of the split.");
+                parts.Add($"{PresentArmyName(army.Name)} is too small to split safely. Keep at least 40 agents on each side of the split.");
             }
             else
             {
-                var range = maxSplit >= 40 ? $"Valid split window: 40-{maxSplit} troops." : "Valid split window is currently unavailable.";
+                var range = maxSplit >= 40 ? $"Valid split window: 40-{maxSplit} agents." : "Valid split window is currently unavailable.";
                 parts.Add($"{range} Current draft: {BuildSplitDraftSummary(splitSize, army)}.");
             }
 
             if (mergeTarget != null)
             {
-                parts.Add($"Merge target: {mergeTarget.Name} • {BuildFormationLore(mergeTarget)}.");
+                parts.Add($"Merge target: {PresentArmyName(mergeTarget.Name)} • {BuildFormationLore(mergeTarget)}.");
             }
             else
             {
-                parts.Add("No secondary formation is available to merge into yet.");
+                parts.Add("No secondary cell is available to merge into yet.");
             }
 
             parts.Add(string.IsNullOrWhiteSpace(holdRegionId)
-                ? "Choose a region and posture before assigning a hold line or dispatching a frontline action."
-                : $"Region desk: {(string.IsNullOrWhiteSpace(holdRegionLabel) ? holdRegionId : holdRegionLabel)} as {HumanizeKey(holdPosture)} duty, or dispatch {army.Name} there directly.");
+                ? "Choose a region and posture before assigning a route or opening a pressure action."
+                : $"Region desk: {(string.IsNullOrWhiteSpace(holdRegionLabel) ? holdRegionId : holdRegionLabel)} as {HumanizeKey(holdPosture)} duty, or deploy {PresentArmyName(army.Name)} there directly.");
             if (dispatchHero != null)
             {
                 parts.Add($"Dispatch hero: {dispatchHero.Name} • {BuildHeroDispatchLore(dispatchHero)}.");
             }
             else if (idleHeroCount > 0)
             {
-                parts.Add($"Dispatch hero is unset. {idleHeroCount} idle hero{(idleHeroCount == 1 ? string.Empty : "es")} can be assigned explicitly before frontline actions.");
+                parts.Add($"Dispatch operative is unset. {idleHeroCount} idle hero{(idleHeroCount == 1 ? string.Empty : "es")} can be assigned explicitly before live pressure actions.");
             }
             else
             {
-                parts.Add("No idle hero is visible right now, so garrison strike will stay parked until one stands free.");
+                parts.Add("No idle hero is visible right now, so disruption action stays parked until one stands free.");
             }
             parts.Add(formationCount > 1
-                ? "Disband removes the selected idle formation and trims upkeep without refunding field investment directly."
-                : "You must keep at least one formation on the roster, so disband is parked right now.");
+                ? "Retiring the selected idle cell trims upkeep without refunding committed field investment directly."
+                : "You must keep at least one cell on the roster, so retirement stays parked right now.");
             return string.Join(" ", parts.Where(part => !string.IsNullOrWhiteSpace(part)));
         }
 
         private static string BuildHeroDispatchLore(HeroSnapshot hero)
         {
-            var roleText = string.IsNullOrWhiteSpace(hero.Role) ? "field support" : HumanizeKey(hero.Role);
+            var roleText = string.IsNullOrWhiteSpace(hero.Role) ? "covert support" : HumanizeKey(hero.Role);
             var responseText = hero.ResponseRoles != null && hero.ResponseRoles.Count > 0
                 ? string.Join("/", hero.ResponseRoles.Select(HumanizeKey))
-                : "frontline support";
+                 : "operations support";
             return $"{roleText} • {responseText}";
         }
 
@@ -1170,12 +1191,12 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         {
             if (splitSize <= 0)
             {
-                return "enter a troop count to peel off a sibling formation";
+                return "enter an operator count to peel off a sibling cell";
             }
 
             var size = (int)Math.Round(army.Size ?? 0);
             var remaining = Math.Max(0, size - splitSize);
-            return $"move {splitSize} troops from {army.Name} and leave {remaining}";
+            return $"move {splitSize} agents from {PresentArmyName(army.Name)} and leave {remaining}";
         }
 
         private List<HoldRegionOption> BuildHoldRegionOptions()
@@ -1289,12 +1310,57 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             public string Label { get; }
         }
 
+        private static string PresentArmyName(string rawName)
+        {
+            if (string.IsNullOrWhiteSpace(rawName))
+            {
+                return "cell";
+            }
+
+            var value = rawName.Trim();
+            value = ReplaceWord(value, "Vanguard", "Cell");
+            value = ReplaceWord(value, "Guard", "Cell");
+            value = ReplaceWord(value, "Militia", "Operatives");
+            return value;
+        }
+
+        private static string HumanizeArmyTypeLabel(string rawType)
+        {
+            var normalized = (rawType ?? string.Empty).Trim().ToLowerInvariant().Replace("-", "_").Replace(" ", "_");
+            return normalized switch
+            {
+                "militia" => "Operatives",
+                "vanguard" => "Cell lead",
+                "guard" => "Cell watch",
+                _ => string.IsNullOrWhiteSpace(rawType) ? "cell" : HumanizeKey(rawType),
+            };
+        }
+
+        private static string ReplaceWord(string input, string source, string target)
+        {
+            if (string.IsNullOrWhiteSpace(input) || string.IsNullOrWhiteSpace(source))
+            {
+                return input ?? string.Empty;
+            }
+
+            var parts = input.Split(' ');
+            for (var i = 0; i < parts.Length; i++)
+            {
+                if (string.Equals(parts[i], source, StringComparison.OrdinalIgnoreCase))
+                {
+                    parts[i] = target;
+                }
+            }
+
+            return string.Join(" ", parts);
+        }
+
         private static string BuildArmyChoiceLabel(ArmySnapshot army)
         {
-            var typeLabel = string.IsNullOrWhiteSpace(army.Type) ? "formation" : HumanizeKey(army.Type);
-            var sizeText = army.Size.HasValue ? $"{army.Size.Value:0} troops" : "troops unknown";
+            var typeLabel = HumanizeArmyTypeLabel(army.Type);
+            var sizeText = army.Size.HasValue ? $"{army.Size.Value:0} agents" : "agents unknown";
             var powerText = army.Power.HasValue ? $"{army.Power.Value:0} power" : "power unknown";
-            return $"{army.Name} • {typeLabel} • {sizeText} • {powerText}";
+            return $"{PresentArmyName(army.Name)} • {typeLabel} • {sizeText} • {powerText}";
         }
 
         private static string BuildHeroChoiceLabel(HeroSnapshot hero)
@@ -1303,7 +1369,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var levelText = hero.Level.HasValue ? $"L{hero.Level.Value:0}" : "level unknown";
             var responseText = hero.ResponseRoles != null && hero.ResponseRoles.Count > 0
                 ? string.Join("/", hero.ResponseRoles.Select(HumanizeKey))
-                : "frontline support";
+                 : "operations support";
             return $"{hero.Name} • {roleText} • {levelText} • {responseText}";
         }
 
@@ -1321,7 +1387,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
         private static string BuildSuggestedSplitName(IReadOnlyList<ArmySnapshot> armies, ArmySnapshot army)
         {
-            var baseName = string.IsNullOrWhiteSpace(army?.Name) ? "Field Detachment" : $"{army.Name} Reserve";
+            var baseName = string.IsNullOrWhiteSpace(army?.Name) ? "Shadow Cell" : $"{PresentArmyName(army.Name)} Reserve";
             var candidate = baseName;
             var index = 2;
             while (armies.Any(existing => existing != null && string.Equals(existing.Name, candidate, StringComparison.OrdinalIgnoreCase)))
@@ -1339,7 +1405,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
         private static string HumanizeStatus(string value) => string.IsNullOrWhiteSpace(value) ? "unknown" : value.Replace('_', ' ');
         private static string FormatSignal(WarfrontSignalSnapshot signal) => $"{signal.Label}: {signal.Value}";
-        private static string CompactSignalSummary(List<WarfrontSignalSnapshot> signals) => signals == null || signals.Count == 0 ? "No warfront status signals." : signals.Count == 1 ? FormatSignal(signals[0]) : $"{FormatSignal(signals[0])} • +{signals.Count - 1} more";
+        private static string CompactSignalSummary(List<WarfrontSignalSnapshot> signals) => signals == null || signals.Count == 0 ? "No operations status signals." : signals.Count == 1 ? FormatSignal(signals[0]) : $"{FormatSignal(signals[0])} • +{signals.Count - 1} more";
         private static string FirstNonBlank(params string[] values) => values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? string.Empty;
         private static string Truncate(string value, int maxLen) => string.IsNullOrWhiteSpace(value) || value.Length <= maxLen ? value ?? string.Empty : value.Substring(0, Math.Max(0, maxLen - 1)).TrimEnd() + "…";
         private static string FormatRemaining(TimeSpan? span) => !span.HasValue ? "time unknown" : span.Value <= TimeSpan.Zero ? "now" : span.Value.ToString(span.Value.TotalHours >= 1 ? @"hh\:mm\:ss" : @"mm\:ss");

@@ -248,7 +248,7 @@ namespace PlanarWar.Client.UI.Screens.City
                 : s.ActiveResearch != null
                     ? $"Active research plus {Math.Max(0, s.AvailableTechs.Count)} surfaced tech option(s)."
                     : s.AvailableTechs.Count > 0
-                        ? $"Showing {s.AvailableTechs.Count} available tech option(s) from /api/me."
+                        ? $"Showing {s.AvailableTechs.Count} available tech option(s) ready."
                         : "No research cards were surfaced in payload.";
 
             RenderCards(researchCards, cards);
@@ -331,7 +331,7 @@ namespace PlanarWar.Client.UI.Screens.City
                     : readyJobs.Count > 0
                         ? $"{readyJobs.Count} ready pickup(s) visible; collect wiring is now live."
                         : summaryState.WorkshopRecipes.Count > 0
-                            ? $"Showing {summaryState.WorkshopRecipes.Count} craft recipe(s) from /api/workshop/recipes."
+                            ? $"Showing {summaryState.WorkshopRecipes.Count} craft recipe(s) ready."
                             : workshopTimers.Count > 0
                                 ? $"Workshop timing is coming through cityTimers even though no job body is active."
                                 : "No workshop queue, timer, or recipe catalog is visible right now.";
@@ -409,7 +409,7 @@ namespace PlanarWar.Client.UI.Screens.City
                     family: "Hero recruit",
                     title: recruitTimer.Label,
                     lore: recruitTimer.FinishesAtUtc.HasValue ? $"active • {FormatRemaining(recruitTimer.FinishesAtUtc.Value - nowUtc)}" : "active",
-                    note: FirstNonBlank(recruitTimer.Detail, "Hero recruitment timer surfaced from /api/me."),
+                    note: FirstNonBlank(recruitTimer.Detail, isBlackMarket ? "Recruitment timer is visible in the carry lane." : "Hero recruitment timer is visible from the latest summary."),
                     buttonText: summaryState.IsActionBusy && !string.IsNullOrWhiteSpace(summaryState.PendingHeroRecruitRole) ? "Recruiting..." : "Scouting",
                     buttonEnabled: false));
             }
@@ -447,10 +447,10 @@ namespace PlanarWar.Client.UI.Screens.City
                 .Where(t => !string.Equals(t.Category, "resource_tick", StringComparison.OrdinalIgnoreCase) && !string.Equals(t.Category, "workshop_job", StringComparison.OrdinalIgnoreCase) && !string.Equals(t.Category, "operator_recruit", StringComparison.OrdinalIgnoreCase))
                 .Take(Math.Max(0, 3 - cards.Count))
                 .Select(timer => new CardView(
-                    family: HumanizeCategory(timer.Category),
-                    title: timer.Label,
+                    family: isBlackMarket ? HumanizeBlackMarketTimerCategory(timer.Category) : HumanizeCategory(timer.Category),
+                    title: isBlackMarket ? NormalizeBlackMarketTimerLabel(timer.Label, timer.Category) : timer.Label,
                     lore: timer.FinishesAtUtc.HasValue ? $"{timer.Status} • {FormatRemaining(timer.FinishesAtUtc.Value - nowUtc)}" : timer.Status,
-                    note: FirstNonBlank(timer.Detail, "Live city timer surfaced from /api/me."))));
+                    note: FirstNonBlank(timer.Detail, isBlackMarket ? "Live operations timer is visible in the carry lane." : "Live city timer is visible from the latest summary."))));
 
             if (cards.Count < 4)
             {
@@ -931,6 +931,29 @@ namespace PlanarWar.Client.UI.Screens.City
         {
             if (string.IsNullOrWhiteSpace(raw)) return "Category";
             return HumanizeKey(raw);
+        }
+
+        private static string HumanizeBlackMarketTimerCategory(string raw)
+        {
+            if (string.Equals(raw, "warfront_window", StringComparison.OrdinalIgnoreCase)) return "Operations window";
+            if (string.Equals(raw, "army_reinforcement", StringComparison.OrdinalIgnoreCase)) return "Cell reinforcement";
+            return HumanizeCategory(raw);
+        }
+
+        private static string NormalizeBlackMarketTimerLabel(string label, string category)
+        {
+            var cleaned = FirstNonBlank(label);
+            if (string.IsNullOrWhiteSpace(cleaned))
+            {
+                return string.Equals(category, "warfront_window", StringComparison.OrdinalIgnoreCase)
+                    ? "Operations window"
+                    : HumanizeBlackMarketTimerCategory(category);
+            }
+
+            cleaned = cleaned.Replace("Warfront window", "Operations window", StringComparison.OrdinalIgnoreCase);
+            cleaned = cleaned.Replace("Warfront Window", "Operations window", StringComparison.OrdinalIgnoreCase);
+            cleaned = cleaned.Replace("warfront window", "operations window", StringComparison.OrdinalIgnoreCase);
+            return cleaned;
         }
 
         private static string HumanizeLane(string raw) => string.IsNullOrWhiteSpace(raw) ? "development" : raw;

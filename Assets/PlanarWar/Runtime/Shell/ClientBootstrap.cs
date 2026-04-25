@@ -330,12 +330,12 @@ namespace PlanarWar.Client.UI
                 await apiClient.ReinforceArmyAsync(trimmedArmyId);
                 await summaryController.RefreshAsync();
                 summaryState.FinishAction(string.IsNullOrWhiteSpace(trimmedArmyId)
-                    ? "Army reinforcement started."
-                    : $"Army reinforcement started: {trimmedArmyId}");
+                    ? "Cell reinforcement started."
+                    : $"Cell reinforcement started: {trimmedArmyId}");
             }
             catch (Exception ex)
             {
-                summaryState.FinishAction($"Army reinforcement failed: {ex.Message}", failed: true);
+                summaryState.FinishAction($"Cell reinforcement failed: {ex.Message}", failed: true);
             }
         }
 
@@ -520,16 +520,16 @@ namespace PlanarWar.Client.UI
 
             try
             {
-                summaryState.BeginFrontlineDispatch("warfront assault", trimmedRegionId, trimmedArmyId, trimmedHeroId);
+                summaryState.BeginFrontlineDispatch("pressure deployment", trimmedRegionId, trimmedArmyId, trimmedHeroId);
                 await apiClient.StartWarfrontAssaultAsync(trimmedRegionId, trimmedArmyId, trimmedHeroId);
                 await summaryController.RefreshAsync();
                 summaryState.FinishAction(string.IsNullOrWhiteSpace(trimmedHeroId)
-                    ? $"Warfront assault launched for {trimmedRegionId} with {trimmedArmyId}."
-                    : $"Warfront assault launched for {trimmedRegionId} with {trimmedArmyId} under {trimmedHeroId}.");
+                    ? $"Pressure deployment opened for {trimmedRegionId} with {trimmedArmyId}."
+                    : $"Pressure deployment opened for {trimmedRegionId} with {trimmedArmyId} under {trimmedHeroId}.");
             }
             catch (Exception ex)
             {
-                summaryState.FinishAction($"Warfront assault failed: {ex.Message}", failed: true);
+                summaryState.FinishAction($"Pressure deployment failed: {ex.Message}", failed: true);
             }
         }
 
@@ -550,16 +550,16 @@ namespace PlanarWar.Client.UI
 
             try
             {
-                summaryState.BeginFrontlineDispatch("garrison strike", trimmedRegionId, trimmedArmyId, trimmedHeroId);
+                summaryState.BeginFrontlineDispatch("disruption action", trimmedRegionId, trimmedArmyId, trimmedHeroId);
                 await apiClient.StartGarrisonStrikeAsync(trimmedRegionId, trimmedArmyId, trimmedHeroId);
                 await summaryController.RefreshAsync();
                 summaryState.FinishAction(string.IsNullOrWhiteSpace(trimmedHeroId)
-                    ? $"Garrison strike launched for {trimmedRegionId} with {trimmedArmyId} as support."
-                    : $"Garrison strike launched for {trimmedRegionId} with {trimmedArmyId} under {trimmedHeroId}.");
+                    ? $"Disruption action opened for {trimmedRegionId} with {trimmedArmyId}."
+                    : $"Disruption action opened for {trimmedRegionId} with {trimmedArmyId} under {trimmedHeroId}.");
             }
             catch (Exception ex)
             {
-                summaryState.FinishAction($"Garrison strike failed: {ex.Message}", failed: true);
+                summaryState.FinishAction($"Disruption action failed: {ex.Message}", failed: true);
             }
         }
 
