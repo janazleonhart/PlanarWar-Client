@@ -2,6 +2,7 @@ using PlanarWar.Client.Core;
 using PlanarWar.Client.Core.Application;
 using PlanarWar.Client.Network;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -157,7 +158,10 @@ namespace PlanarWar.Client.UI
                 && armyReinforcement.FinishesAtUtc.HasValue
                 && armyReinforcement.FinishesAtUtc.Value <= nowUtc;
 
-            if (!heroScoutingElapsed && !heroCandidateReviewElapsed && !armyReinforcementElapsed)
+            var researchElapsed = (snapshot.ActiveResearches ?? new System.Collections.Generic.List<PlanarWar.Client.Core.Contracts.ResearchSnapshot>())
+                .Any(r => r != null && r.FinishesAtUtc.HasValue && r.FinishesAtUtc.Value <= nowUtc);
+
+            if (!heroScoutingElapsed && !heroCandidateReviewElapsed && !armyReinforcementElapsed && !researchElapsed)
             {
                 return;
             }
@@ -196,13 +200,16 @@ namespace PlanarWar.Client.UI
 
             try
             {
-                summaryState.BeginResearchAction(techId);
-                await apiClient.StartResearchAsync(techId.Trim());
+                var trimmedTechId = techId.Trim();
+                summaryState.BeginResearchAction(trimmedTechId);
+                await apiClient.StartResearchAsync(trimmedTechId);
+                summaryState.MarkResearchStartAccepted(trimmedTechId);
                 await summaryController.RefreshAsync();
-                summaryState.FinishAction($"Research started: {techId.Trim()}");
+                summaryState.FinishAction($"Research started: {trimmedTechId}");
             }
             catch (Exception ex)
             {
+                summaryState.ClearRecentResearchStart();
                 summaryState.FinishAction($"Research failed: {ex.Message}", failed: true);
             }
         }

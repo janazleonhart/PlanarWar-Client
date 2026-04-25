@@ -100,15 +100,16 @@ namespace PlanarWar.Client.UI.Screens.Summary
             heartbeat++;
             var nowUtc = DateTime.UtcNow;
 
+            var activeResearches = SelectActiveResearches(s, nowUtc);
             statusHeadline.text = s.HasCity ? $"{s.City.Name} • {s.City.SettlementLaneLabel}" : (s.FounderMode ? "Founder mode active." : "No settlement loaded.");
             resources.text = FormatResource(s.Resources, s.ResourceLabels, "No resources loaded.");
             production.text = FormatResource(s.ProductionPerTick, s.ResourceLabels, s.HasCity ? "No production snapshot." : "Found a city to unlock production.", "/tick");
-            research.text = FormatResearchSummary(s.ActiveResearch, nowUtc);
+            research.text = FormatResearchSummary(activeResearches, nowUtc);
             warnings.text = s.ThreatWarnings.Count == 0 ? "No active threat warnings." : s.ThreatWarnings[0].Headline;
             readyOps.text = s.OpeningOperations.Count == 0 ? "No opening operations surfaced." : BuildReadyOpsSummary(s.OpeningOperations);
             heroes.text = s.Heroes.Count == 0 ? (s.HasCity ? "No officer corps visible." : "Found a city to unlock officers.") : $"{s.Heroes.Count(h => h.Status == "idle")}/{s.Heroes.Count} idle • {s.Heroes.Count(h => h.AttachmentCount > 0)} geared";
             armies.text = s.Armies.Count == 0 ? (s.HasCity ? "No formations visible." : "Found a city to unlock formations.") : $"{s.Armies.Count(a => (a.Readiness ?? 0) >= 70)}/{s.Armies.Count} ready";
-            researchTimer.text = FormatResearchTimer(s.ActiveResearch, nowUtc);
+            researchTimer.text = FormatResearchTimer(activeResearches, nowUtc);
             workshopTimer.text = FormatWorkshopAndBuild(s, nowUtc);
             missionTimer.text = FormatMission(s.ActiveMissions);
             resourceTick.text = FormatTick(s.ResourceTickTiming);
@@ -1329,27 +1330,68 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private static string FormatProgress(double? p, double? c) => c.GetValueOrDefault() > 0 ? $"{p.GetValueOrDefault():0.#}/{c.Value:0.#}" : $"{p.GetValueOrDefault():0.#}";
         private static string FormatRemaining(TimeSpan span) => span <= TimeSpan.Zero ? "now" : span.ToString(span.TotalHours >= 1 ? @"hh\:mm\:ss" : @"mm\:ss");
 
-        private static string FormatResearchSummary(ResearchSnapshot research, DateTime nowUtc)
+        private static List<ResearchSnapshot> SelectActiveResearches(ShellSummarySnapshot s, DateTime nowUtc)
         {
-            if (research == null) return "No active research.";
+            var selected = new List<ResearchSnapshot>();
+            if (s?.ActiveResearches != null)
+            {
+                selected.AddRange(s.ActiveResearches.Where(r => r != null));
+            }
+
+            if (s?.ActiveResearch != null)
+            {
+                selected.Add(s.ActiveResearch);
+            }
+
+            return selected
+                .Where(r => !string.IsNullOrWhiteSpace(FirstNonBlank(r.Id, r.Name)))
+                .GroupBy(r => FirstNonBlank(r.Id, r.Name), StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.First())
+                .OrderBy(r => IsResearchReady(r, nowUtc) ? 0 : 1)
+                .ThenBy(r => r.FinishesAtUtc ?? DateTime.MaxValue)
+                .ThenBy(r => FirstNonBlank(r.Name, r.Id))
+                .ToList();
+        }
+
+        private static string FormatResearchSummary(IReadOnlyList<ResearchSnapshot> researches, DateTime nowUtc)
+        {
+            if (researches == null || researches.Count == 0) return "No active research.";
+            var lead = researches[0];
+            var more = researches.Count > 1 ? $" • +{researches.Count - 1} more" : string.Empty;
+            return $"{FormatResearchEntry(lead, nowUtc)}{more}";
+        }
+
+        private static string FormatResearchTimer(IReadOnlyList<ResearchSnapshot> researches, DateTime nowUtc)
+        {
+            if (researches == null || researches.Count == 0) return "No active research timer.";
+
+            var ready = researches.Count(r => IsResearchReady(r, nowUtc));
+            var lead = researches[0];
+            var prefix = researches.Count > 1 ? $"{researches.Count} research item(s)" : lead.Name;
+            if (lead.FinishesAtUtc.HasValue)
+            {
+                var leadTimer = lead.FinishesAtUtc.Value <= nowUtc
+                    ? "ready / refresh for result"
+                    : $"completes in {FormatRemaining(lead.FinishesAtUtc.Value - nowUtc)}";
+                var readySuffix = ready > 0 ? $" • {ready} ready" : string.Empty;
+                return $"{prefix} • {leadTimer}{readySuffix}";
+            }
+
+            return lead.StartedAtUtc.HasValue
+                ? $"{prefix} • running {FormatRemaining(nowUtc - lead.StartedAtUtc.Value)}"
+                : $"{prefix} • active, ETA unavailable";
+        }
+
+        private static string FormatResearchEntry(ResearchSnapshot research, DateTime nowUtc)
+        {
             var timer = research.FinishesAtUtc.HasValue ? $" • {FormatRemaining(research.FinishesAtUtc.Value - nowUtc)}" : string.Empty;
             var status = string.IsNullOrWhiteSpace(research.Status) ? string.Empty : $" • {HumanizeWords(research.Status, "Active")}";
             return $"{research.Name} • {FormatProgress(research.Progress, research.Cost)}{timer}{status}";
         }
 
-        private static string FormatResearchTimer(ResearchSnapshot research, DateTime nowUtc)
+        private static bool IsResearchReady(ResearchSnapshot research, DateTime nowUtc)
         {
-            if (research == null) return "No active research timer.";
-            if (research.FinishesAtUtc.HasValue)
-            {
-                return research.FinishesAtUtc.Value <= nowUtc
-                    ? $"{research.Name} • ready / refresh for result"
-                    : $"{research.Name} • completes in {FormatRemaining(research.FinishesAtUtc.Value - nowUtc)}";
-            }
-
-            return research.StartedAtUtc.HasValue
-                ? $"{research.Name} • running {FormatRemaining(nowUtc - research.StartedAtUtc.Value)}"
-                : $"{research.Name} • active, ETA unavailable";
+            return research?.FinishesAtUtc.HasValue == true && research.FinishesAtUtc.Value <= nowUtc;
         }
 
         private static string FormatWorkshopAndBuild(ShellSummarySnapshot s, DateTime nowUtc)

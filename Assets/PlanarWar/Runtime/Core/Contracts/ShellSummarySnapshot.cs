@@ -18,6 +18,7 @@ namespace PlanarWar.Client.Core.Contracts
         public ResourceSnapshot ProductionPerTick { get; set; } = new();
         public TimerSnapshot ResourceTickTiming { get; set; } = new();
         public ResearchSnapshot ActiveResearch { get; set; }
+        public List<ResearchSnapshot> ActiveResearches { get; set; } = new();
         public List<TechOptionSnapshot> AvailableTechs { get; set; } = new();
         public List<CityTimerEntrySnapshot> CityTimers { get; set; } = new();
         public List<ThreatWarningSnapshot> ThreatWarnings { get; set; } = new();

@@ -1,5 +1,7 @@
 using NUnit.Framework;
+using PlanarWar.Client.Core;
 using PlanarWar.Client.Core.Contracts;
+using PlanarWar.Client.Core.Mapping;
 using PlanarWar.Client.Core.Presentation;
 using PlanarWar.Client.UI.Screens.City;
 using System;
@@ -102,6 +104,84 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(blackMarketTimers, Has.Count.EqualTo(1));
             Assert.That(blackMarketTimers[0].Id, Is.EqualTo("front_timer_1"));
             Assert.That(cityTimers, Is.Empty);
+        }
+
+        [Test]
+        public void Mapper_promotes_active_research_arrays_and_research_timers_without_counting_front_timers()
+        {
+            const string payload = @"{
+                ""hasCity"": true,
+                ""city"": { ""name"": ""Black Market Tester"", ""settlementLane"": ""black_market"", ""settlementLaneProfile"": { ""label"": ""Black Market"" } },
+                ""activeResearches"": [
+                    { ""techId"": ""urban_planning_1"", ""name"": ""Urban Planning I"", ""status"": ""active"", ""finishesAt"": ""2026-04-25T12:00:00Z"" }
+                ],
+                ""cityTimers"": [
+                    { ""id"": ""basic_sanitation"", ""category"": ""research"", ""label"": ""Basic Sanitation"", ""status"": ""active"", ""finishesAt"": ""2026-04-25T11:59:00Z"" },
+                    { ""id"": ""heartland_basin"", ""category"": ""operator_front"", ""label"": ""Operations window heartland_basin"", ""status"": ""active"", ""finishesAt"": ""2026-04-25T11:58:00Z"" }
+                ]
+            }";
+
+            var summary = ShellSummarySnapshotMapper.Map(payload);
+            var ids = summary.ActiveResearches.ConvertAll(r => r.Id);
+
+            Assert.That(summary.ActiveResearches, Has.Count.EqualTo(2));
+            Assert.That(ids, Does.Contain("urban_planning_1"));
+            Assert.That(ids, Does.Contain("basic_sanitation"));
+            Assert.That(ids, Does.Not.Contain("heartland_basin"));
+            Assert.That(summary.ActiveResearch.Id, Is.EqualTo("basic_sanitation"));
+        }
+
+        [Test]
+        public void Development_research_start_block_respects_canonical_active_research_and_recent_accepted_start()
+        {
+            var selector = typeof(CityScreenController).GetMethod("IsResearchStartBlocked", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(selector, Is.Not.Null);
+
+            var canonical = new ShellSummarySnapshot
+            {
+                ActiveResearches = new List<ResearchSnapshot>
+                {
+                    new ResearchSnapshot { Id = "urban_planning_1", Name = "Urban Planning I", FinishesAtUtc = DateTime.UtcNow.AddSeconds(30) }
+                }
+            };
+
+            var empty = new ShellSummarySnapshot();
+            var state = new SummaryState();
+
+            Assert.That((bool)selector.Invoke(null, new object[] { canonical, state, DateTime.UtcNow }), Is.True);
+            Assert.That((bool)selector.Invoke(null, new object[] { empty, state, DateTime.UtcNow }), Is.False);
+
+            state.MarkResearchStartAccepted("basic_sanitation");
+            Assert.That((bool)selector.Invoke(null, new object[] { empty, state, DateTime.UtcNow }), Is.True);
+        }
+
+        [Test]
+        public void Research_start_guard_persists_until_canonical_research_truth_arrives()
+        {
+            var state = new SummaryState();
+            var startedAt = DateTime.UtcNow;
+            state.MarkResearchStartAccepted("animal_husbandry_1");
+
+            Assert.That(state.HasRecentResearchStartGuard(startedAt.AddMinutes(20)), Is.True);
+            Assert.That(state.HasRecentResearchStartGuard(startedAt.AddMinutes(20), guardSeconds: 12), Is.False);
+
+            state.ReconcileRecentResearchStartWithSnapshot(new ShellSummarySnapshot(), startedAt.AddMinutes(20));
+            Assert.That(state.HasRecentResearchStartGuard(startedAt.AddMinutes(20)), Is.True);
+
+            state.ReconcileRecentResearchStartWithSnapshot(new ShellSummarySnapshot
+            {
+                ActiveResearches = new List<ResearchSnapshot>
+                {
+                    new ResearchSnapshot
+                    {
+                        Id = "animal_husbandry_1",
+                        Name = "Animal Husbandry I",
+                        FinishesAtUtc = startedAt.AddMinutes(1)
+                    }
+                }
+            }, startedAt.AddMinutes(20));
+
+            Assert.That(state.HasRecentResearchStartGuard(startedAt.AddMinutes(20)), Is.False);
         }
 
     }

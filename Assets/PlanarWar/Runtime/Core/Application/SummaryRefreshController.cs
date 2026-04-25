@@ -22,7 +22,7 @@ namespace PlanarWar.Client.Core.Application
         public async Task RefreshAsync()
         {
             var raw = await apiClient.FetchSummaryAsync();
-            var snapshot = ShellSummarySnapshotMapper.Map(raw);
+            var snapshot = ShellSummarySnapshotMapper.Map(raw?.ToString(Newtonsoft.Json.Formatting.None) ?? "{}");
 
             List<WorkshopRecipeSnapshot> workshopRecipes = new();
             try

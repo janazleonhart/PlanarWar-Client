@@ -19,7 +19,7 @@ namespace PlanarWar.Client.Core.Mapping
             return Map(JObject.Parse(json));
         }
 
-        public static ShellSummarySnapshot Map(JObject summary)
+        private static ShellSummarySnapshot Map(JObject summary)
         {
             if (summary == null) return ShellSummarySnapshot.Empty;
 
@@ -52,6 +52,27 @@ namespace PlanarWar.Client.Core.Mapping
                 city?["cityTimers"],
                 city?["city_timers"],
                 city?["timers"]);
+            var mappedCityTimers = cityTimers?.OfType<JObject>().Select(MapCityTimer).Where(t => t != null).ToList() ?? new List<CityTimerEntrySnapshot>();
+            var activeResearchObjects = ObjectsFromArrays(
+                summary["activeResearch"],
+                summary["active_research"],
+                summary["activeResearches"],
+                summary["active_researches"],
+                summary["research"]?["active"],
+                summary["research"]?["activeResearch"],
+                summary["research"]?["active_research"],
+                summary["research"]?["activeResearches"],
+                summary["research"]?["active_researches"],
+                city?["activeResearch"],
+                city?["active_research"],
+                city?["activeResearches"],
+                city?["active_researches"],
+                city?["research"]?["active"],
+                city?["research"]?["activeResearch"],
+                city?["research"]?["active_research"],
+                city?["research"]?["activeResearches"],
+                city?["research"]?["active_researches"]);
+            var activeResearches = BuildActiveResearchList(activeResearchObjects, mappedCityTimers);
             var openingOps = FirstArray(
                 summary["settlementOpeningOperations"],
                 summary["settlement_opening_operations"],
@@ -102,9 +123,10 @@ namespace PlanarWar.Client.Core.Mapping
                 ResourceLabels = MapResourcePresentation(FirstObject(summary["resourceLabels"], summary["resource_labels"]), city?["settlementLane"]?.Read<string>() ?? city?["settlement_lane"]?.Read<string>()),
                 ProductionPerTick = MapResource(city?["production"] as JObject, true),
                 ResourceTickTiming = MapTimer(resourceTickTiming),
-                ActiveResearch = MapResearch(summary["activeResearch"] as JObject ?? summary["active_research"] as JObject ?? summary["research"]?["active"] as JObject ?? summary["research"]?["activeResearch"] as JObject ?? summary["research"]?["active_research"] as JObject ?? city?["activeResearch"] as JObject ?? city?["active_research"] as JObject),
+                ActiveResearch = activeResearches.FirstOrDefault(),
+                ActiveResearches = activeResearches,
                 AvailableTechs = availableTechs?.OfType<JObject>().Select(MapTech).Where(t => t != null).ToList() ?? new List<TechOptionSnapshot>(),
-                CityTimers = cityTimers?.OfType<JObject>().Select(MapCityTimer).Where(t => t != null).ToList() ?? new List<CityTimerEntrySnapshot>(),
+                CityTimers = mappedCityTimers,
                 ThreatWarnings = FirstArray(summary["threatWarnings"], summary["threat_warnings"])?.OfType<JObject>().Select(MapThreatWarning).Where(w => w != null).ToList() ?? new List<ThreatWarningSnapshot>(),
                 OpeningOperations = openingOps?.OfType<JObject>().Select(MapOperation).Where(o => o != null).ToList() ?? new List<OperationSnapshot>(),
                 ActiveMissions = activeMissions?.OfType<JObject>().Select(MapMission).Where(m => m != null).ToList() ?? new List<MissionSnapshot>(),
@@ -125,6 +147,65 @@ namespace PlanarWar.Client.Core.Mapping
 
             ResolveActiveMissionAssignments(mapped);
             return mapped;
+        }
+
+
+        private static List<ResearchSnapshot> BuildActiveResearchList(List<JObject> activeResearchObjects, IEnumerable<CityTimerEntrySnapshot> cityTimers)
+        {
+            var research = activeResearchObjects?
+                .Select(MapResearch)
+                .Where(r => r != null)
+                .ToList() ?? new List<ResearchSnapshot>();
+
+            foreach (var timer in cityTimers ?? Enumerable.Empty<CityTimerEntrySnapshot>())
+            {
+                if (!IsResearchTimer(timer))
+                {
+                    continue;
+                }
+
+                research.Add(new ResearchSnapshot
+                {
+                    Id = FirstNonBlank(timer.Id, timer.Label, timer.Category),
+                    Name = FirstNonBlank(timer.Label, timer.Id, timer.Category, "Research"),
+                    Status = FirstNonBlank(timer.Status, "active"),
+                    StartedAtUtc = timer.StartedAtUtc,
+                    FinishesAtUtc = timer.FinishesAtUtc,
+                });
+            }
+
+            return research
+                .Where(r => !string.IsNullOrWhiteSpace(FirstNonBlank(r.Id, r.Name)))
+                .GroupBy(r => FirstNonBlank(r.Id, r.Name), StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.OrderBy(r => r.FinishesAtUtc.HasValue && r.FinishesAtUtc.Value <= DateTime.UtcNow ? 0 : 1)
+                              .ThenBy(r => r.FinishesAtUtc ?? DateTime.MaxValue)
+                              .First())
+                .OrderBy(r => r.FinishesAtUtc.HasValue && r.FinishesAtUtc.Value <= DateTime.UtcNow ? 0 : 1)
+                .ThenBy(r => r.FinishesAtUtc ?? DateTime.MaxValue)
+                .ThenBy(r => FirstNonBlank(r.Name, r.Id))
+                .ToList();
+        }
+
+        private static bool IsResearchTimer(CityTimerEntrySnapshot timer)
+        {
+            var category = timer?.Category ?? string.Empty;
+            var label = timer?.Label ?? string.Empty;
+            var detail = timer?.Detail ?? string.Empty;
+
+            return ContainsResearchWord(category)
+                || ContainsResearchWord(label)
+                || ContainsResearchWord(detail);
+        }
+
+        private static bool ContainsResearchWord(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return false;
+            return raw.IndexOf("research", StringComparison.OrdinalIgnoreCase) >= 0
+                || raw.IndexOf("tech", StringComparison.OrdinalIgnoreCase) >= 0
+                || raw.IndexOf("unlock", StringComparison.OrdinalIgnoreCase) >= 0
+                || raw.IndexOf("shadow_book", StringComparison.OrdinalIgnoreCase) >= 0
+                || raw.IndexOf("shadow-book", StringComparison.OrdinalIgnoreCase) >= 0
+                || raw.IndexOf("shadow book", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private static ThreatWarningSnapshot MapThreatWarning(JObject obj)

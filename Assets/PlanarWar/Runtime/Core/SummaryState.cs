@@ -22,6 +22,8 @@ namespace PlanarWar.Client.Core
         public string ActionStatus { get; private set; } = string.Empty;
         public bool ActionFailed { get; private set; }
         public string PendingResearchTechId { get; private set; } = string.Empty;
+        public string RecentStartedResearchTechId { get; private set; } = string.Empty;
+        public DateTime? RecentStartedResearchAtUtc { get; private set; }
         public string PendingWorkshopJobId { get; private set; } = string.Empty;
         public string PendingWorkshopRecipeId { get; private set; } = string.Empty;
         public string PendingMissionInstanceId { get; private set; } = string.Empty;
@@ -38,6 +40,7 @@ namespace PlanarWar.Client.Core
             LastError = "-";
             LastUpdatedUtc = DateTime.UtcNow;
             WorkshopRecipes = workshopRecipes?.Where(r => r != null).ToList() ?? new List<WorkshopRecipeSnapshot>();
+            ReconcileRecentResearchStartWithSnapshot(Snapshot, LastUpdatedUtc, notify: false);
             Changed?.Invoke();
         }
 
@@ -51,6 +54,117 @@ namespace PlanarWar.Client.Core
         {
             BeginAction(string.IsNullOrWhiteSpace(techId) ? "Starting research..." : $"Starting research: {techId.Trim()}");
             PendingResearchTechId = techId?.Trim() ?? string.Empty;
+        }
+
+        public void MarkResearchStartAccepted(string techId)
+        {
+            RecentStartedResearchTechId = techId?.Trim() ?? string.Empty;
+            RecentStartedResearchAtUtc = DateTime.UtcNow;
+            Changed?.Invoke();
+        }
+
+        public void ClearRecentResearchStart()
+        {
+            RecentStartedResearchTechId = string.Empty;
+            RecentStartedResearchAtUtc = null;
+            Changed?.Invoke();
+        }
+
+        public bool HasRecentResearchStartGuard(DateTime nowUtc, double guardSeconds = 0)
+        {
+            if (!RecentStartedResearchAtUtc.HasValue || string.IsNullOrWhiteSpace(RecentStartedResearchTechId))
+            {
+                return false;
+            }
+
+            if (guardSeconds <= 0)
+            {
+                return true;
+            }
+
+            return nowUtc - RecentStartedResearchAtUtc.Value < TimeSpan.FromSeconds(Math.Max(1, guardSeconds));
+        }
+
+        public bool HasResearchStartCanonicalWaitWarning(DateTime nowUtc, double warningSeconds = 30)
+        {
+            return HasRecentResearchStartGuard(nowUtc)
+                && RecentStartedResearchAtUtc.HasValue
+                && nowUtc - RecentStartedResearchAtUtc.Value >= TimeSpan.FromSeconds(Math.Max(1, warningSeconds));
+        }
+
+        public void ReconcileRecentResearchStartWithSnapshot(ShellSummarySnapshot snapshot, DateTime nowUtc, bool notify = true)
+        {
+            if (!HasRecentResearchStartGuard(nowUtc))
+            {
+                return;
+            }
+
+            if (!SnapshotHasCanonicalResearch(snapshot))
+            {
+                return;
+            }
+
+            RecentStartedResearchTechId = string.Empty;
+            RecentStartedResearchAtUtc = null;
+            if (notify)
+            {
+                Changed?.Invoke();
+            }
+        }
+
+        private static bool SnapshotHasCanonicalResearch(ShellSummarySnapshot snapshot)
+        {
+            if (snapshot == null)
+            {
+                return false;
+            }
+
+            if (snapshot.ActiveResearch != null && HasResearchIdentity(snapshot.ActiveResearch))
+            {
+                return true;
+            }
+
+            if (snapshot.ActiveResearches != null && snapshot.ActiveResearches.Any(HasResearchIdentity))
+            {
+                return true;
+            }
+
+            return snapshot.CityTimers != null && snapshot.CityTimers.Any(IsResearchTimer);
+        }
+
+        private static bool HasResearchIdentity(ResearchSnapshot research)
+        {
+            return research != null
+                && (!string.IsNullOrWhiteSpace(research.Id)
+                    || !string.IsNullOrWhiteSpace(research.Name)
+                    || research.FinishesAtUtc.HasValue);
+        }
+
+        private static bool IsResearchTimer(CityTimerEntrySnapshot timer)
+        {
+            if (timer == null)
+            {
+                return false;
+            }
+
+            return ContainsResearchWord(timer.Category)
+                || ContainsResearchWord(timer.Label)
+                || ContainsResearchWord(timer.Detail);
+        }
+
+        private static bool ContainsResearchWord(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return false;
+            }
+
+            return raw.IndexOf("research", StringComparison.OrdinalIgnoreCase) >= 0
+                || raw.IndexOf("tech", StringComparison.OrdinalIgnoreCase) >= 0
+                || raw.IndexOf("unlock", StringComparison.OrdinalIgnoreCase) >= 0
+                || raw.IndexOf("shadow_book", StringComparison.OrdinalIgnoreCase) >= 0
+                || raw.IndexOf("shadow-book", StringComparison.OrdinalIgnoreCase) >= 0
+                || raw.IndexOf("shadow book", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         public void BeginWorkshopCraft(string recipeId)

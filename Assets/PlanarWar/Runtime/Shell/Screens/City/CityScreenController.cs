@@ -122,6 +122,9 @@ namespace PlanarWar.Client.UI.Screens.City
         {
             var recipeCount = summaryState?.WorkshopRecipes?.Count ?? 0;
             var isBlackMarket = IsBlackMarketLane(s);
+            var nowUtc = DateTime.UtcNow;
+            var activeResearches = SelectActiveResearches(s, nowUtc);
+            var researchStartBlocked = IsResearchStartBlocked(s, summaryState, nowUtc);
             if (growthLaneButton != null)
             {
                 growthLaneButton.text = isBlackMarket ? "Fronts" : "Buildings";
@@ -139,8 +142,8 @@ namespace PlanarWar.Client.UI.Screens.City
                 : $"Tier {(s.City.Tier ?? 0)} {HumanizeLane(s.City.SettlementLaneLabel)} desk. Review research, queues, buildings, and timing without leaving the city shell.";
 
             card1Title.text = isBlackMarket ? ShadowLaneText.BuildResearchLaneTitle() : "Research lane";
-            card1Value.text = s.ActiveResearch != null
-                ? $"{s.ActiveResearch.Name} • {FormatProgress(s.ActiveResearch.Progress, s.ActiveResearch.Cost)}"
+            card1Value.text = activeResearches.Count > 0
+                ? FormatResearchOverview(activeResearches, isBlackMarket, nowUtc)
                 : s.AvailableTechs.Count > 0
                     ? isBlackMarket
                         ? ShadowLaneText.DescribeResearchLaneValue(s.AvailableTechs)
@@ -153,7 +156,11 @@ namespace PlanarWar.Client.UI.Screens.City
             card3Title.text = isBlackMarket ? "Front lane" : "Building lane";
             card3Value.text = DescribeBuildingLane(s, isBlackMarket);
 
-            researchFocusValue.text = s.ActiveResearch?.Name ?? (isBlackMarket ? "No active shadow-book focus." : "No active research focus.");
+            researchFocusValue.text = activeResearches.Count > 0
+                ? FormatResearchOverview(activeResearches, isBlackMarket, nowUtc)
+                : summaryState?.HasRecentResearchStartGuard(nowUtc) == true
+                    ? $"Accepted {HumanizeKey(summaryState.RecentStartedResearchTechId)}; waiting for canonical timer."
+                    : (isBlackMarket ? "No active shadow-book focus." : "No active research focus.");
             nextTechValue.text = isBlackMarket
                 ? ShadowLaneText.BuildNextTechValue(s.AvailableTechs)
                 : s.AvailableTechs.FirstOrDefault()?.Name ?? "No available tech surfaced.";
@@ -166,8 +173,10 @@ namespace PlanarWar.Client.UI.Screens.City
                 var suggestedTech = GetSuggestedTech(s);
                 startSuggestedResearchButton.text = summaryState.IsActionBusy && !string.IsNullOrWhiteSpace(summaryState.PendingResearchTechId)
                     ? "Starting..."
-                    : "Start suggested research";
-                startSuggestedResearchButton.SetEnabled(suggestedTech != null && !summaryState.IsActionBusy && onStartResearchRequested != null);
+                    : researchStartBlocked
+                        ? "Research active"
+                        : "Start suggested research";
+                startSuggestedResearchButton.SetEnabled(suggestedTech != null && (summaryState == null || !summaryState.IsActionBusy) && !researchStartBlocked && onStartResearchRequested != null);
             }
 
             RenderResearchLane(s);
@@ -208,30 +217,46 @@ namespace PlanarWar.Client.UI.Screens.City
         private void RenderResearchLane(ShellSummarySnapshot s)
         {
             var isBlackMarket = IsBlackMarketLane(s);
+            var nowUtc = DateTime.UtcNow;
+            var activeResearches = SelectActiveResearches(s, nowUtc);
+            var researchStartBlocked = IsResearchStartBlocked(s, summaryState, nowUtc);
             laneTitle.text = activeLane == DevelopmentLane.Research ? (isBlackMarket ? ShadowLaneText.BuildResearchLaneTitle() : "Research lane") : laneTitle.text;
             laneCopy.text = activeLane == DevelopmentLane.Research
                 ? (isBlackMarket ? ShadowLaneText.BuildResearchLaneCopy() : "Research keeps the current tech, next unlocks, and readiness posture visible in one place so you can judge the next order before mutation wiring lands.")
                 : laneCopy.text;
 
             var cards = new List<CardView>();
-            if (s.ActiveResearch != null)
+            foreach (var research in activeResearches.Take(4))
             {
                 cards.Add(new CardView(
-                    family: isBlackMarket ? "Live front" : "Active research",
-                    title: s.ActiveResearch.Name,
-                    lore: BuildResearchLore(s.ActiveResearch, isBlackMarket, DateTime.UtcNow),
-                    note: BuildResearchNote(s.ActiveResearch, isBlackMarket, DateTime.UtcNow),
-                    buttonText: s.ActiveResearch.FinishesAtUtc.HasValue && s.ActiveResearch.FinishesAtUtc.Value <= DateTime.UtcNow ? "Ready" : "Live",
+                    family: isBlackMarket ? "Live shadow-book" : "Active research",
+                    title: research.Name,
+                    lore: BuildResearchLore(research, isBlackMarket, nowUtc),
+                    note: BuildResearchNote(research, isBlackMarket, nowUtc),
+                    buttonText: IsResearchReady(research, nowUtc) ? "Ready" : "Live",
                     buttonEnabled: false));
             }
 
-            cards.AddRange(s.AvailableTechs.Take(4 - cards.Count).Select(tech => new CardView(
+            if (cards.Count == 0 && summaryState?.HasRecentResearchStartGuard(nowUtc) == true)
+            {
+                cards.Add(new CardView(
+                    isBlackMarket ? "Accepted shadow order" : "Accepted research order",
+                    HumanizeKey(summaryState.RecentStartedResearchTechId),
+                    "The server accepted the start request, but /api/me has not surfaced canonical active research or an ETA timer yet.",
+                    summaryState.HasResearchStartCanonicalWaitWarning(nowUtc)
+                        ? "Start buttons stay locked because canonical ETA truth is still missing from the summary payload."
+                        : "Start buttons stay locked so the desk cannot stack duplicate research by accident.",
+                    "Awaiting canonical timer",
+                    false));
+            }
+
+            cards.AddRange(s.AvailableTechs.Take(Math.Max(0, 4 - cards.Count)).Select(tech => new CardView(
                 family: isBlackMarket ? ShadowLaneText.BuildTechFamily(tech) : (string.IsNullOrWhiteSpace(tech.IdentityFamily) ? HumanizeCategory(tech.Category) : tech.IdentityFamily),
                 title: tech.Name,
                 lore: isBlackMarket ? ShadowLaneText.BuildTechLore(tech) : FirstNonBlank(tech.IdentitySummary, tech.Description, tech.UnlockPreview.FirstOrDefault(), "No research summary provided."),
                 note: BuildTechNote(tech, isBlackMarket),
-                buttonText: summaryState.IsActionBusy && string.Equals(summaryState.PendingResearchTechId, tech.Id, StringComparison.OrdinalIgnoreCase) ? "Starting..." : "Start research",
-                buttonEnabled: !summaryState.IsActionBusy && onStartResearchRequested != null,
+                buttonText: BuildResearchStartButtonText(tech, researchStartBlocked),
+                buttonEnabled: (summaryState == null || !summaryState.IsActionBusy) && !researchStartBlocked && onStartResearchRequested != null,
                 onClick: () => TriggerStartResearch(tech.Id))));
 
             if (cards.Count == 0)
@@ -245,13 +270,7 @@ namespace PlanarWar.Client.UI.Screens.City
                     false));
             }
 
-            researchCardsCopyValue.text = isBlackMarket
-                ? ShadowLaneText.DescribeResearchCardsCopy(s)
-                : s.ActiveResearch != null
-                    ? $"Active research plus {Math.Max(0, s.AvailableTechs.Count)} surfaced tech option(s)."
-                    : s.AvailableTechs.Count > 0
-                        ? $"Showing {s.AvailableTechs.Count} available tech option(s) ready."
-                        : "No research cards were surfaced in payload.";
+            researchCardsCopyValue.text = BuildResearchCardsCopy(s, isBlackMarket, activeResearches, nowUtc);
 
             RenderCards(researchCards, cards);
         }
@@ -490,6 +509,93 @@ namespace PlanarWar.Client.UI.Screens.City
         }
 
 
+        private static List<ResearchSnapshot> SelectActiveResearches(ShellSummarySnapshot s, DateTime nowUtc)
+        {
+            var selected = new List<ResearchSnapshot>();
+            if (s?.ActiveResearches != null)
+            {
+                selected.AddRange(s.ActiveResearches.Where(r => r != null));
+            }
+
+            if (s?.ActiveResearch != null)
+            {
+                selected.Add(s.ActiveResearch);
+            }
+
+            return selected
+                .Where(r => !string.IsNullOrWhiteSpace(FirstNonBlank(r.Id, r.Name)))
+                .GroupBy(r => FirstNonBlank(r.Id, r.Name), StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.First())
+                .OrderBy(r => IsResearchReady(r, nowUtc) ? 0 : 1)
+                .ThenBy(r => r.FinishesAtUtc ?? DateTime.MaxValue)
+                .ThenBy(r => FirstNonBlank(r.Name, r.Id))
+                .ToList();
+        }
+
+        private static bool IsResearchStartBlocked(ShellSummarySnapshot s, SummaryState state, DateTime nowUtc)
+        {
+            return SelectActiveResearches(s, nowUtc).Count > 0
+                || (state?.HasRecentResearchStartGuard(nowUtc) == true);
+        }
+
+        private static bool IsResearchReady(ResearchSnapshot research, DateTime nowUtc)
+        {
+            return research?.FinishesAtUtc.HasValue == true && research.FinishesAtUtc.Value <= nowUtc;
+        }
+
+        private string BuildResearchStartButtonText(TechOptionSnapshot tech, bool researchStartBlocked)
+        {
+            if (summaryState != null && summaryState.IsActionBusy && string.Equals(summaryState.PendingResearchTechId, tech?.Id, StringComparison.OrdinalIgnoreCase))
+            {
+                return "Starting...";
+            }
+
+            if (researchStartBlocked)
+            {
+                return summaryState?.HasRecentResearchStartGuard(DateTime.UtcNow) == true ? "Awaiting canonical timer" : "Research active";
+            }
+
+            return "Start research";
+        }
+
+        private static string BuildResearchCardsCopy(ShellSummarySnapshot s, bool isBlackMarket, IReadOnlyList<ResearchSnapshot> activeResearches, DateTime nowUtc)
+        {
+            var activeCount = activeResearches?.Count ?? 0;
+            var readyCount = activeResearches?.Count(r => IsResearchReady(r, nowUtc)) ?? 0;
+            if (isBlackMarket)
+            {
+                if (activeCount > 0)
+                {
+                    return $"Showing {activeCount} active shadow-book/front research item(s), {readyCount} ready, and {s.AvailableTechs.Count} available option(s).";
+                }
+
+                return ShadowLaneText.DescribeResearchCardsCopy(s);
+            }
+
+            if (activeCount > 0)
+            {
+                return $"Showing {activeCount} active research item(s), {readyCount} ready, and {s.AvailableTechs.Count} available tech option(s).";
+            }
+
+            return s.AvailableTechs.Count > 0
+                ? $"Showing {s.AvailableTechs.Count} available tech option(s) ready."
+                : "No research cards were surfaced in payload.";
+        }
+
+        private static string FormatResearchOverview(IReadOnlyList<ResearchSnapshot> activeResearches, bool isBlackMarket, DateTime nowUtc)
+        {
+            if (activeResearches == null || activeResearches.Count == 0)
+            {
+                return isBlackMarket ? "No active shadow-book focus." : "No active research focus.";
+            }
+
+            var lead = activeResearches[0];
+            var timer = lead.FinishesAtUtc.HasValue ? $" • {FormatRemaining(lead.FinishesAtUtc.Value - nowUtc)}" : string.Empty;
+            var more = activeResearches.Count > 1 ? $" • +{activeResearches.Count - 1} more" : string.Empty;
+            return $"{lead.Name}{timer}{more}";
+        }
+
+
         private void TriggerRefreshDesk()
         {
             if (summaryState.IsActionBusy || onRefreshDeskRequested == null)
@@ -503,7 +609,7 @@ namespace PlanarWar.Client.UI.Screens.City
         private void TriggerSuggestedResearch()
         {
             var suggested = GetSuggestedTech(summaryState.Snapshot);
-            if (suggested == null || summaryState.IsActionBusy || onStartResearchRequested == null)
+            if (suggested == null || summaryState.IsActionBusy || IsResearchStartBlocked(summaryState.Snapshot, summaryState, DateTime.UtcNow) || onStartResearchRequested == null)
             {
                 return;
             }
@@ -513,7 +619,7 @@ namespace PlanarWar.Client.UI.Screens.City
 
         private void TriggerStartResearch(string techId)
         {
-            if (summaryState.IsActionBusy || onStartResearchRequested == null || string.IsNullOrWhiteSpace(techId))
+            if (summaryState.IsActionBusy || IsResearchStartBlocked(summaryState.Snapshot, summaryState, DateTime.UtcNow) || onStartResearchRequested == null || string.IsNullOrWhiteSpace(techId))
             {
                 return;
             }
