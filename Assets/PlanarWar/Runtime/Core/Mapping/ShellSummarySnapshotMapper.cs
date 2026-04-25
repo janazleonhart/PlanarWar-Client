@@ -174,26 +174,57 @@ namespace PlanarWar.Client.Core.Mapping
                     continue;
                 }
 
-                research.Add(new ResearchSnapshot
+                var fromTimer = new ResearchSnapshot
                 {
-                    Id = FirstNonBlank(timer.Id, timer.Label, timer.Category),
-                    Name = FirstNonBlank(timer.Label, timer.Id, timer.Category, "Research"),
+                    Id = NormalizeResearchTimerId(FirstNonBlank(timer.Id, timer.Label, timer.Category)),
+                    Name = NormalizeResearchTimerLabel(FirstNonBlank(timer.Label, timer.Id, timer.Category, "Research")),
                     Status = FirstNonBlank(timer.Status, "active"),
                     StartedAtUtc = timer.StartedAtUtc,
                     FinishesAtUtc = timer.FinishesAtUtc,
-                });
+                };
+                ApplyResearchProgressDetail(fromTimer, timer.Detail);
+                research.Add(fromTimer);
             }
 
             return research
                 .Where(r => !string.IsNullOrWhiteSpace(FirstNonBlank(r.Id, r.Name)))
-                .GroupBy(r => FirstNonBlank(r.Id, r.Name), StringComparer.OrdinalIgnoreCase)
-                .Select(g => g.OrderBy(r => r.FinishesAtUtc.HasValue && r.FinishesAtUtc.Value <= DateTime.UtcNow ? 0 : 1)
-                              .ThenBy(r => r.FinishesAtUtc ?? DateTime.MaxValue)
-                              .First())
+                .GroupBy(r => NormalizeResearchKey(r.Id, r.Name), StringComparer.OrdinalIgnoreCase)
+                .Select(MergeResearchGroup)
+                .Where(r => r != null)
                 .OrderBy(r => r.FinishesAtUtc.HasValue && r.FinishesAtUtc.Value <= DateTime.UtcNow ? 0 : 1)
                 .ThenBy(r => r.FinishesAtUtc ?? DateTime.MaxValue)
                 .ThenBy(r => FirstNonBlank(r.Name, r.Id))
                 .ToList();
+        }
+
+        private static ResearchSnapshot MergeResearchGroup(IEnumerable<ResearchSnapshot> group)
+        {
+            var items = group?.Where(r => r != null).ToList() ?? new List<ResearchSnapshot>();
+            if (items.Count == 0) return null;
+
+            var preferredIdentity = items.FirstOrDefault(r => !IsResearchTimerId(r.Id)) ?? items[0];
+            var preferredName = items.FirstOrDefault(r => !StartsWithResearchPrefix(r.Name)) ?? preferredIdentity;
+            var finish = items
+                .Where(r => r.FinishesAtUtc.HasValue)
+                .OrderBy(r => r.FinishesAtUtc.Value)
+                .Select(r => r.FinishesAtUtc)
+                .FirstOrDefault();
+            var started = items
+                .Where(r => r.StartedAtUtc.HasValue)
+                .OrderBy(r => r.StartedAtUtc.Value)
+                .Select(r => r.StartedAtUtc)
+                .FirstOrDefault();
+
+            return new ResearchSnapshot
+            {
+                Id = NormalizeResearchTimerId(FirstNonBlank(new[] { preferredIdentity.Id }.Concat(items.Select(r => r.Id)).ToArray())),
+                Name = NormalizeResearchTimerLabel(FirstNonBlank(new[] { preferredName.Name, preferredIdentity.Name }.Concat(items.Select(r => r.Name)).ToArray())),
+                Status = FirstNonBlank(items.Select(r => r.Status).ToArray()),
+                Progress = items.Select(r => r.Progress).FirstOrDefault(v => v.HasValue),
+                Cost = items.Select(r => r.Cost).FirstOrDefault(v => v.HasValue),
+                StartedAtUtc = started,
+                FinishesAtUtc = finish,
+            };
         }
 
         private static bool IsResearchTimer(CityTimerEntrySnapshot timer)
@@ -216,6 +247,63 @@ namespace PlanarWar.Client.Core.Mapping
                 || raw.IndexOf("shadow_book", StringComparison.OrdinalIgnoreCase) >= 0
                 || raw.IndexOf("shadow-book", StringComparison.OrdinalIgnoreCase) >= 0
                 || raw.IndexOf("shadow book", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static string NormalizeResearchKey(string id, string name)
+        {
+            var raw = NormalizeResearchTimerId(FirstNonBlank(id, name));
+            if (string.IsNullOrWhiteSpace(raw)) raw = NormalizeResearchTimerLabel(name);
+            raw = NormalizeResearchTimerLabel(raw);
+            var chars = raw
+                .ToLowerInvariant()
+                .Where(char.IsLetterOrDigit)
+                .ToArray();
+            return chars.Length > 0 ? new string(chars) : "research";
+        }
+
+        private static bool IsResearchTimerId(string id)
+        {
+            return !string.IsNullOrWhiteSpace(id) && id.Trim().StartsWith("research:", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string NormalizeResearchTimerId(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
+            var value = raw.Trim();
+            return value.StartsWith("research:", StringComparison.OrdinalIgnoreCase) ? value.Substring("research:".Length).Trim() : value;
+        }
+
+        private static bool StartsWithResearchPrefix(string raw)
+        {
+            return !string.IsNullOrWhiteSpace(raw) && raw.Trim().StartsWith("Research ", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string NormalizeResearchTimerLabel(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
+            var value = NormalizeResearchTimerId(raw);
+            return value.StartsWith("Research ", StringComparison.OrdinalIgnoreCase) ? value.Substring("Research ".Length).Trim() : value;
+        }
+
+        private static void ApplyResearchProgressDetail(ResearchSnapshot research, string detail)
+        {
+            if (research == null || string.IsNullOrWhiteSpace(detail)) return;
+            const string marker = "progress:";
+            var index = detail.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+            if (index < 0) return;
+            var segment = detail.Substring(index + marker.Length).Split('•')[0].Trim();
+            var parts = segment.Split('/');
+            if (parts.Length != 2) return;
+
+            if (double.TryParse(parts[0].Trim(), out var progress))
+            {
+                research.Progress = progress;
+            }
+
+            if (double.TryParse(parts[1].Trim(), out var cost))
+            {
+                research.Cost = cost;
+            }
         }
 
         private static ThreatWarningSnapshot MapThreatWarning(JObject obj)

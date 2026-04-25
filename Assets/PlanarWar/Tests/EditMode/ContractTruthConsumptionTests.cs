@@ -240,5 +240,131 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(state.HasRecentResearchStartGuard(startedAt.AddMinutes(20)), Is.False);
         }
 
+
+        [Test]
+        public void Mapper_merges_research_timer_with_matching_active_research_card()
+        {
+            const string payload = @"{
+                ""activeResearches"": [
+                    { ""techId"": ""black_market_contacts_1"", ""name"": ""Black Market Contacts"", ""status"": ""active"", ""progress"": 180, ""cost"": 200 }
+                ],
+                ""cityTimers"": [
+                    { ""id"": ""research:black_market_contacts_1"", ""category"": ""research"", ""label"": ""Research Black Market Contacts"", ""status"": ""active"", ""finishesAt"": ""2026-04-25T14:45:00Z"", ""detail"": ""progress:180/200 • rate:3/tick"" }
+                ]
+            }";
+
+            var summary = ShellSummarySnapshotMapper.Map(payload);
+
+            Assert.That(summary.ActiveResearches, Has.Count.EqualTo(1));
+            Assert.That(summary.ActiveResearches[0].Id, Is.EqualTo("black_market_contacts_1"));
+            Assert.That(summary.ActiveResearches[0].Name, Is.EqualTo("Black Market Contacts"));
+            Assert.That(summary.ActiveResearches[0].Progress, Is.EqualTo(180));
+            Assert.That(summary.ActiveResearches[0].Cost, Is.EqualTo(200));
+            Assert.That(summary.ActiveResearches[0].FinishesAtUtc, Is.EqualTo(new DateTime(2026, 4, 25, 14, 45, 0, DateTimeKind.Utc)));
+        }
+
+        [Test]
+        public void Development_research_lane_hides_available_option_that_matches_active_research()
+        {
+            var selector = typeof(CityScreenController).GetMethod("SelectAvailableResearchOptions", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(selector, Is.Not.Null);
+
+            var summary = new ShellSummarySnapshot
+            {
+                ActiveResearches = new List<ResearchSnapshot>
+                {
+                    new ResearchSnapshot
+                    {
+                        Id = "black_market_contacts_1",
+                        Name = "Black Market Contacts",
+                        FinishesAtUtc = DateTime.UtcNow.AddMinutes(6)
+                    }
+                },
+                AvailableTechs = new List<TechOptionSnapshot>
+                {
+                    new TechOptionSnapshot { Id = "black_market_contacts_1", Name = "Black Market Contacts" },
+                    new TechOptionSnapshot { Id = "hush_routes_1", Name = "Hush Routes" }
+                }
+            };
+
+            var visible = (List<TechOptionSnapshot>)selector.Invoke(null, new object[] { summary, summary.ActiveResearches });
+
+            Assert.That(visible, Has.Count.EqualTo(1));
+            Assert.That(visible[0].Id, Is.EqualTo("hush_routes_1"));
+        }
+
+        [Test]
+        public void Development_desk_note_suppresses_stale_research_started_status_when_canonical_research_is_active()
+        {
+            var builder = typeof(CityScreenController).GetMethod("BuildDeskNote", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(builder, Is.Not.Null);
+
+            var state = new SummaryState();
+            state.FinishAction("Research started: hush_routes_1");
+
+            var summary = new ShellSummarySnapshot
+            {
+                HasCity = true,
+                City = new CitySummarySnapshot
+                {
+                    Name = "Black Market Tester",
+                    SettlementLane = "black_market",
+                    SettlementLaneLabel = "Black Market"
+                },
+                ActiveResearches = new List<ResearchSnapshot>
+                {
+                    new ResearchSnapshot
+                    {
+                        Id = "hush_routes_1",
+                        Name = "Hush Routes",
+                        Status = "active",
+                        Progress = 180,
+                        Cost = 240,
+                        FinishesAtUtc = DateTime.UtcNow.AddMinutes(20)
+                    }
+                },
+                AvailableTechs = new List<TechOptionSnapshot>
+                {
+                    new TechOptionSnapshot { Id = "safehouse_network_1", Name = "Safehouse Network" }
+                }
+            };
+
+            var note = (string)builder.Invoke(null, new object[] { summary, state, true });
+
+            Assert.That(note, Does.Contain("Shadow-book active"));
+            Assert.That(note, Does.Contain("Hush Routes"));
+            Assert.That(note, Does.Not.Contain("Research started: hush_routes_1"));
+        }
+
+        [Test]
+        public void Development_desk_note_drops_old_research_started_status_after_research_is_no_longer_active()
+        {
+            var builder = typeof(CityScreenController).GetMethod("BuildDeskNote", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(builder, Is.Not.Null);
+
+            var state = new SummaryState();
+            state.FinishAction("Research started: caravan_trails_1");
+
+            var summary = new ShellSummarySnapshot
+            {
+                HasCity = true,
+                City = new CitySummarySnapshot
+                {
+                    Name = "Black Market Tester",
+                    SettlementLane = "black_market",
+                    SettlementLaneLabel = "Black Market"
+                },
+                AvailableTechs = new List<TechOptionSnapshot>
+                {
+                    new TechOptionSnapshot { Id = "black_market_contacts_1", Name = "Black Market Contacts" }
+                }
+            };
+
+            var note = (string)builder.Invoke(null, new object[] { summary, state, true });
+
+            Assert.That(note, Does.Contain("Shadow books:"));
+            Assert.That(note, Does.Not.Contain("Research started: caravan_trails_1"));
+        }
+
     }
 }
