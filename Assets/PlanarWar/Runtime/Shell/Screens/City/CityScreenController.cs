@@ -824,7 +824,8 @@ namespace PlanarWar.Client.UI.Screens.City
             if (buildings.Count > 0 || buildTimers.Count > 0)
             {
                 var label = isBlackMarket ? "front" : "building";
-                return $"{buildings.Count} {label} card(s) • {active} active • {ready} ready";
+                var timerLabel = isBlackMarket ? "front timer" : "build timer";
+                return $"{buildings.Count} {label} card(s) • {buildTimers.Count} {timerLabel}(s) • {active} active • {ready} ready";
             }
 
             var liveTimers = s.CityTimers?.Count ?? 0;
@@ -839,7 +840,13 @@ namespace PlanarWar.Client.UI.Screens.City
         private static List<CardView> BuildBuildingCards(ShellSummarySnapshot s, bool isBlackMarket, DateTime nowUtc, int maxCards)
         {
             var cards = new List<CardView>();
-            foreach (var building in SelectLaneBuildings(s, isBlackMarket).Take(Math.Max(0, maxCards)))
+            var budget = Math.Max(0, maxCards);
+            var buildings = SelectLaneBuildings(s, isBlackMarket);
+            var timers = SortBuildTimers(SelectBuildTimers(s, isBlackMarket), nowUtc);
+            var reservedTimerSlots = timers.Count > 0 && budget > 1 ? 1 : 0;
+            var buildingBudget = Math.Max(0, budget - reservedTimerSlots);
+
+            foreach (var building in buildings.Take(buildingBudget))
             {
                 cards.Add(new CardView(
                     family: isBlackMarket ? "Operator front" : "Building",
@@ -850,18 +857,15 @@ namespace PlanarWar.Client.UI.Screens.City
                     buttonEnabled: false));
             }
 
-            if (cards.Count < maxCards)
+            foreach (var timer in timers.Take(Math.Max(0, budget - cards.Count)))
             {
-                foreach (var timer in SelectBuildTimers(s, isBlackMarket).Take(Math.Max(0, maxCards - cards.Count)))
-                {
-                    cards.Add(new CardView(
-                        family: isBlackMarket ? "Front timer" : "Build timer",
-                        title: isBlackMarket ? NormalizeBlackMarketTimerLabel(timer.Label, timer.Category) : FirstNonBlank(timer.Label, HumanizeCategory(timer.Category)),
-                        lore: FormatTimerState(timer.Status, timer.FinishesAtUtc, nowUtc),
-                        note: FirstNonBlank(timer.Detail, isBlackMarket ? "Operator-front timing is visible from cityTimers." : "Construction timing is visible from cityTimers."),
-                        buttonText: timer.FinishesAtUtc.HasValue && timer.FinishesAtUtc.Value <= nowUtc ? "Ready" : "Timed",
-                        buttonEnabled: false));
-                }
+                cards.Add(new CardView(
+                    family: isBlackMarket ? "Front timer" : "Build timer",
+                    title: isBlackMarket ? NormalizeBlackMarketTimerLabel(timer.Label, timer.Category) : FirstNonBlank(timer.Label, HumanizeCategory(timer.Category)),
+                    lore: FormatTimerState(timer.Status, timer.FinishesAtUtc, nowUtc),
+                    note: FirstNonBlank(timer.Detail, isBlackMarket ? "Operator-front timing is visible from cityTimers." : "Construction timing is visible from cityTimers."),
+                    buttonText: timer.FinishesAtUtc.HasValue && timer.FinishesAtUtc.Value <= nowUtc ? "Ready" : "Timed",
+                    buttonEnabled: false));
             }
 
             return cards;
@@ -875,12 +879,13 @@ namespace PlanarWar.Client.UI.Screens.City
             var active = buildings.Count(b => IsActiveStatus(b.Status) && !IsBuildingReady(b, nowUtc)) + timers.Count(t => !t.FinishesAtUtc.HasValue || t.FinishesAtUtc.Value > nowUtc);
             var label = isBlackMarket ? "operator-front" : "building";
 
+            var timerLabel = isBlackMarket ? "front timer" : "build timer";
             if (buildings.Count == 0 && timers.Count == 0)
             {
-                return $"No {label} card or construction timer is visible in the current summary payload.";
+                return $"No {label} card or {timerLabel} is visible in the current summary payload.";
             }
 
-            return $"Showing {buildings.Count} {label} card(s), {timers.Count} build timer(s), {active} active, and {ready} ready/finished state(s).";
+            return $"Showing {buildings.Count} {label} card(s), {timers.Count} {timerLabel}(s), {active} active, and {ready} ready/finished state(s).";
         }
 
         private static List<BuildingSnapshot> SelectLaneBuildings(ShellSummarySnapshot s, bool isBlackMarket)
@@ -893,9 +898,10 @@ namespace PlanarWar.Client.UI.Screens.City
         private static List<CityTimerEntrySnapshot> SelectBuildTimers(ShellSummarySnapshot s, bool isBlackMarket)
         {
             return (s?.CityTimers ?? new List<CityTimerEntrySnapshot>())
-                .Where(t => t != null && IsBuildTimer(t) && (!isBlackMarket || ContainsShadowLane(t.Category) || ContainsShadowLane(t.Label) || ContainsShadowLane(t.Detail) || IsBlackMarketLane(s)))
+                .Where(t => t != null && (IsBuildTimer(t) || (isBlackMarket && IsFrontTimer(t))) && (!isBlackMarket || ContainsShadowLane(t.Category) || ContainsShadowLane(t.Label) || ContainsShadowLane(t.Detail) || IsBlackMarketLane(s)))
                 .ToList();
         }
+
 
         private static bool BuildingBelongsToLane(BuildingSnapshot building, bool isBlackMarket)
         {
@@ -916,6 +922,28 @@ namespace PlanarWar.Client.UI.Screens.City
                 || label.IndexOf("construction", StringComparison.OrdinalIgnoreCase) >= 0
                 || detail.IndexOf("construction", StringComparison.OrdinalIgnoreCase) >= 0;
         }
+
+        private static bool IsFrontTimer(CityTimerEntrySnapshot timer)
+        {
+            var category = timer?.Category ?? string.Empty;
+            var label = timer?.Label ?? string.Empty;
+            var detail = timer?.Detail ?? string.Empty;
+            return ContainsShadowLane(category)
+                || ContainsShadowLane(label)
+                || ContainsShadowLane(detail)
+                || category.IndexOf("route", StringComparison.OrdinalIgnoreCase) >= 0
+                || label.IndexOf("route", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static List<CityTimerEntrySnapshot> SortBuildTimers(List<CityTimerEntrySnapshot> timers, DateTime nowUtc)
+        {
+            return (timers ?? new List<CityTimerEntrySnapshot>())
+                .OrderBy(t => t.FinishesAtUtc.HasValue && t.FinishesAtUtc.Value <= nowUtc ? 0 : 1)
+                .ThenBy(t => t.FinishesAtUtc ?? DateTime.MaxValue)
+                .ThenBy(t => FirstNonBlank(t.Label, t.Category, t.Id))
+                .ToList();
+        }
+
 
         private static bool IsBuildingReady(BuildingSnapshot building, DateTime nowUtc)
         {

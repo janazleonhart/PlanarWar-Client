@@ -1,6 +1,10 @@
 using NUnit.Framework;
 using PlanarWar.Client.Core.Contracts;
 using PlanarWar.Client.Core.Presentation;
+using PlanarWar.Client.UI.Screens.City;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace PlanarWar.Client.Tests.EditMode
 {
@@ -46,5 +50,59 @@ namespace PlanarWar.Client.Tests.EditMode
                 ContractTruthText.BuildShadowEffectsValue(shadowEffects, "fallback"),
                 Is.EqualTo("Receipt chain linked • Covert carry carried"));
         }
+        [Test]
+        public void Development_front_lane_counts_operator_front_timers_as_visible_front_timing()
+        {
+            var summary = new ShellSummarySnapshot
+            {
+                HasCity = true,
+                City = new CitySummarySnapshot
+                {
+                    Name = "Black Market Tester",
+                    SettlementLane = "black_market",
+                    SettlementLaneLabel = "Black Market"
+                },
+                Buildings = new List<BuildingSnapshot>
+                {
+                    new BuildingSnapshot
+                    {
+                        Id = "safehouse_ring",
+                        Name = "Safehouse Ring",
+                        Lane = "black_market",
+                        Status = "active"
+                    }
+                },
+                CityTimers = new List<CityTimerEntrySnapshot>
+                {
+                    new CityTimerEntrySnapshot
+                    {
+                        Id = "front_timer_1",
+                        Category = "operator_front",
+                        Label = "Quiet route front timer",
+                        Status = "active",
+                        FinishesAtUtc = DateTime.UtcNow.AddMinutes(3)
+                    },
+                    new CityTimerEntrySnapshot
+                    {
+                        Id = "city_research_1",
+                        Category = "research",
+                        Label = "Research timer",
+                        Status = "active",
+                        FinishesAtUtc = DateTime.UtcNow.AddMinutes(5)
+                    }
+                }
+            };
+
+            var selector = typeof(CityScreenController).GetMethod("SelectBuildTimers", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(selector, Is.Not.Null);
+
+            var blackMarketTimers = (List<CityTimerEntrySnapshot>)selector.Invoke(null, new object[] { summary, true });
+            var cityTimers = (List<CityTimerEntrySnapshot>)selector.Invoke(null, new object[] { summary, false });
+
+            Assert.That(blackMarketTimers, Has.Count.EqualTo(1));
+            Assert.That(blackMarketTimers[0].Id, Is.EqualTo("front_timer_1"));
+            Assert.That(cityTimers, Is.Empty);
+        }
+
     }
 }
