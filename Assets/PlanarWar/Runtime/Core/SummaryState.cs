@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using PlanarWar.Client.Core.Contracts;
 using System;
@@ -31,6 +32,10 @@ namespace PlanarWar.Client.Core
         public string PendingWorkshopRecipeId { get; private set; } = string.Empty;
         public string PendingMissionOfferId { get; private set; } = string.Empty;
         public string PendingMissionInstanceId { get; private set; } = string.Empty;
+        public string RecentMissionReceipt { get; private set; } = string.Empty;
+        public string RecentMissionTitle { get; private set; } = string.Empty;
+        public string RecentMissionInstanceId { get; private set; } = string.Empty;
+        public DateTime? RecentMissionReceiptAtUtc { get; private set; }
         public string PendingHeroRecruitRole { get; private set; } = string.Empty;
         public string PendingHeroRecruitCandidateId { get; private set; } = string.Empty;
         public bool PendingHeroRecruitDismiss { get; private set; }
@@ -349,6 +354,578 @@ namespace PlanarWar.Client.Core
         {
             BeginAction(string.IsNullOrWhiteSpace(instanceId) ? "Completing mission..." : $"Completing mission: {instanceId.Trim()}");
             PendingMissionInstanceId = instanceId?.Trim() ?? string.Empty;
+        }
+
+        public void FinishMissionCompletion(string instanceId, string receipt, string title = null)
+        {
+            var trimmedInstanceId = instanceId?.Trim() ?? string.Empty;
+            var trimmedReceipt = string.IsNullOrWhiteSpace(receipt)
+                ? "Mission completed, but the backend did not return a readable receipt."
+                : receipt.Trim();
+
+            RecentMissionInstanceId = trimmedInstanceId;
+            RecentMissionTitle = title?.Trim() ?? string.Empty;
+            RecentMissionReceipt = trimmedReceipt;
+            RecentMissionReceiptAtUtc = DateTime.UtcNow;
+            FinishAction(trimmedReceipt);
+        }
+
+        public bool HasRecentMissionReceipt(DateTime nowUtc, double noticeSeconds = 120)
+        {
+            if (!RecentMissionReceiptAtUtc.HasValue || string.IsNullOrWhiteSpace(RecentMissionReceipt))
+            {
+                return false;
+            }
+
+            return nowUtc - RecentMissionReceiptAtUtc.Value < TimeSpan.FromSeconds(Math.Max(1, noticeSeconds));
+        }
+
+        public void ClearRecentMissionReceipt()
+        {
+            RecentMissionReceipt = string.Empty;
+            RecentMissionTitle = string.Empty;
+            RecentMissionInstanceId = string.Empty;
+            RecentMissionReceiptAtUtc = null;
+            Changed?.Invoke();
+        }
+
+
+        public static string FormatMissionCompletionReceipt(string responseJson, string fallbackInstanceId)
+        {
+            var fallback = string.IsNullOrWhiteSpace(fallbackInstanceId)
+                ? "Mission completed."
+                : $"Mission completed: {fallbackInstanceId.Trim()}";
+
+            if (string.IsNullOrWhiteSpace(responseJson))
+            {
+                return $"{fallback} No completion receipt was returned.";
+            }
+
+            try
+            {
+                var root = JToken.Parse(responseJson);
+                var result = FirstDirectToken(new[] { root }, "result", "completion", "data");
+                if (result == null || result.Type != JTokenType.Object)
+                {
+                    result = root;
+                }
+
+                var receipt = FirstDirectToken(new[] { result, root }, "receipt", "missionReceipt", "mission_receipt");
+                if (receipt == null || receipt.Type != JTokenType.Object)
+                {
+                    receipt = null;
+                }
+
+                var parts = new List<string>();
+                var outcome = FirstReceiptText(
+                    Child(Child(result, "outcome"), "kind"),
+                    Child(receipt, "outcome"),
+                    Child(root, "outcome"));
+                if (!string.IsNullOrWhiteSpace(outcome))
+                {
+                    parts.Add($"Outcome: {HumanizeReceiptPhrase(outcome)}");
+                }
+
+                var rewardText = FormatRewardBundle(FirstDirectToken(
+                    new[] { result, root },
+                    "rewards",
+                    "reward",
+                    "resourceRewards",
+                    "resource_rewards",
+                    "gains",
+                    "gain",
+                    "resourceDelta",
+                    "resource_delta",
+                    "resourceDeltas",
+                    "resource_deltas"));
+                parts.Add(string.IsNullOrWhiteSpace(rewardText)
+                    ? "Rewards: no direct resource reward returned"
+                    : $"Rewards: {rewardText}");
+
+                var effectText = FormatEffectBundle(FirstDirectToken(
+                    new[] { result, root },
+                    "effects",
+                    "effect",
+                    "changes",
+                    "impact",
+                    "impacts",
+                    "payoff",
+                    "regionImpact",
+                    "region_impact"));
+                var flatEffectText = FormatFlatEffectDeltas(result, root);
+                effectText = JoinDistinctReceiptParts(effectText, flatEffectText);
+                if (!string.IsNullOrWhiteSpace(effectText))
+                {
+                    parts.Add($"Effects: {effectText}");
+                }
+
+                var summary = FirstReceiptText(
+                    Child(receipt, "summary"),
+                    Child(result, "summary"),
+                    Child(root, "summary"),
+                    Child(root, "message"));
+                if (!string.IsNullOrWhiteSpace(summary))
+                {
+                    parts.Add($"Summary: {summary}");
+                }
+
+                var setbackText = FormatSetbacks(FirstDirectToken(new[] { receipt, result, root }, "setbacks", "setback"));
+                if (!string.IsNullOrWhiteSpace(setbackText))
+                {
+                    parts.Add($"Setbacks: {setbackText}");
+                }
+
+                var followupText = FormatOfferTitles(FirstDirectToken(new[] { root, result }, "followupOffers", "followup_offers"));
+                if (!string.IsNullOrWhiteSpace(followupText))
+                {
+                    parts.Add($"Follow-up: {followupText}");
+                }
+
+                var recoveryText = FormatOfferTitles(FirstDirectToken(new[] { root, result }, "recoveryOffers", "recovery_offers"));
+                if (!string.IsNullOrWhiteSpace(recoveryText))
+                {
+                    parts.Add($"Recovery: {recoveryText}");
+                }
+
+                var readable = string.Join(" • ", parts.Where(part => !string.IsNullOrWhiteSpace(part)).Distinct());
+                return string.IsNullOrWhiteSpace(readable)
+                    ? $"{fallback} Backend returned no readable reward/effect receipt."
+                    : $"Mission completed. {readable}";
+            }
+            catch
+            {
+                return $"{fallback} Raw receipt: {responseJson.Trim()}";
+            }
+        }
+
+        public static string ExtractMissionCompletionTitle(string responseJson)
+        {
+            if (string.IsNullOrWhiteSpace(responseJson))
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                var root = JToken.Parse(responseJson);
+                var result = FirstDirectToken(new[] { root }, "result", "completion", "data");
+                if (result == null || result.Type != JTokenType.Object)
+                {
+                    result = root;
+                }
+
+                var receipt = FirstDirectToken(new[] { result, root }, "receipt", "missionReceipt", "mission_receipt");
+                var title = FirstReceiptText(
+                    Child(receipt, "missionTitle"),
+                    Child(receipt, "mission_title"),
+                    Child(result, "missionTitle"),
+                    Child(result, "mission_title"),
+                    Child(root, "missionTitle"),
+                    Child(root, "mission_title"));
+                return title?.Trim() ?? string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static JToken Child(JToken root, string name)
+        {
+            if (root == null || root.Type != JTokenType.Object || string.IsNullOrWhiteSpace(name))
+            {
+                return null;
+            }
+
+            var direct = root[name];
+            return IsMeaningfulToken(direct) ? direct : null;
+        }
+
+        private static JToken FirstDirectToken(IEnumerable<JToken> roots, params string[] names)
+        {
+            if (roots == null || names == null)
+            {
+                return null;
+            }
+
+            foreach (var root in roots)
+            {
+                if (root == null || root.Type != JTokenType.Object)
+                {
+                    continue;
+                }
+
+                foreach (var name in names)
+                {
+                    var direct = Child(root, name);
+                    if (IsMeaningfulToken(direct))
+                    {
+                        return direct;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private static string FirstReceiptText(params JToken[] tokens)
+        {
+            if (tokens == null)
+            {
+                return string.Empty;
+            }
+
+            foreach (var token in tokens)
+            {
+                if (!IsMeaningfulToken(token))
+                {
+                    continue;
+                }
+
+                if (token.Type == JTokenType.String || token.Type == JTokenType.Boolean || token.Type == JTokenType.Integer || token.Type == JTokenType.Float)
+                {
+                    return token.ToString().Trim();
+                }
+
+                var summary = Child(token, "summary") ?? Child(token, "message") ?? Child(token, "detail");
+                if (IsMeaningfulToken(summary))
+                {
+                    return summary.ToString().Trim();
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private static string FormatRewardBundle(JToken token)
+        {
+            if (!IsMeaningfulToken(token))
+            {
+                return string.Empty;
+            }
+
+            if (token.Type == JTokenType.Array)
+            {
+                return string.Join(", ", token.Children().Select(FormatRewardBundle).Where(part => !string.IsNullOrWhiteSpace(part)));
+            }
+
+            if (token.Type != JTokenType.Object)
+            {
+                return FormatReceiptToken(token);
+            }
+
+            var pieces = new List<string>();
+            foreach (var property in token.Children<JProperty>())
+            {
+                if (property == null || IsReceiptIdentityKey(property.Name) || !IsMeaningfulToken(property.Value))
+                {
+                    continue;
+                }
+
+                if (property.Value.Type == JTokenType.Integer || property.Value.Type == JTokenType.Float)
+                {
+                    var amount = property.Value.Value<double>();
+                    if (Math.Abs(amount) < 0.0001)
+                    {
+                        continue;
+                    }
+
+                    pieces.Add($"{HumanizeReceiptKey(property.Name)} {FormatSignedNumber(amount)}");
+                    continue;
+                }
+
+                var nested = FormatRewardBundle(property.Value);
+                if (!string.IsNullOrWhiteSpace(nested))
+                {
+                    pieces.Add($"{HumanizeReceiptKey(property.Name)} {nested}");
+                }
+            }
+
+            return string.Join(", ", pieces);
+        }
+
+        private static string FormatEffectBundle(JToken token)
+        {
+            if (!IsMeaningfulToken(token))
+            {
+                return string.Empty;
+            }
+
+            if (token.Type == JTokenType.Array)
+            {
+                return string.Join(", ", token.Children().Select(FormatEffectBundle).Where(part => !string.IsNullOrWhiteSpace(part)));
+            }
+
+            if (token.Type != JTokenType.Object)
+            {
+                return FormatReceiptToken(token);
+            }
+
+            var pieces = new List<string>();
+            foreach (var property in token.Children<JProperty>())
+            {
+                if (property == null || IsReceiptIdentityKey(property.Name) || !IsMeaningfulToken(property.Value))
+                {
+                    continue;
+                }
+
+                if (property.Value.Type == JTokenType.Integer || property.Value.Type == JTokenType.Float)
+                {
+                    var amount = property.Value.Value<double>();
+                    if (Math.Abs(amount) < 0.0001)
+                    {
+                        continue;
+                    }
+
+                    pieces.Add($"{HumanizeEffectKey(property.Name)} {FormatSignedNumber(amount)}");
+                    continue;
+                }
+
+                var nested = FormatEffectBundle(property.Value);
+                if (!string.IsNullOrWhiteSpace(nested))
+                {
+                    pieces.Add($"{HumanizeEffectKey(property.Name)} {nested}");
+                }
+            }
+
+            return string.Join(", ", pieces);
+        }
+
+        private static string FormatFlatEffectDeltas(params JToken[] roots)
+        {
+            var pieces = new List<string>();
+            foreach (var root in roots ?? Array.Empty<JToken>())
+            {
+                AddFlatNumericEffect(pieces, root, "controlDelta", "Control");
+                AddFlatNumericEffect(pieces, root, "control_delta", "Control");
+                AddFlatNumericEffect(pieces, root, "threatDelta", "Threat");
+                AddFlatNumericEffect(pieces, root, "threat_delta", "Threat");
+                AddFlatNumericEffect(pieces, root, "pressureDelta", "Pressure");
+                AddFlatNumericEffect(pieces, root, "pressure_delta", "Pressure");
+                AddFlatNumericEffect(pieces, root, "recoveryDelta", "Recovery burden");
+                AddFlatNumericEffect(pieces, root, "recovery_delta", "Recovery burden");
+            }
+
+            return string.Join(", ", pieces.Distinct());
+        }
+
+        private static void AddFlatNumericEffect(List<string> pieces, JToken root, string key, string label)
+        {
+            var token = Child(root, key);
+            if (!IsMeaningfulToken(token) || (token.Type != JTokenType.Integer && token.Type != JTokenType.Float))
+            {
+                return;
+            }
+
+            var amount = token.Value<double>();
+            if (Math.Abs(amount) < 0.0001)
+            {
+                return;
+            }
+
+            pieces.Add($"{label} {FormatSignedNumber(amount)}");
+        }
+
+        private static string FormatSetbacks(JToken token)
+        {
+            if (!IsMeaningfulToken(token))
+            {
+                return string.Empty;
+            }
+
+            if (token.Type == JTokenType.Array)
+            {
+                var summaries = token.Children()
+                    .Select(item => FirstReceiptText(Child(item, "summary"), Child(item, "detail"), item))
+                    .Where(text => !string.IsNullOrWhiteSpace(text))
+                    .Take(3)
+                    .ToList();
+                return summaries.Count == 0 ? string.Empty : string.Join("; ", summaries);
+            }
+
+            return FirstReceiptText(Child(token, "summary"), Child(token, "detail"), token);
+        }
+
+        private static string FormatOfferTitles(JToken token)
+        {
+            if (!IsMeaningfulToken(token))
+            {
+                return string.Empty;
+            }
+
+            if (token.Type == JTokenType.Array)
+            {
+                var titles = token.Children()
+                    .Select(item => FirstReceiptText(Child(item, "title"), Child(item, "name"), Child(item, "summary")))
+                    .Where(text => !string.IsNullOrWhiteSpace(text))
+                    .Take(3)
+                    .ToList();
+                return titles.Count == 0 ? string.Empty : string.Join(", ", titles);
+            }
+
+            return FirstReceiptText(Child(token, "title"), Child(token, "name"), Child(token, "summary"), token);
+        }
+
+        private static string JoinDistinctReceiptParts(params string[] parts)
+        {
+            return string.Join(", ", (parts ?? Array.Empty<string>())
+                .Where(part => !string.IsNullOrWhiteSpace(part))
+                .Select(part => part.Trim())
+                .Distinct());
+        }
+
+        private static string FormatSignedNumber(double value)
+        {
+            return value > 0 ? $"+{value:0.##}" : value.ToString("0.##");
+        }
+
+        private static string HumanizeEffectKey(string key)
+        {
+            var label = HumanizeReceiptKey(key);
+            if (string.IsNullOrWhiteSpace(label))
+            {
+                return string.Empty;
+            }
+
+            return label.EndsWith(" delta", StringComparison.OrdinalIgnoreCase)
+                ? label.Substring(0, label.Length - " delta".Length)
+                : label;
+        }
+
+        private static string HumanizeReceiptPhrase(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return string.Empty;
+            }
+
+            var phrase = text.Trim().Replace("_", " ").Replace("-", " ");
+            return phrase.Length == 0
+                ? string.Empty
+                : char.ToUpperInvariant(phrase[0]) + (phrase.Length > 1 ? phrase.Substring(1) : string.Empty);
+        }
+
+        private static string FormatReceiptToken(JToken token)
+        {
+            if (!IsMeaningfulToken(token))
+            {
+                return string.Empty;
+            }
+
+            if (token.Type == JTokenType.String || token.Type == JTokenType.Boolean || token.Type == JTokenType.Integer || token.Type == JTokenType.Float)
+            {
+                return FormatScalarToken(token);
+            }
+
+            if (token.Type == JTokenType.Array)
+            {
+                return string.Join(", ", token.Children().Select(FormatReceiptToken).Where(part => !string.IsNullOrWhiteSpace(part)));
+            }
+
+            if (token.Type != JTokenType.Object)
+            {
+                return token.ToString(Formatting.None);
+            }
+
+            var pieces = new List<string>();
+            foreach (var property in token.Children<JProperty>())
+            {
+                if (property == null || IsReceiptIdentityKey(property.Name) || !IsMeaningfulToken(property.Value))
+                {
+                    continue;
+                }
+
+                var valueText = FormatReceiptToken(property.Value);
+                if (string.IsNullOrWhiteSpace(valueText))
+                {
+                    continue;
+                }
+
+                pieces.Add($"{HumanizeReceiptKey(property.Name)} {valueText}");
+            }
+
+            return string.Join(", ", pieces);
+        }
+
+        private static string FormatScalarToken(JToken token)
+        {
+            if (token == null)
+            {
+                return string.Empty;
+            }
+
+            if (token.Type == JTokenType.Integer || token.Type == JTokenType.Float)
+            {
+                var value = token.Value<double>();
+                return FormatSignedNumber(value);
+            }
+
+            return token.ToString().Trim();
+        }
+
+        private static bool IsMeaningfulToken(JToken token)
+        {
+            if (token == null || token.Type == JTokenType.Null || token.Type == JTokenType.Undefined)
+            {
+                return false;
+            }
+
+            if (token.Type == JTokenType.String)
+            {
+                return !string.IsNullOrWhiteSpace(token.ToString());
+            }
+
+            if (token.Type == JTokenType.Array)
+            {
+                return token.Children().Any(IsMeaningfulToken);
+            }
+
+            if (token.Type == JTokenType.Object)
+            {
+                return token.Children<JProperty>().Any(property => property != null && IsMeaningfulToken(property.Value));
+            }
+
+            return true;
+        }
+
+        private static bool IsReceiptIdentityKey(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return true;
+            }
+
+            var normalized = key.Trim().Replace("_", "").Replace("-", "").ToLowerInvariant();
+            return normalized == "id"
+                || normalized == "missionid"
+                || normalized == "missiontitle"
+                || normalized == "instanceid"
+                || normalized == "createdat"
+                || normalized == "ok"
+                || normalized == "status"
+                || normalized == "success";
+        }
+
+        private static string HumanizeReceiptKey(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return string.Empty;
+            }
+
+            var spaced = key.Trim().Replace("_", " ").Replace("-", " ");
+            var chars = new System.Text.StringBuilder();
+            for (var i = 0; i < spaced.Length; i++)
+            {
+                var c = spaced[i];
+                if (i > 0 && char.IsUpper(c) && !char.IsWhiteSpace(spaced[i - 1]))
+                {
+                    chars.Append(' ');
+                }
+                chars.Append(c);
+            }
+
+            return chars.ToString().Trim().ToLowerInvariant();
         }
 
         public void BeginWorkshopCraft(string recipeId)

@@ -252,13 +252,16 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             readinessValue.text = LaneText(BuildForceReadinessSummary(summary.Armies, reinforceState, reinforceOp));
             signalValue.text = LaneText(signalPairs.Count > 0 ? CompactSignalSummary(signalPairs) : frontBuildings.Count > 0 ? BuildFrontSignalSummary(frontBuildings, frontTimers, nowUtc) : "No operations status signals.");
             missionValue.text = LaneText(activeMission != null
-                ? $"{activeMission.Title} • {(activeMission.FinishesAtUtc.HasValue ? FormatRemaining(activeMission.FinishesAtUtc.Value - nowUtc) : "anchor missing")}"
-                : summaryState.MissionOffers.Count > 0
-                    ? $"{summaryState.MissionOffers.Count} available support operation(s)."
-                    : "No active support operation.");
+                ? $"{activeMission.Title} • {(activeMission.FinishesAtUtc.HasValue ? FormatRemaining(activeMission.FinishesAtUtc.Value - nowUtc) : "anchor missing")}" 
+                : summaryState.HasRecentMissionReceipt(nowUtc)
+                    ? Truncate(summaryState.RecentMissionReceipt, 96)
+                    : summaryState.MissionOffers.Count > 0
+                        ? $"{summaryState.MissionOffers.Count} available support operation(s)."
+                        : "No active support operation.");
             pressureValue.text = LaneText(!string.IsNullOrWhiteSpace(primaryWarning) ? Truncate(primaryWarning, 96) : warfrontWindows.Count > 0 ? "Operations windows are open; no extra warning headline is active." : "No extra route-pressure warning surfaced.");
-            noteValue.text = LaneText(BuildReinforcementDeskNote(summary.Armies, reinforceState, reinforceTimer, reinforceOp, warfrontWindows.Count > 0));
-
+            noteValue.text = LaneText(summaryState.HasRecentMissionReceipt(nowUtc)
+                ? Truncate(summaryState.RecentMissionReceipt, 128)
+                : BuildReinforcementDeskNote(summary.Armies, reinforceState, reinforceTimer, reinforceOp, warfrontWindows.Count > 0));
             RenderCards(cards, LaneCards(BuildCards(summary, rankedArmies, warfrontWindows, activeMission, primaryWarning, signalPairs, reinforceState, reinforceTimer, reinforceOp)));
             RenderFormationManagement(summary, rankedArmies, targetArmyId);
         }
@@ -623,6 +626,11 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var nowUtc = DateTime.UtcNow;
             var targetArmyId = FirstNonBlank(reinforceState?.ArmyId, reinforceOp?.ArmyId);
 
+            if (summaryState.HasRecentMissionReceipt(nowUtc))
+            {
+                cards.Add(BuildRecentMissionReceiptCard());
+            }
+
             if (reinforceState != null)
             {
                 if (string.Equals(reinforceState.Status, "reinforcing", StringComparison.OrdinalIgnoreCase))
@@ -970,6 +978,19 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         }
 
 
+
+        private CardView BuildRecentMissionReceiptCard()
+        {
+            var title = FirstNonBlank(summaryState.RecentMissionTitle, "Mission completed");
+            var instance = summaryState.RecentMissionInstanceId;
+            return new CardView(
+                family: "Mission result",
+                title: title,
+                lore: string.IsNullOrWhiteSpace(instance) ? "Completion receipt" : $"Receipt • {instance}",
+                note: Truncate(summaryState.RecentMissionReceipt, 160),
+                buttonText: "Receipt visible",
+                buttonEnabled: false);
+        }
         private CardView BuildActiveMissionCard(MissionSnapshot activeMission, ShellSummarySnapshot summary, string primaryWarning, DateTime nowUtc)
         {
             var hasInstance = !string.IsNullOrWhiteSpace(activeMission?.InstanceId);

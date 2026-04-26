@@ -853,5 +853,66 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(state.MissionOffers[0].Id, Is.EqualTo("relief_1"));
         }
 
+        [Test]
+        public void Summary_state_formats_mission_completion_receipt_from_reward_payload()
+        {
+            const string response = "{ \"summary\": \"Raid resolved cleanly.\", \"rewards\": { \"wealth\": 15, \"materials\": 4 }, \"effects\": { \"controlDelta\": 2, \"threatDelta\": -1 } }";
+
+            var receipt = SummaryState.FormatMissionCompletionReceipt(response, "mission_1");
+
+            Assert.That(receipt, Does.Contain("Mission completed"));
+            Assert.That(receipt, Does.Contain("Raid resolved cleanly"));
+            Assert.That(receipt, Does.Contain("wealth +15"));
+            Assert.That(receipt, Does.Contain("materials +4"));
+            Assert.That(receipt, Does.Contain("control +2"));
+        }
+
+        [Test]
+        public void Summary_state_formats_nested_backend_mission_completion_result_readably()
+        {
+            const string response = @"{
+                ""ok"": true,
+                ""result"": {
+                    ""status"": ""ok"",
+                    ""rewards"": { ""wealth"": 12, ""materials"": 8, ""influence"": 0 },
+                    ""outcome"": { ""kind"": ""success"", ""score"": 1.2 },
+                    ""receipt"": {
+                        ""id"": ""receipt_1"",
+                        ""missionId"": ""frontline_1"",
+                        ""missionTitle"": ""Frontline Assault: Heartland Basin"",
+                        ""createdAt"": ""2026-04-26T08:20:12.387Z"",
+                        ""outcome"": ""success"",
+                        ""posture"": ""balanced"",
+                        ""summary"": ""Frontline assault pushed hostile pressure back."",
+                        ""setbacks"": []
+                    }
+                },
+                ""resources"": { ""wealth"": 123, ""materials"": 44 }
+            }";
+
+            var receipt = SummaryState.FormatMissionCompletionReceipt(response, "active_1");
+            var title = SummaryState.ExtractMissionCompletionTitle(response);
+
+            Assert.That(receipt, Does.Contain("Outcome: Success"));
+            Assert.That(receipt, Does.Contain("Rewards: wealth +12, materials +8"));
+            Assert.That(receipt, Does.Contain("Summary: Frontline assault pushed hostile pressure back."));
+            Assert.That(receipt, Does.Not.Contain("created at"));
+            Assert.That(receipt, Does.Not.Contain("mission title"));
+            Assert.That(title, Is.EqualTo("Frontline Assault: Heartland Basin"));
+        }
+
+        [Test]
+        public void Summary_state_keeps_recent_mission_receipt_visible_briefly()
+        {
+            var state = new SummaryState();
+
+            state.FinishMissionCompletion("mission_1", "Mission completed. Rewards: wealth +15.", "Lair Strike");
+
+            Assert.That(state.HasRecentMissionReceipt(DateTime.UtcNow), Is.True);
+            Assert.That(state.RecentMissionReceipt, Does.Contain("wealth +15"));
+            Assert.That(state.RecentMissionTitle, Is.EqualTo("Lair Strike"));
+            Assert.That(state.RecentMissionInstanceId, Is.EqualTo("mission_1"));
+        }
+
     }
 }

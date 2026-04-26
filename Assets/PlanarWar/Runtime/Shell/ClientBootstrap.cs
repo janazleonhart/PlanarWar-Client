@@ -589,8 +589,11 @@ namespace PlanarWar.Client.UI
             {
                 var trimmedInstanceId = instanceId.Trim();
                 summaryState.BeginMissionCompleteAction(trimmedInstanceId);
-                await apiClient.CompleteMissionAsync(trimmedInstanceId);
-                summaryState.FinishAction($"Mission completed: {trimmedInstanceId}");
+                var response = await apiClient.CompleteMissionAsync(trimmedInstanceId);
+                var responseText = response?.ToString();
+                var receipt = SummaryState.FormatMissionCompletionReceipt(responseText, trimmedInstanceId);
+                var title = SummaryState.ExtractMissionCompletionTitle(responseText);
+                summaryState.FinishMissionCompletion(trimmedInstanceId, receipt, title);
                 await summaryController.RefreshAsync();
             }
             catch (Exception ex)
@@ -598,6 +601,7 @@ namespace PlanarWar.Client.UI
                 summaryState.FinishAction($"Mission complete failed: {ex.Message}", failed: true);
             }
         }
+
 
         private async Task HandleReinforceArmyRequestedAsync(string armyId)
         {
