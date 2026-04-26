@@ -15,6 +15,28 @@ namespace PlanarWar.Client.Tests.EditMode
     public class ContractTruthConsumptionTests
     {
         [Test]
+        public void Operations_city_lane_translates_shadow_force_terms_to_troop_language()
+        {
+            var formatter = typeof(PlanarWar.Client.UI.Screens.BlackMarket.BlackMarketScreenController)
+                .GetMethod("ApplyCityForceTerms", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(formatter, Is.Not.Null);
+
+            var result = (string)formatter.Invoke(null, new object[]
+            {
+                "Cell lead • 220 agents • Supplies 40 • Cashflow 23 • Rename cell • Assign route"
+            });
+
+            Assert.That(result, Does.Contain("Formation lead"));
+            Assert.That(result, Does.Contain("220 troops"));
+            Assert.That(result, Does.Contain("Materials 40"));
+            Assert.That(result, Does.Contain("Wealth 23"));
+            Assert.That(result, Does.Contain("Rename formation"));
+            Assert.That(result, Does.Contain("Assign line"));
+            Assert.That(result, Does.Not.Contain("agents"));
+            Assert.That(result, Does.Not.Contain("Cell"));
+        }
+
+        [Test]
         public void Formatter_keeps_lifecycle_and_effects_language_specific_instead_of_generic()
         {
             var followThrough = new ContractFollowThroughSnapshot
