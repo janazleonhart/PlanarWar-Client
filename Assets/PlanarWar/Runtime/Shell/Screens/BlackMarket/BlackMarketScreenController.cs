@@ -50,6 +50,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private readonly Func<string, Task> onReleaseArmyHoldRequested;
         private readonly Func<string, string, string, Task> onWarfrontAssaultRequested;
         private readonly Func<string, string, string, Task> onGarrisonStrikeRequested;
+        private readonly Func<string, string, string, string, Task> onStartMissionRequested;
+        private readonly Func<string, Task> onCompleteMissionRequested;
         private readonly Action onRefreshDeskRequested;
         private readonly List<string> managementArmyChoiceIds = new();
         private readonly List<string> mergeArmyChoiceIds = new();
@@ -67,7 +69,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private bool suppressManagementEvents;
         private bool useBlackMarketForceTerms = true;
 
-        public BlackMarketScreenController(VisualElement root, SummaryState summaryState, Func<string, Task> onReinforceArmyRequested, Func<string, string, Task> onRenameArmyRequested, Func<string, int, string, Task> onSplitArmyRequested, Func<string, string, Task> onMergeArmyRequested, Func<string, Task> onDisbandArmyRequested, Func<string, string, string, Task> onAssignArmyHoldRequested, Func<string, Task> onReleaseArmyHoldRequested, Func<string, string, string, Task> onWarfrontAssaultRequested, Func<string, string, string, Task> onGarrisonStrikeRequested, Action onRefreshDeskRequested)
+        public BlackMarketScreenController(VisualElement root, SummaryState summaryState, Func<string, Task> onReinforceArmyRequested, Func<string, string, Task> onRenameArmyRequested, Func<string, int, string, Task> onSplitArmyRequested, Func<string, string, Task> onMergeArmyRequested, Func<string, Task> onDisbandArmyRequested, Func<string, string, string, Task> onAssignArmyHoldRequested, Func<string, Task> onReleaseArmyHoldRequested, Func<string, string, string, Task> onWarfrontAssaultRequested, Func<string, string, string, Task> onGarrisonStrikeRequested, Func<string, string, string, string, Task> onStartMissionRequested, Func<string, Task> onCompleteMissionRequested, Action onRefreshDeskRequested)
         {
             headline = root.Q<Label>("placeholder-headline-value");
             copy = root.Q<Label>("placeholder-copy-value");
@@ -108,6 +110,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             this.onReleaseArmyHoldRequested = onReleaseArmyHoldRequested;
             this.onWarfrontAssaultRequested = onWarfrontAssaultRequested;
             this.onGarrisonStrikeRequested = onGarrisonStrikeRequested;
+            this.onStartMissionRequested = onStartMissionRequested;
+            this.onCompleteMissionRequested = onCompleteMissionRequested;
             this.onRefreshDeskRequested = onRefreshDeskRequested;
 
             if (managementArmyField != null)
@@ -247,7 +251,11 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             windowsValue.text = LaneText(warfrontWindows.Count > 0 ? $"{warfrontWindows.Count} open • {string.Join(" • ", warfrontWindows.Take(2).Select(window => HumanizeStatus(window.Status)))}" : "No active operations window.");
             readinessValue.text = LaneText(BuildForceReadinessSummary(summary.Armies, reinforceState, reinforceOp));
             signalValue.text = LaneText(signalPairs.Count > 0 ? CompactSignalSummary(signalPairs) : frontBuildings.Count > 0 ? BuildFrontSignalSummary(frontBuildings, frontTimers, nowUtc) : "No operations status signals.");
-            missionValue.text = LaneText(activeMission != null ? $"{activeMission.Title} • {(activeMission.FinishesAtUtc.HasValue ? FormatRemaining(activeMission.FinishesAtUtc.Value - nowUtc) : "anchor missing")}" : "No active support operation.");
+            missionValue.text = LaneText(activeMission != null
+                ? $"{activeMission.Title} • {(activeMission.FinishesAtUtc.HasValue ? FormatRemaining(activeMission.FinishesAtUtc.Value - nowUtc) : "anchor missing")}"
+                : summaryState.MissionOffers.Count > 0
+                    ? $"{summaryState.MissionOffers.Count} available support operation(s)."
+                    : "No active support operation.");
             pressureValue.text = LaneText(!string.IsNullOrWhiteSpace(primaryWarning) ? Truncate(primaryWarning, 96) : warfrontWindows.Count > 0 ? "Operations windows are open; no extra warning headline is active." : "No extra route-pressure warning surfaced.");
             noteValue.text = LaneText(BuildReinforcementDeskNote(summary.Armies, reinforceState, reinforceTimer, reinforceOp, warfrontWindows.Count > 0));
 
@@ -480,28 +488,28 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             }
             if (assignHoldButton != null)
             {
-                assignHoldButton.text = summaryState.IsActionBusy ? "Working..." : LaneText("Assign route");
+                assignHoldButton.text = summaryState.IsActionBusy ? "Working..." : GetAssignHoldButtonText();
                 assignHoldButton.SetEnabled(canAssignHold);
             }
             if (releaseHoldButton != null)
             {
-                releaseHoldButton.text = summaryState.IsActionBusy ? "Working..." : LaneText("Release route");
+                releaseHoldButton.text = summaryState.IsActionBusy ? "Working..." : GetReleaseHoldButtonText();
                 releaseHoldButton.SetEnabled(canReleaseHold);
             }
             if (dispatchAssaultButton != null)
             {
-                dispatchAssaultButton.text = summaryState.IsActionBusy ? "Working..." : LaneText("Open pressure line");
+                dispatchAssaultButton.text = summaryState.IsActionBusy ? "Working..." : GetWarfrontAssaultButtonText();
                 dispatchAssaultButton.SetEnabled(canDispatchAssault);
             }
             if (dispatchGarrisonButton != null)
             {
-                dispatchGarrisonButton.text = summaryState.IsActionBusy ? "Working..." : LaneText("Run disruption action");
+                dispatchGarrisonButton.text = summaryState.IsActionBusy ? "Working..." : GetQuickStrikeButtonText();
                 dispatchGarrisonButton.SetEnabled(canDispatchGarrison);
             }
 
             if (managementCopy != null)
             {
-                managementCopy.text = LaneText($"Operations controls stay bounded here: rename, split, merge, retire, assign routes, and dispatch the selected idle cell into live pressure actions. Focus: {PresentArmyName(selectedArmy.Name)} • {BuildFormationLore(selectedArmy)}.");
+                managementCopy.text = LaneText($"Operations controls stay bounded here: rename, split, merge, retire, assign hold posture, and launch direct actions from the selected idle cell. Focus: {PresentArmyName(selectedArmy.Name)} • {BuildFormationLore(selectedArmy)}.");
             }
 
             if (managementNote != null)
@@ -581,22 +589,32 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
         private void TriggerWarfrontAssault()
         {
-            if (summaryState.IsActionBusy || onWarfrontAssaultRequested == null || string.IsNullOrWhiteSpace(selectedArmyId) || string.IsNullOrWhiteSpace(selectedHoldRegionId))
+            TriggerWarfrontAssaultFor(selectedHoldRegionId, selectedArmyId, selectedDispatchHeroId?.Trim() ?? string.Empty);
+        }
+
+        private void TriggerWarfrontAssaultFor(string regionId, string armyId, string heroId)
+        {
+            if (summaryState.IsActionBusy || onWarfrontAssaultRequested == null || string.IsNullOrWhiteSpace(armyId) || string.IsNullOrWhiteSpace(regionId))
             {
                 return;
             }
 
-            _ = onWarfrontAssaultRequested.Invoke(selectedHoldRegionId.Trim(), selectedArmyId.Trim(), selectedDispatchHeroId?.Trim() ?? string.Empty);
+            _ = onWarfrontAssaultRequested.Invoke(regionId.Trim(), armyId.Trim(), heroId?.Trim() ?? string.Empty);
         }
 
         private void TriggerGarrisonStrike()
         {
-            if (summaryState.IsActionBusy || onGarrisonStrikeRequested == null || string.IsNullOrWhiteSpace(selectedArmyId) || string.IsNullOrWhiteSpace(selectedHoldRegionId))
+            TriggerGarrisonStrikeFor(selectedHoldRegionId, selectedArmyId, selectedDispatchHeroId?.Trim() ?? string.Empty);
+        }
+
+        private void TriggerGarrisonStrikeFor(string regionId, string armyId, string heroId)
+        {
+            if (summaryState.IsActionBusy || onGarrisonStrikeRequested == null || string.IsNullOrWhiteSpace(armyId) || string.IsNullOrWhiteSpace(regionId))
             {
                 return;
             }
 
-            _ = onGarrisonStrikeRequested.Invoke(selectedHoldRegionId.Trim(), selectedArmyId.Trim(), selectedDispatchHeroId?.Trim() ?? string.Empty);
+            _ = onGarrisonStrikeRequested.Invoke(regionId.Trim(), armyId.Trim(), heroId?.Trim() ?? string.Empty);
         }
 
         private List<CardView> BuildCards(ShellSummarySnapshot summary, List<ArmySnapshot> rankedArmies, List<CityTimerEntrySnapshot> windows, MissionSnapshot activeMission, string primaryWarning, List<WarfrontSignalSnapshot> signalPairs, ArmyReinforcementSnapshot reinforceState, CityTimerEntrySnapshot reinforceTimer, OperationSnapshot reinforceOp)
@@ -667,9 +685,24 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                     onClick: () => TriggerReinforceArmy(reinforceOp.ArmyId)));
             }
 
-            cards.AddRange(BuildFrontCards(summary, nowUtc).Take(Math.Max(0, 3 - cards.Count)));
+            if (activeMission != null && cards.Count < 4)
+            {
+                cards.Add(BuildActiveMissionCard(activeMission, summary, primaryWarning, nowUtc));
+            }
 
-            var formationSlots = cards.Count == 0 ? 2 : Math.Min(2, Math.Max(0, 3 - cards.Count));
+            if (activeMission == null)
+            {
+                cards.AddRange(BuildWarfrontActionCards(summary, rankedArmies).Take(Math.Max(0, Math.Min(2, 4 - cards.Count))));
+
+                foreach (var offer in (summaryState.MissionOffers ?? new List<MissionOfferSnapshot>()).Take(Math.Max(0, Math.Min(2, 4 - cards.Count))))
+                {
+                    cards.Add(BuildMissionOfferCard(offer));
+                }
+            }
+
+            cards.AddRange(BuildFrontCards(summary, nowUtc).Take(Math.Max(0, Math.Min(2, 4 - cards.Count))));
+
+            var formationSlots = cards.Count == 0 ? 2 : Math.Min(2, Math.Max(0, 4 - cards.Count));
             foreach (var army in rankedArmies.Take(formationSlots))
             {
                 cards.Add(BuildFormationCard(army, string.Equals(army.Id, targetArmyId, StringComparison.OrdinalIgnoreCase)));
@@ -680,15 +713,6 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 title: NormalizeOperationsTimerLabel(timer.Label),
                 lore: $"{HumanizeStatus(timer.Status)} • {FormatRemaining(timer.FinishesAtUtc.HasValue ? timer.FinishesAtUtc.Value - nowUtc : (TimeSpan?)null)}",
                 note: Truncate(FirstNonBlank(timer.Detail, "Live operations window surfaced from city timers."), 96))));
-
-            if (cards.Count < 4 && activeMission != null)
-            {
-                cards.Add(new CardView(
-                    family: "Support operation",
-                    title: activeMission.Title,
-                    lore: activeMission.FinishesAtUtc.HasValue ? $"Mission resolves in {FormatRemaining(activeMission.FinishesAtUtc.Value - nowUtc)}" : "Mission is live without a finish anchor.",
-                    note: Truncate(BuildActiveMissionCardNote(activeMission, summary, primaryWarning), 96)));
-            }
 
             if (cards.Count < 4 && signalPairs.Count > 0)
             {
@@ -916,6 +940,10 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             result = result.Replace("assign routes", "assign lines", StringComparison.OrdinalIgnoreCase);
             result = result.Replace("Assign route", "Assign line", StringComparison.OrdinalIgnoreCase);
             result = result.Replace("Release route", "Release line", StringComparison.OrdinalIgnoreCase);
+            result = result.Replace("Open pressure line", "Launch warfront assault", StringComparison.OrdinalIgnoreCase);
+            result = result.Replace("Run disruption action", "Launch quick strike", StringComparison.OrdinalIgnoreCase);
+            result = result.Replace("pressure deployment", "warfront assault", StringComparison.OrdinalIgnoreCase);
+            result = result.Replace("disruption action", "quick strike", StringComparison.OrdinalIgnoreCase);
             result = result.Replace("retire formation", "disband formation", StringComparison.OrdinalIgnoreCase);
             result = result.Replace("Retire formation", "Disband formation", StringComparison.OrdinalIgnoreCase);
             return result;
@@ -942,15 +970,170 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         }
 
 
+        private CardView BuildActiveMissionCard(MissionSnapshot activeMission, ShellSummarySnapshot summary, string primaryWarning, DateTime nowUtc)
+        {
+            var hasInstance = !string.IsNullOrWhiteSpace(activeMission?.InstanceId);
+            var ready = activeMission?.FinishesAtUtc.HasValue == true && activeMission.FinishesAtUtc.Value <= nowUtc;
+            var pending = summaryState.IsActionBusy && string.Equals(summaryState.PendingMissionInstanceId, activeMission?.InstanceId, StringComparison.OrdinalIgnoreCase);
+            var remaining = activeMission?.FinishesAtUtc.HasValue == true ? FormatRemaining(activeMission.FinishesAtUtc.Value - nowUtc) : string.Empty;
+            var region = HumanizeRegionId(activeMission?.RegionId);
+            return new CardView(
+                family: "Support operation",
+                title: FirstNonBlank(activeMission?.Title, activeMission?.Id, "Mission"),
+                lore: ready
+                    ? "Mission ready to complete"
+                    : activeMission?.FinishesAtUtc.HasValue == true
+                        ? $"Mission resolves in {remaining}"
+                        : "Mission is live without a finish anchor.",
+                note: Truncate(BuildActiveMissionCardNote(activeMission, summary, primaryWarning), 128),
+                buttonText: pending ? "Completing..." : ready ? "Complete mission" : string.IsNullOrWhiteSpace(region) ? "Mission active" : $"Active in {region}",
+                buttonEnabled: ready && hasInstance && !summaryState.IsActionBusy && onCompleteMissionRequested != null,
+                onClick: ready && hasInstance ? () => TriggerCompleteMission(activeMission.InstanceId) : null);
+        }
+
+        private List<CardView> BuildWarfrontActionCards(ShellSummarySnapshot summary, IReadOnlyList<ArmySnapshot> rankedArmies)
+        {
+            var cards = new List<CardView>();
+            var regionId = FirstNonBlank(selectedHoldRegionId, ResolveDefaultHoldRegionId());
+            var regionLabel = string.IsNullOrWhiteSpace(regionId) ? "Select a region" : HumanizeRegionLabel(regionId);
+            var army = ResolveActionArmy(summary, rankedArmies);
+            var hero = ResolveActionHero(summary);
+            var hasIdleArmy = army != null && string.Equals(army.Status, "idle", StringComparison.OrdinalIgnoreCase);
+            var assaultEnabled = !summaryState.IsActionBusy && hasIdleArmy && !string.IsNullOrWhiteSpace(regionId) && onWarfrontAssaultRequested != null;
+            var quickStrikeEnabled = assaultEnabled && hero != null && onGarrisonStrikeRequested != null;
+            var armyName = army != null ? PresentArmyName(army.Name) : "No idle formation selected";
+            var heroName = hero != null ? hero.Name : "No idle hero selected";
+
+            cards.Add(new CardView(
+                family: useBlackMarketForceTerms ? "Pressure action" : "Warfront action",
+                title: useBlackMarketForceTerms ? $"Exploit {regionLabel}" : $"Assault {regionLabel}",
+                lore: $"{armyName} • direct timed push",
+                note: useBlackMarketForceTerms
+                    ? "Uses /api/warfront/assault to exploit a live pressure window for Cashflow, Materials, Influence, and control pressure. Occupation is only a hold posture."
+                    : "Uses /api/warfront/assault to push control, reduce threat pressure, and earn rewards. Occupation is only a hold posture.",
+                buttonText: GetWarfrontAssaultButtonText(),
+                buttonEnabled: assaultEnabled,
+                onClick: assaultEnabled ? () => TriggerWarfrontAssaultFor(regionId, army.Id, selectedDispatchHeroId?.Trim() ?? string.Empty) : null));
+
+            cards.Add(new CardView(
+                family: useBlackMarketForceTerms ? "Deniable raid" : "Quick strike",
+                title: useBlackMarketForceTerms ? $"Raid {regionLabel}" : $"Quick strike {regionLabel}",
+                lore: $"{armyName} • {heroName}",
+                note: useBlackMarketForceTerms
+                    ? "Uses /api/garrisons/strike for a faster hero-led raid against caches, lairs, or lieutenants. Needs an idle hero."
+                    : "Uses /api/garrisons/strike for a faster hero-led raid against camps, caches, or lieutenants. Needs an idle hero.",
+                buttonText: GetQuickStrikeButtonText(),
+                buttonEnabled: quickStrikeEnabled,
+                onClick: quickStrikeEnabled ? () => TriggerGarrisonStrikeFor(regionId, army.Id, FirstNonBlank(selectedDispatchHeroId, hero.Id)) : null));
+
+            return cards;
+        }
+
+        private ArmySnapshot ResolveActionArmy(ShellSummarySnapshot summary, IReadOnlyList<ArmySnapshot> rankedArmies)
+        {
+            var armies = rankedArmies ?? summary?.Armies ?? new List<ArmySnapshot>();
+            var selected = armies.FirstOrDefault(army => string.Equals(army.Id, selectedArmyId, StringComparison.OrdinalIgnoreCase));
+            if (selected != null)
+            {
+                return selected;
+            }
+
+            return armies.FirstOrDefault(army => string.Equals(army.Status, "idle", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private HeroSnapshot ResolveActionHero(ShellSummarySnapshot summary)
+        {
+            var heroes = summary?.Heroes ?? new List<HeroSnapshot>();
+            var selected = heroes.FirstOrDefault(hero => string.Equals(hero.Id, selectedDispatchHeroId, StringComparison.OrdinalIgnoreCase));
+            if (selected != null && string.Equals(selected.Status, "idle", StringComparison.OrdinalIgnoreCase))
+            {
+                return selected;
+            }
+
+            return heroes.FirstOrDefault(hero => string.Equals(hero.Status, "idle", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private string GetWarfrontAssaultButtonText()
+        {
+            return useBlackMarketForceTerms ? "Exploit pressure window" : "Launch warfront assault";
+        }
+
+        private string GetQuickStrikeButtonText()
+        {
+            return useBlackMarketForceTerms ? "Run deniable raid" : "Launch quick strike";
+        }
+
+        private string GetAssignHoldButtonText()
+        {
+            return useBlackMarketForceTerms ? "Assign route hold" : "Assign regional hold";
+        }
+
+        private string GetReleaseHoldButtonText()
+        {
+            return useBlackMarketForceTerms ? "Release route hold" : "Release regional hold";
+        }
+
+        private CardView BuildMissionOfferCard(MissionOfferSnapshot offer)
+        {
+            var pending = summaryState.IsActionBusy && string.Equals(summaryState.PendingMissionOfferId, offer?.Id, StringComparison.OrdinalIgnoreCase);
+            var title = FirstNonBlank(offer?.Title, offer?.Id, "Mission offer");
+            var meta = string.Join(" • ", new[]
+            {
+                HumanizeStatus(offer?.BoardCategory),
+                HumanizeStatus(offer?.Difficulty),
+                HumanizeRegionId(offer?.RegionId)
+            }.Where(part => !string.IsNullOrWhiteSpace(part) && part != "-"));
+            var note = FirstNonBlank(BuildMissionEffectSummary(offer?.Summary, offer?.Payoff, offer?.Risk), "Mission board offer surfaced from /api/missions/offers.");
+            return new CardView(
+                family: "Mission offer",
+                title: title,
+                lore: string.IsNullOrWhiteSpace(meta) ? "Available support operation" : meta,
+                note: Truncate(note, 128),
+                buttonText: pending ? "Starting..." : $"Start {title}",
+                buttonEnabled: !summaryState.IsActionBusy && onStartMissionRequested != null && !string.IsNullOrWhiteSpace(offer?.Id),
+                onClick: () => TriggerStartMission(offer?.Id));
+        }
+
+        private void TriggerStartMission(string missionId)
+        {
+            if (summaryState.IsActionBusy || onStartMissionRequested == null || string.IsNullOrWhiteSpace(missionId))
+            {
+                return;
+            }
+
+            _ = onStartMissionRequested.Invoke(missionId.Trim(), selectedArmyId?.Trim() ?? string.Empty, selectedDispatchHeroId?.Trim() ?? string.Empty, "balanced");
+        }
+
+        private void TriggerCompleteMission(string instanceId)
+        {
+            if (summaryState.IsActionBusy || onCompleteMissionRequested == null || string.IsNullOrWhiteSpace(instanceId))
+            {
+                return;
+            }
+
+            _ = onCompleteMissionRequested.Invoke(instanceId.Trim());
+        }
+
         private static string BuildActiveMissionCardNote(MissionSnapshot activeMission, ShellSummarySnapshot summary, string fallbackWarning)
         {
             var commitment = BuildMissionCommitmentSummary(activeMission, summary?.Armies ?? new List<ArmySnapshot>(), summary?.Heroes ?? new List<HeroSnapshot>());
-            if (!string.IsNullOrWhiteSpace(commitment) && !string.IsNullOrWhiteSpace(fallbackWarning))
-            {
-                return $"{commitment} • {fallbackWarning}";
-            }
+            var effect = BuildMissionEffectSummary(activeMission?.Summary, activeMission?.Payoff, activeMission?.Risk);
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(commitment)) parts.Add(commitment);
+            if (!string.IsNullOrWhiteSpace(effect)) parts.Add(effect);
+            if (!string.IsNullOrWhiteSpace(fallbackWarning)) parts.Add(fallbackWarning);
+            return parts.Count > 0
+                ? string.Join(" • ", parts)
+                : "Active support pressure remains part of the current operations posture.";
+        }
 
-            return FirstNonBlank(commitment, fallbackWarning, "Active support pressure remains part of the current operations posture.");
+        private static string BuildMissionEffectSummary(string summary, string payoff, string risk)
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(summary)) parts.Add(summary.Trim());
+            if (!string.IsNullOrWhiteSpace(payoff)) parts.Add($"Gain/effect: {payoff.Trim()}");
+            if (!string.IsNullOrWhiteSpace(risk)) parts.Add($"Risk: {risk.Trim()}");
+            return string.Join(" • ", parts.Where(part => !string.IsNullOrWhiteSpace(part)));
         }
 
         private static string BuildMissionCommitmentSummary(MissionSnapshot mission, IReadOnlyList<ArmySnapshot> armies, IReadOnlyList<HeroSnapshot> heroes)
@@ -1351,8 +1534,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             }
 
             parts.Add(string.IsNullOrWhiteSpace(holdRegionId)
-                ? "Choose a region and posture before assigning a route or opening a pressure action."
-                : $"Region desk: {(string.IsNullOrWhiteSpace(holdRegionLabel) ? holdRegionId : holdRegionLabel)} as {HumanizeKey(holdPosture)} duty, or deploy {PresentArmyName(army.Name)} there directly.");
+                ? "Choose a region and posture before assigning a hold or launching a warfront action."
+                : $"Region desk: {(string.IsNullOrWhiteSpace(holdRegionLabel) ? holdRegionId : holdRegionLabel)} as {HumanizeKey(holdPosture)} duty. Hold posture is a standing assignment; warfront assault and quick strike are direct timed actions.");
             if (dispatchHero != null)
             {
                 parts.Add($"Dispatch hero: {dispatchHero.Name} • {BuildHeroDispatchLore(dispatchHero)}.");
@@ -1451,7 +1634,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
         private string ResolveDefaultHoldRegionId()
         {
-            return BuildHoldRegionOptions().FirstOrDefault().RegionId ?? string.Empty;
+            var firstRegion = BuildHoldRegionOptions().FirstOrDefault();
+            return firstRegion?.RegionId ?? string.Empty;
         }
 
         private static List<string> BuildHoldPostureChoices()

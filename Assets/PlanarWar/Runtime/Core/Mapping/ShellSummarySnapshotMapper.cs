@@ -40,6 +40,20 @@ namespace PlanarWar.Client.Core.Mapping
                 summary["missions"]?["active_missions"],
                 city?["activeMissions"],
                 city?["active_missions"]);
+            var missionOffers = FirstArray(
+                summary["missionOffers"],
+                summary["mission_offers"],
+                summary["currentOffers"],
+                summary["current_offers"],
+                summary["missions"],
+                summary["missionBoard"]?["missions"],
+                summary["mission_board"]?["missions"],
+                summary["missionBoard"]?["offers"],
+                summary["mission_board"]?["offers"],
+                city?["missionOffers"],
+                city?["mission_offers"],
+                city?["currentOffers"],
+                city?["current_offers"]);
             var availableTechs = FirstArray(
                 summary["availableTechs"],
                 summary["available_techs"],
@@ -186,6 +200,7 @@ namespace PlanarWar.Client.Core.Mapping
                 ThreatWarnings = FirstArray(summary["threatWarnings"], summary["threat_warnings"])?.OfType<JObject>().Select(MapThreatWarning).Where(w => w != null).ToList() ?? new List<ThreatWarningSnapshot>(),
                 OpeningOperations = openingOps?.OfType<JObject>().Select(MapOperation).Where(o => o != null).ToList() ?? new List<OperationSnapshot>(),
                 ActiveMissions = activeMissions?.OfType<JObject>().Select(MapMission).Where(m => m != null).ToList() ?? new List<MissionSnapshot>(),
+                MissionOffers = missionOffers?.OfType<JObject>().Select(MapMissionOffer).Where(m => m != null).ToList() ?? new List<MissionOfferSnapshot>(),
                 Heroes = FirstArray(summary["heroes"], summary["Heroes"])?.OfType<JObject>().Select(MapHero).Where(h => h != null).ToList() ?? new List<HeroSnapshot>(),
                 Armies = FirstArray(summary["armies"], summary["Armies"])?.OfType<JObject>().Select(MapArmy).Where(a => a != null).ToList() ?? new List<ArmySnapshot>(),
                 HeroRecruitment = MapHeroRecruitment(summary["heroRecruitment"] as JObject ?? summary["hero_recruitment"] as JObject),
@@ -377,6 +392,35 @@ namespace PlanarWar.Client.Core.Mapping
                 AssignedArmyId = obj["assignedArmyId"]?.Read<string>() ?? obj["assigned_army_id"]?.Read<string>() ?? string.Empty,
                 AssignedHeroId = obj["assignedHeroId"]?.Read<string>() ?? obj["assigned_hero_id"]?.Read<string>() ?? string.Empty,
                 ResponsePosture = obj["responsePosture"]?.Read<string>() ?? obj["response_posture"]?.Read<string>() ?? string.Empty,
+                BoardState = obj["boardState"]?.Read<string>() ?? obj["board_state"]?.Read<string>() ?? obj["mission"]?["boardState"]?.Read<string>() ?? obj["mission"]?["board_state"]?.Read<string>() ?? string.Empty,
+                BoardCategory = obj["boardCategory"]?.Read<string>() ?? obj["board_category"]?.Read<string>() ?? obj["mission"]?["boardCategory"]?.Read<string>() ?? obj["mission"]?["board_category"]?.Read<string>() ?? string.Empty,
+                Summary = FirstNonBlank(
+                    obj["summary"]?.Read<string>(),
+                    obj["description"]?.Read<string>(),
+                    obj["mission"]?["summary"]?.Read<string>(),
+                    obj["mission"]?["description"]?.Read<string>(),
+                    obj["authoredSummary"]?.Read<string>(),
+                    obj["authored_summary"]?.Read<string>()),
+                Payoff = FirstNonBlank(
+                    obj["payoff"]?.Read<string>(),
+                    obj["reward"]?.Read<string>(),
+                    obj["rewards"]?.Read<string>(),
+                    obj["effect"]?.Read<string>(),
+                    obj["effects"]?.Read<string>(),
+                    obj["mission"]?["payoff"]?.Read<string>(),
+                    obj["mission"]?["reward"]?.Read<string>(),
+                    obj["mission"]?["rewards"]?.Read<string>(),
+                    obj["mission"]?["effect"]?.Read<string>(),
+                    obj["mission"]?["effects"]?.Read<string>(),
+                    obj["authoredActionSummary"]?.Read<string>(),
+                    obj["authored_action_summary"]?.Read<string>()),
+                Risk = FirstNonBlank(
+                    obj["risk"]?.Read<string>(),
+                    obj["riskSummary"]?.Read<string>(),
+                    obj["risk_summary"]?.Read<string>(),
+                    obj["mission"]?["risk"]?.Read<string>(),
+                    obj["mission"]?["riskSummary"]?.Read<string>(),
+                    obj["mission"]?["risk_summary"]?.Read<string>()),
                 FinishesAtUtc = ParseUtc(
                     obj["finishesAt"]
                     ?? obj["finishes_at"]
@@ -392,6 +436,29 @@ namespace PlanarWar.Client.Core.Mapping
                     ?? obj["timing"]?["finish_at"]
                     ?? obj["timing"]?["endsAt"]
                     ?? obj["timing"]?["ends_at"])
+            };
+        }
+
+        private static MissionOfferSnapshot MapMissionOffer(JObject obj)
+        {
+            if (obj == null) return null;
+            return new MissionOfferSnapshot
+            {
+                Id = obj["id"]?.Read<string>() ?? obj["missionId"]?.Read<string>() ?? obj["mission_id"]?.Read<string>() ?? "mission",
+                Title = obj["title"]?.Read<string>() ?? obj["name"]?.Read<string>() ?? obj["id"]?.Read<string>() ?? "Mission",
+                Kind = obj["kind"]?.Read<string>() ?? obj["missionKind"]?.Read<string>() ?? obj["mission_kind"]?.Read<string>() ?? string.Empty,
+                RegionId = obj["regionId"]?.Read<string>() ?? obj["region_id"]?.Read<string>() ?? string.Empty,
+                BoardState = obj["boardState"]?.Read<string>() ?? obj["board_state"]?.Read<string>() ?? string.Empty,
+                BoardCategory = obj["boardCategory"]?.Read<string>() ?? obj["board_category"]?.Read<string>() ?? string.Empty,
+                BoardSourceKind = obj["boardSourceKind"]?.Read<string>() ?? obj["board_source_kind"]?.Read<string>() ?? string.Empty,
+                BoardLaneTone = obj["boardLaneTone"]?.Read<string>() ?? obj["board_lane_tone"]?.Read<string>() ?? string.Empty,
+                Difficulty = obj["difficulty"]?.Read<string>() ?? string.Empty,
+                Summary = obj["summary"]?.Read<string>() ?? obj["authoredSummary"]?.Read<string>() ?? obj["authored_summary"]?.Read<string>() ?? obj["description"]?.Read<string>() ?? string.Empty,
+                Payoff = obj["payoff"]?.Read<string>() ?? obj["reward"]?.Read<string>() ?? obj["authoredActionSummary"]?.Read<string>() ?? obj["authored_action_summary"]?.Read<string>() ?? string.Empty,
+                Risk = obj["risk"]?.Read<string>() ?? obj["riskSummary"]?.Read<string>() ?? obj["risk_summary"]?.Read<string>() ?? string.Empty,
+                ResponseTags = (obj["responseTags"] as JArray)?.Select(tag => tag?.Read<string>()).Where(tag => !string.IsNullOrWhiteSpace(tag)).ToList()
+                    ?? (obj["response_tags"] as JArray)?.Select(tag => tag?.Read<string>()).Where(tag => !string.IsNullOrWhiteSpace(tag)).ToList()
+                    ?? new List<string>(),
             };
         }
 

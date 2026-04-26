@@ -94,6 +94,8 @@ namespace PlanarWar.Client.UI
                     HandleReleaseArmyHoldRequestedAsync,
                     HandleWarfrontAssaultRequestedAsync,
                     HandleGarrisonStrikeRequestedAsync,
+                    HandleStartMissionRequestedAsync,
+                    HandleCompleteMissionRequestedAsync,
                     RefreshSummary,
                     () => navigationState.SetActive(ShellScreen.Summary));
             }
@@ -169,13 +171,15 @@ namespace PlanarWar.Client.UI
             var researchElapsed = (snapshot.ActiveResearches ?? new System.Collections.Generic.List<ResearchSnapshot>())
                 .Any(r => r != null && r.FinishesAtUtc.HasValue && r.FinishesAtUtc.Value <= nowUtc);
 
+            var missionElapsed = HasAnyMissionElapsed(snapshot.ActiveMissions, nowUtc);
+
             var resourceTickElapsed = HasResourceTickElapsed(snapshot.ResourceTickTiming, nowUtc);
             if (resourceTickElapsed && nowUtc - lastResourceTickRefreshRequestedAtUtc < TimeSpan.FromSeconds(5))
             {
                 resourceTickElapsed = false;
             }
 
-            if (!heroScoutingElapsed && !heroCandidateReviewElapsed && !armyReinforcementElapsed && !researchElapsed && !resourceTickElapsed)
+            if (!heroScoutingElapsed && !heroCandidateReviewElapsed && !armyReinforcementElapsed && !researchElapsed && !missionElapsed && !resourceTickElapsed)
             {
                 return;
             }
@@ -198,6 +202,12 @@ namespace PlanarWar.Client.UI
             }
 
             return nextTickAtUtc.Value <= nowUtc;
+        }
+
+        private static bool HasAnyMissionElapsed(System.Collections.Generic.IEnumerable<MissionSnapshot> missions, DateTime nowUtc)
+        {
+            return (missions ?? Enumerable.Empty<MissionSnapshot>())
+                .Any(mission => mission != null && mission.FinishesAtUtc.HasValue && mission.FinishesAtUtc.Value <= nowUtc);
         }
 
         private static TimeSpan? GetResourceTickCadence(TimerSnapshot timing)
@@ -544,6 +554,48 @@ namespace PlanarWar.Client.UI
             catch (Exception ex)
             {
                 summaryState.FinishAction($"Hero candidate dismiss failed: {ex.Message}", failed: true);
+            }
+        }
+
+        private async Task HandleStartMissionRequestedAsync(string missionId, string armyId, string heroId, string responsePosture)
+        {
+            if (summaryState == null || apiClient == null || string.IsNullOrWhiteSpace(missionId) || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            try
+            {
+                var trimmedMissionId = missionId.Trim();
+                summaryState.BeginMissionStartAction(trimmedMissionId);
+                await apiClient.StartMissionAsync(trimmedMissionId, armyId, heroId, responsePosture);
+                summaryState.FinishAction($"Mission started: {trimmedMissionId}");
+                await summaryController.RefreshAsync();
+            }
+            catch (Exception ex)
+            {
+                summaryState.FinishAction($"Mission start failed: {ex.Message}", failed: true);
+            }
+        }
+
+        private async Task HandleCompleteMissionRequestedAsync(string instanceId)
+        {
+            if (summaryState == null || apiClient == null || string.IsNullOrWhiteSpace(instanceId) || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            try
+            {
+                var trimmedInstanceId = instanceId.Trim();
+                summaryState.BeginMissionCompleteAction(trimmedInstanceId);
+                await apiClient.CompleteMissionAsync(trimmedInstanceId);
+                summaryState.FinishAction($"Mission completed: {trimmedInstanceId}");
+                await summaryController.RefreshAsync();
+            }
+            catch (Exception ex)
+            {
+                summaryState.FinishAction($"Mission complete failed: {ex.Message}", failed: true);
             }
         }
 

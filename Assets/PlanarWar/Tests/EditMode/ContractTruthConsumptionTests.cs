@@ -9,11 +9,25 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
+using System.IO;
 
 namespace PlanarWar.Client.Tests.EditMode
 {
     public class ContractTruthConsumptionTests
     {
+        [Test]
+        public void Operations_visible_card_slots_all_have_action_buttons()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            for (var i = 1; i <= 4; i++)
+            {
+                Assert.That(uxml, Does.Contain($"warfront-card-{i}-button"), $"Visible operation card {i} needs a button slot so actionable cards do not render as dead text.");
+            }
+        }
+
         [Test]
         public void Operations_city_lane_translates_shadow_force_terms_to_troop_language()
         {
@@ -23,7 +37,7 @@ namespace PlanarWar.Client.Tests.EditMode
 
             var result = (string)formatter.Invoke(null, new object[]
             {
-                "Cell lead • 220 agents • Supplies 40 • Cashflow 23 • Rename cell • Assign route"
+                "Cell lead • 220 agents • Supplies 40 • Cashflow 23 • Rename cell • Assign route • Open pressure line • Run disruption action"
             });
 
             Assert.That(result, Does.Contain("Formation lead"));
@@ -32,6 +46,8 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(result, Does.Contain("Wealth 23"));
             Assert.That(result, Does.Contain("Rename formation"));
             Assert.That(result, Does.Contain("Assign line"));
+            Assert.That(result, Does.Contain("Launch warfront assault"));
+            Assert.That(result, Does.Contain("Launch quick strike"));
             Assert.That(result, Does.Not.Contain("agents"));
             Assert.That(result, Does.Not.Contain("Cell"));
         }
@@ -741,6 +757,100 @@ namespace PlanarWar.Client.Tests.EditMode
             state.ClearBuildingConfirm();
             Assert.That(state.HasPendingBuildingConfirm("cancel_build", activeBuildId: "build_1"), Is.False);
             Assert.That(state.PendingBuildingConfirmToken, Is.Empty);
+        }
+
+        [Test]
+        public void Mapper_captures_mission_board_offers_from_missions_payload()
+        {
+            const string payload = @"{
+                ""missions"": [
+                    {
+                        ""id"": ""counterfeit_trace_1"",
+                        ""title"": ""Trace Counterfeit Scrip"",
+                        ""kind"": ""hero"",
+                        ""regionId"": ""heartland_basin"",
+                        ""boardCategory"": ""counterfeit"",
+                        ""difficulty"": ""normal"",
+                        ""summary"": ""Follow the counterfeit receipt chain before it cools.""
+                    }
+                ]
+            }";
+
+            var summary = ShellSummarySnapshotMapper.Map(payload);
+
+            Assert.That(summary.MissionOffers, Has.Count.EqualTo(1));
+            Assert.That(summary.MissionOffers[0].Id, Is.EqualTo("counterfeit_trace_1"));
+            Assert.That(summary.MissionOffers[0].Title, Is.EqualTo("Trace Counterfeit Scrip"));
+            Assert.That(summary.MissionOffers[0].BoardCategory, Is.EqualTo("counterfeit"));
+        }
+
+
+        [Test]
+        public void Mapper_captures_active_mission_timer_and_effect_copy()
+        {
+            const string payload = @"{
+                ""activeMissions"": [
+                    {
+                        ""id"": ""lair_strike_1"",
+                        ""title"": ""Lair Strike: Heartland Basin"",
+                        ""instanceId"": ""mission_123"",
+                        ""regionId"": ""heartland_basin"",
+                        ""assignedArmyId"": ""army_1"",
+                        ""summary"": ""Hit a minor lair before it fortifies."",
+                        ""payoff"": ""materials and control pressure"",
+                        ""risk"": ""readiness loss"",
+                        ""finishesAt"": ""2099-01-01T00:05:00Z""
+                    }
+                ],
+                ""armies"": [
+                    { ""id"": ""army_1"", ""name"": ""First Tempest Cell"" }
+                ]
+            }";
+
+            var summary = ShellSummarySnapshotMapper.Map(payload);
+
+            Assert.That(summary.ActiveMissions, Has.Count.EqualTo(1));
+            Assert.That(summary.ActiveMissions[0].Title, Is.EqualTo("Lair Strike: Heartland Basin"));
+            Assert.That(summary.ActiveMissions[0].AssignedArmyName, Is.EqualTo("First Tempest Cell"));
+            Assert.That(summary.ActiveMissions[0].Payoff, Does.Contain("control pressure"));
+            Assert.That(summary.ActiveMissions[0].Risk, Does.Contain("readiness"));
+            Assert.That(summary.ActiveMissions[0].FinishesAtUtc, Is.Not.Null);
+        }
+
+        [Test]
+        public void Client_bootstrap_treats_elapsed_active_mission_as_timed_refresh_trigger()
+        {
+            var checker = typeof(PlanarWar.Client.UI.ClientBootstrap).GetMethod("HasAnyMissionElapsed", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(checker, Is.Not.Null);
+
+            var missions = new List<MissionSnapshot>
+            {
+                new MissionSnapshot
+                {
+                    InstanceId = "mission_123",
+                    Title = "Lair Strike",
+                    FinishesAtUtc = DateTime.UtcNow.AddSeconds(-1)
+                }
+            };
+
+            var elapsed = (bool)checker.Invoke(null, new object[] { missions, DateTime.UtcNow });
+
+            Assert.That(elapsed, Is.True);
+        }
+
+        [Test]
+        public void Summary_state_stores_mission_offers_from_refresh_side_payload()
+        {
+            var state = new SummaryState();
+            var offers = new[]
+            {
+                new MissionOfferSnapshot { Id = "relief_1", Title = "Relief Convoy", BoardCategory = "relief" }
+            };
+
+            state.ApplySnapshot(new ShellSummarySnapshot(), missionOffers: offers);
+
+            Assert.That(state.MissionOffers, Has.Count.EqualTo(1));
+            Assert.That(state.MissionOffers[0].Id, Is.EqualTo("relief_1"));
         }
 
     }

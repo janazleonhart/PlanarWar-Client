@@ -35,7 +35,18 @@ namespace PlanarWar.Client.Core.Application
                 workshopRecipes = new List<WorkshopRecipeSnapshot>();
             }
 
-            summaryState.Apply(raw, snapshot, workshopRecipes);
+            List<MissionOfferSnapshot> missionOffers = new();
+            try
+            {
+                var missionPayload = await apiClient.FetchMissionOffersAsync();
+                missionOffers = ParseMissionOffers(missionPayload);
+            }
+            catch
+            {
+                missionOffers = new List<MissionOfferSnapshot>();
+            }
+
+            summaryState.Apply(raw, snapshot, workshopRecipes, missionOffers);
         }
 
         private static List<WorkshopRecipeSnapshot> ParseWorkshopRecipes(JObject payload)
@@ -59,6 +70,44 @@ namespace PlanarWar.Client.Core.Application
                     ResponseTags = (r["responseTags"] as JArray)?.Select(tag => tag?.ToString()?.Trim()).Where(tag => !string.IsNullOrWhiteSpace(tag)).ToList() ?? new List<string>(),
                 })
                 .Where(r => !string.IsNullOrWhiteSpace(r.RecipeId))
+                .ToList();
+        }
+
+        private static List<MissionOfferSnapshot> ParseMissionOffers(JObject payload)
+        {
+            var offers = payload?["missions"] as JArray
+                ?? payload?["missionOffers"] as JArray
+                ?? payload?["mission_offers"] as JArray
+                ?? payload?["offers"] as JArray;
+            if (offers == null) return new List<MissionOfferSnapshot>();
+
+            return offers
+                .OfType<JObject>()
+                .Select(m => new MissionOfferSnapshot
+                {
+                    Id = m["id"]?.ToString()?.Trim() ?? m["missionId"]?.ToString()?.Trim() ?? "mission",
+                    Title = m["title"]?.ToString()?.Trim() ?? m["name"]?.ToString()?.Trim() ?? m["id"]?.ToString()?.Trim() ?? "Mission",
+                    Kind = m["kind"]?.ToString()?.Trim() ?? m["missionKind"]?.ToString()?.Trim() ?? string.Empty,
+                    RegionId = m["regionId"]?.ToString()?.Trim() ?? m["region_id"]?.ToString()?.Trim() ?? string.Empty,
+                    BoardState = m["boardState"]?.ToString()?.Trim() ?? m["board_state"]?.ToString()?.Trim() ?? string.Empty,
+                    BoardCategory = m["boardCategory"]?.ToString()?.Trim() ?? m["board_category"]?.ToString()?.Trim() ?? string.Empty,
+                    BoardSourceKind = m["boardSourceKind"]?.ToString()?.Trim() ?? m["board_source_kind"]?.ToString()?.Trim() ?? string.Empty,
+                    BoardLaneTone = m["boardLaneTone"]?.ToString()?.Trim() ?? m["board_lane_tone"]?.ToString()?.Trim() ?? string.Empty,
+                    Difficulty = m["difficulty"]?.ToString()?.Trim() ?? string.Empty,
+                    Summary = m["summary"]?.ToString()?.Trim() ?? m["authoredSummary"]?.ToString()?.Trim() ?? m["description"]?.ToString()?.Trim() ?? string.Empty,
+                    Payoff = m["payoff"]?.ToString()?.Trim()
+                        ?? m["reward"]?.ToString()?.Trim()
+                        ?? m["rewards"]?.ToString(Newtonsoft.Json.Formatting.None)?.Trim()
+                        ?? m["effect"]?.ToString()?.Trim()
+                        ?? m["effects"]?.ToString(Newtonsoft.Json.Formatting.None)?.Trim()
+                        ?? m["authoredActionSummary"]?.ToString()?.Trim()
+                        ?? string.Empty,
+                    Risk = m["risk"]?.ToString()?.Trim() ?? m["riskSummary"]?.ToString()?.Trim() ?? m["risk_summary"]?.ToString()?.Trim() ?? string.Empty,
+                    ResponseTags = (m["responseTags"] as JArray)?.Select(tag => tag?.ToString()?.Trim()).Where(tag => !string.IsNullOrWhiteSpace(tag)).ToList()
+                        ?? (m["response_tags"] as JArray)?.Select(tag => tag?.ToString()?.Trim()).Where(tag => !string.IsNullOrWhiteSpace(tag)).ToList()
+                        ?? new List<string>(),
+                })
+                .Where(m => !string.IsNullOrWhiteSpace(m.Id))
                 .ToList();
         }
 

@@ -17,6 +17,7 @@ namespace PlanarWar.Client.Core
         public string LastError { get; private set; } = "-";
         public DateTime LastUpdatedUtc { get; private set; }
         public List<WorkshopRecipeSnapshot> WorkshopRecipes { get; private set; } = new();
+        public List<MissionOfferSnapshot> MissionOffers { get; private set; } = new();
 
         public bool IsActionBusy { get; private set; }
         public string ActionStatus { get; private set; } = string.Empty;
@@ -28,6 +29,7 @@ namespace PlanarWar.Client.Core
         public DateTime? RecentCompletedResearchAtUtc { get; private set; }
         public string PendingWorkshopJobId { get; private set; } = string.Empty;
         public string PendingWorkshopRecipeId { get; private set; } = string.Empty;
+        public string PendingMissionOfferId { get; private set; } = string.Empty;
         public string PendingMissionInstanceId { get; private set; } = string.Empty;
         public string PendingHeroRecruitRole { get; private set; } = string.Empty;
         public string PendingHeroRecruitCandidateId { get; private set; } = string.Empty;
@@ -42,14 +44,29 @@ namespace PlanarWar.Client.Core
         public string PendingBuildingConfirmTargetKind { get; private set; } = string.Empty;
         public string PendingBuildingConfirmActiveBuildId { get; private set; } = string.Empty;
 
-        public void Apply(JObject summary, ShellSummarySnapshot snapshot, IEnumerable<WorkshopRecipeSnapshot> workshopRecipes = null)
+        public void Apply(JObject summary, ShellSummarySnapshot snapshot, IEnumerable<WorkshopRecipeSnapshot> workshopRecipes = null, IEnumerable<MissionOfferSnapshot> missionOffers = null)
+        {
+            ApplyInternal(summary, snapshot, summary != null, workshopRecipes, missionOffers);
+        }
+
+        public void ApplySnapshot(ShellSummarySnapshot snapshot, IEnumerable<WorkshopRecipeSnapshot> workshopRecipes = null, IEnumerable<MissionOfferSnapshot> missionOffers = null)
+        {
+            ApplyInternal(null, snapshot, snapshot != null, workshopRecipes, missionOffers);
+        }
+
+        private void ApplyInternal(JObject summary, ShellSummarySnapshot snapshot, bool isLoaded, IEnumerable<WorkshopRecipeSnapshot> workshopRecipes, IEnumerable<MissionOfferSnapshot> missionOffers)
         {
             RawSummary = summary;
             Snapshot = snapshot ?? ShellSummarySnapshot.Empty;
-            IsLoaded = summary != null;
+            IsLoaded = isLoaded;
             LastError = "-";
             LastUpdatedUtc = DateTime.UtcNow;
             WorkshopRecipes = workshopRecipes?.Where(r => r != null).ToList() ?? new List<WorkshopRecipeSnapshot>();
+            MissionOffers = missionOffers?.Where(m => m != null).ToList() ?? new List<MissionOfferSnapshot>();
+            if (MissionOffers.Count == 0 && Snapshot.MissionOffers != null && Snapshot.MissionOffers.Count > 0)
+            {
+                MissionOffers = Snapshot.MissionOffers.Where(m => m != null).ToList();
+            }
             ReconcileRecentResearchStartWithSnapshot(Snapshot, LastUpdatedUtc, notify: false);
             Changed?.Invoke();
         }
@@ -322,6 +339,18 @@ namespace PlanarWar.Client.Core
                 : string.Empty;
         }
 
+        public void BeginMissionStartAction(string missionId)
+        {
+            BeginAction(string.IsNullOrWhiteSpace(missionId) ? "Starting mission..." : $"Starting mission: {missionId.Trim()}");
+            PendingMissionOfferId = missionId?.Trim() ?? string.Empty;
+        }
+
+        public void BeginMissionCompleteAction(string instanceId)
+        {
+            BeginAction(string.IsNullOrWhiteSpace(instanceId) ? "Completing mission..." : $"Completing mission: {instanceId.Trim()}");
+            PendingMissionInstanceId = instanceId?.Trim() ?? string.Empty;
+        }
+
         public void BeginWorkshopCraft(string recipeId)
         {
             BeginAction(string.IsNullOrWhiteSpace(recipeId) ? "Starting workshop craft..." : $"Starting workshop craft: {recipeId.Trim()}");
@@ -459,6 +488,7 @@ namespace PlanarWar.Client.Core
             PendingResearchTechId = string.Empty;
             PendingWorkshopJobId = string.Empty;
             PendingWorkshopRecipeId = string.Empty;
+            PendingMissionOfferId = string.Empty;
             PendingMissionInstanceId = string.Empty;
             PendingHeroRecruitRole = string.Empty;
             PendingHeroRecruitCandidateId = string.Empty;
@@ -478,6 +508,7 @@ namespace PlanarWar.Client.Core
             PendingResearchTechId = string.Empty;
             PendingWorkshopJobId = string.Empty;
             PendingWorkshopRecipeId = string.Empty;
+            PendingMissionOfferId = string.Empty;
             PendingMissionInstanceId = string.Empty;
             PendingHeroRecruitRole = string.Empty;
             PendingHeroRecruitCandidateId = string.Empty;

@@ -44,6 +44,11 @@ namespace PlanarWar.Client.Network
             return GetJsonAsync(BuildUrl("/api/workshop/recipes"));
         }
 
+        public Task<JObject> FetchMissionOffersAsync()
+        {
+            return GetJsonAsync(BuildUrl("/api/missions/offers"));
+        }
+
         public Task<JObject> LoginAsync(string emailOrName, string password)
         {
             if (string.IsNullOrWhiteSpace(emailOrName))
@@ -450,6 +455,52 @@ namespace PlanarWar.Client.Network
 
             return PostJsonAsync(BuildUrl("/api/armies/release_hold"), body, includeBearerToken: true);
         }
+
+        public Task<JObject> StartMissionAsync(string missionId, string armyId = null, string heroId = null, string responsePosture = null)
+        {
+            if (string.IsNullOrWhiteSpace(missionId))
+            {
+                throw new ArgumentException("missionId is required", nameof(missionId));
+            }
+
+            var body = new JObject
+            {
+                ["missionId"] = missionId.Trim(),
+            };
+
+            if (!string.IsNullOrWhiteSpace(armyId))
+            {
+                body["armyId"] = armyId.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(heroId))
+            {
+                body["heroId"] = heroId.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(responsePosture))
+            {
+                body["responsePosture"] = responsePosture.Trim();
+            }
+
+            return PostJsonAsync(BuildUrl("/api/missions/start"), body, includeBearerToken: true);
+        }
+
+        public Task<JObject> CompleteMissionAsync(string instanceId)
+        {
+            if (string.IsNullOrWhiteSpace(instanceId))
+            {
+                throw new ArgumentException("instanceId is required", nameof(instanceId));
+            }
+
+            var body = new JObject
+            {
+                ["instanceId"] = instanceId.Trim(),
+            };
+
+            return PostJsonAsync(BuildUrl("/api/missions/complete"), body, includeBearerToken: true);
+        }
+
 
         private string BuildUrl(string path)
         {
