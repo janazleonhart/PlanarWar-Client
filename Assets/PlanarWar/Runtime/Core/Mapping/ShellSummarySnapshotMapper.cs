@@ -130,6 +130,34 @@ namespace PlanarWar.Client.Core.Mapping
                 city?["black_market_fronts"],
                 city?["operatorFronts"],
                 city?["operator_fronts"]);
+            var maxBuildingSlots = FirstInt(
+                summary["maxBuildingSlots"],
+                summary["max_building_slots"],
+                summary["buildingSlotCap"],
+                summary["building_slot_cap"],
+                summary["maxFrontSlots"],
+                summary["max_front_slots"],
+                city?["maxBuildingSlots"],
+                city?["max_building_slots"],
+                city?["buildingSlotCap"],
+                city?["building_slot_cap"],
+                city?["maxFrontSlots"],
+                city?["max_front_slots"]);
+            var effectiveBuildingSlots = FirstInt(
+                summary["effectiveBuildingSlots"],
+                summary["effective_building_slots"],
+                summary["buildingSlots"],
+                summary["building_slots"],
+                summary["effectiveFrontSlots"],
+                summary["effective_front_slots"],
+                city?["effectiveBuildingSlots"],
+                city?["effective_building_slots"],
+                city?["buildingSlots"],
+                city?["building_slots"],
+                city?["effectiveFrontSlots"],
+                city?["effective_front_slots"]);
+
+
 
             var mapped = new ShellSummarySnapshot
             {
@@ -144,6 +172,8 @@ namespace PlanarWar.Client.Core.Mapping
                     Tier = city?["tier"]?.Read<int?>()
                 },
                 Buildings = buildingObjects.Select(MapBuilding).Where(b => b != null).ToList(),
+                MaxBuildingSlots = maxBuildingSlots,
+                EffectiveBuildingSlots = effectiveBuildingSlots ?? maxBuildingSlots,
                 Resources = MapResource(summary["resources"] as JObject),
                 ResourceLabels = MapResourcePresentation(FirstObject(summary["resourceLabels"], summary["resource_labels"]), city?["settlementLane"]?.Read<string>() ?? city?["settlement_lane"]?.Read<string>()),
                 ProductionPerTick = MapResource(city?["production"] as JObject, true),
@@ -964,6 +994,18 @@ namespace PlanarWar.Client.Core.Mapping
 
         private static JObject FirstObject(params JToken[] tokens) => tokens?.OfType<JObject>().FirstOrDefault();
         private static JArray FirstArray(params JToken[] tokens) => tokens?.OfType<JArray>().FirstOrDefault();
+
+        private static int? FirstInt(params JToken[] tokens)
+        {
+            if (tokens == null) return null;
+            foreach (var token in tokens)
+            {
+                var value = token?.Read<int?>();
+                if (value.HasValue) return value;
+            }
+
+            return null;
+        }
 
         private static List<string> MapStringArray(JArray array)
         {

@@ -6,6 +6,22 @@ using UnityEngine.Networking;
 
 namespace PlanarWar.Client.Network
 {
+    public sealed class PlanarWarApiException : InvalidOperationException
+    {
+        public PlanarWarApiException(long statusCode, string message, JObject body = null) : base(message)
+        {
+            StatusCode = statusCode;
+            Body = body;
+        }
+
+        public long StatusCode { get; }
+        public JObject Body { get; }
+
+        public string ConfirmToken => Body?["confirmToken"]?.ToString();
+        public string ApiStatus => Body?["status"]?.ToString();
+        public string ApiError => Body?["error"]?.ToString();
+    }
+
     public sealed class PlanarWarApiClient
     {
         private readonly Func<string> getHttpBaseUrl;
@@ -116,6 +132,69 @@ namespace PlanarWar.Client.Network
             };
 
             return PostJsonAsync(BuildUrl("/api/buildings/routing"), body, includeBearerToken: true);
+        }
+
+        public Task<JObject> DestroyBuildingAsync(string buildingId, string confirmToken = null)
+        {
+            if (string.IsNullOrWhiteSpace(buildingId))
+            {
+                throw new ArgumentException("buildingId is required", nameof(buildingId));
+            }
+
+            var body = new JObject
+            {
+                ["buildingId"] = buildingId.Trim()
+            };
+
+            if (!string.IsNullOrWhiteSpace(confirmToken))
+            {
+                body["confirm"] = confirmToken.Trim();
+            }
+
+            return PostJsonAsync(BuildUrl("/api/buildings/destroy"), body, includeBearerToken: true);
+        }
+
+        public Task<JObject> RemodelBuildingAsync(string buildingId, string kind, string confirmToken = null)
+        {
+            if (string.IsNullOrWhiteSpace(buildingId))
+            {
+                throw new ArgumentException("buildingId is required", nameof(buildingId));
+            }
+
+            if (string.IsNullOrWhiteSpace(kind))
+            {
+                throw new ArgumentException("kind is required", nameof(kind));
+            }
+
+            var body = new JObject
+            {
+                ["buildingId"] = buildingId.Trim(),
+                ["kind"] = kind.Trim()
+            };
+
+            if (!string.IsNullOrWhiteSpace(confirmToken))
+            {
+                body["confirm"] = confirmToken.Trim();
+            }
+
+            return PostJsonAsync(BuildUrl("/api/buildings/remodel"), body, includeBearerToken: true);
+        }
+
+        public Task<JObject> CancelActiveBuildAsync(string activeBuildId = null, string confirmToken = null)
+        {
+            var body = new JObject();
+
+            if (!string.IsNullOrWhiteSpace(activeBuildId))
+            {
+                body["activeBuildId"] = activeBuildId.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(confirmToken))
+            {
+                body["confirm"] = confirmToken.Trim();
+            }
+
+            return PostJsonAsync(BuildUrl("/api/buildings/cancel_active"), body, includeBearerToken: true);
         }
 
 
@@ -431,12 +510,30 @@ namespace PlanarWar.Client.Network
 
         private static JObject ParseResponse(UnityWebRequest request)
         {
+            var text = request.downloadHandler?.text;
             if (request.result != UnityWebRequest.Result.Success)
             {
-                throw new InvalidOperationException($"HTTP {request.responseCode}: {request.error}\n{request.downloadHandler?.text}");
+                JObject body = null;
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    try
+                    {
+                        body = JObject.Parse(text);
+                    }
+                    catch
+                    {
+                        body = null;
+                    }
+                }
+
+                var apiError = body?["error"]?.ToString();
+                var status = body?["status"]?.ToString();
+                var message = string.IsNullOrWhiteSpace(apiError)
+                    ? $"HTTP {request.responseCode}: {request.error}\n{text}"
+                    : $"HTTP {request.responseCode}: {apiError}{(string.IsNullOrWhiteSpace(status) ? string.Empty : $" ({status})")}";
+                throw new PlanarWarApiException(request.responseCode, message, body);
             }
 
-            var text = request.downloadHandler?.text;
             if (string.IsNullOrWhiteSpace(text))
             {
                 return new JObject();

@@ -13,6 +13,8 @@ namespace PlanarWar.Client.Core.Contracts
         public bool HasCity { get; set; }
         public CitySummarySnapshot City { get; set; } = new();
         public List<BuildingSnapshot> Buildings { get; set; } = new();
+        public int? MaxBuildingSlots { get; set; }
+        public int? EffectiveBuildingSlots { get; set; }
         public ResourceSnapshot Resources { get; set; } = new();
         public ResourcePresentationSnapshot ResourceLabels { get; set; } = new();
         public ResourceSnapshot ProductionPerTick { get; set; } = new();

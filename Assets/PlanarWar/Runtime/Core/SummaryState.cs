@@ -36,6 +36,11 @@ namespace PlanarWar.Client.Core
         public string PendingBuildingKind { get; private set; } = string.Empty;
         public string PendingBuildingId { get; private set; } = string.Empty;
         public string PendingBuildingRoutingPreference { get; private set; } = string.Empty;
+        public string PendingBuildingConfirmAction { get; private set; } = string.Empty;
+        public string PendingBuildingConfirmToken { get; private set; } = string.Empty;
+        public string PendingBuildingConfirmBuildingId { get; private set; } = string.Empty;
+        public string PendingBuildingConfirmTargetKind { get; private set; } = string.Empty;
+        public string PendingBuildingConfirmActiveBuildId { get; private set; } = string.Empty;
 
         public void Apply(JObject summary, ShellSummarySnapshot snapshot, IEnumerable<WorkshopRecipeSnapshot> workshopRecipes = null)
         {
@@ -228,6 +233,93 @@ namespace PlanarWar.Client.Core
             BeginAction(string.IsNullOrWhiteSpace(buildingId) ? "Switching building routing..." : $"Switching building routing: {buildingId.Trim()}");
             PendingBuildingId = buildingId?.Trim() ?? string.Empty;
             PendingBuildingRoutingPreference = routingPreference?.Trim() ?? string.Empty;
+        }
+
+        public void BeginBuildingDestroy(string buildingId, bool confirming = false)
+        {
+            BeginAction(string.IsNullOrWhiteSpace(buildingId)
+                ? (confirming ? "Confirming demolition..." : "Requesting demolition confirmation...")
+                : confirming ? $"Confirming demolition: {buildingId.Trim()}" : $"Requesting demolition confirmation: {buildingId.Trim()}");
+            PendingBuildingId = buildingId?.Trim() ?? string.Empty;
+        }
+
+        public void BeginBuildingRemodel(string buildingId, string targetKind, bool confirming = false)
+        {
+            var label = string.IsNullOrWhiteSpace(buildingId)
+                ? (confirming ? "Confirming remodel..." : "Requesting remodel confirmation...")
+                : confirming ? $"Confirming remodel: {buildingId.Trim()}" : $"Requesting remodel confirmation: {buildingId.Trim()}";
+            if (!string.IsNullOrWhiteSpace(targetKind))
+            {
+                label += $" -> {targetKind.Trim()}";
+            }
+
+            BeginAction(label);
+            PendingBuildingId = buildingId?.Trim() ?? string.Empty;
+            PendingBuildingKind = targetKind?.Trim() ?? string.Empty;
+        }
+
+        public void BeginActiveBuildCancel(string activeBuildId, bool confirming = false)
+        {
+            BeginAction(string.IsNullOrWhiteSpace(activeBuildId)
+                ? (confirming ? "Confirming build cancellation..." : "Requesting build cancellation confirmation...")
+                : confirming ? $"Confirming build cancellation: {activeBuildId.Trim()}" : $"Requesting build cancellation confirmation: {activeBuildId.Trim()}");
+            PendingBuildingId = activeBuildId?.Trim() ?? string.Empty;
+        }
+
+        public void MarkBuildingConfirmRequired(string action, string confirmToken, string buildingId = null, string targetKind = null, string activeBuildId = null)
+        {
+            PendingBuildingConfirmAction = action?.Trim() ?? string.Empty;
+            PendingBuildingConfirmToken = confirmToken?.Trim() ?? string.Empty;
+            PendingBuildingConfirmBuildingId = buildingId?.Trim() ?? string.Empty;
+            PendingBuildingConfirmTargetKind = targetKind?.Trim() ?? string.Empty;
+            PendingBuildingConfirmActiveBuildId = activeBuildId?.Trim() ?? string.Empty;
+            Changed?.Invoke();
+        }
+
+        public void ClearBuildingConfirm()
+        {
+            PendingBuildingConfirmAction = string.Empty;
+            PendingBuildingConfirmToken = string.Empty;
+            PendingBuildingConfirmBuildingId = string.Empty;
+            PendingBuildingConfirmTargetKind = string.Empty;
+            PendingBuildingConfirmActiveBuildId = string.Empty;
+            Changed?.Invoke();
+        }
+
+        public bool HasPendingBuildingConfirm(string action, string buildingId = null, string targetKind = null, string activeBuildId = null)
+        {
+            if (string.IsNullOrWhiteSpace(PendingBuildingConfirmToken)
+                || !string.Equals(PendingBuildingConfirmAction, action?.Trim() ?? string.Empty, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(buildingId)
+                && !string.Equals(PendingBuildingConfirmBuildingId, buildingId.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(targetKind)
+                && !string.Equals(PendingBuildingConfirmTargetKind, targetKind.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(activeBuildId)
+                && !string.Equals(PendingBuildingConfirmActiveBuildId, activeBuildId.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        public string GetPendingBuildingConfirmToken(string action, string buildingId = null, string targetKind = null, string activeBuildId = null)
+        {
+            return HasPendingBuildingConfirm(action, buildingId, targetKind, activeBuildId)
+                ? PendingBuildingConfirmToken
+                : string.Empty;
         }
 
         public void BeginWorkshopCraft(string recipeId)

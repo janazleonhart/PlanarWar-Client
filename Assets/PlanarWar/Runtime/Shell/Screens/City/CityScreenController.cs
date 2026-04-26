@@ -58,6 +58,9 @@ namespace PlanarWar.Client.UI.Screens.City
         private readonly Func<string, Task> onConstructBuildingRequested;
         private readonly Func<string, Task> onUpgradeBuildingRequested;
         private readonly Func<string, string, Task> onSwitchBuildingRoutingRequested;
+        private readonly Func<string, Task> onDestroyBuildingRequested;
+        private readonly Func<string, string, Task> onRemodelBuildingRequested;
+        private readonly Func<string, Task> onCancelActiveBuildRequested;
         private readonly Action onRefreshDeskRequested;
         private readonly Action onBackHomeRequested;
         private readonly Button refreshDeskButton;
@@ -65,8 +68,11 @@ namespace PlanarWar.Client.UI.Screens.City
         private readonly Button backHomeButton;
 
         private DevelopmentLane activeLane = DevelopmentLane.Research;
+        private string selectedCityBuildingId = string.Empty;
+        private string selectedBlackMarketBuildingId = string.Empty;
+        private ShellSummarySnapshot lastRenderedSnapshot = ShellSummarySnapshot.Empty;
 
-        public CityScreenController(VisualElement root, SummaryState summaryState, Func<string, Task> onStartResearchRequested, Func<string, Task> onStartWorkshopCraftRequested, Func<string, Task> onCollectWorkshopRequested, Func<string, Task> onRecruitHeroRequested, Func<string, Task> onAcceptHeroRecruitCandidateRequested, Func<Task> onDismissHeroRecruitCandidatesRequested, Func<string, Task> onConstructBuildingRequested, Func<string, Task> onUpgradeBuildingRequested, Func<string, string, Task> onSwitchBuildingRoutingRequested, Action onRefreshDeskRequested, Action onBackHomeRequested)
+        public CityScreenController(VisualElement root, SummaryState summaryState, Func<string, Task> onStartResearchRequested, Func<string, Task> onStartWorkshopCraftRequested, Func<string, Task> onCollectWorkshopRequested, Func<string, Task> onRecruitHeroRequested, Func<string, Task> onAcceptHeroRecruitCandidateRequested, Func<Task> onDismissHeroRecruitCandidatesRequested, Func<string, Task> onConstructBuildingRequested, Func<string, Task> onUpgradeBuildingRequested, Func<string, string, Task> onSwitchBuildingRoutingRequested, Func<string, Task> onDestroyBuildingRequested, Func<string, string, Task> onRemodelBuildingRequested, Func<string, Task> onCancelActiveBuildRequested, Action onRefreshDeskRequested, Action onBackHomeRequested)
         {
             headline = root.Q<Label>("development-headline-value");
             copy = root.Q<Label>("development-copy-value");
@@ -105,6 +111,9 @@ namespace PlanarWar.Client.UI.Screens.City
             this.onConstructBuildingRequested = onConstructBuildingRequested;
             this.onUpgradeBuildingRequested = onUpgradeBuildingRequested;
             this.onSwitchBuildingRoutingRequested = onSwitchBuildingRoutingRequested;
+            this.onDestroyBuildingRequested = onDestroyBuildingRequested;
+            this.onRemodelBuildingRequested = onRemodelBuildingRequested;
+            this.onCancelActiveBuildRequested = onCancelActiveBuildRequested;
             this.onRefreshDeskRequested = onRefreshDeskRequested;
             this.onBackHomeRequested = onBackHomeRequested;
 
@@ -126,6 +135,7 @@ namespace PlanarWar.Client.UI.Screens.City
 
         public void Render(ShellSummarySnapshot s, SummaryState summaryState)
         {
+            lastRenderedSnapshot = s ?? ShellSummarySnapshot.Empty;
             var recipeCount = summaryState?.WorkshopRecipes?.Count ?? 0;
             var isBlackMarket = IsBlackMarketLane(s);
             var nowUtc = DateTime.UtcNow;
@@ -772,6 +782,36 @@ namespace PlanarWar.Client.UI.Screens.City
             _ = onSwitchBuildingRoutingRequested.Invoke(buildingId.Trim(), routingPreference.Trim());
         }
 
+        private void TriggerDestroyBuilding(string buildingId)
+        {
+            if (summaryState.IsActionBusy || onDestroyBuildingRequested == null || string.IsNullOrWhiteSpace(buildingId))
+            {
+                return;
+            }
+
+            _ = onDestroyBuildingRequested.Invoke(buildingId.Trim());
+        }
+
+        private void TriggerRemodelBuilding(string buildingId, string targetKind)
+        {
+            if (summaryState.IsActionBusy || onRemodelBuildingRequested == null || string.IsNullOrWhiteSpace(buildingId) || string.IsNullOrWhiteSpace(targetKind))
+            {
+                return;
+            }
+
+            _ = onRemodelBuildingRequested.Invoke(buildingId.Trim(), targetKind.Trim());
+        }
+
+        private void TriggerCancelActiveBuild(string activeBuildId)
+        {
+            if (summaryState.IsActionBusy || onCancelActiveBuildRequested == null)
+            {
+                return;
+            }
+
+            _ = onCancelActiveBuildRequested.Invoke(activeBuildId?.Trim() ?? string.Empty);
+        }
+
         private static TechOptionSnapshot GetSuggestedTech(ShellSummarySnapshot s, IReadOnlyList<ResearchSnapshot> activeResearches = null)
         {
             return SelectAvailableResearchOptions(s, activeResearches ?? SelectActiveResearches(s, DateTime.UtcNow))
@@ -1107,15 +1147,31 @@ namespace PlanarWar.Client.UI.Screens.City
             var hasActiveBuildWork = (activeBuilding != null && !IsBuildingReady(activeBuilding, nowUtc))
                 || (activeTimer != null && (!activeTimer.FinishesAtUtc.HasValue || activeTimer.FinishesAtUtc.Value > nowUtc));
 
-            cards.Add(BuildBuildingInventoryCard(buildings, timers, isBlackMarket, nowUtc));
+            cards.Add(BuildBuildingInventoryCard(s, buildings, timers, isBlackMarket, nowUtc));
 
             if (activeBuilding != null && cards.Count < budget)
             {
-                cards.Add(BuildExistingBuildingCard(activeBuilding, isBlackMarket, nowUtc, allowUpgrade: false));
+                cards.Add(BuildExistingBuildingCard(s, activeBuilding, isBlackMarket, nowUtc, allowUpgrade: false, allBuildings: buildings));
             }
             else if (activeTimer != null && cards.Count < budget)
             {
                 cards.Add(BuildBuildTimerCard(activeTimer, isBlackMarket, nowUtc));
+            }
+
+            var manageableBuildings = SelectManageableBuildings(buildings, nowUtc);
+            BuildingSnapshot selectedBuilding = null;
+            if (manageableBuildings.Count > 0)
+            {
+                selectedBuilding = ResolveSelectedManagedBuilding(manageableBuildings, isBlackMarket);
+                if (cards.Count < budget)
+                {
+                    cards.Add(BuildBuildingSelectorCard(manageableBuildings, selectedBuilding, isBlackMarket));
+                }
+
+                if (selectedBuilding != null && cards.Count < budget)
+                {
+                    cards.Add(BuildExistingBuildingCard(s, selectedBuilding, isBlackMarket, nowUtc, allowUpgrade: !hasActiveBuildWork, allBuildings: buildings));
+                }
             }
 
             var visibleBuildOptions = SelectCurrentlyBuildableOptions(s, isBlackMarket, buildings);
@@ -1132,72 +1188,173 @@ namespace PlanarWar.Client.UI.Screens.City
                 }
             }
 
-            if (cards.Count < budget)
-            {
-                foreach (var managed in buildings
-                    .Where(b => !HasBuildingTimingAnchor(b) && !IsBuildingReady(b, nowUtc))
-                    .Concat(buildings.Where(b => !HasBuildingTimingAnchor(b)))
-                    .GroupBy(b => GetBuildingActionId(b), StringComparer.OrdinalIgnoreCase)
-                    .Select(g => g.First()))
-                {
-                    if (ReferenceEquals(managed, activeBuilding)) continue;
-                    cards.Add(BuildExistingBuildingCard(managed, isBlackMarket, nowUtc, allowUpgrade: !hasActiveBuildWork));
-                    if (cards.Count >= budget) break;
-                }
-            }
-
             return cards;
         }
 
-        private CardView BuildBuildingInventoryCard(List<BuildingSnapshot> buildings, List<CityTimerEntrySnapshot> timers, bool isBlackMarket, DateTime nowUtc)
+        private CardView BuildBuildingInventoryCard(ShellSummarySnapshot s, List<BuildingSnapshot> buildings, List<CityTimerEntrySnapshot> timers, bool isBlackMarket, DateTime nowUtc)
         {
             var label = isBlackMarket ? "front" : "building";
             var counts = BuildBuildingTypeCounts(buildings);
+            var capacity = FormatBuildingCapacity(s, isBlackMarket, buildings.Count);
+            var typeSummary = counts.Count > 0 ? FormatBuildingTypeCounts(counts) : $"Pick a {label} type below to start the first real project.";
 
             return new CardView(
                 family: isBlackMarket ? "Front inventory" : "Building inventory",
                 title: buildings.Count > 0
                     ? $"{buildings.Count} {label}{(buildings.Count == 1 ? string.Empty : "s")} across {Math.Max(1, counts.Count)} type{(counts.Count == 1 ? string.Empty : "s")}"
                     : $"No {label}s built yet",
-                lore: counts.Count > 0 ? FormatBuildingTypeCounts(counts) : $"Pick a {label} type below to start the first real project.",
-                note: BuildBuildingInventoryNote(buildings, timers, isBlackMarket, nowUtc),
+                lore: string.IsNullOrWhiteSpace(capacity) ? typeSummary : $"{capacity} • {typeSummary}",
+                note: BuildBuildingInventoryNote(s, buildings, timers, isBlackMarket, nowUtc),
                 buttonText: null,
                 buttonEnabled: false,
                 onClick: null);
         }
 
-        private CardView BuildExistingBuildingCard(BuildingSnapshot building, bool isBlackMarket, DateTime nowUtc, bool allowUpgrade)
+        private CardView BuildBuildingSelectorCard(List<BuildingSnapshot> manageableBuildings, BuildingSnapshot selectedBuilding, bool isBlackMarket)
+        {
+            var noun = isBlackMarket ? "front" : "building";
+            var choices = manageableBuildings.Select(b => FormatBuildingSelectorLabel(b, isBlackMarket)).ToList();
+            var selectedIndex = selectedBuilding == null ? 0 : Math.Max(0, manageableBuildings.FindIndex(b => BuildingSelectorKeysMatch(b, selectedBuilding)));
+            var title = selectedBuilding == null ? $"Choose {noun}" : FormatBuildingTitle(selectedBuilding, isBlackMarket);
+            var selectedId = selectedBuilding == null ? string.Empty : FirstNonBlank(GetBuildingActionId(selectedBuilding), GetBuildingSelectorKey(selectedBuilding));
+
+            return new CardView(
+                family: isBlackMarket ? "Front selector" : "Building selector",
+                title: title,
+                lore: $"{manageableBuildings.Count} completed {noun}{(manageableBuildings.Count == 1 ? string.Empty : "s")} can be managed from this selector.",
+                note: string.IsNullOrWhiteSpace(selectedId)
+                    ? $"Pick which {noun} to inspect. This entry has no stable backend id, so mutation buttons stay disabled on its management card."
+                    : $"Selected {noun}: {selectedId}. Use the selected management card for upgrade, remodel, or destroy.",
+                selectorLabel: isBlackMarket ? "Manage front" : "Manage building",
+                selectorOptions: choices,
+                selectorIndex: selectedIndex,
+                selectorOnChange: index => SelectManagedBuilding(manageableBuildings, isBlackMarket, index));
+        }
+
+        private void SelectManagedBuilding(List<BuildingSnapshot> manageableBuildings, bool isBlackMarket, int index)
+        {
+            if (manageableBuildings == null || manageableBuildings.Count == 0)
+            {
+                SetSelectedManagedBuildingId(isBlackMarket, string.Empty);
+                return;
+            }
+
+            var safeIndex = Math.Max(0, Math.Min(index, manageableBuildings.Count - 1));
+            SetSelectedManagedBuildingId(isBlackMarket, GetBuildingSelectorKey(manageableBuildings[safeIndex]));
+            if (lastRenderedSnapshot != null)
+            {
+                Render(lastRenderedSnapshot, summaryState);
+            }
+        }
+
+        private BuildingSnapshot ResolveSelectedManagedBuilding(List<BuildingSnapshot> manageableBuildings, bool isBlackMarket)
+        {
+            if (manageableBuildings == null || manageableBuildings.Count == 0)
+            {
+                SetSelectedManagedBuildingId(isBlackMarket, string.Empty);
+                return null;
+            }
+
+            var selectedId = GetSelectedManagedBuildingId(isBlackMarket);
+            var selected = manageableBuildings.FirstOrDefault(b => string.Equals(GetBuildingSelectorKey(b), selectedId, StringComparison.OrdinalIgnoreCase));
+            if (selected == null)
+            {
+                selected = manageableBuildings[0];
+                SetSelectedManagedBuildingId(isBlackMarket, GetBuildingSelectorKey(selected));
+            }
+
+            return selected;
+        }
+
+        private string GetSelectedManagedBuildingId(bool isBlackMarket) => isBlackMarket ? selectedBlackMarketBuildingId : selectedCityBuildingId;
+
+        private void SetSelectedManagedBuildingId(bool isBlackMarket, string selectedId)
+        {
+            if (isBlackMarket)
+            {
+                selectedBlackMarketBuildingId = selectedId ?? string.Empty;
+            }
+            else
+            {
+                selectedCityBuildingId = selectedId ?? string.Empty;
+            }
+        }
+
+        private CardView BuildExistingBuildingCard(ShellSummarySnapshot s, BuildingSnapshot building, bool isBlackMarket, DateTime nowUtc, bool allowUpgrade, List<BuildingSnapshot> allBuildings)
         {
             var buildingId = GetBuildingActionId(building);
+            var activeBuildId = FirstNonBlank(building?.Id, buildingId);
+            var hasTiming = HasBuildingTimingAnchor(building);
             var pendingUpgrade = summaryState.IsActionBusy && string.Equals(summaryState.PendingBuildingId, buildingId, StringComparison.OrdinalIgnoreCase);
             var canUpgrade = allowUpgrade
                 && !summaryState.IsActionBusy
                 && !string.IsNullOrWhiteSpace(buildingId)
                 && onUpgradeBuildingRequested != null
                 && !IsBuildingReady(building, nowUtc)
-                && !HasBuildingTimingAnchor(building);
+                && !hasTiming;
+
+            var remodelTarget = SelectRemodelTarget(s, isBlackMarket, building, allBuildings);
+            var canRemodel = !summaryState.IsActionBusy
+                && !hasTiming
+                && onRemodelBuildingRequested != null
+                && !string.IsNullOrWhiteSpace(buildingId)
+                && remodelTarget.HasValue;
+            var pendingRemodelConfirm = canRemodel
+                && summaryState.HasPendingBuildingConfirm("remodel", buildingId, remodelTarget.Value.Kind);
+            var canDestroy = !summaryState.IsActionBusy
+                && !hasTiming
+                && onDestroyBuildingRequested != null
+                && !string.IsNullOrWhiteSpace(buildingId);
+            var pendingDestroyConfirm = canDestroy
+                && summaryState.HasPendingBuildingConfirm("destroy", buildingId);
+            var canCancel = !summaryState.IsActionBusy
+                && hasTiming
+                && onCancelActiveBuildRequested != null;
+            var pendingCancelConfirm = canCancel
+                && summaryState.HasPendingBuildingConfirm("cancel_build", activeBuildId: activeBuildId);
 
             return new CardView(
                 family: isBlackMarket ? "Operator front" : "Building",
                 title: FormatBuildingTitle(building, isBlackMarket),
                 lore: BuildBuildingLore(building, nowUtc),
-                note: BuildBuildingNote(building, isBlackMarket, nowUtc),
+                note: BuildBuildingManagementNote(BuildBuildingNote(building, isBlackMarket, nowUtc), canDestroy || canRemodel, canCancel),
                 buttonText: canUpgrade || pendingUpgrade
                     ? pendingUpgrade ? "Upgrading..." : "Upgrade"
                     : BuildBuildingStatusButtonText(building, isBlackMarket, nowUtc),
                 buttonEnabled: canUpgrade,
-                onClick: canUpgrade ? () => TriggerUpgradeBuilding(buildingId) : null);
+                onClick: canUpgrade ? () => TriggerUpgradeBuilding(buildingId) : null,
+                secondaryButtonText: pendingRemodelConfirm
+                    ? $"Confirm remodel → {remodelTarget.Value.Label}"
+                    : canRemodel ? $"Remodel → {remodelTarget.Value.Label}" : canCancel ? (pendingCancelConfirm ? "Confirm cancel" : "Cancel project") : null,
+                secondaryButtonEnabled: canRemodel || canCancel,
+                secondaryOnClick: canRemodel
+                    ? () => TriggerRemodelBuilding(buildingId, remodelTarget.Value.Kind)
+                    : canCancel ? () => TriggerCancelActiveBuild(activeBuildId) : null,
+                tertiaryButtonText: canDestroy ? (pendingDestroyConfirm ? "Confirm destroy" : "Destroy") : null,
+                tertiaryButtonEnabled: canDestroy,
+                tertiaryOnClick: canDestroy ? () => TriggerDestroyBuilding(buildingId) : null);
         }
 
         private CardView BuildBuildTimerCard(CityTimerEntrySnapshot timer, bool isBlackMarket, DateTime nowUtc)
         {
+            var activeBuildId = FirstNonBlank(timer?.Id);
+            var canCancel = !summaryState.IsActionBusy
+                && onCancelActiveBuildRequested != null
+                && !string.IsNullOrWhiteSpace(activeBuildId)
+                && !(timer?.FinishesAtUtc.HasValue == true && timer.FinishesAtUtc.Value <= nowUtc);
+            var pendingCancelConfirm = canCancel
+                && summaryState.HasPendingBuildingConfirm("cancel_build", activeBuildId: activeBuildId);
+
             return new CardView(
                 family: isBlackMarket ? "Front timer" : "Build timer",
                 title: isBlackMarket ? NormalizeBlackMarketTimerLabel(timer.Label, timer.Category) : FirstNonBlank(timer.Label, HumanizeCategory(timer.Category)),
                 lore: FormatTimerState(timer.Status, timer.FinishesAtUtc, nowUtc),
                 note: FirstNonBlank(timer.Detail, isBlackMarket ? "Operator-front timing is visible from cityTimers." : "Construction timing is visible from cityTimers."),
                 buttonText: timer.FinishesAtUtc.HasValue && timer.FinishesAtUtc.Value <= nowUtc ? "Ready" : "Timed",
-                buttonEnabled: false);
+                buttonEnabled: false,
+                secondaryButtonText: canCancel ? (pendingCancelConfirm ? "Confirm cancel" : "Cancel project") : null,
+                secondaryButtonEnabled: canCancel,
+                secondaryOnClick: canCancel ? () => TriggerCancelActiveBuild(activeBuildId) : null);
         }
 
         private CardView BuildConstructOptionCard(BuildingBuildOption option, bool isBlackMarket, bool hasActiveBuildWork)
@@ -1230,7 +1387,7 @@ namespace PlanarWar.Client.UI.Screens.City
                 family: isBlackMarket ? "Front choices" : "Build choices",
                 title: isBlackMarket ? "No fronts ready to open" : "No buildings ready to build",
                 lore: string.Join(" • ", blockerParts),
-                note: $"Unavailable {noun} choices are hidden instead of being offered as fake action buttons. Destroy/remodel still requires a backend endpoint.",
+                note: $"Unavailable {noun} choices are hidden instead of being offered as fake action buttons. Destroy/remodel uses explicit backend confirmation; no refund is issued in v1.",
                 buttonText: "No valid build target",
                 buttonEnabled: false);
         }
@@ -1243,6 +1400,20 @@ namespace PlanarWar.Client.UI.Screens.City
                 .OrderBy(option => counts.TryGetValue(NormalizeIdentity(option.Kind), out var count) ? count : 0)
                 .ThenBy(option => option.SortOrder)
                 .ToList();
+        }
+
+        private static BuildingBuildOption? SelectRemodelTarget(ShellSummarySnapshot s, bool isBlackMarket, BuildingSnapshot building, List<BuildingSnapshot> buildings)
+        {
+            var currentKind = NormalizeIdentity(FirstNonBlank(building?.Type, building?.BuildingId, building?.Name));
+            foreach (var option in SelectCurrentlyBuildableOptions(s, isBlackMarket, buildings))
+            {
+                if (!string.Equals(NormalizeIdentity(option.Kind), currentKind, StringComparison.OrdinalIgnoreCase))
+                {
+                    return option;
+                }
+            }
+
+            return null;
         }
 
         private static List<BuildingBuildOption> SelectCurrentlyBuildableOptions(ShellSummarySnapshot s, bool isBlackMarket, List<BuildingSnapshot> buildings)
@@ -1281,6 +1452,57 @@ namespace PlanarWar.Client.UI.Screens.City
             return string.Join(", ", parts);
         }
 
+        private static List<BuildingSnapshot> SelectManageableBuildings(List<BuildingSnapshot> buildings, DateTime nowUtc)
+        {
+            return (buildings ?? new List<BuildingSnapshot>())
+                .Where(b => b != null)
+                .Where(b => !HasBuildingTimingAnchor(b))
+                .Where(b => !IsBuildingReady(b, nowUtc))
+                .GroupBy(GetBuildingSelectorKey, StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.First())
+                .OrderBy(b => b.Slot ?? int.MaxValue)
+                .ThenBy(b => FirstNonBlank(b.Name, b.BuildingId, b.Type))
+                .ToList();
+        }
+
+        private static string GetBuildingSelectorKey(BuildingSnapshot building)
+        {
+            if (building == null) return string.Empty;
+            var stableId = FirstNonBlank(building.Id, building.BuildingId);
+            if (!string.IsNullOrWhiteSpace(stableId)) return stableId.Trim();
+            if (building.Slot.HasValue) return $"slot:{building.Slot.Value}";
+            return NormalizeIdentity(FirstNonBlank(building.Name, building.Type, "building"));
+        }
+
+        private static bool BuildingSelectorKeysMatch(BuildingSnapshot left, BuildingSnapshot right)
+        {
+            return string.Equals(GetBuildingSelectorKey(left), GetBuildingSelectorKey(right), StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string FormatBuildingSelectorLabel(BuildingSnapshot building, bool isBlackMarket)
+        {
+            var title = FormatBuildingTitle(building, isBlackMarket);
+            var key = FirstNonBlank(GetBuildingActionId(building), building?.Slot.HasValue == true ? $"slot {building.Slot.Value}" : string.Empty);
+            var status = BuildBuildingLifecycleLabel(building, DateTime.UtcNow);
+            var parts = new List<string> { title };
+            if (!string.IsNullOrWhiteSpace(key)) parts.Add(key);
+            if (!string.IsNullOrWhiteSpace(status)) parts.Add(status);
+            return string.Join(" • ", parts);
+        }
+
+        private static string FormatBuildingCapacity(ShellSummarySnapshot s, bool isBlackMarket, int occupied)
+        {
+            var cap = s?.EffectiveBuildingSlots ?? s?.MaxBuildingSlots;
+            var noun = isBlackMarket ? "front" : "building";
+            if (!cap.HasValue || cap.Value <= 0)
+            {
+                return "Slot cap not surfaced";
+            }
+
+            var open = Math.Max(0, cap.Value - Math.Max(0, occupied));
+            return $"{open} open of {cap.Value} {noun} slot{(cap.Value == 1 ? string.Empty : "s")}";
+        }
+
         private static Dictionary<string, int> BuildBuildingTypeCounts(List<BuildingSnapshot> buildings)
         {
             var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -1302,14 +1524,16 @@ namespace PlanarWar.Client.UI.Screens.City
                 .Select(pair => $"{HumanizeKey(pair.Key)} x{pair.Value}"));
         }
 
-        private static string BuildBuildingInventoryNote(List<BuildingSnapshot> buildings, List<CityTimerEntrySnapshot> timers, bool isBlackMarket, DateTime nowUtc)
+        private static string BuildBuildingInventoryNote(ShellSummarySnapshot s, List<BuildingSnapshot> buildings, List<CityTimerEntrySnapshot> timers, bool isBlackMarket, DateTime nowUtc)
         {
             var ready = (buildings ?? new List<BuildingSnapshot>()).Count(b => IsBuildingReady(b, nowUtc))
                 + (timers ?? new List<CityTimerEntrySnapshot>()).Count(t => t.FinishesAtUtc.HasValue && t.FinishesAtUtc.Value <= nowUtc);
             var timed = (buildings ?? new List<BuildingSnapshot>()).Count(HasBuildingTimingAnchor)
                 + (timers ?? new List<CityTimerEntrySnapshot>()).Count(t => !t.FinishesAtUtc.HasValue || t.FinishesAtUtc.Value > nowUtc);
             var noun = isBlackMarket ? "front" : "building";
-            return $"{ready} ready/finished • {timed} timed • only unlocked, affordable {noun} choices are shown below. Destroy/remodel requires a backend endpoint, so it is intentionally not shown yet.";
+            var manageable = SelectManageableBuildings(buildings, nowUtc).Count;
+            var capacity = FormatBuildingCapacity(s, isBlackMarket, buildings?.Count ?? 0);
+            return $"{ready} ready/finished • {timed} timed • {manageable} manageable {noun}{(manageable == 1 ? string.Empty : "s")} • {capacity}. Only unlocked, affordable {noun} choices are shown below. Destroy/remodel/cancel use backend confirm-token contracts with no refunds in v1.";
         }
 
         private static string GetBuildingActionId(BuildingSnapshot building)
@@ -1399,6 +1623,8 @@ namespace PlanarWar.Client.UI.Screens.City
             if (value.StartsWith("build:", StringComparison.OrdinalIgnoreCase)) value = value.Substring("build:".Length);
             if (value.StartsWith("construction:", StringComparison.OrdinalIgnoreCase)) value = value.Substring("construction:".Length);
             if (value.StartsWith("upgrade:", StringComparison.OrdinalIgnoreCase)) value = value.Substring("upgrade:".Length);
+            if (value.StartsWith("remodel:", StringComparison.OrdinalIgnoreCase)) value = value.Substring("remodel:".Length);
+            if (value.StartsWith("cancel_build:", StringComparison.OrdinalIgnoreCase)) value = value.Substring("cancel_build:".Length);
             value = value.Replace('_', ' ').Replace('-', ' ');
             while (value.IndexOf("  ", StringComparison.Ordinal) >= 0) value = value.Replace("  ", " ");
             return value.ToLowerInvariant();
@@ -1420,9 +1646,12 @@ namespace PlanarWar.Client.UI.Screens.City
             return category.IndexOf("build", StringComparison.OrdinalIgnoreCase) >= 0
                 || category.IndexOf("construction", StringComparison.OrdinalIgnoreCase) >= 0
                 || category.IndexOf("upgrade", StringComparison.OrdinalIgnoreCase) >= 0
+                || category.IndexOf("remodel", StringComparison.OrdinalIgnoreCase) >= 0
                 || label.IndexOf("build", StringComparison.OrdinalIgnoreCase) >= 0
                 || label.IndexOf("construction", StringComparison.OrdinalIgnoreCase) >= 0
-                || detail.IndexOf("construction", StringComparison.OrdinalIgnoreCase) >= 0;
+                || label.IndexOf("remodel", StringComparison.OrdinalIgnoreCase) >= 0
+                || detail.IndexOf("construction", StringComparison.OrdinalIgnoreCase) >= 0
+                || detail.IndexOf("remodel", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private static bool IsFrontTimer(CityTimerEntrySnapshot timer)
@@ -1487,6 +1716,13 @@ namespace PlanarWar.Client.UI.Screens.City
                 || value.Equals("upgrading", StringComparison.OrdinalIgnoreCase);
         }
 
+        private static bool IsRemodelingStatus(string status)
+        {
+            var value = (status ?? string.Empty).Trim();
+            return value.Equals("remodel", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("remodeling", StringComparison.OrdinalIgnoreCase);
+        }
+
         private static bool IsReadyStatus(string status)
         {
             var value = (status ?? string.Empty).Trim();
@@ -1519,6 +1755,7 @@ namespace PlanarWar.Client.UI.Screens.City
         private static string BuildBuildingStatusButtonText(BuildingSnapshot building, bool isBlackMarket, DateTime nowUtc)
         {
             if (IsBuildingReady(building, nowUtc)) return "Ready";
+            if (IsRemodelingStatus(building?.Status)) return "Remodeling";
             if (IsUpgradingStatus(building?.Status)) return "Upgrading";
             if (IsConstructingStatus(building?.Status) && HasBuildingTimingAnchor(building)) return isBlackMarket ? "Opening" : "Building";
             if (HasBuildingTimingAnchor(building)) return isBlackMarket ? "Front timer" : "Build timer";
@@ -1544,6 +1781,7 @@ namespace PlanarWar.Client.UI.Screens.City
         {
             if (building == null) return string.Empty;
             if (IsBuildingReady(building, nowUtc)) return "Ready";
+            if (IsRemodelingStatus(building.Status)) return "Remodeling";
             if (IsUpgradingStatus(building.Status)) return "Upgrading";
             if (IsConstructingStatus(building.Status) && HasBuildingTimingAnchor(building)) return "Building";
             if (HasBuildingTimingAnchor(building)) return "Timed";
@@ -1558,6 +1796,22 @@ namespace PlanarWar.Client.UI.Screens.City
             if (!string.IsNullOrWhiteSpace(building?.Detail)) return building.Detail;
             if (building?.StartedAtUtc.HasValue == true) return isBlackMarket ? $"Front opened {building.StartedAtUtc.Value:HH:mm:ss} UTC." : $"Construction started {building.StartedAtUtc.Value:HH:mm:ss} UTC.";
             return isBlackMarket ? "Operator-front truth is visible without fake covert simulation." : "Building truth is visible without fake construction simulation.";
+        }
+
+        private static string BuildBuildingManagementNote(string baseNote, bool canManage, bool canCancel)
+        {
+            var note = string.IsNullOrWhiteSpace(baseNote) ? "Building/front truth is visible." : baseNote.Trim();
+            if (canCancel)
+            {
+                return $"{note} Cancel requires a second backend confirmation and refunds nothing in v1.";
+            }
+
+            if (canManage)
+            {
+                return $"{note} Destroy/remodel require a second backend confirmation and refund nothing in v1.";
+            }
+
+            return note;
         }
 
         private static string BuildResearchLore(ResearchSnapshot research, bool isBlackMarket, DateTime nowUtc)
@@ -1810,7 +2064,24 @@ namespace PlanarWar.Client.UI.Screens.City
 
         private readonly struct CardView
         {
-            public CardView(string family, string title, string lore, string note, string buttonText = null, bool buttonEnabled = false, Action onClick = null)
+            public CardView(
+                string family,
+                string title,
+                string lore,
+                string note,
+                string buttonText = null,
+                bool buttonEnabled = false,
+                Action onClick = null,
+                string secondaryButtonText = null,
+                bool secondaryButtonEnabled = false,
+                Action secondaryOnClick = null,
+                string tertiaryButtonText = null,
+                bool tertiaryButtonEnabled = false,
+                Action tertiaryOnClick = null,
+                string selectorLabel = null,
+                IReadOnlyList<string> selectorOptions = null,
+                int selectorIndex = -1,
+                Action<int> selectorOnChange = null)
             {
                 Family = family;
                 Title = title;
@@ -1819,6 +2090,16 @@ namespace PlanarWar.Client.UI.Screens.City
                 ButtonText = buttonText;
                 ButtonEnabled = buttonEnabled;
                 OnClick = onClick;
+                SecondaryButtonText = secondaryButtonText;
+                SecondaryButtonEnabled = secondaryButtonEnabled;
+                SecondaryOnClick = secondaryOnClick;
+                TertiaryButtonText = tertiaryButtonText;
+                TertiaryButtonEnabled = tertiaryButtonEnabled;
+                TertiaryOnClick = tertiaryOnClick;
+                SelectorLabel = selectorLabel;
+                SelectorOptions = selectorOptions ?? Array.Empty<string>();
+                SelectorIndex = selectorIndex;
+                SelectorOnChange = selectorOnChange;
             }
 
             public string Family { get; }
@@ -1828,6 +2109,16 @@ namespace PlanarWar.Client.UI.Screens.City
             public string ButtonText { get; }
             public bool ButtonEnabled { get; }
             public Action OnClick { get; }
+            public string SecondaryButtonText { get; }
+            public bool SecondaryButtonEnabled { get; }
+            public Action SecondaryOnClick { get; }
+            public string TertiaryButtonText { get; }
+            public bool TertiaryButtonEnabled { get; }
+            public Action TertiaryOnClick { get; }
+            public string SelectorLabel { get; }
+            public IReadOnlyList<string> SelectorOptions { get; }
+            public int SelectorIndex { get; }
+            public Action<int> SelectorOnChange { get; }
         }
 
         private sealed class InfoCard
@@ -1838,8 +2129,17 @@ namespace PlanarWar.Client.UI.Screens.City
             private readonly Label lore;
             private readonly Label note;
             private readonly Button button;
+            private readonly DropdownField selector;
+            private VisualElement extraButtonRow;
+            private Button secondaryButton;
+            private Button tertiaryButton;
             private Action clickAction;
+            private Action secondaryClickAction;
+            private Action tertiaryClickAction;
+            private Action<int> selectorChangeAction;
             private bool clickEnabled;
+            private bool secondaryClickEnabled;
+            private bool tertiaryClickEnabled;
 
             public InfoCard(VisualElement shellRoot, string prefix, bool hasButton = false)
             {
@@ -1851,6 +2151,47 @@ namespace PlanarWar.Client.UI.Screens.City
                 button = hasButton ? shellRoot.Q<Button>($"{prefix}-button") : null;
                 if (root != null)
                 {
+                    selector = new DropdownField();
+                    selector.style.marginTop = 4;
+                    selector.style.display = DisplayStyle.None;
+                    selector.RegisterValueChangedCallback(evt =>
+                    {
+                        if (selectorChangeAction == null || selector.choices == null)
+                        {
+                            return;
+                        }
+
+                        var selectedIndex = selector.choices.IndexOf(evt.newValue);
+                        if (selectedIndex >= 0)
+                        {
+                            selectorChangeAction.Invoke(selectedIndex);
+                        }
+                    });
+                    root.Add(selector);
+                }
+
+                if (root != null && hasButton)
+                {
+                    extraButtonRow = new VisualElement();
+                    extraButtonRow.style.flexDirection = FlexDirection.Row;
+                    extraButtonRow.style.flexWrap = Wrap.Wrap;
+                    extraButtonRow.style.marginTop = 4;
+                    extraButtonRow.style.display = DisplayStyle.None;
+
+                    secondaryButton = new Button(InvokeSecondaryClick);
+                    secondaryButton.style.flexGrow = 1;
+                    secondaryButton.style.marginRight = 4;
+
+                    tertiaryButton = new Button(InvokeTertiaryClick);
+                    tertiaryButton.style.flexGrow = 1;
+
+                    extraButtonRow.Add(secondaryButton);
+                    extraButtonRow.Add(tertiaryButton);
+                    root.Add(extraButtonRow);
+                }
+
+                if (root != null)
+                {
                     root.RegisterCallback<ClickEvent>(evt =>
                     {
                         if (!clickEnabled || clickAction == null)
@@ -1859,7 +2200,10 @@ namespace PlanarWar.Client.UI.Screens.City
                         }
 
                         var targetElement = evt.target as VisualElement;
-                        if (button != null && targetElement != null && (ReferenceEquals(targetElement, button) || button.Contains(targetElement)))
+                        if (targetElement != null
+                            && ((button != null && (ReferenceEquals(targetElement, button) || button.Contains(targetElement)))
+                                || (extraButtonRow != null && (ReferenceEquals(targetElement, extraButtonRow) || extraButtonRow.Contains(targetElement)))
+                                || (selector != null && (ReferenceEquals(targetElement, selector) || selector.Contains(targetElement)))))
                         {
                             return;
                         }
@@ -1889,11 +2233,60 @@ namespace PlanarWar.Client.UI.Screens.City
                     ? FirstNonBlank(view.ButtonText, view.Title)
                     : string.Empty;
 
+                selectorChangeAction = view.SelectorOnChange;
+                if (selector != null)
+                {
+                    var choices = (view.SelectorOptions ?? Array.Empty<string>())
+                        .Where(choice => !string.IsNullOrWhiteSpace(choice))
+                        .ToList();
+                    if (choices.Count > 0)
+                    {
+                        selector.style.display = DisplayStyle.Flex;
+                        selector.label = string.IsNullOrWhiteSpace(view.SelectorLabel) ? "Select" : view.SelectorLabel;
+                        selector.choices = choices;
+                        var index = Math.Max(0, Math.Min(view.SelectorIndex, choices.Count - 1));
+                        selector.SetValueWithoutNotify(choices[index]);
+                        selector.SetEnabled(selectorChangeAction != null && choices.Count > 1);
+                    }
+                    else
+                    {
+                        selector.style.display = DisplayStyle.None;
+                        selector.choices = new List<string>();
+                        selector.SetValueWithoutNotify(string.Empty);
+                        selector.SetEnabled(false);
+                    }
+                }
                 if (button != null)
                 {
                     button.style.display = string.IsNullOrWhiteSpace(view.ButtonText) ? DisplayStyle.None : DisplayStyle.Flex;
                     button.text = view.ButtonText ?? "Read-only";
                     button.SetEnabled(clickEnabled);
+                }
+
+                secondaryClickAction = view.SecondaryOnClick;
+                secondaryClickEnabled = view.SecondaryButtonEnabled && secondaryClickAction != null;
+                tertiaryClickAction = view.TertiaryOnClick;
+                tertiaryClickEnabled = view.TertiaryButtonEnabled && tertiaryClickAction != null;
+
+                if (extraButtonRow != null)
+                {
+                    var showSecondary = !string.IsNullOrWhiteSpace(view.SecondaryButtonText);
+                    var showTertiary = !string.IsNullOrWhiteSpace(view.TertiaryButtonText);
+                    extraButtonRow.style.display = showSecondary || showTertiary ? DisplayStyle.Flex : DisplayStyle.None;
+
+                    if (secondaryButton != null)
+                    {
+                        secondaryButton.style.display = showSecondary ? DisplayStyle.Flex : DisplayStyle.None;
+                        secondaryButton.text = view.SecondaryButtonText ?? "Secondary";
+                        secondaryButton.SetEnabled(secondaryClickEnabled);
+                    }
+
+                    if (tertiaryButton != null)
+                    {
+                        tertiaryButton.style.display = showTertiary ? DisplayStyle.Flex : DisplayStyle.None;
+                        tertiaryButton.text = view.TertiaryButtonText ?? "Tertiary";
+                        tertiaryButton.SetEnabled(tertiaryClickEnabled);
+                    }
                 }
             }
 
@@ -1907,10 +2300,48 @@ namespace PlanarWar.Client.UI.Screens.City
                 clickAction.Invoke();
             }
 
+            private void InvokeSecondaryClick()
+            {
+                if (!secondaryClickEnabled || secondaryClickAction == null)
+                {
+                    return;
+                }
+
+                secondaryClickAction.Invoke();
+            }
+
+            private void InvokeTertiaryClick()
+            {
+                if (!tertiaryClickEnabled || tertiaryClickAction == null)
+                {
+                    return;
+                }
+
+                tertiaryClickAction.Invoke();
+            }
+
             public void RenderHidden()
             {
                 clickAction = null;
+                secondaryClickAction = null;
+                tertiaryClickAction = null;
+                selectorChangeAction = null;
                 clickEnabled = false;
+                secondaryClickEnabled = false;
+                tertiaryClickEnabled = false;
+                if (selector != null)
+                {
+                    selector.style.display = DisplayStyle.None;
+                    selector.choices = new List<string>();
+                    selector.SetValueWithoutNotify(string.Empty);
+                    selector.SetEnabled(false);
+                }
+
+                if (extraButtonRow != null)
+                {
+                    extraButtonRow.style.display = DisplayStyle.None;
+                }
+
                 if (root != null)
                 {
                     root.EnableInClassList("is-actionable-card", false);

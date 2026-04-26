@@ -82,6 +82,9 @@ namespace PlanarWar.Client.UI
                     HandleConstructBuildingRequestedAsync,
                     HandleUpgradeBuildingRequestedAsync,
                     HandleSwitchBuildingRoutingRequestedAsync,
+                    HandleDestroyBuildingRequestedAsync,
+                    HandleRemodelBuildingRequestedAsync,
+                    HandleCancelActiveBuildRequestedAsync,
                     HandleReinforceArmyRequestedAsync,
                     HandleRenameArmyRequestedAsync,
                     HandleSplitArmyRequestedAsync,
@@ -325,12 +328,115 @@ namespace PlanarWar.Client.UI
                 summaryState.BeginBuildingRouting(trimmedBuildingId, trimmedRoutingPreference);
                 await apiClient.SetBuildingRoutingPreferenceAsync(trimmedBuildingId, trimmedRoutingPreference);
                 await summaryController.RefreshAsync();
+                summaryState.ClearBuildingConfirm();
                 summaryState.FinishAction($"Building routing switched: {trimmedBuildingId} -> {trimmedRoutingPreference}");
             }
             catch (Exception ex)
             {
                 summaryState.FinishAction($"Building routing failed: {ex.Message}", failed: true);
             }
+        }
+
+        private async Task HandleDestroyBuildingRequestedAsync(string buildingId)
+        {
+            if (summaryState == null || apiClient == null || string.IsNullOrWhiteSpace(buildingId) || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            var trimmedBuildingId = buildingId.Trim();
+            var confirm = summaryState.GetPendingBuildingConfirmToken("destroy", trimmedBuildingId);
+            try
+            {
+                summaryState.BeginBuildingDestroy(trimmedBuildingId, !string.IsNullOrWhiteSpace(confirm));
+                await apiClient.DestroyBuildingAsync(trimmedBuildingId, confirm);
+                await summaryController.RefreshAsync();
+                summaryState.ClearBuildingConfirm();
+                summaryState.FinishAction($"Building demolished: {trimmedBuildingId}");
+            }
+            catch (PlanarWarApiException ex) when (TryCaptureBuildingConfirm("destroy", ex, trimmedBuildingId))
+            {
+                summaryState.FinishAction($"Confirm demolition required: {CleanApiError(ex)}");
+            }
+            catch (Exception ex)
+            {
+                summaryState.ClearBuildingConfirm();
+                summaryState.FinishAction($"Building demolition failed: {ex.Message}", failed: true);
+            }
+        }
+
+        private async Task HandleRemodelBuildingRequestedAsync(string buildingId, string targetKind)
+        {
+            if (summaryState == null || apiClient == null || string.IsNullOrWhiteSpace(buildingId) || string.IsNullOrWhiteSpace(targetKind) || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            var trimmedBuildingId = buildingId.Trim();
+            var trimmedTargetKind = targetKind.Trim();
+            var confirm = summaryState.GetPendingBuildingConfirmToken("remodel", trimmedBuildingId, trimmedTargetKind);
+            try
+            {
+                summaryState.BeginBuildingRemodel(trimmedBuildingId, trimmedTargetKind, !string.IsNullOrWhiteSpace(confirm));
+                await apiClient.RemodelBuildingAsync(trimmedBuildingId, trimmedTargetKind, confirm);
+                await summaryController.RefreshAsync();
+                summaryState.ClearBuildingConfirm();
+                summaryState.FinishAction($"Building remodel started: {trimmedBuildingId} -> {trimmedTargetKind}");
+            }
+            catch (PlanarWarApiException ex) when (TryCaptureBuildingConfirm("remodel", ex, trimmedBuildingId, trimmedTargetKind))
+            {
+                summaryState.FinishAction($"Confirm remodel required: {CleanApiError(ex)}");
+            }
+            catch (Exception ex)
+            {
+                summaryState.ClearBuildingConfirm();
+                summaryState.FinishAction($"Building remodel failed: {ex.Message}", failed: true);
+            }
+        }
+
+        private async Task HandleCancelActiveBuildRequestedAsync(string activeBuildId)
+        {
+            if (summaryState == null || apiClient == null || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            var trimmedActiveBuildId = activeBuildId?.Trim() ?? string.Empty;
+            var confirm = summaryState.GetPendingBuildingConfirmToken("cancel_build", activeBuildId: trimmedActiveBuildId);
+            try
+            {
+                summaryState.BeginActiveBuildCancel(trimmedActiveBuildId, !string.IsNullOrWhiteSpace(confirm));
+                await apiClient.CancelActiveBuildAsync(trimmedActiveBuildId, confirm);
+                await summaryController.RefreshAsync();
+                summaryState.ClearBuildingConfirm();
+                summaryState.FinishAction(string.IsNullOrWhiteSpace(trimmedActiveBuildId) ? "Active building project canceled." : $"Active building project canceled: {trimmedActiveBuildId}");
+            }
+            catch (PlanarWarApiException ex) when (TryCaptureBuildingConfirm("cancel_build", ex, activeBuildId: trimmedActiveBuildId))
+            {
+                summaryState.FinishAction($"Confirm cancellation required: {CleanApiError(ex)}");
+            }
+            catch (Exception ex)
+            {
+                summaryState.ClearBuildingConfirm();
+                summaryState.FinishAction($"Building cancellation failed: {ex.Message}", failed: true);
+            }
+        }
+
+        private bool TryCaptureBuildingConfirm(string action, PlanarWarApiException ex, string buildingId = null, string targetKind = null, string activeBuildId = null)
+        {
+            var token = ex?.ConfirmToken;
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return false;
+            }
+
+            summaryState.MarkBuildingConfirmRequired(action, token, buildingId, targetKind, activeBuildId);
+            return true;
+        }
+
+        private static string CleanApiError(PlanarWarApiException ex)
+        {
+            return string.IsNullOrWhiteSpace(ex?.ApiError) ? ex?.Message ?? "Confirm token required." : ex.ApiError.Trim();
         }
 
 

@@ -564,17 +564,57 @@ namespace PlanarWar.Client.Tests.EditMode
             var builder = typeof(CityScreenController).GetMethod("BuildBuildingInventoryNote", BindingFlags.NonPublic | BindingFlags.Static);
             Assert.That(builder, Is.Not.Null);
 
+            var summary = new ShellSummarySnapshot { EffectiveBuildingSlots = 8 };
             var buildings = new List<BuildingSnapshot>
             {
                 new BuildingSnapshot { Id = "low_quarter", Type = "housing", Name = "Low Quarter", Status = "active" }
             };
             var timers = new List<CityTimerEntrySnapshot>();
 
-            var note = (string)builder.Invoke(null, new object[] { buildings, timers, false, DateTime.UtcNow });
+            var note = (string)builder.Invoke(null, new object[] { summary, buildings, timers, false, DateTime.UtcNow });
 
             Assert.That(note, Does.Contain("only unlocked, affordable"));
-            Assert.That(note, Does.Contain("Destroy/remodel requires a backend endpoint"));
+            Assert.That(note, Does.Contain("1 manageable building"));
+            Assert.That(note, Does.Contain("7 open of 8 building slots"));
+            Assert.That(note, Does.Contain("backend confirm-token"));
             Assert.That(note, Does.Not.Contain("Route:"));
+        }
+
+        [Test]
+        public void Mapper_captures_building_slot_capacity_aliases()
+        {
+            const string payload = @"{
+                ""hasCity"": true,
+                ""effectiveBuildingSlots"": 8,
+                ""maxBuildingSlots"": 10,
+                ""city"": { ""name"": ""Slot City"", ""settlementLane"": ""city"" }
+            }";
+
+            var summary = ShellSummarySnapshotMapper.Map(payload);
+
+            Assert.That(summary.EffectiveBuildingSlots, Is.EqualTo(8));
+            Assert.That(summary.MaxBuildingSlots, Is.EqualTo(10));
+        }
+
+        [Test]
+        public void Development_building_selector_lists_all_completed_manageable_buildings()
+        {
+            var selector = typeof(CityScreenController).GetMethod("SelectManageableBuildings", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(selector, Is.Not.Null);
+
+            var now = DateTime.UtcNow;
+            var buildings = new List<BuildingSnapshot>
+            {
+                new BuildingSnapshot { Id = "b_housing_1", Type = "housing", Name = "Low Quarter", Status = "active", Slot = 2 },
+                new BuildingSnapshot { Id = "b_farm_1", Type = "farmland", Name = "Outer Farmlands", Status = "active", Slot = 1 },
+                new BuildingSnapshot { Id = "build_active_1", Type = "mine", Name = "Mine Dig", Status = "construct", StartedAtUtc = now.AddMinutes(-1), FinishesAtUtc = now.AddMinutes(5) }
+            };
+
+            var manageable = ((System.Collections.IEnumerable)selector.Invoke(null, new object[] { buildings, now })).Cast<BuildingSnapshot>().ToList();
+
+            Assert.That(manageable, Has.Count.EqualTo(2));
+            Assert.That(manageable[0].Id, Is.EqualTo("b_farm_1"));
+            Assert.That(manageable[1].Id, Is.EqualTo("b_housing_1"));
         }
 
         [Test]
@@ -678,6 +718,29 @@ namespace PlanarWar.Client.Tests.EditMode
             var elapsed = (bool)checker.Invoke(null, new object[] { timing, DateTime.UtcNow });
 
             Assert.That(elapsed, Is.True);
+        }
+
+
+        [Test]
+        public void Building_confirm_state_tracks_destroy_remodel_and_cancel_tokens()
+        {
+            var state = new SummaryState();
+
+            state.MarkBuildingConfirmRequired("destroy", "destroy:b_housing_1", buildingId: "b_housing_1");
+            Assert.That(state.HasPendingBuildingConfirm("destroy", "b_housing_1"), Is.True);
+            Assert.That(state.GetPendingBuildingConfirmToken("destroy", "b_housing_1"), Is.EqualTo("destroy:b_housing_1"));
+            Assert.That(state.HasPendingBuildingConfirm("destroy", "b_mine_1"), Is.False);
+
+            state.MarkBuildingConfirmRequired("remodel", "remodel:b_housing_1:farmland", buildingId: "b_housing_1", targetKind: "farmland");
+            Assert.That(state.HasPendingBuildingConfirm("remodel", "b_housing_1", "farmland"), Is.True);
+            Assert.That(state.GetPendingBuildingConfirmToken("remodel", "b_housing_1", "mine"), Is.Empty);
+
+            state.MarkBuildingConfirmRequired("cancel_build", "cancel_build:build_1", activeBuildId: "build_1");
+            Assert.That(state.HasPendingBuildingConfirm("cancel_build", activeBuildId: "build_1"), Is.True);
+
+            state.ClearBuildingConfirm();
+            Assert.That(state.HasPendingBuildingConfirm("cancel_build", activeBuildId: "build_1"), Is.False);
+            Assert.That(state.PendingBuildingConfirmToken, Is.Empty);
         }
 
     }
