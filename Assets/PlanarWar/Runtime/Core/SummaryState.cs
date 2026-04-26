@@ -33,6 +33,9 @@ namespace PlanarWar.Client.Core
         public string PendingHeroRecruitCandidateId { get; private set; } = string.Empty;
         public bool PendingHeroRecruitDismiss { get; private set; }
         public string PendingArmyReinforcementId { get; private set; } = string.Empty;
+        public string PendingBuildingKind { get; private set; } = string.Empty;
+        public string PendingBuildingId { get; private set; } = string.Empty;
+        public string PendingBuildingRoutingPreference { get; private set; } = string.Empty;
 
         public void Apply(JObject summary, ShellSummarySnapshot snapshot, IEnumerable<WorkshopRecipeSnapshot> workshopRecipes = null)
         {
@@ -208,6 +211,25 @@ namespace PlanarWar.Client.Core
                 || raw.IndexOf("shadow book", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
+        public void BeginBuildingConstruct(string kind)
+        {
+            BeginAction(string.IsNullOrWhiteSpace(kind) ? "Starting construction..." : $"Starting construction: {kind.Trim()}");
+            PendingBuildingKind = kind?.Trim() ?? string.Empty;
+        }
+
+        public void BeginBuildingUpgrade(string buildingId)
+        {
+            BeginAction(string.IsNullOrWhiteSpace(buildingId) ? "Starting building upgrade..." : $"Starting building upgrade: {buildingId.Trim()}");
+            PendingBuildingId = buildingId?.Trim() ?? string.Empty;
+        }
+
+        public void BeginBuildingRouting(string buildingId, string routingPreference)
+        {
+            BeginAction(string.IsNullOrWhiteSpace(buildingId) ? "Switching building routing..." : $"Switching building routing: {buildingId.Trim()}");
+            PendingBuildingId = buildingId?.Trim() ?? string.Empty;
+            PendingBuildingRoutingPreference = routingPreference?.Trim() ?? string.Empty;
+        }
+
         public void BeginWorkshopCraft(string recipeId)
         {
             BeginAction(string.IsNullOrWhiteSpace(recipeId) ? "Starting workshop craft..." : $"Starting workshop craft: {recipeId.Trim()}");
@@ -350,6 +372,9 @@ namespace PlanarWar.Client.Core
             PendingHeroRecruitCandidateId = string.Empty;
             PendingHeroRecruitDismiss = false;
             PendingArmyReinforcementId = string.Empty;
+            PendingBuildingKind = string.Empty;
+            PendingBuildingId = string.Empty;
+            PendingBuildingRoutingPreference = string.Empty;
             ActionStatus = string.IsNullOrWhiteSpace(status) ? (failed ? "Action failed." : "Action complete.") : status.Trim();
             Changed?.Invoke();
         }
@@ -366,6 +391,9 @@ namespace PlanarWar.Client.Core
             PendingHeroRecruitCandidateId = string.Empty;
             PendingHeroRecruitDismiss = false;
             PendingArmyReinforcementId = string.Empty;
+            PendingBuildingKind = string.Empty;
+            PendingBuildingId = string.Empty;
+            PendingBuildingRoutingPreference = string.Empty;
             ActionStatus = status;
             Changed?.Invoke();
         }

@@ -55,6 +55,9 @@ namespace PlanarWar.Client.UI.Screens.City
         private readonly Func<string, Task> onRecruitHeroRequested;
         private readonly Func<string, Task> onAcceptHeroRecruitCandidateRequested;
         private readonly Func<Task> onDismissHeroRecruitCandidatesRequested;
+        private readonly Func<string, Task> onConstructBuildingRequested;
+        private readonly Func<string, Task> onUpgradeBuildingRequested;
+        private readonly Func<string, string, Task> onSwitchBuildingRoutingRequested;
         private readonly Action onRefreshDeskRequested;
         private readonly Action onBackHomeRequested;
         private readonly Button refreshDeskButton;
@@ -63,7 +66,7 @@ namespace PlanarWar.Client.UI.Screens.City
 
         private DevelopmentLane activeLane = DevelopmentLane.Research;
 
-        public CityScreenController(VisualElement root, SummaryState summaryState, Func<string, Task> onStartResearchRequested, Func<string, Task> onStartWorkshopCraftRequested, Func<string, Task> onCollectWorkshopRequested, Func<string, Task> onRecruitHeroRequested, Func<string, Task> onAcceptHeroRecruitCandidateRequested, Func<Task> onDismissHeroRecruitCandidatesRequested, Action onRefreshDeskRequested, Action onBackHomeRequested)
+        public CityScreenController(VisualElement root, SummaryState summaryState, Func<string, Task> onStartResearchRequested, Func<string, Task> onStartWorkshopCraftRequested, Func<string, Task> onCollectWorkshopRequested, Func<string, Task> onRecruitHeroRequested, Func<string, Task> onAcceptHeroRecruitCandidateRequested, Func<Task> onDismissHeroRecruitCandidatesRequested, Func<string, Task> onConstructBuildingRequested, Func<string, Task> onUpgradeBuildingRequested, Func<string, string, Task> onSwitchBuildingRoutingRequested, Action onRefreshDeskRequested, Action onBackHomeRequested)
         {
             headline = root.Q<Label>("development-headline-value");
             copy = root.Q<Label>("development-copy-value");
@@ -99,6 +102,9 @@ namespace PlanarWar.Client.UI.Screens.City
             this.onRecruitHeroRequested = onRecruitHeroRequested;
             this.onAcceptHeroRecruitCandidateRequested = onAcceptHeroRecruitCandidateRequested;
             this.onDismissHeroRecruitCandidatesRequested = onDismissHeroRecruitCandidatesRequested;
+            this.onConstructBuildingRequested = onConstructBuildingRequested;
+            this.onUpgradeBuildingRequested = onUpgradeBuildingRequested;
+            this.onSwitchBuildingRoutingRequested = onSwitchBuildingRoutingRequested;
             this.onRefreshDeskRequested = onRefreshDeskRequested;
             this.onBackHomeRequested = onBackHomeRequested;
 
@@ -384,14 +390,19 @@ namespace PlanarWar.Client.UI.Screens.City
 
             var nowUtc = DateTime.UtcNow;
             var cards = new List<CardView>();
-            cards.Add(new CardView(
-                family: isBlackMarket ? ShadowLaneText.BuildProductionFamily() : "Production",
-                title: isBlackMarket ? ShadowLaneText.BuildProductionTitle() : "Per-tick output",
-                lore: FormatProduction(s.ProductionPerTick, s.ResourceLabels),
-                note: isBlackMarket ? ShadowLaneText.BuildProductionNote(s.ResourceTickTiming, nowUtc) : s.ResourceTickTiming.NextTickAtUtc.HasValue ? $"Next resource tick in {FormatRemaining(s.ResourceTickTiming.NextTickAtUtc.Value - nowUtc)}" : "Resource cadence is visible without a live anchor."));
-
-            var buildingCards = BuildBuildingCards(s, isBlackMarket, nowUtc, 2);
-            cards.AddRange(buildingCards);
+            var buildingCards = BuildBuildingCards(s, isBlackMarket, nowUtc, 4);
+            if (buildingCards.Count > 0)
+            {
+                cards.AddRange(buildingCards);
+            }
+            else
+            {
+                cards.Add(new CardView(
+                    family: isBlackMarket ? ShadowLaneText.BuildProductionFamily() : "Production",
+                    title: isBlackMarket ? ShadowLaneText.BuildProductionTitle() : "Per-tick output",
+                    lore: FormatProduction(s.ProductionPerTick, s.ResourceLabels),
+                    note: isBlackMarket ? ShadowLaneText.BuildProductionNote(s.ResourceTickTiming, nowUtc) : FormatResourceTickNote(s.ResourceTickTiming, nowUtc)));
+            }
 
             var heroRecruitment = s.HeroRecruitment;
             var recruitTimer = s.CityTimers.FirstOrDefault(t => string.Equals(t.Category, "operator_recruit", StringComparison.OrdinalIgnoreCase));
@@ -731,6 +742,36 @@ namespace PlanarWar.Client.UI.Screens.City
             _ = onDismissHeroRecruitCandidatesRequested.Invoke();
         }
 
+        private void TriggerConstructBuilding(string kind)
+        {
+            if (summaryState.IsActionBusy || onConstructBuildingRequested == null || string.IsNullOrWhiteSpace(kind))
+            {
+                return;
+            }
+
+            _ = onConstructBuildingRequested.Invoke(kind.Trim());
+        }
+
+        private void TriggerUpgradeBuilding(string buildingId)
+        {
+            if (summaryState.IsActionBusy || onUpgradeBuildingRequested == null || string.IsNullOrWhiteSpace(buildingId))
+            {
+                return;
+            }
+
+            _ = onUpgradeBuildingRequested.Invoke(buildingId.Trim());
+        }
+
+        private void TriggerSwitchBuildingRouting(string buildingId, string routingPreference)
+        {
+            if (summaryState.IsActionBusy || onSwitchBuildingRoutingRequested == null || string.IsNullOrWhiteSpace(buildingId) || string.IsNullOrWhiteSpace(routingPreference))
+            {
+                return;
+            }
+
+            _ = onSwitchBuildingRoutingRequested.Invoke(buildingId.Trim(), routingPreference.Trim());
+        }
+
         private static TechOptionSnapshot GetSuggestedTech(ShellSummarySnapshot s, IReadOnlyList<ResearchSnapshot> activeResearches = null)
         {
             return SelectAvailableResearchOptions(s, activeResearches ?? SelectActiveResearches(s, DateTime.UtcNow))
@@ -1041,46 +1082,248 @@ namespace PlanarWar.Client.UI.Screens.City
             }
 
             var liveTimers = s.CityTimers?.Count ?? 0;
-            if (s.ResourceTickTiming.NextTickAtUtc.HasValue)
+            var nextResourceTick = ResolveRollingResourceTickAtUtc(s.ResourceTickTiming, nowUtc);
+            if (nextResourceTick.HasValue)
             {
-                return $"Next tick in {FormatRemaining(s.ResourceTickTiming.NextTickAtUtc.Value - nowUtc)} • no {(isBlackMarket ? "front" : "building")} payload yet.";
+                return $"Next tick in {FormatRemaining(nextResourceTick.Value - nowUtc)} • no {(isBlackMarket ? "front" : "building")} payload yet.";
             }
 
             return liveTimers > 0 ? $"{liveTimers} live timer(s) visible; no {(isBlackMarket ? "front" : "building")} cards surfaced." : $"No {(isBlackMarket ? "front" : "building")} payload surfaced.";
         }
 
-        private static List<CardView> BuildBuildingCards(ShellSummarySnapshot s, bool isBlackMarket, DateTime nowUtc, int maxCards)
+        private List<CardView> BuildBuildingCards(ShellSummarySnapshot s, bool isBlackMarket, DateTime nowUtc, int maxCards)
         {
             var cards = new List<CardView>();
             var budget = Math.Max(0, maxCards);
-            var buildings = SelectLaneBuildings(s, isBlackMarket);
-            var timers = SortBuildTimers(SelectBuildTimers(s, isBlackMarket), nowUtc);
-            var reservedTimerSlots = timers.Count > 0 && budget > 1 ? 1 : 0;
-            var buildingBudget = Math.Max(0, budget - reservedTimerSlots);
-
-            foreach (var building in buildings.Take(buildingBudget))
+            if (budget <= 0)
             {
-                cards.Add(new CardView(
-                    family: isBlackMarket ? "Operator front" : "Building",
-                    title: FormatBuildingTitle(building, isBlackMarket),
-                    lore: BuildBuildingLore(building, nowUtc),
-                    note: BuildBuildingNote(building, isBlackMarket, nowUtc),
-                    buttonText: BuildBuildingStatusButtonText(building, isBlackMarket, nowUtc),
-                    buttonEnabled: false));
+                return cards;
             }
 
-            foreach (var timer in timers.Take(Math.Max(0, budget - cards.Count)))
+            var buildings = SelectLaneBuildings(s, isBlackMarket);
+            var timers = SortBuildTimers(SelectBuildTimers(s, isBlackMarket), nowUtc);
+            var activeBuilding = buildings.FirstOrDefault(b => HasBuildingTimingAnchor(b));
+            var activeTimer = timers.FirstOrDefault();
+            var hasActiveBuildWork = (activeBuilding != null && !IsBuildingReady(activeBuilding, nowUtc))
+                || (activeTimer != null && (!activeTimer.FinishesAtUtc.HasValue || activeTimer.FinishesAtUtc.Value > nowUtc));
+
+            cards.Add(BuildBuildingInventoryCard(buildings, timers, isBlackMarket, nowUtc));
+
+            if (activeBuilding != null && cards.Count < budget)
             {
-                cards.Add(new CardView(
-                    family: isBlackMarket ? "Front timer" : "Build timer",
-                    title: isBlackMarket ? NormalizeBlackMarketTimerLabel(timer.Label, timer.Category) : FirstNonBlank(timer.Label, HumanizeCategory(timer.Category)),
-                    lore: FormatTimerState(timer.Status, timer.FinishesAtUtc, nowUtc),
-                    note: FirstNonBlank(timer.Detail, isBlackMarket ? "Operator-front timing is visible from cityTimers." : "Construction timing is visible from cityTimers."),
-                    buttonText: timer.FinishesAtUtc.HasValue && timer.FinishesAtUtc.Value <= nowUtc ? "Ready" : "Timed",
-                    buttonEnabled: false));
+                cards.Add(BuildExistingBuildingCard(activeBuilding, isBlackMarket, nowUtc, allowUpgrade: false));
+            }
+            else if (activeTimer != null && cards.Count < budget)
+            {
+                cards.Add(BuildBuildTimerCard(activeTimer, isBlackMarket, nowUtc));
+            }
+
+            var visibleBuildOptions = SelectCurrentlyBuildableOptions(s, isBlackMarket, buildings);
+            if (!hasActiveBuildWork)
+            {
+                foreach (var option in visibleBuildOptions.Take(Math.Max(0, budget - cards.Count)))
+                {
+                    cards.Add(BuildConstructOptionCard(option, isBlackMarket, hasActiveBuildWork));
+                }
+
+                if (visibleBuildOptions.Count == 0 && cards.Count < budget)
+                {
+                    cards.Add(BuildNoAvailableBuildOptionsCard(s, isBlackMarket, buildings));
+                }
+            }
+
+            if (cards.Count < budget)
+            {
+                foreach (var managed in buildings
+                    .Where(b => !HasBuildingTimingAnchor(b) && !IsBuildingReady(b, nowUtc))
+                    .Concat(buildings.Where(b => !HasBuildingTimingAnchor(b)))
+                    .GroupBy(b => GetBuildingActionId(b), StringComparer.OrdinalIgnoreCase)
+                    .Select(g => g.First()))
+                {
+                    if (ReferenceEquals(managed, activeBuilding)) continue;
+                    cards.Add(BuildExistingBuildingCard(managed, isBlackMarket, nowUtc, allowUpgrade: !hasActiveBuildWork));
+                    if (cards.Count >= budget) break;
+                }
             }
 
             return cards;
+        }
+
+        private CardView BuildBuildingInventoryCard(List<BuildingSnapshot> buildings, List<CityTimerEntrySnapshot> timers, bool isBlackMarket, DateTime nowUtc)
+        {
+            var label = isBlackMarket ? "front" : "building";
+            var counts = BuildBuildingTypeCounts(buildings);
+
+            return new CardView(
+                family: isBlackMarket ? "Front inventory" : "Building inventory",
+                title: buildings.Count > 0
+                    ? $"{buildings.Count} {label}{(buildings.Count == 1 ? string.Empty : "s")} across {Math.Max(1, counts.Count)} type{(counts.Count == 1 ? string.Empty : "s")}"
+                    : $"No {label}s built yet",
+                lore: counts.Count > 0 ? FormatBuildingTypeCounts(counts) : $"Pick a {label} type below to start the first real project.",
+                note: BuildBuildingInventoryNote(buildings, timers, isBlackMarket, nowUtc),
+                buttonText: null,
+                buttonEnabled: false,
+                onClick: null);
+        }
+
+        private CardView BuildExistingBuildingCard(BuildingSnapshot building, bool isBlackMarket, DateTime nowUtc, bool allowUpgrade)
+        {
+            var buildingId = GetBuildingActionId(building);
+            var pendingUpgrade = summaryState.IsActionBusy && string.Equals(summaryState.PendingBuildingId, buildingId, StringComparison.OrdinalIgnoreCase);
+            var canUpgrade = allowUpgrade
+                && !summaryState.IsActionBusy
+                && !string.IsNullOrWhiteSpace(buildingId)
+                && onUpgradeBuildingRequested != null
+                && !IsBuildingReady(building, nowUtc)
+                && !HasBuildingTimingAnchor(building);
+
+            return new CardView(
+                family: isBlackMarket ? "Operator front" : "Building",
+                title: FormatBuildingTitle(building, isBlackMarket),
+                lore: BuildBuildingLore(building, nowUtc),
+                note: BuildBuildingNote(building, isBlackMarket, nowUtc),
+                buttonText: canUpgrade || pendingUpgrade
+                    ? pendingUpgrade ? "Upgrading..." : "Upgrade"
+                    : BuildBuildingStatusButtonText(building, isBlackMarket, nowUtc),
+                buttonEnabled: canUpgrade,
+                onClick: canUpgrade ? () => TriggerUpgradeBuilding(buildingId) : null);
+        }
+
+        private CardView BuildBuildTimerCard(CityTimerEntrySnapshot timer, bool isBlackMarket, DateTime nowUtc)
+        {
+            return new CardView(
+                family: isBlackMarket ? "Front timer" : "Build timer",
+                title: isBlackMarket ? NormalizeBlackMarketTimerLabel(timer.Label, timer.Category) : FirstNonBlank(timer.Label, HumanizeCategory(timer.Category)),
+                lore: FormatTimerState(timer.Status, timer.FinishesAtUtc, nowUtc),
+                note: FirstNonBlank(timer.Detail, isBlackMarket ? "Operator-front timing is visible from cityTimers." : "Construction timing is visible from cityTimers."),
+                buttonText: timer.FinishesAtUtc.HasValue && timer.FinishesAtUtc.Value <= nowUtc ? "Ready" : "Timed",
+                buttonEnabled: false);
+        }
+
+        private CardView BuildConstructOptionCard(BuildingBuildOption option, bool isBlackMarket, bool hasActiveBuildWork)
+        {
+            var pendingConstruct = summaryState.IsActionBusy && string.Equals(summaryState.PendingBuildingKind, option.Kind, StringComparison.OrdinalIgnoreCase);
+            var canConstruct = !summaryState.IsActionBusy && !hasActiveBuildWork && onConstructBuildingRequested != null;
+            return new CardView(
+                family: isBlackMarket ? "Front build option" : "Build option",
+                title: option.Label,
+                lore: option.Summary,
+                note: $"Cost {FormatBuildOptionCost(option)}. {(isBlackMarket ? "Click this card or its button to open this front." : "Click this card or its button to build this type.")} Only unlocked and affordable options are shown here.",
+                buttonText: pendingConstruct ? "Starting..." : hasActiveBuildWork ? (isBlackMarket ? "Front active" : "Build active") : isBlackMarket ? $"Open {option.Label}" : $"Build {option.Label}",
+                buttonEnabled: canConstruct,
+                onClick: canConstruct ? () => TriggerConstructBuilding(option.Kind) : null);
+        }
+
+        private static CardView BuildNoAvailableBuildOptionsCard(ShellSummarySnapshot s, bool isBlackMarket, List<BuildingSnapshot> buildings)
+        {
+            var all = SelectBuildOptions(isBlackMarket, buildings);
+            var locked = all.Count(option => !IsBuildOptionUnlocked(s, option));
+            var unlocked = all.Where(option => IsBuildOptionUnlocked(s, option)).ToList();
+            var costBlocked = unlocked.Count(option => !CanAffordBuildOption(s?.Resources, option));
+            var noun = isBlackMarket ? "front" : "building";
+            var blockerParts = new List<string>();
+            if (locked > 0) blockerParts.Add($"{locked} locked by research");
+            if (costBlocked > 0) blockerParts.Add($"{costBlocked} blocked by visible resources");
+            if (blockerParts.Count == 0) blockerParts.Add("backend validation has no current target exposed");
+
+            return new CardView(
+                family: isBlackMarket ? "Front choices" : "Build choices",
+                title: isBlackMarket ? "No fronts ready to open" : "No buildings ready to build",
+                lore: string.Join(" • ", blockerParts),
+                note: $"Unavailable {noun} choices are hidden instead of being offered as fake action buttons. Destroy/remodel still requires a backend endpoint.",
+                buttonText: "No valid build target",
+                buttonEnabled: false);
+        }
+
+        private static List<BuildingBuildOption> SelectBuildOptions(bool isBlackMarket, List<BuildingSnapshot> buildings)
+        {
+            var options = isBlackMarket ? BlackMarketBuildOptions : CityBuildOptions;
+            var counts = BuildBuildingTypeCounts(buildings);
+            return options
+                .OrderBy(option => counts.TryGetValue(NormalizeIdentity(option.Kind), out var count) ? count : 0)
+                .ThenBy(option => option.SortOrder)
+                .ToList();
+        }
+
+        private static List<BuildingBuildOption> SelectCurrentlyBuildableOptions(ShellSummarySnapshot s, bool isBlackMarket, List<BuildingSnapshot> buildings)
+        {
+            return SelectBuildOptions(isBlackMarket, buildings)
+                .Where(option => IsBuildOptionUnlocked(s, option))
+                .Where(option => CanAffordBuildOption(s?.Resources, option))
+                .ToList();
+        }
+
+        private static bool IsBuildOptionUnlocked(ShellSummarySnapshot s, BuildingBuildOption option)
+        {
+            if (string.IsNullOrWhiteSpace(option.RequiredTechId)) return true;
+            return (s?.ResearchedTechIds ?? new List<string>())
+                .Any(techId => string.Equals(techId, option.RequiredTechId, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool CanAffordBuildOption(ResourceSnapshot resources, BuildingBuildOption option)
+        {
+            if (resources == null) return false;
+            return NumberOrZero(resources.Materials) >= option.MaterialsCost
+                && NumberOrZero(resources.Wealth) >= option.WealthCost
+                && NumberOrZero(resources.Mana) >= option.ManaCost;
+        }
+
+        private static double NumberOrZero(double? value) => value ?? 0;
+
+        private static string FormatBuildOptionCost(BuildingBuildOption option)
+        {
+            var parts = new List<string>
+            {
+                $"{option.MaterialsCost} materials",
+                $"{option.WealthCost} wealth",
+            };
+            if (option.ManaCost > 0) parts.Add($"{option.ManaCost} mana");
+            return string.Join(", ", parts);
+        }
+
+        private static Dictionary<string, int> BuildBuildingTypeCounts(List<BuildingSnapshot> buildings)
+        {
+            var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            foreach (var building in buildings ?? new List<BuildingSnapshot>())
+            {
+                var key = NormalizeIdentity(FirstNonBlank(building?.Type, building?.BuildingId, building?.Name));
+                if (string.IsNullOrWhiteSpace(key)) key = "unknown";
+                counts[key] = counts.TryGetValue(key, out var current) ? current + 1 : 1;
+            }
+            return counts;
+        }
+
+        private static string FormatBuildingTypeCounts(Dictionary<string, int> counts)
+        {
+            if (counts == null || counts.Count == 0) return "No building types surfaced.";
+            return string.Join(" • ", counts
+                .OrderByDescending(pair => pair.Value)
+                .ThenBy(pair => pair.Key)
+                .Select(pair => $"{HumanizeKey(pair.Key)} x{pair.Value}"));
+        }
+
+        private static string BuildBuildingInventoryNote(List<BuildingSnapshot> buildings, List<CityTimerEntrySnapshot> timers, bool isBlackMarket, DateTime nowUtc)
+        {
+            var ready = (buildings ?? new List<BuildingSnapshot>()).Count(b => IsBuildingReady(b, nowUtc))
+                + (timers ?? new List<CityTimerEntrySnapshot>()).Count(t => t.FinishesAtUtc.HasValue && t.FinishesAtUtc.Value <= nowUtc);
+            var timed = (buildings ?? new List<BuildingSnapshot>()).Count(HasBuildingTimingAnchor)
+                + (timers ?? new List<CityTimerEntrySnapshot>()).Count(t => !t.FinishesAtUtc.HasValue || t.FinishesAtUtc.Value > nowUtc);
+            var noun = isBlackMarket ? "front" : "building";
+            return $"{ready} ready/finished • {timed} timed • only unlocked, affordable {noun} choices are shown below. Destroy/remodel requires a backend endpoint, so it is intentionally not shown yet.";
+        }
+
+        private static string GetBuildingActionId(BuildingSnapshot building)
+        {
+            return FirstNonBlank(building?.Id, building?.BuildingId);
+        }
+
+        private static string GetNextRoutingPreference(string current)
+        {
+            var value = (current ?? string.Empty).Trim();
+            if (value.Equals("prefer_local", StringComparison.OrdinalIgnoreCase)) return "prefer_reserve";
+            if (value.Equals("prefer_reserve", StringComparison.OrdinalIgnoreCase)) return "prefer_exchange";
+            if (value.Equals("prefer_exchange", StringComparison.OrdinalIgnoreCase)) return "balanced";
+            return "prefer_local";
         }
 
         private static string BuildBuildingCardsCopy(ShellSummarySnapshot s, bool isBlackMarket, DateTime nowUtc)
@@ -1440,6 +1683,40 @@ namespace PlanarWar.Client.UI.Screens.City
             return span.TotalHours >= 1 ? span.ToString(@"hh\:mm") : span.ToString(@"mm\:ss");
         }
 
+        private static string FormatResourceTickNote(TimerSnapshot timing, DateTime nowUtc)
+        {
+            var next = ResolveRollingResourceTickAtUtc(timing, nowUtc);
+            return next.HasValue
+                ? $"Next resource tick in {FormatRemaining(next.Value - nowUtc)}"
+                : "Resource cadence is visible without a live anchor.";
+        }
+
+        private static DateTime? ResolveRollingResourceTickAtUtc(TimerSnapshot timing, DateTime nowUtc)
+        {
+            var cadence = timing?.TickMs.HasValue == true && timing.TickMs.Value > 0
+                ? TimeSpan.FromMilliseconds(timing.TickMs.Value)
+                : (TimeSpan?)null;
+            var anchor = timing?.NextTickAtUtc;
+            if (!anchor.HasValue && timing?.LastTickAtUtc.HasValue == true && cadence.HasValue)
+            {
+                anchor = timing.LastTickAtUtc.Value + cadence.Value;
+            }
+
+            if (!anchor.HasValue)
+            {
+                return null;
+            }
+
+            if (!cadence.HasValue || cadence.Value <= TimeSpan.Zero || anchor.Value > nowUtc)
+            {
+                return anchor.Value;
+            }
+
+            var elapsed = nowUtc - anchor.Value;
+            var skippedTicks = Math.Floor(elapsed.TotalMilliseconds / cadence.Value.TotalMilliseconds) + 1;
+            return anchor.Value.AddMilliseconds(skippedTicks * cadence.Value.TotalMilliseconds);
+        }
+
         private static string FormatRemaining(TimeSpan span)
         {
             if (span <= TimeSpan.Zero) return "now";
@@ -1485,6 +1762,52 @@ namespace PlanarWar.Client.UI.Screens.City
                 .Select(part => char.ToUpperInvariant(part[0]) + (part.Length > 1 ? part.Substring(1) : string.Empty)));
         }
 
+        private readonly struct BuildingBuildOption
+        {
+            public BuildingBuildOption(string kind, string label, string summary, int sortOrder, int materialsCost, int wealthCost, int manaCost = 0, string requiredTechId = null)
+            {
+                Kind = kind;
+                Label = label;
+                Summary = summary;
+                SortOrder = sortOrder;
+                MaterialsCost = materialsCost;
+                WealthCost = wealthCost;
+                ManaCost = manaCost;
+                RequiredTechId = requiredTechId ?? string.Empty;
+            }
+
+            public string Kind { get; }
+            public string Label { get; }
+            public string Summary { get; }
+            public int SortOrder { get; }
+            public int MaterialsCost { get; }
+            public int WealthCost { get; }
+            public int ManaCost { get; }
+            public string RequiredTechId { get; }
+        }
+
+        private static readonly List<BuildingBuildOption> CityBuildOptions = new()
+        {
+            new BuildingBuildOption("housing", "Charter Ward", "Housing/ward capacity for population and civic stability.", 10, materialsCost: 60, wealthCost: 30),
+            new BuildingBuildOption("farmland", "Granary Fields", "Food production and reserve stability for the civic lane.", 20, materialsCost: 50, wealthCost: 20),
+            new BuildingBuildOption("mine", "Works Quarry", "Material throughput for building, workshop, and support demands.", 30, materialsCost: 80, wealthCost: 40),
+            new BuildingBuildOption("arcane_spire", "Beacon Tower", "Mana and lawful arcana infrastructure for civic development.", 40, materialsCost: 70, wealthCost: 50, manaCost: 30),
+            new BuildingBuildOption("hall_of_records", "Hall of Records", "Records depth building unlocked by the civic research runway.", 50, materialsCost: 64, wealthCost: 40, requiredTechId: "urban_planning_1"),
+            new BuildingBuildOption("watch_barracks", "Watch Barracks", "Security/watch depth building unlocked by later civic development.", 60, materialsCost: 78, wealthCost: 34, requiredTechId: "urban_planning_2"),
+            new BuildingBuildOption("provincial_office", "Provincial Office", "Outer-district support capacity for higher civic tiers.", 70, materialsCost: 92, wealthCost: 44, requiredTechId: "provincial_charters_1"),
+        };
+
+        private static readonly List<BuildingBuildOption> BlackMarketBuildOptions = new()
+        {
+            new BuildingBuildOption("safehouse", "Safehouse Ring", "Deniable cover, storage, and operator-front safety.", 10, materialsCost: 68, wealthCost: 42),
+            new BuildingBuildOption("quiet_provisioning", "Quiet Provisioning Cell", "Low-visibility supplies and reserve movement for the shadow lane.", 20, materialsCost: 52, wealthCost: 24),
+            new BuildingBuildOption("illicit_extraction", "Illicit Extraction Cell", "Riskier material throughput and dirty leverage.", 30, materialsCost: 86, wealthCost: 46),
+            new BuildingBuildOption("occult_relay", "Occult Relay", "Arcana and hidden relay capacity for covert operations.", 40, materialsCost: 74, wealthCost: 54, manaCost: 26),
+            new BuildingBuildOption("front_house", "Front House", "Respectable cover once the laundering runway is unlocked.", 50, materialsCost: 62, wealthCost: 48, requiredTechId: "front_businesses_1"),
+            new BuildingBuildOption("debt_house", "Debt House", "Ledgered leverage for debt pressure and durable control.", 60, materialsCost: 54, wealthCost: 56, requiredTechId: "debt_ledgers_1"),
+            new BuildingBuildOption("cutout_bureau", "Cutout Bureau", "Deniable network reach for late shadow runway work.", 70, materialsCost: 58, wealthCost: 64, requiredTechId: "cutout_syndicates_1"),
+        };
+
         private readonly struct CardView
         {
             public CardView(string family, string title, string lore, string note, string buttonText = null, bool buttonEnabled = false, Action onClick = null)
@@ -1516,6 +1839,7 @@ namespace PlanarWar.Client.UI.Screens.City
             private readonly Label note;
             private readonly Button button;
             private Action clickAction;
+            private bool clickEnabled;
 
             public InfoCard(VisualElement shellRoot, string prefix, bool hasButton = false)
             {
@@ -1525,9 +1849,28 @@ namespace PlanarWar.Client.UI.Screens.City
                 lore = shellRoot.Q<Label>($"{prefix}-lore-value");
                 note = shellRoot.Q<Label>($"{prefix}-note-value");
                 button = hasButton ? shellRoot.Q<Button>($"{prefix}-button") : null;
+                if (root != null)
+                {
+                    root.RegisterCallback<ClickEvent>(evt =>
+                    {
+                        if (!clickEnabled || clickAction == null)
+                        {
+                            return;
+                        }
+
+                        var targetElement = evt.target as VisualElement;
+                        if (button != null && targetElement != null && (ReferenceEquals(targetElement, button) || button.Contains(targetElement)))
+                        {
+                            return;
+                        }
+
+                        InvokeClick();
+                    });
+                }
+
                 if (button != null)
                 {
-                    button.clicked += () => clickAction?.Invoke();
+                    button.clicked += InvokeClick;
                 }
             }
 
@@ -1539,19 +1882,41 @@ namespace PlanarWar.Client.UI.Screens.City
                 if (title != null) title.text = view.Title;
                 if (lore != null) lore.text = view.Lore;
                 if (note != null) note.text = view.Note;
+                clickAction = view.OnClick;
+                clickEnabled = view.ButtonEnabled && clickAction != null;
+                root.EnableInClassList("is-actionable-card", clickEnabled);
+                root.tooltip = clickEnabled
+                    ? FirstNonBlank(view.ButtonText, view.Title)
+                    : string.Empty;
+
                 if (button != null)
                 {
-                    clickAction = view.OnClick;
                     button.style.display = string.IsNullOrWhiteSpace(view.ButtonText) ? DisplayStyle.None : DisplayStyle.Flex;
                     button.text = view.ButtonText ?? "Read-only";
-                    button.SetEnabled(view.ButtonEnabled && clickAction != null);
+                    button.SetEnabled(clickEnabled);
                 }
+            }
+
+            private void InvokeClick()
+            {
+                if (!clickEnabled || clickAction == null)
+                {
+                    return;
+                }
+
+                clickAction.Invoke();
             }
 
             public void RenderHidden()
             {
                 clickAction = null;
-                if (root != null) root.style.display = DisplayStyle.None;
+                clickEnabled = false;
+                if (root != null)
+                {
+                    root.EnableInClassList("is-actionable-card", false);
+                    root.tooltip = string.Empty;
+                    root.style.display = DisplayStyle.None;
+                }
             }
         }
     }

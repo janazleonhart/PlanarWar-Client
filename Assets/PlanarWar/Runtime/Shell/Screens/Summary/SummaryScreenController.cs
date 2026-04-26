@@ -1597,17 +1597,31 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
         private static DateTime? ResolveNextTickAtUtc(TimerSnapshot timing, TimeSpan? cadence)
         {
-            if (timing.NextTickAtUtc.HasValue)
+            var anchor = timing.NextTickAtUtc;
+            if (!anchor.HasValue && timing.LastTickAtUtc.HasValue && cadence.HasValue)
             {
-                return timing.NextTickAtUtc.Value;
+                anchor = timing.LastTickAtUtc.Value + cadence.Value;
             }
 
-            if (!timing.LastTickAtUtc.HasValue || !cadence.HasValue)
+            if (!anchor.HasValue)
             {
                 return null;
             }
 
-            return timing.LastTickAtUtc.Value + cadence.Value;
+            if (!cadence.HasValue || cadence.Value <= TimeSpan.Zero)
+            {
+                return anchor.Value;
+            }
+
+            var nowUtc = DateTime.UtcNow;
+            if (anchor.Value > nowUtc)
+            {
+                return anchor.Value;
+            }
+
+            var elapsed = nowUtc - anchor.Value;
+            var skippedTicks = Math.Floor(elapsed.TotalMilliseconds / cadence.Value.TotalMilliseconds) + 1;
+            return anchor.Value.AddMilliseconds(skippedTicks * cadence.Value.TotalMilliseconds);
         }
 
         private static string DescribeTimingState(bool hasAnchor, bool hasCadence)

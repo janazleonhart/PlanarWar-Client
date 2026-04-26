@@ -1,5 +1,6 @@
 using PlanarWar.Client.Core;
 using PlanarWar.Client.Core.Application;
+using PlanarWar.Client.Core.Contracts;
 using PlanarWar.Client.Network;
 using System;
 using System.Linq;
@@ -36,6 +37,7 @@ namespace PlanarWar.Client.UI
         private float nextClockRenderAt;
         private float nextTimedRefreshCheckAt;
         private bool timedRefreshInFlight;
+        private DateTime lastResourceTickRefreshRequestedAtUtc = DateTime.MinValue;
 
         private TextField loginNameField;
         private TextField passwordField;
@@ -77,6 +79,9 @@ namespace PlanarWar.Client.UI
                     HandleRecruitHeroRequestedAsync,
                     HandleAcceptHeroRecruitCandidateRequestedAsync,
                     HandleDismissHeroRecruitCandidatesRequestedAsync,
+                    HandleConstructBuildingRequestedAsync,
+                    HandleUpgradeBuildingRequestedAsync,
+                    HandleSwitchBuildingRoutingRequestedAsync,
                     HandleReinforceArmyRequestedAsync,
                     HandleRenameArmyRequestedAsync,
                     HandleSplitArmyRequestedAsync,
@@ -158,15 +163,64 @@ namespace PlanarWar.Client.UI
                 && armyReinforcement.FinishesAtUtc.HasValue
                 && armyReinforcement.FinishesAtUtc.Value <= nowUtc;
 
-            var researchElapsed = (snapshot.ActiveResearches ?? new System.Collections.Generic.List<PlanarWar.Client.Core.Contracts.ResearchSnapshot>())
+            var researchElapsed = (snapshot.ActiveResearches ?? new System.Collections.Generic.List<ResearchSnapshot>())
                 .Any(r => r != null && r.FinishesAtUtc.HasValue && r.FinishesAtUtc.Value <= nowUtc);
 
-            if (!heroScoutingElapsed && !heroCandidateReviewElapsed && !armyReinforcementElapsed && !researchElapsed)
+            var resourceTickElapsed = HasResourceTickElapsed(snapshot.ResourceTickTiming, nowUtc);
+            if (resourceTickElapsed && nowUtc - lastResourceTickRefreshRequestedAtUtc < TimeSpan.FromSeconds(5))
+            {
+                resourceTickElapsed = false;
+            }
+
+            if (!heroScoutingElapsed && !heroCandidateReviewElapsed && !armyReinforcementElapsed && !researchElapsed && !resourceTickElapsed)
             {
                 return;
             }
 
+            if (resourceTickElapsed)
+            {
+                lastResourceTickRefreshRequestedAtUtc = nowUtc;
+            }
+
             TriggerTimedRefresh();
+        }
+
+        private static bool HasResourceTickElapsed(TimerSnapshot timing, DateTime nowUtc)
+        {
+            var cadence = GetResourceTickCadence(timing);
+            var nextTickAtUtc = ResolveResourceTickAnchor(timing, cadence);
+            if (!nextTickAtUtc.HasValue)
+            {
+                return false;
+            }
+
+            return nextTickAtUtc.Value <= nowUtc;
+        }
+
+        private static TimeSpan? GetResourceTickCadence(TimerSnapshot timing)
+        {
+            if (timing == null || !timing.TickMs.HasValue || timing.TickMs <= 0)
+            {
+                return null;
+            }
+
+            return TimeSpan.FromMilliseconds(timing.TickMs.Value);
+        }
+
+        private static DateTime? ResolveResourceTickAnchor(TimerSnapshot timing, TimeSpan? cadence)
+        {
+            if (timing == null)
+            {
+                return null;
+            }
+
+            var anchor = timing.NextTickAtUtc;
+            if (!anchor.HasValue && timing.LastTickAtUtc.HasValue && cadence.HasValue)
+            {
+                anchor = timing.LastTickAtUtc.Value + cadence.Value;
+            }
+
+            return anchor;
         }
 
         private async void TriggerTimedRefresh()
@@ -211,6 +265,71 @@ namespace PlanarWar.Client.UI
             {
                 summaryState.ClearRecentResearchStart();
                 summaryState.FinishAction($"Research failed: {ex.Message}", failed: true);
+            }
+        }
+
+
+        private async Task HandleConstructBuildingRequestedAsync(string kind)
+        {
+            if (summaryState == null || apiClient == null || string.IsNullOrWhiteSpace(kind) || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            var trimmedKind = kind.Trim();
+            try
+            {
+                summaryState.BeginBuildingConstruct(trimmedKind);
+                await apiClient.ConstructBuildingAsync(trimmedKind);
+                await summaryController.RefreshAsync();
+                summaryState.FinishAction($"Construction started: {trimmedKind}");
+            }
+            catch (Exception ex)
+            {
+                summaryState.FinishAction($"Construction failed: {ex.Message}", failed: true);
+            }
+        }
+
+        private async Task HandleUpgradeBuildingRequestedAsync(string buildingId)
+        {
+            if (summaryState == null || apiClient == null || string.IsNullOrWhiteSpace(buildingId) || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            var trimmedBuildingId = buildingId.Trim();
+            try
+            {
+                summaryState.BeginBuildingUpgrade(trimmedBuildingId);
+                await apiClient.UpgradeBuildingAsync(trimmedBuildingId);
+                await summaryController.RefreshAsync();
+                summaryState.FinishAction($"Building upgrade started: {trimmedBuildingId}");
+            }
+            catch (Exception ex)
+            {
+                summaryState.FinishAction($"Building upgrade failed: {ex.Message}", failed: true);
+            }
+        }
+
+        private async Task HandleSwitchBuildingRoutingRequestedAsync(string buildingId, string routingPreference)
+        {
+            if (summaryState == null || apiClient == null || string.IsNullOrWhiteSpace(buildingId) || string.IsNullOrWhiteSpace(routingPreference) || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            var trimmedBuildingId = buildingId.Trim();
+            var trimmedRoutingPreference = routingPreference.Trim();
+            try
+            {
+                summaryState.BeginBuildingRouting(trimmedBuildingId, trimmedRoutingPreference);
+                await apiClient.SetBuildingRoutingPreferenceAsync(trimmedBuildingId, trimmedRoutingPreference);
+                await summaryController.RefreshAsync();
+                summaryState.FinishAction($"Building routing switched: {trimmedBuildingId} -> {trimmedRoutingPreference}");
+            }
+            catch (Exception ex)
+            {
+                summaryState.FinishAction($"Building routing failed: {ex.Message}", failed: true);
             }
         }
 

@@ -461,6 +461,7 @@ namespace PlanarWar.Client.Core.Mapping
                 Name = name,
                 Lane = FirstNonBlank(obj["lane"]?.Read<string>(), obj["settlementLane"]?.Read<string>(), obj["settlement_lane"]?.Read<string>(), definition?["lane"]?.Read<string>()),
                 Status = FirstNonBlank(obj["status"]?.Read<string>(), obj["state"]?.Read<string>(), obj["phase"]?.Read<string>(), obj["action"]?.Read<string>(), "active"),
+                RoutingPreference = FirstNonBlank(obj["routingPreference"]?.Read<string>(), obj["routing_preference"]?.Read<string>(), obj["routePreference"]?.Read<string>(), obj["route_preference"]?.Read<string>(), definition?["routingPreference"]?.Read<string>(), definition?["routing_preference"]?.Read<string>()),
                 Level = obj["level"]?.Read<int?>() ?? obj["rank"]?.Read<int?>() ?? obj["tier"]?.Read<int?>() ?? obj["targetLevel"]?.Read<int?>() ?? obj["target_level"]?.Read<int?>(),
                 Slot = obj["slot"]?.Read<int?>() ?? obj["slotIndex"]?.Read<int?>() ?? obj["slot_index"]?.Read<int?>(),
                 StartedAtUtc = ParseUtc(obj["startedAt"] ?? obj["started_at"] ?? obj["constructionStartedAt"] ?? obj["construction_started_at"] ?? obj["upgradingStartedAt"] ?? obj["upgrading_started_at"]),

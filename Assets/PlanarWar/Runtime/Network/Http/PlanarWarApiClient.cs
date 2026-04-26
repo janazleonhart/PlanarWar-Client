@@ -65,6 +65,59 @@ namespace PlanarWar.Client.Network
             return PostJsonAsync(BuildUrl("/api/tech/start"), body, includeBearerToken: true);
         }
 
+        public Task<JObject> ConstructBuildingAsync(string kind)
+        {
+            if (string.IsNullOrWhiteSpace(kind))
+            {
+                throw new ArgumentException("kind is required", nameof(kind));
+            }
+
+            var body = new JObject
+            {
+                ["kind"] = kind.Trim(),
+                ["serviceMode"] = "private_city"
+            };
+
+            return PostJsonAsync(BuildUrl("/api/buildings/construct"), body, includeBearerToken: true);
+        }
+
+        public Task<JObject> UpgradeBuildingAsync(string buildingId)
+        {
+            if (string.IsNullOrWhiteSpace(buildingId))
+            {
+                throw new ArgumentException("buildingId is required", nameof(buildingId));
+            }
+
+            var body = new JObject
+            {
+                ["buildingId"] = buildingId.Trim(),
+                ["serviceMode"] = "private_city"
+            };
+
+            return PostJsonAsync(BuildUrl("/api/buildings/upgrade"), body, includeBearerToken: true);
+        }
+
+        public Task<JObject> SetBuildingRoutingPreferenceAsync(string buildingId, string routingPreference)
+        {
+            if (string.IsNullOrWhiteSpace(buildingId))
+            {
+                throw new ArgumentException("buildingId is required", nameof(buildingId));
+            }
+
+            if (string.IsNullOrWhiteSpace(routingPreference))
+            {
+                throw new ArgumentException("routingPreference is required", nameof(routingPreference));
+            }
+
+            var body = new JObject
+            {
+                ["buildingId"] = buildingId.Trim(),
+                ["routingPreference"] = routingPreference.Trim()
+            };
+
+            return PostJsonAsync(BuildUrl("/api/buildings/routing"), body, includeBearerToken: true);
+        }
+
 
 
         public Task<JObject> StartWorkshopCraftAsync(string recipeId)

@@ -4,9 +4,11 @@ using PlanarWar.Client.Core.Contracts;
 using PlanarWar.Client.Core.Mapping;
 using PlanarWar.Client.Core.Presentation;
 using PlanarWar.Client.UI.Screens.City;
+using PlanarWar.Client.UI.Screens.Summary;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Linq;
 
 namespace PlanarWar.Client.Tests.EditMode
 {
@@ -499,6 +501,162 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(text, Does.Not.Contain("2 active"));
         }
 
+        [Test]
+        public void Mapper_captures_building_routing_preference_for_switch_controls()
+        {
+            const string payload = @"{
+                ""buildings"": [
+                    { ""id"": ""bld_1"", ""kind"": ""housing"", ""name"": ""Low Quarter"", ""routingPreference"": ""prefer_local"" }
+                ]
+            }";
+
+            var summary = ShellSummarySnapshotMapper.Map(payload);
+
+            Assert.That(summary.Buildings, Has.Count.EqualTo(1));
+            Assert.That(summary.Buildings[0].RoutingPreference, Is.EqualTo("prefer_local"));
+        }
+
+        [Test]
+        public void Development_build_options_prioritize_missing_building_types_for_player_choice()
+        {
+            var selector = typeof(CityScreenController).GetMethod("SelectBuildOptions", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(selector, Is.Not.Null);
+
+            var buildings = new List<BuildingSnapshot>
+            {
+                new BuildingSnapshot { Type = "housing", Name = "Low Quarter" },
+                new BuildingSnapshot { Type = "housing", Name = "Low Quarter" },
+                new BuildingSnapshot { Type = "farmland", Name = "Outer Farmlands" }
+            };
+
+            var options = ((System.Collections.IEnumerable)selector.Invoke(null, new object[] { false, buildings })).Cast<object>().ToList();
+            var kind = options[0].GetType().GetProperty("Kind")?.GetValue(options[0]) as string;
+
+            Assert.That(kind, Is.EqualTo("mine"));
+        }
+
+
+        [Test]
+        public void Development_building_inventory_note_does_not_present_routing_as_destroy_or_switch()
+        {
+            var builder = typeof(CityScreenController).GetMethod("BuildBuildingInventoryNote", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(builder, Is.Not.Null);
+
+            var buildings = new List<BuildingSnapshot>
+            {
+                new BuildingSnapshot { Id = "low_quarter", Type = "housing", Name = "Low Quarter", Status = "active" }
+            };
+            var timers = new List<CityTimerEntrySnapshot>();
+
+            var note = (string)builder.Invoke(null, new object[] { buildings, timers, false, DateTime.UtcNow });
+
+            Assert.That(note, Does.Contain("only unlocked, affordable"));
+            Assert.That(note, Does.Contain("Destroy/remodel requires a backend endpoint"));
+            Assert.That(note, Does.Not.Contain("Route:"));
+        }
+
+        [Test]
+        public void Development_build_options_hide_locked_and_unaffordable_city_targets()
+        {
+            var selector = typeof(CityScreenController).GetMethod("SelectCurrentlyBuildableOptions", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(selector, Is.Not.Null);
+
+            var summary = new ShellSummarySnapshot
+            {
+                Resources = new ResourceSnapshot
+                {
+                    Materials = 65,
+                    Wealth = 100,
+                    Mana = 0
+                },
+                ResearchedTechIds = new List<string> { "urban_planning_1" }
+            };
+
+            var options = ((System.Collections.IEnumerable)selector.Invoke(null, new object[] { summary, false, new List<BuildingSnapshot>() })).Cast<object>().ToList();
+            var kinds = options.Select(option => option.GetType().GetProperty("Kind")?.GetValue(option) as string).ToList();
+
+            Assert.That(kinds, Does.Contain("housing"));
+            Assert.That(kinds, Does.Contain("farmland"));
+            Assert.That(kinds, Does.Contain("hall_of_records"));
+            Assert.That(kinds, Does.Not.Contain("mine"));
+            Assert.That(kinds, Does.Not.Contain("arcane_spire"));
+            Assert.That(kinds, Does.Not.Contain("watch_barracks"));
+            Assert.That(kinds, Does.Not.Contain("provincial_office"));
+        }
+
+        [Test]
+        public void Development_front_options_hide_locked_black_market_depth_targets()
+        {
+            var selector = typeof(CityScreenController).GetMethod("SelectCurrentlyBuildableOptions", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(selector, Is.Not.Null);
+
+            var lockedSummary = new ShellSummarySnapshot
+            {
+                Resources = new ResourceSnapshot
+                {
+                    Materials = 100,
+                    Wealth = 100,
+                    Mana = 100
+                },
+                ResearchedTechIds = new List<string>()
+            };
+
+            var lockedOptions = ((System.Collections.IEnumerable)selector.Invoke(null, new object[] { lockedSummary, true, new List<BuildingSnapshot>() })).Cast<object>().ToList();
+            var lockedKinds = lockedOptions.Select(option => option.GetType().GetProperty("Kind")?.GetValue(option) as string).ToList();
+
+            Assert.That(lockedKinds, Does.Contain("safehouse"));
+            Assert.That(lockedKinds, Does.Not.Contain("front_house"));
+            Assert.That(lockedKinds, Does.Not.Contain("debt_house"));
+            Assert.That(lockedKinds, Does.Not.Contain("cutout_bureau"));
+
+            lockedSummary.ResearchedTechIds.Add("front_businesses_1");
+            var unlockedOptions = ((System.Collections.IEnumerable)selector.Invoke(null, new object[] { lockedSummary, true, new List<BuildingSnapshot>() })).Cast<object>().ToList();
+            var unlockedKinds = unlockedOptions.Select(option => option.GetType().GetProperty("Kind")?.GetValue(option) as string).ToList();
+
+            Assert.That(unlockedKinds, Does.Contain("front_house"));
+            Assert.That(unlockedKinds, Does.Not.Contain("debt_house"));
+        }
+
+
+
+        [Test]
+        public void Summary_resource_tick_countdown_rolls_forward_when_payload_anchor_is_stale()
+        {
+            var staleNext = DateTime.UtcNow.AddMinutes(-5);
+            var timing = new TimerSnapshot
+            {
+                TickMs = 60_000,
+                LastTickAtUtc = staleNext.AddMinutes(-1),
+                NextTickAtUtc = staleNext
+            };
+
+            var resolver = typeof(SummaryScreenController).GetMethod("ResolveNextTickAtUtc", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(resolver, Is.Not.Null);
+
+            var resolved = (DateTime?)resolver.Invoke(null, new object[] { timing, TimeSpan.FromMinutes(1) });
+
+            Assert.That(resolved.HasValue, Is.True);
+            Assert.That(resolved.Value, Is.GreaterThan(DateTime.UtcNow));
+        }
+
+
+        [Test]
+        public void Client_bootstrap_treats_elapsed_resource_tick_as_timed_refresh_trigger()
+        {
+            var timing = new TimerSnapshot
+            {
+                TickMs = 60_000,
+                LastTickAtUtc = DateTime.UtcNow.AddMinutes(-2),
+                NextTickAtUtc = DateTime.UtcNow.AddMinutes(-1)
+            };
+
+            var checker = typeof(PlanarWar.Client.UI.ClientBootstrap).GetMethod("HasResourceTickElapsed", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(checker, Is.Not.Null);
+
+            var elapsed = (bool)checker.Invoke(null, new object[] { timing, DateTime.UtcNow });
+
+            Assert.That(elapsed, Is.True);
+        }
 
     }
 }
