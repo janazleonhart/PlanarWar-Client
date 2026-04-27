@@ -1282,6 +1282,42 @@
     align-self: stretch;
 }
 
+
+/* Hero / Operative slot-surface completion pass v1c */
+.heroes-action-strip {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    background-color: rgba(8, 14, 30, 0.72);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgba(95, 126, 210, 0.32);
+    border-right-color: rgba(95, 126, 210, 0.32);
+    border-top-color: rgba(95, 126, 210, 0.32);
+    border-bottom-color: rgba(95, 126, 210, 0.32);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.heroes-action-strip-label {
+    flex-shrink: 0;
+    min-width: 82px;
+}
+
+.heroes-action-strip-value {
+    flex-grow: 1;
+    min-height: 20px;
+    white-space: normal;
+}
+
 /* Hero / Operative dense picker cleanup v1b */
 .heroes-native-picker-hidden {
     display: none;

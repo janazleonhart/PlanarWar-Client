@@ -1200,5 +1200,50 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(rosterCardsIndex, Is.GreaterThan(recruitmentIndex), "Slot-first controls should render before quick roster cards so release-card duplication does not bury equipment actions.");
         }
 
+        [Test]
+        public void Shell_keeps_hero_action_status_inside_slot_surface_management_card()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var appStylePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(appStylePath), Is.True, "AppShell.uss should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(appStylePath);
+
+            Assert.That(uxml, Does.Contain("heroes-action-strip"));
+            Assert.That(uxml, Does.Contain("heroes-action-strip-value"));
+            Assert.That(uss, Does.Contain(".heroes-action-strip"));
+            Assert.That(uss, Does.Contain(".heroes-action-strip-value"));
+
+            var managementIndex = uxml.IndexOf("heroes-management-card", StringComparison.Ordinal);
+            var actionStripIndex = uxml.IndexOf("heroes-action-strip", StringComparison.Ordinal);
+            var noteIndex = uxml.IndexOf("heroes-note-value", StringComparison.Ordinal);
+            var selectionIndex = uxml.IndexOf("heroes-selection-card", StringComparison.Ordinal);
+            var equipmentIndex = uxml.IndexOf("heroes-equipment-card", StringComparison.Ordinal);
+
+            Assert.That(managementIndex, Is.GreaterThanOrEqualTo(0));
+            Assert.That(actionStripIndex, Is.GreaterThan(managementIndex));
+            Assert.That(noteIndex, Is.GreaterThan(actionStripIndex));
+            Assert.That(selectionIndex, Is.GreaterThan(noteIndex), "Hero action receipts/status should stay anchored above roster selection instead of being clipped in the preflight summary cards.");
+            Assert.That(equipmentIndex, Is.GreaterThan(selectionIndex));
+        }
+
+        [Test]
+        public void Shell_keeps_single_hero_desk_note_binding_for_receipt_status()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var first = uxml.IndexOf("heroes-note-value", StringComparison.Ordinal);
+            var last = uxml.LastIndexOf("heroes-note-value", StringComparison.Ordinal);
+
+            Assert.That(first, Is.GreaterThanOrEqualTo(0));
+            Assert.That(last, Is.EqualTo(first), "The hero result/status binding should appear once so the controller cannot drift between duplicate receipt surfaces.");
+            Assert.That(uxml, Does.Not.Contain("<ui:Label name=\"heroes-note-value\" text=\"Hero controls load from live summary payload.\" class=\"summary-value summary-value--glance\" />"), "Hero desk status should live with the slot-first surface, not in the clipped preflight support cards.");
+        }
+
+
     }
 }
