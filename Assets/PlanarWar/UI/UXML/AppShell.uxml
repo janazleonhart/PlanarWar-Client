@@ -333,10 +333,10 @@
                         </ui:VisualElement>
                     </ui:VisualElement>
 
-                    <ui:VisualElement name="dev-research-cards-section" class="summary-card summary-card--full summary-card--action development-research-cards-section">
+                    <ui:VisualElement name="dev-research-cards-section" class="summary-card summary-card--full summary-card--action development-research-cards-section development-action-board">
                         <ui:VisualElement class="development-actions-head">
-                            <ui:Label text="Visible research cards" class="eyebrow" />
-                            <ui:Label name="dev-research-cards-copy-value" text="Visible research cards load here." class="metric-subvalue metric-subvalue--wrap" />
+                            <ui:Label text="Research action board" class="eyebrow" />
+                            <ui:Label name="dev-research-cards-copy-value" text="Live research options, timers, and start actions surface here." class="metric-subvalue metric-subvalue--wrap" />
                         </ui:VisualElement>
                         <ui:VisualElement class="summary-grid development-research-cards-grid">
                             <ui:VisualElement name="dev-research-card-1" class="summary-card glance-card development-research-card">
@@ -374,10 +374,10 @@
                     </ui:VisualElement>
 
 
-                    <ui:VisualElement name="dev-workshop-cards-section" class="summary-card summary-card--full summary-card--action development-info-cards-section">
+                    <ui:VisualElement name="dev-workshop-cards-section" class="summary-card summary-card--full summary-card--action development-info-cards-section development-action-board">
                         <ui:VisualElement class="development-actions-head">
-                            <ui:Label text="Visible workshop cards" class="eyebrow" />
-                            <ui:Label name="dev-workshop-cards-copy-value" text="Visible workshop cards load here." class="metric-subvalue metric-subvalue--wrap" />
+                            <ui:Label text="Workshop action board" class="eyebrow" />
+                            <ui:Label name="dev-workshop-cards-copy-value" text="Live jobs, ready pickups, recipes, and collect actions surface here." class="metric-subvalue metric-subvalue--wrap" />
                         </ui:VisualElement>
                         <ui:VisualElement class="summary-grid development-info-cards-grid">
                             <ui:VisualElement name="dev-workshop-card-1" class="summary-card glance-card development-info-card">
@@ -414,10 +414,10 @@
                         </ui:VisualElement>
                     </ui:VisualElement>
 
-                    <ui:VisualElement name="dev-growth-cards-section" class="summary-card summary-card--full summary-card--action development-info-cards-section">
+                    <ui:VisualElement name="dev-growth-cards-section" class="summary-card summary-card--full summary-card--action development-info-cards-section development-action-board">
                         <ui:VisualElement class="development-actions-head">
-                            <ui:Label text="Visible growth cards" class="eyebrow" />
-                            <ui:Label name="dev-growth-cards-copy-value" text="Visible growth cards load here." class="metric-subvalue metric-subvalue--wrap" />
+                            <ui:Label text="Building / front action board" class="eyebrow" />
+                            <ui:Label name="dev-growth-cards-copy-value" text="Live building/front cards, timers, cadence, and support actions surface here." class="metric-subvalue metric-subvalue--wrap" />
                         </ui:VisualElement>
                         <ui:VisualElement class="summary-grid development-info-cards-grid">
                             <ui:VisualElement name="dev-growth-card-1" class="summary-card glance-card development-info-card">
@@ -454,7 +454,7 @@
                         </ui:VisualElement>
                     </ui:VisualElement>
 
-                    <ui:VisualElement class="summary-grid summary-grid--desk-support">
+                    <ui:VisualElement class="summary-grid summary-grid--desk-support development-support-grid--hidden">
                         <ui:VisualElement class="summary-card glance-card">
                             <ui:Label text="Research focus" class="eyebrow" />
                             <ui:Label name="dev-research-focus-value" text="No research lane loaded." class="summary-value summary-value--glance" />
@@ -486,7 +486,7 @@
                         </ui:VisualElement>
                     </ui:VisualElement>
 
-                    <ui:VisualElement class="summary-card summary-card--full summary-card--action">
+                    <ui:VisualElement class="summary-card summary-card--full summary-card--action development-desk-actions-card">
                         <ui:Label text="Desk actions" class="eyebrow" />
                         <ui:VisualElement class="button-row">
                             <ui:Button name="dev-refresh-button" text="Refresh desk" class="action-button action-button--primary" />

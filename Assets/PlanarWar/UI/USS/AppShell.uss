@@ -1861,3 +1861,66 @@
 .operations-support-grid--hidden {
     display: none;
 }
+
+
+/* Development surface cleanup v1 */
+.development-action-board {
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.development-action-board .development-actions-head {
+    gap: 3px;
+}
+
+.development-action-board .development-actions-head .metric-subvalue {
+    max-height: 28px;
+    overflow: hidden;
+}
+
+.development-action-board .development-research-cards-grid,
+.development-action-board .development-info-cards-grid {
+    gap: 10px;
+    margin-top: 0;
+}
+
+.development-action-board .development-research-card,
+.development-action-board .development-info-card {
+    min-width: 230px;
+    min-height: 136px;
+    gap: 6px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+}
+
+.development-action-board .development-research-card .summary-value,
+.development-action-board .development-info-card .summary-value {
+    max-height: 34px;
+    overflow: hidden;
+}
+
+.development-action-board .development-research-card .metric-subvalue,
+.development-action-board .development-info-card .metric-subvalue {
+    display: none;
+}
+
+.development-action-board .development-research-card .action-button,
+.development-action-board .development-info-card .action-button {
+    min-width: 132px;
+    align-self: stretch;
+    margin-top: auto;
+}
+
+.development-support-grid--hidden {
+    display: none;
+}
+
+.development-desk-actions-card {
+    gap: 8px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.development-desk-actions-card .button-row {
+    margin-top: 0;
+}

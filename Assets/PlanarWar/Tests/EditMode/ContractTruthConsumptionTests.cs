@@ -1520,6 +1520,32 @@ namespace PlanarWar.Client.Tests.EditMode
             }
         }
 
+
+        [Test]
+        public void Development_surface_uses_compact_action_boards_and_hides_duplicate_support_grid()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var appStylePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(appStylePath), Is.True, "AppShell.uss should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(appStylePath);
+
+            Assert.That(uxml, Does.Contain("Research action board"));
+            Assert.That(uxml, Does.Contain("Workshop action board"));
+            Assert.That(uxml, Does.Contain("Building / front action board"));
+            Assert.That(uxml, Does.Contain("development-action-board"));
+            Assert.That(uxml, Does.Contain("development-support-grid--hidden"));
+            Assert.That(uxml, Does.Contain("development-desk-actions-card"));
+
+            Assert.That(uss, Does.Contain("Development surface cleanup v1"));
+            Assert.That(uss, Does.Contain(".development-action-board"));
+            Assert.That(uss, Does.Contain(".development-support-grid--hidden"));
+            Assert.That(uss, Does.Contain(".development-desk-actions-card"));
+        }
+
+
         private static VisualElement BuildMinimalHeroControllerRoot()
         {
             var root = new VisualElement();
