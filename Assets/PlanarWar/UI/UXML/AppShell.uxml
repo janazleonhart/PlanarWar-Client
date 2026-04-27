@@ -622,6 +622,10 @@
                                 <ui:Label name="heroes-availability-value" text="Availability unknown." class="summary-value summary-value--glance" />
                             </ui:VisualElement>
                             <ui:VisualElement class="summary-card glance-card">
+                                <ui:Label text="Shared armory" class="eyebrow" />
+                                <ui:Label name="heroes-armory-value" text="Armory truth unavailable." class="summary-value summary-value--glance" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="summary-card glance-card">
                                 <ui:Label text="Desk note" class="eyebrow" />
                                 <ui:Label name="heroes-note-value" text="Hero controls load from live summary payload." class="summary-value summary-value--glance" />
                             </ui:VisualElement>
@@ -665,6 +669,10 @@
                             <ui:Label text="Roster management" class="eyebrow" />
                             <ui:DropdownField name="heroes-manage-hero-field" label="Hero" />
                             <ui:Button name="heroes-release-button" text="Release selected hero" class="action-button" />
+                            <ui:DropdownField name="heroes-armory-item-field" label="Shared armory item" />
+                            <ui:Button name="heroes-equip-armory-button" text="Equip selected gear" class="action-button action-button--primary" />
+                            <ui:DropdownField name="heroes-equipped-slot-field" label="Equipped slot" />
+                            <ui:Button name="heroes-unequip-gear-button" text="Return gear to armory" class="action-button" />
                             <ui:DropdownField name="heroes-manage-candidate-field" label="Recruit candidate" />
                             <ui:VisualElement class="button-row">
                                 <ui:Button name="heroes-recruit-button" text="Scout hero candidate" class="action-button action-button--primary" />

@@ -97,6 +97,8 @@ namespace PlanarWar.Client.UI
                     HandleStartMissionRequestedAsync,
                     HandleCompleteMissionRequestedAsync,
                     HandleReleaseHeroRequestedAsync,
+                    HandleEquipHeroFromArmoryRequestedAsync,
+                    HandleUnequipHeroToArmoryRequestedAsync,
                     RefreshSummary,
                     () => navigationState.SetActive(ShellScreen.Summary));
             }
@@ -591,6 +593,57 @@ namespace PlanarWar.Client.UI
             catch (Exception ex)
             {
                 summaryState.FinishAction($"{terms.ReleaseFailureLabel} failed: {ex.Message}", failed: true);
+            }
+        }
+
+        private async Task HandleEquipHeroFromArmoryRequestedAsync(string heroId, int armorySlotIndex)
+        {
+            if (summaryState == null || apiClient == null || string.IsNullOrWhiteSpace(heroId) || armorySlotIndex < 0 || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            var trimmedHeroId = heroId.Trim();
+            var terms = ResolveHeroActionTerms();
+            try
+            {
+                summaryState.BeginHeroEquipFromArmory(trimmedHeroId, armorySlotIndex);
+                var response = await apiClient.EquipHeroFromArmoryAsync(trimmedHeroId, armorySlotIndex);
+                var action = terms.IsOperative ? "Operative gear equipped" : "Hero gear equipped";
+                var receipt = SummaryState.FormatHeroActionReceipt(response?.ToString(), action, $"{trimmedHeroId}:slot_{armorySlotIndex}", terms.SubjectNoun);
+                var title = SummaryState.ExtractHeroActionTitle(response?.ToString(), action, terms.SubjectNoun);
+                await summaryController.RefreshAsync();
+                summaryState.FinishHeroActionReceipt(action, receipt, title);
+            }
+            catch (Exception ex)
+            {
+                summaryState.FinishAction($"{terms.SubjectNoun} gear equip failed: {ex.Message}", failed: true);
+            }
+        }
+
+        private async Task HandleUnequipHeroToArmoryRequestedAsync(string heroId, string slot)
+        {
+            if (summaryState == null || apiClient == null || string.IsNullOrWhiteSpace(heroId) || string.IsNullOrWhiteSpace(slot) || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            var trimmedHeroId = heroId.Trim();
+            var trimmedSlot = slot.Trim();
+            var terms = ResolveHeroActionTerms();
+            try
+            {
+                summaryState.BeginHeroUnequipToArmory(trimmedHeroId, trimmedSlot);
+                var response = await apiClient.UnequipHeroToArmoryAsync(trimmedHeroId, trimmedSlot);
+                var action = terms.IsOperative ? "Operative gear returned" : "Hero gear returned";
+                var receipt = SummaryState.FormatHeroActionReceipt(response?.ToString(), action, $"{trimmedHeroId}:{trimmedSlot}", terms.SubjectNoun);
+                var title = SummaryState.ExtractHeroActionTitle(response?.ToString(), action, terms.SubjectNoun);
+                await summaryController.RefreshAsync();
+                summaryState.FinishHeroActionReceipt(action, receipt, title);
+            }
+            catch (Exception ex)
+            {
+                summaryState.FinishAction($"{terms.SubjectNoun} gear return failed: {ex.Message}", failed: true);
             }
         }
 

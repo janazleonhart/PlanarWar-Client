@@ -975,5 +975,76 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(state.RecentHeroReceiptAction, Is.EqualTo("Hero released"));
         }
 
+        [Test]
+        public void Shell_has_hero_armory_controls()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            Assert.That(uxml, Does.Contain("heroes-armory-value"));
+            Assert.That(uxml, Does.Contain("heroes-armory-item-field"));
+            Assert.That(uxml, Does.Contain("heroes-equip-armory-button"));
+            Assert.That(uxml, Does.Contain("heroes-equipped-slot-field"));
+            Assert.That(uxml, Does.Contain("heroes-unequip-gear-button"));
+        }
+
+        [Test]
+        public void Mapper_captures_hero_armory_bridge_from_me_payload()
+        {
+            const string payload = @"{
+                ""heroArmoryBridge"": {
+                    ""summary"": { ""slotCount"": 12, ""occupiedSlots"": 2, ""distinctItemIds"": 2, ""totalItemCount"": 3 },
+                    ""armoryItems"": [
+                        { ""slotIndex"": 0, ""itemId"": ""iron_sword_1"", ""qty"": 1, ""template"": { ""name"": ""Iron Sword"", ""slot"": ""mainhand"", ""stats"": { ""power"": 4 } } }
+                    ],
+                    ""heroEquipment"": [
+                        {
+                            ""heroId"": ""hero_1"",
+                            ""equipment"": [
+                                { ""slot"": ""mainhand"", ""itemId"": ""training_blade"", ""qty"": 1, ""template"": { ""name"": ""Training Blade"", ""slot"": ""mainhand"" } }
+                            ],
+                            ""emptySlots"": [""offhand""],
+                            ""bestLoadoutPlan"": [
+                                { ""slotIndex"": 0, ""itemId"": ""iron_sword_1"", ""template"": { ""name"": ""Iron Sword"", ""slot"": ""mainhand"" }, ""comparison"": { ""targetSlot"": ""mainhand"", ""state"": ""upgrade"", ""deltaScore"": 5, ""summary"": ""Iron Sword is an upgrade."" } }
+                            ],
+                            ""bestLoadoutSummary"": { ""note"": ""One upgrade ready."" },
+                            ""loadoutResetSummary"": { ""note"": ""One equipped item can return."" }
+                        }
+                    ]
+                }
+            }";
+
+            var summary = ShellSummarySnapshotMapper.Map(payload);
+
+            Assert.That(summary.HeroArmoryBridge, Is.Not.Null);
+            Assert.That(summary.HeroArmoryBridge.Summary.TotalItemCount, Is.EqualTo(3));
+            Assert.That(summary.HeroArmoryBridge.ArmoryItems, Has.Count.EqualTo(1));
+            Assert.That(summary.HeroArmoryBridge.ArmoryItems[0].Template.Name, Is.EqualTo("Iron Sword"));
+            Assert.That(summary.HeroArmoryBridge.HeroEquipment, Has.Count.EqualTo(1));
+            Assert.That(summary.HeroArmoryBridge.HeroEquipment[0].Equipment[0].Slot, Is.EqualTo("mainhand"));
+            Assert.That(summary.HeroArmoryBridge.HeroEquipment[0].BestLoadoutPlan[0].State, Is.EqualTo("upgrade"));
+        }
+
+        [Test]
+        public void Summary_state_formats_hero_armory_receipts_with_equipped_items()
+        {
+            const string response = @"{
+                ""ok"": true,
+                ""hero"": { ""name"": ""Ser Kael the Stormguard"" },
+                ""equippedSlot"": ""mainhand"",
+                ""equippedItem"": { ""itemId"": ""iron_sword_1"", ""qty"": 1 },
+                ""cityArmorySummary"": { ""occupiedSlots"": 1, ""totalItemCount"": 2 }
+            }";
+
+            var receipt = SummaryState.FormatHeroActionReceipt(response, "Hero gear equipped", "hero_1:slot_0", "Hero");
+
+            Assert.That(receipt, Does.Contain("Hero gear equipped"));
+            Assert.That(receipt, Does.Contain("Hero: Ser Kael the Stormguard"));
+            Assert.That(receipt, Does.Contain("Gear:"));
+            Assert.That(receipt, Does.Contain("Equipped iron_sword_1"));
+        }
+
+
     }
 }

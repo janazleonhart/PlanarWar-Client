@@ -271,6 +271,48 @@ namespace PlanarWar.Client.Network
             return PostJsonAsync(BuildUrl("/api/heroes/recruit/dismiss"), new JObject(), includeBearerToken: true);
         }
 
+        public Task<JObject> EquipHeroFromArmoryAsync(string heroId, int armorySlotIndex)
+        {
+            if (string.IsNullOrWhiteSpace(heroId))
+            {
+                throw new ArgumentException("heroId is required", nameof(heroId));
+            }
+
+            if (armorySlotIndex < 0)
+            {
+                throw new ArgumentException("armorySlotIndex must be zero or greater", nameof(armorySlotIndex));
+            }
+
+            var body = new JObject
+            {
+                ["heroId"] = heroId.Trim(),
+                ["armorySlotIndex"] = armorySlotIndex
+            };
+
+            return PostJsonAsync(BuildUrl("/api/heroes/equip_from_armory"), body, includeBearerToken: true);
+        }
+
+        public Task<JObject> UnequipHeroToArmoryAsync(string heroId, string slot)
+        {
+            if (string.IsNullOrWhiteSpace(heroId))
+            {
+                throw new ArgumentException("heroId is required", nameof(heroId));
+            }
+
+            if (string.IsNullOrWhiteSpace(slot))
+            {
+                throw new ArgumentException("slot is required", nameof(slot));
+            }
+
+            var body = new JObject
+            {
+                ["heroId"] = heroId.Trim(),
+                ["slot"] = slot.Trim()
+            };
+
+            return PostJsonAsync(BuildUrl("/api/heroes/unequip_to_armory"), body, includeBearerToken: true);
+        }
+
         public Task<JObject> ReleaseHeroAsync(string heroId)
         {
             if (string.IsNullOrWhiteSpace(heroId))

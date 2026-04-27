@@ -511,6 +511,15 @@ namespace PlanarWar.Client.Core
                     parts.Add($"Rewards: {rewardText}");
                 }
 
+                var gearText = JoinDistinctReceiptParts(
+                    FormatReceiptItem(FirstDirectToken(new[] { result, receipt, root }, "equippedItem", "equipped_item"), "equipped"),
+                    FormatReceiptItem(FirstDirectToken(new[] { result, receipt, root }, "unequippedItem", "unequipped_item"), "returned"),
+                    FormatReceiptItem(FirstDirectToken(new[] { result, receipt, root }, "swappedOutItem", "swapped_out_item"), "swapped out"));
+                if (!string.IsNullOrWhiteSpace(gearText))
+                {
+                    parts.Add($"Gear: {gearText}");
+                }
+
                 var effectText = FormatEffectBundle(FirstDirectToken(
                     new[] { result, receipt, root },
                     "effects",
@@ -523,6 +532,14 @@ namespace PlanarWar.Client.Core
                     "items_returned",
                     "equipmentReturned",
                     "equipment_returned",
+                    "equippedItem",
+                    "equipped_item",
+                    "unequippedItem",
+                    "unequipped_item",
+                    "swappedOutItem",
+                    "swapped_out_item",
+                    "cityArmorySummary",
+                    "city_armory_summary",
                     "rosterChange",
                     "roster_change"));
                 if (!string.IsNullOrWhiteSpace(effectText))
@@ -852,6 +869,31 @@ namespace PlanarWar.Client.Core
             return string.Join(", ", pieces);
         }
 
+        private static string FormatReceiptItem(JToken token, string verb)
+        {
+            if (!IsMeaningfulToken(token)) return string.Empty;
+            if (token.Type != JTokenType.Object) return FirstReceiptText(token);
+            var name = FirstReceiptText(
+                Child(token, "name"),
+                Child(token, "itemName"),
+                Child(token, "item_name"),
+                Child(Child(token, "template"), "name"),
+                Child(token, "itemId"),
+                Child(token, "item_id"));
+            if (string.IsNullOrWhiteSpace(name)) return string.Empty;
+            var slot = FirstReceiptText(Child(token, "slot"), Child(Child(token, "template"), "slot"));
+            var qtyToken = Child(token, "qty") ?? Child(token, "quantity");
+            double? qty = null;
+            if (qtyToken != null && (qtyToken.Type == JTokenType.Integer || qtyToken.Type == JTokenType.Float))
+            {
+                qty = qtyToken.Value<double>();
+            }
+            var pieces = new List<string> { $"{HumanizeReceiptPhrase(verb)} {name}" };
+            if (!string.IsNullOrWhiteSpace(slot)) pieces.Add(slot);
+            if (qty.HasValue && Math.Abs(qty.Value - 1) > 0.0001) pieces.Add($"x{qty.Value:0.##}");
+            return string.Join(" ", pieces);
+        }
+
         private static string FormatEffectBundle(JToken token)
         {
             if (!IsMeaningfulToken(token))
@@ -1175,6 +1217,22 @@ namespace PlanarWar.Client.Core
         public void BeginHeroRelease(string heroId)
         {
             BeginAction(string.IsNullOrWhiteSpace(heroId) ? "Releasing hero..." : $"Releasing hero: {heroId.Trim()}");
+            PendingHeroReleaseId = heroId?.Trim() ?? string.Empty;
+        }
+
+        public void BeginHeroEquipFromArmory(string heroId, int armorySlotIndex)
+        {
+            BeginAction(string.IsNullOrWhiteSpace(heroId)
+                ? $"Equipping shared gear from armory slot {armorySlotIndex}..."
+                : $"Equipping shared gear: {heroId.Trim()} <- armory slot {armorySlotIndex}");
+            PendingHeroReleaseId = heroId?.Trim() ?? string.Empty;
+        }
+
+        public void BeginHeroUnequipToArmory(string heroId, string slot)
+        {
+            BeginAction(string.IsNullOrWhiteSpace(heroId)
+                ? $"Returning shared gear from {slot}..."
+                : $"Returning shared gear: {heroId.Trim()} {slot}");
             PendingHeroReleaseId = heroId?.Trim() ?? string.Empty;
         }
 

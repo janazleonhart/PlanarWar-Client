@@ -204,6 +204,7 @@ namespace PlanarWar.Client.Core.Mapping
                 Heroes = FirstArray(summary["heroes"], summary["Heroes"])?.OfType<JObject>().Select(MapHero).Where(h => h != null).ToList() ?? new List<HeroSnapshot>(),
                 Armies = FirstArray(summary["armies"], summary["Armies"])?.OfType<JObject>().Select(MapArmy).Where(a => a != null).ToList() ?? new List<ArmySnapshot>(),
                 HeroRecruitment = MapHeroRecruitment(summary["heroRecruitment"] as JObject ?? summary["hero_recruitment"] as JObject),
+                HeroArmoryBridge = MapHeroArmoryBridge(summary["heroArmoryBridge"] as JObject ?? summary["hero_armory_bridge"] as JObject),
                 ArmyReinforcement = MapArmyReinforcement(summary["armyReinforcement"] as JObject ?? summary["army_reinforcement"] as JObject),
                 WorkshopJobs = FirstArray(summary["workshopJobs"], summary["workshop_jobs"])?.OfType<JObject>().Select(MapWorkshopJob).Where(j => j != null).ToList() ?? new List<WorkshopJobSnapshot>(),
                 WarfrontSignals = (summary["warfrontStatus"] as JObject)?.Properties().Select(p => new WarfrontSignalSnapshot { Label = p.Name, Value = p.Value?.ToString() ?? "-" }).ToList()
@@ -597,6 +598,138 @@ namespace PlanarWar.Client.Core.Mapping
                         ?.Name ?? string.Empty;
                 }
             }
+        }
+
+        private static HeroArmoryBridgeSnapshot MapHeroArmoryBridge(JObject obj)
+        {
+            if (obj == null) return null;
+            return new HeroArmoryBridgeSnapshot
+            {
+                Summary = MapHeroArmorySummary(obj["summary"] as JObject ?? obj["armorySummary"] as JObject ?? obj["armory_summary"] as JObject),
+                ArmoryItems = FirstArray(obj["armoryItems"], obj["armory_items"])?.OfType<JObject>().Select(MapHeroArmoryItem).Where(item => item != null).ToList() ?? new List<HeroArmoryItemSnapshot>(),
+                HeroEquipment = FirstArray(obj["heroEquipment"], obj["hero_equipment"])?.OfType<JObject>().Select(MapHeroEquipment).Where(entry => entry != null).ToList() ?? new List<HeroEquipmentSnapshot>(),
+                Note = obj["note"]?.Read<string>() ?? obj["summaryNote"]?.Read<string>() ?? obj["summary_note"]?.Read<string>() ?? string.Empty,
+            };
+        }
+
+        private static HeroArmorySummarySnapshot MapHeroArmorySummary(JObject obj)
+        {
+            if (obj == null) return new HeroArmorySummarySnapshot();
+            return new HeroArmorySummarySnapshot
+            {
+                OwnerId = obj["ownerId"]?.Read<string>() ?? obj["owner_id"]?.Read<string>() ?? string.Empty,
+                SlotCount = obj["slotCount"]?.Read<int?>() ?? obj["slot_count"]?.Read<int?>(),
+                OccupiedSlots = obj["occupiedSlots"]?.Read<int?>() ?? obj["occupied_slots"]?.Read<int?>(),
+                DistinctItemIds = obj["distinctItemIds"]?.Read<int?>() ?? obj["distinct_item_ids"]?.Read<int?>(),
+                TotalItemCount = obj["totalItemCount"]?.Read<int?>() ?? obj["total_item_count"]?.Read<int?>(),
+            };
+        }
+
+        private static HeroArmoryItemSnapshot MapHeroArmoryItem(JObject obj)
+        {
+            if (obj == null) return null;
+            return new HeroArmoryItemSnapshot
+            {
+                SlotIndex = obj["slotIndex"]?.Read<int?>() ?? obj["slot_index"]?.Read<int?>(),
+                ItemId = obj["itemId"]?.Read<string>() ?? obj["item_id"]?.Read<string>() ?? string.Empty,
+                Qty = obj["qty"]?.Read<int?>() ?? obj["quantity"]?.Read<int?>(),
+                GenesisId = obj["genesisId"]?.Read<string>() ?? obj["genesis_id"]?.Read<string>() ?? string.Empty,
+                Template = MapHeroEquipmentTemplate(obj["template"] as JObject),
+                TopHeroFits = FirstArray(obj["topHeroFits"], obj["top_hero_fits"])?.OfType<JObject>().Select(MapHeroGearFit).Where(fit => fit != null).ToList() ?? new List<HeroGearFitSnapshot>(),
+            };
+        }
+
+        private static HeroEquipmentSnapshot MapHeroEquipment(JObject obj)
+        {
+            if (obj == null) return null;
+            var bestLoadoutSummary = obj["bestLoadoutSummary"] as JObject ?? obj["best_loadout_summary"] as JObject;
+            var loadoutResetSummary = obj["loadoutResetSummary"] as JObject ?? obj["loadout_reset_summary"] as JObject;
+            return new HeroEquipmentSnapshot
+            {
+                HeroId = obj["heroId"]?.Read<string>() ?? obj["hero_id"]?.Read<string>() ?? string.Empty,
+                Equipment = FirstArray(obj["equipment"])?.OfType<JObject>().Select(MapHeroEquipmentEntry).Where(entry => entry != null).ToList() ?? new List<HeroEquipmentEntrySnapshot>(),
+                EmptySlots = MapStringArray(FirstArray(obj["emptySlots"], obj["empty_slots"])),
+                EmptySlotSummary = obj["emptySlotSummary"]?.Read<string>() ?? obj["empty_slot_summary"]?.Read<string>() ?? string.Empty,
+                RecommendedArmory = FirstArray(obj["recommendedArmory"], obj["recommended_armory"])?.OfType<JObject>().Select(MapHeroArmoryRecommendation).Where(entry => entry != null).ToList() ?? new List<HeroArmoryRecommendationSnapshot>(),
+                BestLoadoutPlan = FirstArray(obj["bestLoadoutPlan"], obj["best_loadout_plan"])?.OfType<JObject>().Select(MapHeroArmoryRecommendation).Where(entry => entry != null).ToList() ?? new List<HeroArmoryRecommendationSnapshot>(),
+                BestLoadoutSummaryNote = bestLoadoutSummary?["note"]?.Read<string>() ?? string.Empty,
+                LoadoutResetSlots = MapStringArray(FirstArray(obj["loadoutResetSlots"], obj["loadout_reset_slots"])),
+                LoadoutResetSummaryNote = loadoutResetSummary?["note"]?.Read<string>() ?? string.Empty,
+            };
+        }
+
+        private static HeroEquipmentEntrySnapshot MapHeroEquipmentEntry(JObject obj)
+        {
+            if (obj == null) return null;
+            return new HeroEquipmentEntrySnapshot
+            {
+                Slot = obj["slot"]?.Read<string>() ?? string.Empty,
+                ItemId = obj["itemId"]?.Read<string>() ?? obj["item_id"]?.Read<string>() ?? string.Empty,
+                Qty = obj["qty"]?.Read<int?>() ?? obj["quantity"]?.Read<int?>(),
+                GenesisId = obj["genesisId"]?.Read<string>() ?? obj["genesis_id"]?.Read<string>() ?? string.Empty,
+                Template = MapHeroEquipmentTemplate(obj["template"] as JObject),
+                EquippedHeroFit = MapHeroGearFit(obj["equippedHeroFit"] as JObject ?? obj["equipped_hero_fit"] as JObject),
+            };
+        }
+
+        private static HeroArmoryRecommendationSnapshot MapHeroArmoryRecommendation(JObject obj)
+        {
+            if (obj == null) return null;
+            var comparison = obj["comparison"] as JObject;
+            return new HeroArmoryRecommendationSnapshot
+            {
+                SlotIndex = obj["slotIndex"]?.Read<int?>() ?? obj["slot_index"]?.Read<int?>(),
+                ItemId = obj["itemId"]?.Read<string>() ?? obj["item_id"]?.Read<string>() ?? string.Empty,
+                Qty = obj["qty"]?.Read<int?>() ?? obj["quantity"]?.Read<int?>(),
+                GenesisId = obj["genesisId"]?.Read<string>() ?? obj["genesis_id"]?.Read<string>() ?? string.Empty,
+                Template = MapHeroEquipmentTemplate(obj["template"] as JObject),
+                Fit = MapHeroGearFit(obj["fit"] as JObject),
+                TargetSlot = comparison?["targetSlot"]?.Read<string>() ?? comparison?["target_slot"]?.Read<string>() ?? string.Empty,
+                State = comparison?["state"]?.Read<string>() ?? string.Empty,
+                DeltaScore = comparison?["deltaScore"]?.Read<double?>() ?? comparison?["delta_score"]?.Read<double?>(),
+                Summary = comparison?["summary"]?.Read<string>() ?? obj["summary"]?.Read<string>() ?? string.Empty,
+            };
+        }
+
+        private static HeroEquipmentTemplateSnapshot MapHeroEquipmentTemplate(JObject obj)
+        {
+            if (obj == null) return null;
+            return new HeroEquipmentTemplateSnapshot
+            {
+                Id = obj["id"]?.Read<string>() ?? string.Empty,
+                Name = obj["name"]?.Read<string>() ?? obj["label"]?.Read<string>() ?? obj["id"]?.Read<string>() ?? string.Empty,
+                Slot = obj["slot"]?.Read<string>() ?? string.Empty,
+                Rarity = obj["rarity"]?.Read<string>() ?? string.Empty,
+                Category = obj["category"]?.Read<string>() ?? string.Empty,
+                Description = obj["description"]?.Read<string>() ?? string.Empty,
+                Tags = MapStringArray(FirstArray(obj["tags"])),
+                Stats = MapNumberDictionary(obj["stats"] as JObject),
+            };
+        }
+
+        private static HeroGearFitSnapshot MapHeroGearFit(JObject obj)
+        {
+            if (obj == null) return null;
+            return new HeroGearFitSnapshot
+            {
+                HeroId = obj["heroId"]?.Read<string>() ?? obj["hero_id"]?.Read<string>() ?? string.Empty,
+                HeroName = obj["heroName"]?.Read<string>() ?? obj["hero_name"]?.Read<string>() ?? obj["name"]?.Read<string>() ?? string.Empty,
+                Role = obj["role"]?.Read<string>() ?? obj["primaryRole"]?.Read<string>() ?? obj["primary_role"]?.Read<string>() ?? string.Empty,
+                Score = obj["score"]?.Read<double?>(),
+                Summary = obj["summary"]?.Read<string>() ?? obj["note"]?.Read<string>() ?? string.Empty,
+            };
+        }
+
+        private static Dictionary<string, double> MapNumberDictionary(JObject obj)
+        {
+            if (obj == null) return new Dictionary<string, double>();
+            var values = new Dictionary<string, double>();
+            foreach (var property in obj.Properties())
+            {
+                var value = property.Value?.Read<double?>();
+                if (value.HasValue) values[property.Name] = value.Value;
+            }
+            return values;
         }
 
         private static HeroRecruitmentSnapshot MapHeroRecruitment(JObject obj)
