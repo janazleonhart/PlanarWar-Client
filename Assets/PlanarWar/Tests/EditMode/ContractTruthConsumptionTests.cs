@@ -1865,6 +1865,136 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(uss, Does.Contain("-unity-text-align: middle-center"));
         }
 
+
+        [Test]
+        public void Gameplay_shell_closeout_locks_cleaned_surface_markers()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var appStylePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(appStylePath), Is.True, "AppShell.uss should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(appStylePath);
+
+            foreach (var marker in new[]
+            {
+                "home-command-hero",
+                "home-resource-strip",
+                "home-quick-orders",
+                "home-pressure-desk",
+                "development-action-board",
+                "development-support-grid--hidden",
+                "operations-action-board",
+                "operations-support-grid--hidden",
+                "heroes-roster-picker",
+                "heroes-gear-slot-picker",
+                "heroes-armory-item-picker",
+                "heroes-candidate-picker",
+                "social-comms-board",
+                "social-support-grid--hidden",
+                "chapter-row__action",
+                "home-dev-diagnostic-gated",
+            })
+            {
+                Assert.That(uxml, Does.Contain(marker), $"Cleaned gameplay shell marker {marker} should remain in AppShell.uxml.");
+            }
+
+            foreach (var marker in new[]
+            {
+                ".home-fast-option-card",
+                ".development-action-board",
+                ".operations-action-board",
+                ".heroes-roster-picker",
+                ".social-comms-board",
+                ".chapter-row__action",
+                ".home-dev-diagnostic-gated",
+            })
+            {
+                Assert.That(uss, Does.Contain(marker), $"Cleaned gameplay shell style {marker} should remain in AppShell.uss.");
+            }
+        }
+
+        [Test]
+        public void Gameplay_shell_closeout_prevents_native_dropdown_regressions_in_cleaned_surfaces()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var cityControllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/City/CityScreenController.cs");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(cityControllerPath), Is.True, "CityScreenController.cs should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var cityController = File.ReadAllText(cityControllerPath);
+
+            foreach (var id in new[]
+            {
+                "warfront-manage-army-field",
+                "warfront-manage-merge-target-field",
+                "warfront-manage-hold-region-field",
+                "warfront-manage-hold-posture-field",
+                "warfront-manage-dispatch-hero-field",
+                "dev-building-selector-field",
+            })
+            {
+                Assert.That(uxml, Does.Not.Contain($"name=\"{id}\""), $"{id} should not return as a player-facing native DropdownField.");
+            }
+
+            foreach (var id in new[]
+            {
+                "heroes-manage-hero-field",
+                "heroes-gear-slot-field",
+                "heroes-armory-item-field",
+                "heroes-manage-candidate-field",
+            })
+            {
+                var idIndex = uxml.IndexOf($"name=\"{id}\"", StringComparison.Ordinal);
+                Assert.That(idIndex, Is.GreaterThanOrEqualTo(0), $"{id} should remain present as a bound backing control.");
+                var elementEnd = uxml.IndexOf("/>", idIndex, StringComparison.Ordinal);
+                Assert.That(elementEnd, Is.GreaterThan(idIndex), $"{id} should be rendered as a single hidden backing element.");
+                var element = uxml.Substring(idIndex, elementEnd - idIndex);
+                Assert.That(element, Does.Contain("heroes-native-picker-hidden"), $"{id} should stay hidden behind inline player-facing pickers.");
+            }
+
+            Assert.That(cityController, Does.Not.Contain("new DropdownField()"), "Development selectors should not regress to dynamic native DropdownField creation.");
+            Assert.That(cityController, Does.Contain("RenderInlineSelector(view)"), "Development selectors should stay shell-native inline controls.");
+        }
+
+        [Test]
+        public void Gameplay_shell_closeout_keeps_diagnostics_gated_and_number_breakdowns_deferred()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var appStylePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            var summaryControllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(appStylePath), Is.True, "AppShell.uss should be available from the Unity project root.");
+            Assert.That(File.Exists(summaryControllerPath), Is.True, "SummaryScreenController.cs should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(appStylePath);
+            var summaryController = File.ReadAllText(summaryControllerPath);
+
+            Assert.That(uxml, Does.Contain("name=\"timer-diagnostic-card\""));
+            Assert.That(uxml, Does.Contain("name=\"toggle-timer-diagnostics-button\""));
+            Assert.That(uxml, Does.Contain("home-dev-diagnostic-gated"));
+            Assert.That(uss, Does.Contain(".home-dev-diagnostic-gated"));
+            Assert.That(summaryController, Does.Contain("TimerDiagnosticsDevFlagEnabled = false"));
+            Assert.That(summaryController, Does.Contain("timerDiagnosticCard.style.display = diagnosticsEnabled ? DisplayStyle.Flex : DisplayStyle.None"));
+            Assert.That(summaryController, Does.Contain("timerDiagnosticsButton.style.display = diagnosticsEnabled ? DisplayStyle.Flex : DisplayStyle.None"));
+
+            foreach (var deferred in new[]
+            {
+                "number-nerd",
+                "number nerd",
+                "troop-power-breakdown",
+                "economy-breakdown",
+                "production-breakdown",
+                "pressure-breakdown",
+            })
+            {
+                Assert.That(uxml, Does.Not.Contain(deferred), $"Detailed formula/breakdown surfaces stay deferred until their own bounded slice: {deferred}");
+            }
+        }
+
         private static VisualElement BuildMinimalHeroControllerRoot()
         {
             var root = new VisualElement();
