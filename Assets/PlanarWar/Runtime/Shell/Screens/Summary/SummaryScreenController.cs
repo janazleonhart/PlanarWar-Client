@@ -318,6 +318,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             var card = new VisualElement();
             card.AddToClassList("summary-card");
             card.AddToClassList("pressure-op-card");
+            card.AddToClassList("pressure-op-card--compact");
 
             var top = new VisualElement();
             top.AddToClassList("pressure-op-card__top");
@@ -336,55 +337,41 @@ namespace PlanarWar.Client.UI.Screens.Summary
             title.AddToClassList("rail-note-title");
             card.Add(title);
 
-            var postureTitle = new Label("Lane posture");
-            postureTitle.AddToClassList("eyebrow");
-            card.Add(postureTitle);
-
-            var postureValue = new Label(BuildOperationPosture(operation, summary, lane));
+            var postureValue = new Label(BuildHomeOperationSummary(operation, summary, lane));
             postureValue.AddToClassList("summary-value");
             postureValue.AddToClassList("summary-value--glance");
+            postureValue.AddToClassList("pressure-op-card__summary");
             card.Add(postureValue);
 
-            var demandTitle = new Label("Demand signal");
-            demandTitle.AddToClassList("eyebrow");
-            card.Add(demandTitle);
-
-            var demandValue = new Label(BuildOperationDemandSignal(operation, summary, lane));
+            var demandValue = new Label(BuildHomeOperationSignal(operation, summary, lane, index == 0));
             demandValue.AddToClassList("metric-subvalue");
             demandValue.AddToClassList("metric-subvalue--wrap");
+            demandValue.AddToClassList("pressure-op-card__signal");
             card.Add(demandValue);
-
-            var whyTitle = new Label("Why now");
-            whyTitle.AddToClassList("eyebrow");
-            card.Add(whyTitle);
-
-            var whyValue = new Label(FirstNonBlank(operation?.WhyNow, operation?.Payoff, operation?.Detail, operation?.Summary, "No why-now reason surfaced."));
-            whyValue.AddToClassList("metric-subvalue");
-            whyValue.AddToClassList("metric-subvalue--wrap");
-            card.Add(whyValue);
-
-            var handoffTitle = new Label(BuildOperationHandoffTitle(operation));
-            handoffTitle.AddToClassList("eyebrow");
-            card.Add(handoffTitle);
-
-            var handoffValue = new Label(BuildOperationHandoff(operation, index == 0));
-            handoffValue.AddToClassList("metric-subvalue");
-            handoffValue.AddToClassList("metric-subvalue--wrap");
-            card.Add(handoffValue);
-
-            var consequenceTitle = new Label("Consequence hint");
-            consequenceTitle.AddToClassList("eyebrow");
-            card.Add(consequenceTitle);
-
-            var consequenceValue = new Label(BuildOperationConsequenceValue(operation));
-            consequenceValue.AddToClassList("metric-subvalue");
-            consequenceValue.AddToClassList("metric-subvalue--wrap");
-            card.Add(consequenceValue);
 
             var cta = new Label(FirstNonBlank(operation?.CtaLabel, DefaultOperationCta(operation)));
             cta.AddToClassList("pressure-op-card__cta");
             card.Add(cta);
             return card;
+        }
+
+        private static string BuildHomeOperationSummary(OperationSnapshot operation, ShellSummarySnapshot summary, string lane)
+        {
+            return Truncate(FirstNonBlank(
+                operation?.WhyNow,
+                operation?.Summary,
+                operation?.Detail,
+                BuildOperationPosture(operation, summary, lane),
+                "No why-now reason surfaced."), 112);
+        }
+
+        private static string BuildHomeOperationSignal(OperationSnapshot operation, ShellSummarySnapshot summary, string lane, bool isLead)
+        {
+            return Truncate(FirstNonBlank(
+                BuildOperationDemandSignal(operation, summary, lane),
+                BuildOperationConsequenceValue(operation),
+                BuildOperationHandoff(operation, isLead),
+                "No demand or consequence signal surfaced."), 104);
         }
 
         private static string DefaultOperationCta(OperationSnapshot operation)
@@ -615,6 +602,22 @@ namespace PlanarWar.Client.UI.Screens.Summary
             }
 
             return string.Join(" ", value.Split(new[] { '\r', '\n', '\t' }, StringSplitOptions.RemoveEmptyEntries)).Trim();
+        }
+
+        private static string Truncate(string value, int maxLength)
+        {
+            var compact = CompactSingleLine(value);
+            if (string.IsNullOrEmpty(compact) || maxLength <= 0 || compact.Length <= maxLength)
+            {
+                return compact;
+            }
+
+            if (maxLength <= 1)
+            {
+                return "…";
+            }
+
+            return compact.Substring(0, maxLength - 1).TrimEnd() + "…";
         }
 
         private static string BuildOperationStripBadge(List<OperationSnapshot> operations)

@@ -1520,6 +1520,53 @@ namespace PlanarWar.Client.Tests.EditMode
             }
         }
 
+        [Test]
+        public void Home_surface_uses_compact_command_overview_classes()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var appStylePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(appStylePath), Is.True, "AppShell.uss should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(appStylePath);
+
+            foreach (var className in new[]
+            {
+                "home-command-hero",
+                "home-resource-strip",
+                "home-quick-orders",
+                "home-pressure-desk",
+                "home-pressure-grid--hidden",
+                "home-fast-option-strip",
+                "home-timer-strip",
+                "home-status-grid",
+            })
+            {
+                Assert.That(uxml, Does.Contain(className), $"{className} should be wired into the Home command surface.");
+            }
+
+            Assert.That(uxml, Does.Contain("Command desk"));
+            Assert.That(uss, Does.Contain("Home command surface cleanup v1"));
+            Assert.That(uss, Does.Contain(".home-pressure-grid--hidden"));
+            Assert.That(uss, Does.Contain(".home-fast-option-strip"));
+            Assert.That(uss, Does.Contain(".pressure-op-card--compact"));
+        }
+
+        [Test]
+        public void Home_fast_options_use_compact_action_cards_instead_of_detail_dump_cards()
+        {
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs");
+            Assert.That(File.Exists(controllerPath), Is.True, "SummaryScreenController.cs should be available from the Unity project root.");
+
+            var source = File.ReadAllText(controllerPath);
+            Assert.That(source, Does.Contain("pressure-op-card--compact"));
+            Assert.That(source, Does.Contain("BuildHomeOperationSummary"));
+            Assert.That(source, Does.Contain("BuildHomeOperationSignal"));
+            Assert.That(source, Does.Not.Contain("var whyTitle = new Label(\"Why now\")"), "Home fast option cards should no longer render the old multi-section detail dump.");
+            Assert.That(source, Does.Not.Contain("var consequenceTitle = new Label(\"Consequence hint\")"), "Home fast option cards should keep consequence signal compact instead of rendering another section wall.");
+        }
+
 
         [Test]
         public void Development_surface_uses_compact_action_boards_and_hides_duplicate_support_grid()

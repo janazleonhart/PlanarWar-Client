@@ -151,18 +151,18 @@
             <ui:VisualElement name="center-pane" class="panel center-pane">
                 <ui:ScrollView name="summary-screen" class="screen-panel screen-scroll" mode="Vertical">
                     <ui:VisualElement class="screen-scroll-content summary-screen-content">
-                <ui:VisualElement class="summary-hero">
+                <ui:VisualElement class="summary-hero home-command-hero">
                     <ui:Label text="Empire summary" class="eyebrow" />
                     <ui:Label name="status-headline-value" text="Summary not loaded yet." class="headline" />
                     <ui:Label name="action-hint-value" text="Waiting for summary data." class="headline-subtext" />
                 </ui:VisualElement>
 
-                <ui:VisualElement class="summary-card summary-card--full summary-card--ticker">
+                <ui:VisualElement class="summary-card summary-card--full summary-card--ticker home-resource-strip">
                     <ui:Label text="Empire at a glance" class="eyebrow" />
                     <ui:Label name="resources-value" text="No resources loaded yet." class="ticker-value" />
                 </ui:VisualElement>
 
-                <ui:VisualElement class="summary-card summary-card--full summary-card--action">
+                <ui:VisualElement class="summary-card summary-card--full summary-card--action home-quick-orders">
                     <ui:Label text="Quick orders" class="eyebrow" />
                     <ui:VisualElement class="button-row">
                         <ui:Button name="refresh-button" text="Refresh summary" class="action-button action-button--primary" />
@@ -173,15 +173,15 @@
                     </ui:VisualElement>
                 </ui:VisualElement>
 
-                <ui:VisualElement class="summary-card summary-card--full summary-card--action">
+                <ui:VisualElement class="summary-card summary-card--full summary-card--action home-pressure-desk">
                     <ui:VisualElement class="development-actions-head">
-                        <ui:Label text="Pressure / contract desk" class="eyebrow" />
+                        <ui:Label text="Command desk" class="eyebrow" />
                         <ui:Label name="pressure-desk-badge-value" text="No live seam" class="chapter-row__badge" />
                     </ui:VisualElement>
                     <ui:Label name="pressure-desk-headline-value" text="Pressure desk waiting on live summary truth." class="rail-note-title" />
                     <ui:Label name="pressure-desk-detail-value" text="This desk should show the live seam, why the board moved, and the fastest honest next answer without making you dig through three different tabs." class="summary-value summary-value--glance" />
 
-                    <ui:VisualElement class="summary-grid summary-grid--glance">
+                    <ui:VisualElement class="summary-grid summary-grid--glance home-pressure-grid--hidden">
                         <ui:VisualElement class="summary-card glance-card">
                             <ui:Label name="pressure-seam-title" text="Live seam" class="eyebrow" />
                             <ui:Label name="pressure-seam-value" text="No seam surfaced." class="summary-value summary-value--glance" />
@@ -224,10 +224,10 @@
                         <ui:Label name="pressure-operations-count-badge-value" text="2–3 calls" class="chapter-row__badge" />
                     </ui:VisualElement>
                     <ui:Label name="pressure-operations-copy-value" text="The fast strip should rank the most demand-shaped answers first once live demand data is present." class="metric-subvalue metric-subvalue--wrap" />
-                    <ui:VisualElement name="pressure-operations-strip" class="summary-grid pressure-operations-strip" />
+                    <ui:VisualElement name="pressure-operations-strip" class="summary-grid pressure-operations-strip home-fast-option-strip" />
                 </ui:VisualElement>
 
-                <ui:VisualElement class="summary-grid summary-grid--timers">
+                <ui:VisualElement class="summary-grid summary-grid--timers home-timer-strip">
                     <ui:VisualElement class="summary-card timer-card">
                         <ui:Label text="Research timer" class="eyebrow" />
                         <ui:Label name="research-timer-value" text="No active research timer." class="summary-value summary-value--glance" />
@@ -257,7 +257,7 @@
                     </ui:VisualElement>
                 </ui:VisualElement>
 
-                <ui:VisualElement class="summary-grid summary-grid--glance">
+                <ui:VisualElement class="summary-grid summary-grid--glance home-status-grid">
                     <ui:VisualElement class="summary-card glance-card">
                         <ui:Label text="Production snapshot" class="eyebrow" />
                         <ui:Label name="production-value" text="No production snapshot." class="summary-value summary-value--glance" />
