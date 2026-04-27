@@ -654,12 +654,15 @@
                                 </ui:VisualElement>
                                 <ui:VisualElement class="heroes-equipment-grid">
                                     <ui:VisualElement class="heroes-equipment-column heroes-equipment-column--slot">
-                                        <ui:DropdownField name="heroes-gear-slot-field" label="Gear slot" />
+                                        <ui:Label text="Gear slots" class="eyebrow heroes-picker-label" />
+                                        <ui:VisualElement name="heroes-gear-slot-picker" class="heroes-slot-chip-grid" />
+                                        <ui:DropdownField name="heroes-gear-slot-field" label="Gear slot" class="heroes-native-picker-hidden" />
                                         <ui:Label name="heroes-selected-slot-current-value" text="Current slot gear appears here." class="summary-value summary-value--glance heroes-slot-current" />
                                     </ui:VisualElement>
                                     <ui:VisualElement class="heroes-equipment-column heroes-equipment-column--armory">
                                         <ui:Label name="heroes-selected-slot-compatible-value" text="Compatible shared-armory gear appears here." class="metric-subvalue metric-subvalue--wrap heroes-compatible-note" />
-                                        <ui:DropdownField name="heroes-armory-item-field" label="Compatible gear" />
+                                        <ui:VisualElement name="heroes-armory-item-picker" class="heroes-armory-choice-list" />
+                                        <ui:DropdownField name="heroes-armory-item-field" label="Compatible gear" class="heroes-native-picker-hidden" />
                                     </ui:VisualElement>
                                 </ui:VisualElement>
                                 <ui:VisualElement class="button-row heroes-equipment-actions">

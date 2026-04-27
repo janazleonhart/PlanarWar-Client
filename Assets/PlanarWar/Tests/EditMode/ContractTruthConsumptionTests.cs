@@ -985,8 +985,10 @@ namespace PlanarWar.Client.Tests.EditMode
             var uxml = File.ReadAllText(appShellPath);
             Assert.That(uxml, Does.Contain("heroes-armory-value"));
             Assert.That(uxml, Does.Contain("heroes-armory-item-field"));
+            Assert.That(uxml, Does.Contain("heroes-armory-item-picker"));
             Assert.That(uxml, Does.Contain("heroes-equip-armory-button"));
             Assert.That(uxml, Does.Contain("heroes-gear-slot-field"));
+            Assert.That(uxml, Does.Contain("heroes-gear-slot-picker"));
             Assert.That(uxml, Does.Contain("heroes-selected-slot-current-value"));
             Assert.That(uxml, Does.Contain("heroes-selected-slot-compatible-value"));
             Assert.That(uxml, Does.Contain("heroes-unequip-gear-button"));
@@ -1151,6 +1153,26 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(emptyKitText, Does.Contain("kit"));
             Assert.That(current, Does.Contain("empty kit slot"));
             Assert.That(emptyKitText.ToLowerInvariant(), Does.Not.Contain("gear"));
+        }
+
+        [Test]
+        public void Shell_uses_dark_inline_gear_pickers_instead_of_visible_native_dropdown_popups()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var appStylePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(appStylePath), Is.True, "AppShell.uss should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(appStylePath);
+
+            Assert.That(uxml, Does.Contain("heroes-gear-slot-picker"));
+            Assert.That(uxml, Does.Contain("heroes-armory-item-picker"));
+            Assert.That(uxml, Does.Contain("heroes-native-picker-hidden"), "Native dropdowns stay bound as backing controls, but should not expose bright popup menus in the player-facing gear surface.");
+            Assert.That(uss, Does.Contain(".heroes-slot-chip-grid"));
+            Assert.That(uss, Does.Contain(".heroes-armory-choice-list"));
+            Assert.That(uss, Does.Contain(".heroes-native-picker-hidden"));
+            Assert.That(uss, Does.Contain("display: none"));
         }
 
         [Test]

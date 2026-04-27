@@ -1281,3 +1281,119 @@
     margin-top: auto;
     align-self: stretch;
 }
+
+/* Hero / Operative dense picker cleanup v1b */
+.heroes-native-picker-hidden {
+    display: none;
+}
+
+.heroes-picker-label {
+    margin-bottom: -2px;
+}
+
+.heroes-slot-chip-grid {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: flex-start;
+}
+
+.heroes-slot-chip {
+    min-width: 84px;
+    min-height: 28px;
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    background-color: rgba(22, 36, 73, 0.95);
+    color: rgb(210, 222, 255);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgba(95, 126, 210, 0.50);
+    border-right-color: rgba(95, 126, 210, 0.50);
+    border-top-color: rgba(95, 126, 210, 0.50);
+    border-bottom-color: rgba(95, 126, 210, 0.50);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    font-size: 11px;
+}
+
+.heroes-slot-chip:hover {
+    background-color: rgba(46, 72, 139, 0.98);
+    color: rgb(242, 246, 255);
+}
+
+.heroes-slot-chip--selected {
+    background-color: rgb(62, 96, 187);
+    color: rgb(255, 255, 255);
+    border-left-color: rgb(143, 170, 255);
+    border-right-color: rgb(143, 170, 255);
+    border-top-color: rgb(143, 170, 255);
+    border-bottom-color: rgb(143, 170, 255);
+    -unity-font-style: bold;
+}
+
+.heroes-armory-choice-list {
+    gap: 6px;
+    min-height: 32px;
+}
+
+.heroes-armory-choice {
+    align-self: stretch;
+    min-height: 32px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    background-color: rgba(22, 36, 73, 0.95);
+    color: rgb(210, 222, 255);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgba(95, 126, 210, 0.44);
+    border-right-color: rgba(95, 126, 210, 0.44);
+    border-top-color: rgba(95, 126, 210, 0.44);
+    border-bottom-color: rgba(95, 126, 210, 0.44);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    font-size: 11px;
+    white-space: normal;
+}
+
+.heroes-armory-choice:hover {
+    background-color: rgba(46, 72, 139, 0.98);
+    color: rgb(242, 246, 255);
+}
+
+.heroes-armory-choice--selected {
+    background-color: rgb(62, 96, 187);
+    color: rgb(255, 255, 255);
+    border-left-color: rgb(143, 170, 255);
+    border-right-color: rgb(143, 170, 255);
+    border-top-color: rgb(143, 170, 255);
+    border-bottom-color: rgb(143, 170, 255);
+    -unity-font-style: bold;
+}
+
+.heroes-armory-choice-empty {
+    min-height: 32px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    background-color: rgba(8, 14, 30, 0.72);
+    color: rgb(165, 178, 214);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    font-size: 11px;
+    white-space: normal;
+}

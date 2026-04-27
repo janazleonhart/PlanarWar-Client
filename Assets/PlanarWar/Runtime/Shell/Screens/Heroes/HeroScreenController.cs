@@ -33,6 +33,8 @@ namespace PlanarWar.Client.UI.Screens.Heroes
         private readonly DropdownField candidateSelectField;
         private readonly DropdownField gearSlotSelectField;
         private readonly DropdownField armoryItemSelectField;
+        private readonly VisualElement gearSlotPicker;
+        private readonly VisualElement armoryItemPicker;
         private readonly Button releaseHeroButton;
         private readonly Button equipArmoryButton;
         private readonly Button unequipGearButton;
@@ -86,6 +88,8 @@ namespace PlanarWar.Client.UI.Screens.Heroes
             candidateSelectField = root.Q<DropdownField>("heroes-manage-candidate-field");
             gearSlotSelectField = root.Q<DropdownField>("heroes-gear-slot-field");
             armoryItemSelectField = root.Q<DropdownField>("heroes-armory-item-field");
+            gearSlotPicker = root.Q<VisualElement>("heroes-gear-slot-picker");
+            armoryItemPicker = root.Q<VisualElement>("heroes-armory-item-picker");
             releaseHeroButton = root.Q<Button>("heroes-release-button");
             equipArmoryButton = root.Q<Button>("heroes-equip-armory-button");
             unequipGearButton = root.Q<Button>("heroes-unequip-gear-button");
@@ -184,12 +188,14 @@ namespace PlanarWar.Client.UI.Screens.Heroes
             SyncHeroDropdown(heroes, terms);
             SyncCandidateDropdown(candidates, terms);
             SyncGearSlotDropdown();
+            SyncGearSlotButtons();
 
             var selectedHero = heroes.FirstOrDefault(hero => string.Equals(hero.Id, selectedHeroId, StringComparison.OrdinalIgnoreCase));
             var selectedHeroEquipment = FindHeroEquipment(armory, selectedHero?.Id);
             var selectedEquippedEntry = HeroArmorySlotWorkflow.FindEquippedEntry(selectedHeroEquipment, selectedGearSlot);
             var compatibleArmoryItems = HeroArmorySlotWorkflow.GetCompatibleArmoryItems(armory, selectedGearSlot);
             SyncArmoryDropdown(compatibleArmoryItems, terms);
+            SyncArmoryItemButtons(compatibleArmoryItems, terms);
 
             if (slotCurrentValue != null) slotCurrentValue.text = selectedHero == null
                 ? $"Select a {terms.SingularLower} to inspect equipped {HeroArmorySlotWorkflow.EquipmentNounLower(terms.IsOperative)} by slot."
@@ -391,6 +397,81 @@ namespace PlanarWar.Client.UI.Screens.Heroes
             var selectedIndex = armoryChoiceSlotIndexes.FindIndex(slot => slot == selectedArmorySlotIndex);
             armoryItemSelectField.SetValueWithoutNotify(selectedIndex >= 0 && selectedIndex < choices.Count ? choices[selectedIndex] : string.Empty);
             armoryItemSelectField.SetEnabled(choices.Count > 0);
+        }
+
+        private void SyncGearSlotButtons()
+        {
+            if (gearSlotPicker == null) return;
+
+            gearSlotPicker.Clear();
+            var slots = gearSlotChoices.Count > 0 ? gearSlotChoices : HeroArmorySlotWorkflow.StandardSlots.ToList();
+            foreach (var slot in slots)
+            {
+                if (string.IsNullOrWhiteSpace(slot)) continue;
+
+                var slotId = slot;
+                var button = new Button(() => SelectGearSlot(slotId))
+                {
+                    text = HeroArmorySlotWorkflow.FormatSlotLabel(slotId)
+                };
+                button.AddToClassList("heroes-slot-chip");
+                if (HeroArmorySlotWorkflow.SlotsMatch(slotId, selectedGearSlot))
+                {
+                    button.AddToClassList("heroes-slot-chip--selected");
+                }
+
+                gearSlotPicker.Add(button);
+            }
+        }
+
+        private void SyncArmoryItemButtons(List<HeroArmoryItemSnapshot> compatibleItems, HeroTerminology terms)
+        {
+            if (armoryItemPicker == null) return;
+
+            armoryItemPicker.Clear();
+            var items = (compatibleItems ?? new List<HeroArmoryItemSnapshot>())
+                .Where(item => item != null && item.SlotIndex.HasValue)
+                .OrderBy(item => item.SlotIndex.Value)
+                .ToList();
+
+            if (items.Count == 0)
+            {
+                var empty = new Label(HeroArmorySlotWorkflow.BuildNoArmoryChoiceText(selectedGearSlot, terms.IsOperative));
+                empty.AddToClassList("heroes-armory-choice-empty");
+                armoryItemPicker.Add(empty);
+                return;
+            }
+
+            foreach (var item in items)
+            {
+                var slotIndex = item.SlotIndex.Value;
+                var button = new Button(() => SelectArmorySlotIndex(slotIndex))
+                {
+                    text = HeroArmorySlotWorkflow.BuildArmoryItemChoice(item, terms.IsOperative)
+                };
+                button.AddToClassList("heroes-armory-choice");
+                if (slotIndex == selectedArmorySlotIndex)
+                {
+                    button.AddToClassList("heroes-armory-choice--selected");
+                }
+
+                armoryItemPicker.Add(button);
+            }
+        }
+
+        private void SelectGearSlot(string slot)
+        {
+            if (string.IsNullOrWhiteSpace(slot) || HeroArmorySlotWorkflow.SlotsMatch(slot, selectedGearSlot)) return;
+            selectedGearSlot = slot;
+            selectedArmorySlotIndex = -1;
+            Render(summaryState?.Snapshot ?? ShellSummarySnapshot.Empty);
+        }
+
+        private void SelectArmorySlotIndex(int slotIndex)
+        {
+            if (slotIndex < 0 || slotIndex == selectedArmorySlotIndex) return;
+            selectedArmorySlotIndex = slotIndex;
+            Render(summaryState?.Snapshot ?? ShellSummarySnapshot.Empty);
         }
 
         private static CardView BuildArmorySummaryCard(HeroArmoryBridgeSnapshot armory, HeroTerminology terms)
