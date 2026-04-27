@@ -631,31 +631,90 @@
                             </ui:VisualElement>
                         </ui:VisualElement>
 
-                        <ui:VisualElement class="summary-card summary-card--full">
-                            <ui:Label text="Visible roster cards" class="eyebrow" />
-                            <ui:VisualElement class="summary-grid summary-grid--desk-cards">
-                                <ui:VisualElement name="heroes-card-1-root" class="summary-card glance-card">
+                        <ui:VisualElement class="summary-card summary-card--full heroes-management-card">
+                            <ui:VisualElement class="heroes-section-head">
+                                <ui:VisualElement class="heroes-section-title-stack">
+                                    <ui:Label text="Selected roster member" class="eyebrow" />
+                                    <ui:Label text="Slot-first equipment issue" class="rail-note-title" />
+                                </ui:VisualElement>
+                                <ui:Label text="Shared armory truth only" class="heroes-pill" />
+                            </ui:VisualElement>
+
+                            <ui:VisualElement class="heroes-selection-card">
+                                <ui:DropdownField name="heroes-manage-hero-field" label="Hero" />
+                                <ui:Button name="heroes-release-button" text="Release selected hero" class="action-button heroes-release-action" />
+                            </ui:VisualElement>
+
+                            <ui:VisualElement class="summary-card heroes-equipment-card">
+                                <ui:VisualElement class="heroes-section-head heroes-section-head--tight">
+                                    <ui:VisualElement class="heroes-section-title-stack">
+                                        <ui:Label text="Shared equipment slots" class="eyebrow" />
+                                        <ui:Label text="Pick a slot, then issue compatible armory gear." class="metric-subvalue metric-subvalue--wrap" />
+                                    </ui:VisualElement>
+                                </ui:VisualElement>
+                                <ui:VisualElement class="heroes-equipment-grid">
+                                    <ui:VisualElement class="heroes-equipment-column heroes-equipment-column--slot">
+                                        <ui:DropdownField name="heroes-gear-slot-field" label="Gear slot" />
+                                        <ui:Label name="heroes-selected-slot-current-value" text="Current slot gear appears here." class="summary-value summary-value--glance heroes-slot-current" />
+                                    </ui:VisualElement>
+                                    <ui:VisualElement class="heroes-equipment-column heroes-equipment-column--armory">
+                                        <ui:Label name="heroes-selected-slot-compatible-value" text="Compatible shared-armory gear appears here." class="metric-subvalue metric-subvalue--wrap heroes-compatible-note" />
+                                        <ui:DropdownField name="heroes-armory-item-field" label="Compatible gear" />
+                                    </ui:VisualElement>
+                                </ui:VisualElement>
+                                <ui:VisualElement class="button-row heroes-equipment-actions">
+                                    <ui:Button name="heroes-equip-armory-button" text="Equip selected gear" class="action-button action-button--primary" />
+                                    <ui:Button name="heroes-unequip-gear-button" text="Return gear to armory" class="action-button" />
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card summary-card--full heroes-recruitment-card">
+                            <ui:VisualElement class="heroes-section-head">
+                                <ui:VisualElement class="heroes-section-title-stack">
+                                    <ui:Label text="Recruitment / scouting" class="eyebrow" />
+                                    <ui:Label text="Candidates and contacts" class="rail-note-title" />
+                                </ui:VisualElement>
+                                <ui:Button name="heroes-refresh-button" text="Refresh heroes" class="action-button heroes-refresh-action" />
+                            </ui:VisualElement>
+                            <ui:DropdownField name="heroes-manage-candidate-field" label="Recruit candidate" />
+                            <ui:VisualElement class="button-row heroes-recruitment-actions">
+                                <ui:Button name="heroes-recruit-button" text="Scout hero candidate" class="action-button action-button--primary" />
+                                <ui:Button name="heroes-candidate-accept-button" text="Accept candidate" class="action-button action-button--primary" />
+                                <ui:Button name="heroes-candidate-dismiss-button" text="Dismiss candidates" class="action-button" />
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card summary-card--full heroes-roster-cards-card">
+                            <ui:VisualElement class="heroes-section-head">
+                                <ui:VisualElement class="heroes-section-title-stack">
+                                    <ui:Label text="Visible roster cards" class="eyebrow" />
+                                    <ui:Label text="Quick receipts, armory notes, candidates, and roster actions." class="metric-subvalue metric-subvalue--wrap" />
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                            <ui:VisualElement class="summary-grid summary-grid--desk-cards heroes-roster-cards-grid">
+                                <ui:VisualElement name="heroes-card-1-root" class="summary-card glance-card heroes-roster-card">
                                     <ui:Label name="heroes-card-1-family-value" text="Roster" class="eyebrow" />
                                     <ui:Label name="heroes-card-1-title-value" text="Hero card" class="rail-note-title" />
                                     <ui:Label name="heroes-card-1-lore-value" text="Hero truth appears here." class="summary-value summary-value--glance" />
                                     <ui:Label name="heroes-card-1-note-value" text="Hero desk." class="metric-subvalue metric-subvalue--wrap" />
                                     <ui:Button name="heroes-card-1-button" text="Hero action" class="action-button action-button--primary" />
                                 </ui:VisualElement>
-                                <ui:VisualElement name="heroes-card-2-root" class="summary-card glance-card">
+                                <ui:VisualElement name="heroes-card-2-root" class="summary-card glance-card heroes-roster-card">
                                     <ui:Label name="heroes-card-2-family-value" text="Roster" class="eyebrow" />
                                     <ui:Label name="heroes-card-2-title-value" text="Hero card" class="rail-note-title" />
                                     <ui:Label name="heroes-card-2-lore-value" text="Hero truth appears here." class="summary-value summary-value--glance" />
                                     <ui:Label name="heroes-card-2-note-value" text="Hero desk." class="metric-subvalue metric-subvalue--wrap" />
                                     <ui:Button name="heroes-card-2-button" text="Hero action" class="action-button action-button--primary" />
                                 </ui:VisualElement>
-                                <ui:VisualElement name="heroes-card-3-root" class="summary-card glance-card">
+                                <ui:VisualElement name="heroes-card-3-root" class="summary-card glance-card heroes-roster-card">
                                     <ui:Label name="heroes-card-3-family-value" text="Roster" class="eyebrow" />
                                     <ui:Label name="heroes-card-3-title-value" text="Hero card" class="rail-note-title" />
                                     <ui:Label name="heroes-card-3-lore-value" text="Hero truth appears here." class="summary-value summary-value--glance" />
                                     <ui:Label name="heroes-card-3-note-value" text="Hero desk." class="metric-subvalue metric-subvalue--wrap" />
                                     <ui:Button name="heroes-card-3-button" text="Hero action" class="action-button action-button--primary" />
                                 </ui:VisualElement>
-                                <ui:VisualElement name="heroes-card-4-root" class="summary-card glance-card">
+                                <ui:VisualElement name="heroes-card-4-root" class="summary-card glance-card heroes-roster-card">
                                     <ui:Label name="heroes-card-4-family-value" text="Roster" class="eyebrow" />
                                     <ui:Label name="heroes-card-4-title-value" text="Hero card" class="rail-note-title" />
                                     <ui:Label name="heroes-card-4-lore-value" text="Hero truth appears here." class="summary-value summary-value--glance" />
@@ -665,29 +724,6 @@
                             </ui:VisualElement>
                         </ui:VisualElement>
 
-                        <ui:VisualElement class="summary-card summary-card--full">
-                            <ui:Label text="Roster management" class="eyebrow" />
-                            <ui:DropdownField name="heroes-manage-hero-field" label="Hero" />
-                            <ui:Button name="heroes-release-button" text="Release selected hero" class="action-button" />
-                            <ui:VisualElement class="summary-card glance-card">
-                                <ui:Label text="Shared equipment slots" class="eyebrow" />
-                                <ui:DropdownField name="heroes-gear-slot-field" label="Gear slot" />
-                                <ui:Label name="heroes-selected-slot-current-value" text="Current slot gear appears here." class="summary-value summary-value--glance" />
-                                <ui:Label name="heroes-selected-slot-compatible-value" text="Compatible shared-armory gear appears here." class="metric-subvalue metric-subvalue--wrap" />
-                                <ui:DropdownField name="heroes-armory-item-field" label="Compatible gear" />
-                                <ui:VisualElement class="button-row">
-                                    <ui:Button name="heroes-equip-armory-button" text="Equip selected gear" class="action-button action-button--primary" />
-                                    <ui:Button name="heroes-unequip-gear-button" text="Return gear to armory" class="action-button" />
-                                </ui:VisualElement>
-                            </ui:VisualElement>
-                            <ui:DropdownField name="heroes-manage-candidate-field" label="Recruit candidate" />
-                            <ui:VisualElement class="button-row">
-                                <ui:Button name="heroes-recruit-button" text="Scout hero candidate" class="action-button action-button--primary" />
-                                <ui:Button name="heroes-candidate-accept-button" text="Accept candidate" class="action-button action-button--primary" />
-                                <ui:Button name="heroes-candidate-dismiss-button" text="Dismiss candidates" class="action-button" />
-                                <ui:Button name="heroes-refresh-button" text="Refresh heroes" class="action-button" />
-                            </ui:VisualElement>
-                        </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:ScrollView>
 

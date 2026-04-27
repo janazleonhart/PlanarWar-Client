@@ -1133,3 +1133,151 @@
 .rail-panel--compact .chapter-row__action {
     min-width: 36px;
 }
+
+/* Hero / Operative equipment readability pass v1a */
+.heroes-screen-content {
+    gap: 16px;
+    padding-right: 8px;
+    padding-bottom: 10px;
+}
+
+.heroes-hero {
+    gap: 8px;
+    padding-bottom: 10px;
+}
+
+.heroes-management-card,
+.heroes-recruitment-card,
+.heroes-roster-cards-card {
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.heroes-section-head {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.heroes-section-head--tight {
+    margin-bottom: 2px;
+}
+
+.heroes-section-title-stack {
+    flex-grow: 1;
+    gap: 4px;
+}
+
+.heroes-pill {
+    flex-shrink: 0;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    background-color: rgba(31, 49, 93, 0.95);
+    color: rgb(226, 234, 255);
+    border-top-left-radius: 999px;
+    border-top-right-radius: 999px;
+    border-bottom-left-radius: 999px;
+    border-bottom-right-radius: 999px;
+    font-size: 11px;
+    -unity-font-style: bold;
+}
+
+.heroes-selection-card {
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.heroes-selection-card .unity-base-field,
+.heroes-selection-card .unity-base-popup-field,
+.heroes-selection-card .unity-popup-field {
+    flex-grow: 1;
+}
+
+.heroes-release-action,
+.heroes-refresh-action {
+    min-width: 150px;
+}
+
+.heroes-equipment-card {
+    gap: 10px;
+    background-color: rgba(14, 25, 56, 0.92);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgba(95, 126, 210, 0.42);
+    border-right-color: rgba(95, 126, 210, 0.42);
+    border-top-color: rgba(95, 126, 210, 0.42);
+    border-bottom-color: rgba(95, 126, 210, 0.42);
+}
+
+.heroes-equipment-grid {
+    flex-direction: row;
+    gap: 12px;
+    align-items: stretch;
+}
+
+.heroes-equipment-column {
+    flex-grow: 1;
+    gap: 8px;
+    min-width: 280px;
+}
+
+.heroes-equipment-column--slot {
+    flex-grow: 1;
+}
+
+.heroes-equipment-column--armory {
+    flex-grow: 2;
+}
+
+.heroes-slot-current,
+.heroes-compatible-note {
+    min-height: 36px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    background-color: rgba(8, 14, 30, 0.72);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.heroes-equipment-actions,
+.heroes-recruitment-actions {
+    margin-top: 2px;
+}
+
+.heroes-equipment-actions .action-button,
+.heroes-recruitment-actions .action-button {
+    min-width: 150px;
+}
+
+.heroes-roster-cards-grid {
+    align-items: stretch;
+    gap: 12px;
+}
+
+.heroes-roster-card {
+    min-width: 240px;
+    min-height: 132px;
+    gap: 8px;
+    justify-content: flex-start;
+}
+
+.heroes-roster-card .rail-note-title,
+.heroes-roster-card .summary-value,
+.heroes-roster-card .metric-subvalue {
+    white-space: normal;
+}
+
+.heroes-roster-card .action-button {
+    margin-top: auto;
+    align-self: stretch;
+}

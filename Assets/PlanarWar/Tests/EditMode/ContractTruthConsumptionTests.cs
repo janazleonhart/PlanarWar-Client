@@ -1153,5 +1153,30 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(emptyKitText.ToLowerInvariant(), Does.Not.Contain("gear"));
         }
 
+        [Test]
+        public void Shell_places_slot_first_gear_surface_before_roster_quick_cards()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            Assert.That(uxml, Does.Contain("heroes-management-card"));
+            Assert.That(uxml, Does.Contain("heroes-selection-card"));
+            Assert.That(uxml, Does.Contain("heroes-equipment-card"));
+            Assert.That(uxml, Does.Contain("heroes-recruitment-card"));
+            Assert.That(uxml, Does.Contain("heroes-roster-cards-card"));
+            Assert.That(uxml, Does.Contain("Shared armory truth only"));
+
+            var managementIndex = uxml.IndexOf("heroes-management-card", StringComparison.Ordinal);
+            var equipmentIndex = uxml.IndexOf("heroes-equipment-card", StringComparison.Ordinal);
+            var recruitmentIndex = uxml.IndexOf("heroes-recruitment-card", StringComparison.Ordinal);
+            var rosterCardsIndex = uxml.IndexOf("heroes-roster-cards-card", StringComparison.Ordinal);
+
+            Assert.That(managementIndex, Is.GreaterThanOrEqualTo(0));
+            Assert.That(equipmentIndex, Is.GreaterThan(managementIndex));
+            Assert.That(recruitmentIndex, Is.GreaterThan(equipmentIndex));
+            Assert.That(rosterCardsIndex, Is.GreaterThan(recruitmentIndex), "Slot-first controls should render before quick roster cards so release-card duplication does not bury equipment actions.");
+        }
+
     }
 }
