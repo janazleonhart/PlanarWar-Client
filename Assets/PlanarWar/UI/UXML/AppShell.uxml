@@ -681,7 +681,12 @@
                                 </ui:VisualElement>
                                 <ui:Button name="heroes-refresh-button" text="Refresh heroes" class="action-button heroes-refresh-action" />
                             </ui:VisualElement>
-                            <ui:DropdownField name="heroes-manage-candidate-field" label="Recruit candidate" />
+                            <ui:VisualElement class="heroes-candidate-slate">
+                                <ui:Label text="Candidate slate" class="eyebrow heroes-picker-label" />
+                                <ui:Label text="Pick one live candidate/contact before accepting; no generated roster choices are shown here." class="metric-subvalue metric-subvalue--wrap" />
+                                <ui:VisualElement name="heroes-candidate-picker" class="heroes-candidate-choice-list" />
+                                <ui:DropdownField name="heroes-manage-candidate-field" label="Recruit candidate" class="heroes-native-picker-hidden" />
+                            </ui:VisualElement>
                             <ui:VisualElement class="button-row heroes-recruitment-actions">
                                 <ui:Button name="heroes-recruit-button" text="Scout hero candidate" class="action-button action-button--primary" />
                                 <ui:Button name="heroes-candidate-accept-button" text="Accept candidate" class="action-button action-button--primary" />

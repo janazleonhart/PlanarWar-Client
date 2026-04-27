@@ -35,6 +35,7 @@ namespace PlanarWar.Client.UI.Screens.Heroes
         private readonly DropdownField armoryItemSelectField;
         private readonly VisualElement gearSlotPicker;
         private readonly VisualElement armoryItemPicker;
+        private readonly VisualElement candidatePicker;
         private readonly Button releaseHeroButton;
         private readonly Button equipArmoryButton;
         private readonly Button unequipGearButton;
@@ -90,6 +91,7 @@ namespace PlanarWar.Client.UI.Screens.Heroes
             armoryItemSelectField = root.Q<DropdownField>("heroes-armory-item-field");
             gearSlotPicker = root.Q<VisualElement>("heroes-gear-slot-picker");
             armoryItemPicker = root.Q<VisualElement>("heroes-armory-item-picker");
+            candidatePicker = root.Q<VisualElement>("heroes-candidate-picker");
             releaseHeroButton = root.Q<Button>("heroes-release-button");
             equipArmoryButton = root.Q<Button>("heroes-equip-armory-button");
             unequipGearButton = root.Q<Button>("heroes-unequip-gear-button");
@@ -187,6 +189,7 @@ namespace PlanarWar.Client.UI.Screens.Heroes
 
             SyncHeroDropdown(heroes, terms);
             SyncCandidateDropdown(candidates, terms);
+            SyncCandidateButtons(candidates, terms);
             SyncGearSlotDropdown();
             SyncGearSlotButtons();
 
@@ -252,7 +255,9 @@ namespace PlanarWar.Client.UI.Screens.Heroes
             if (acceptCandidateButton != null)
             {
                 var selectedCandidate = candidates.FirstOrDefault(candidate => string.Equals(candidate.CandidateId, selectedCandidateId, StringComparison.OrdinalIgnoreCase));
-                acceptCandidateButton.text = selectedCandidate == null ? $"Select {terms.CandidateLower}" : $"Accept {selectedCandidate.DisplayName}";
+                acceptCandidateButton.text = selectedCandidate == null
+                    ? $"Select {terms.CandidateLower}"
+                    : $"{terms.AcceptCandidateText}: {FirstNonBlank(selectedCandidate.DisplayName, selectedCandidate.ClassName, selectedCandidate.Role, terms.CandidateTitle)}";
                 acceptCandidateButton.SetEnabled(selectedCandidate != null && !isBusy && onAcceptHeroRecruitCandidateRequested != null);
             }
 
@@ -348,6 +353,42 @@ namespace PlanarWar.Client.UI.Screens.Heroes
         {
             if (armory?.HeroEquipment == null || string.IsNullOrWhiteSpace(heroId)) return null;
             return armory.HeroEquipment.FirstOrDefault(entry => string.Equals(entry?.HeroId, heroId, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private void SyncCandidateButtons(List<HeroRecruitCandidateSnapshot> candidates, HeroTerminology terms)
+        {
+            if (candidatePicker == null) return;
+
+            candidatePicker.Clear();
+            var visibleCandidates = (candidates ?? new List<HeroRecruitCandidateSnapshot>())
+                .Where(candidate => candidate != null && !string.IsNullOrWhiteSpace(candidate.CandidateId))
+                .ToList();
+
+            if (visibleCandidates.Count == 0)
+            {
+                var empty = new Label(terms.IsOperative
+                    ? "No operative contacts are available from the current scouting slate."
+                    : "No hero candidates are available from the current recruitment slate.");
+                empty.AddToClassList("heroes-candidate-choice-empty");
+                candidatePicker.Add(empty);
+                return;
+            }
+
+            foreach (var candidate in visibleCandidates)
+            {
+                var candidateId = candidate.CandidateId;
+                var button = new Button(() => SelectCandidate(candidateId))
+                {
+                    text = BuildCandidateChoiceText(candidate, terms)
+                };
+                button.AddToClassList("heroes-candidate-choice");
+                if (string.Equals(candidateId, selectedCandidateId, StringComparison.OrdinalIgnoreCase))
+                {
+                    button.AddToClassList("heroes-candidate-choice--selected");
+                }
+
+                candidatePicker.Add(button);
+            }
         }
 
         private void SyncGearSlotDropdown()
@@ -457,6 +498,13 @@ namespace PlanarWar.Client.UI.Screens.Heroes
 
                 armoryItemPicker.Add(button);
             }
+        }
+
+        private void SelectCandidate(string candidateId)
+        {
+            if (string.IsNullOrWhiteSpace(candidateId) || string.Equals(candidateId, selectedCandidateId, StringComparison.OrdinalIgnoreCase)) return;
+            selectedCandidateId = candidateId;
+            Render(summaryState?.Snapshot ?? ShellSummarySnapshot.Empty);
         }
 
         private void SelectGearSlot(string slot)
@@ -676,6 +724,17 @@ namespace PlanarWar.Client.UI.Screens.Heroes
                 "Receipt visible",
                 false,
                 null);
+        }
+
+        private static string BuildCandidateChoiceText(HeroRecruitCandidateSnapshot candidate, HeroTerminology terms)
+        {
+            if (candidate == null) return terms.CandidateTitle;
+            var title = FirstNonBlank(candidate.DisplayName, candidate.ClassName, candidate.Role, terms.CandidateTitle);
+            var role = FirstNonBlank(candidate.ClassName, candidate.ClassId, candidate.Role, "class unknown");
+            var cost = CostText(candidate.WealthCost, candidate.UnityCost);
+            var traits = BuildCandidateNote(candidate);
+            var summary = FirstNonBlank(candidate.Summary, terms.IsOperative ? "Operative contact from live scouting truth." : "Hero candidate from live recruitment truth.");
+            return $"{title} • {role}\n{cost}\n{traits}\n{summary}";
         }
 
         private static string BuildHeroLore(HeroSnapshot hero, HeroTerminology terms)

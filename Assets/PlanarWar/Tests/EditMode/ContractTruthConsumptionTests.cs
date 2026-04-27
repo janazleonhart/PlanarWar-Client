@@ -43,6 +43,7 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(uxml, Does.Contain("heroes-manage-hero-field"));
             Assert.That(uxml, Does.Contain("heroes-release-button"));
             Assert.That(uxml, Does.Contain("heroes-manage-candidate-field"));
+            Assert.That(uxml, Does.Contain("heroes-candidate-picker"));
             Assert.That(uxml, Does.Contain("heroes-candidate-accept-button"));
             Assert.That(uxml, Does.Contain("heroes-candidate-dismiss-button"));
             Assert.That(uxml, Does.Contain("Hero / Operative desk"));
@@ -1243,6 +1244,68 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(last, Is.EqualTo(first), "The hero result/status binding should appear once so the controller cannot drift between duplicate receipt surfaces.");
             Assert.That(uxml, Does.Not.Contain("<ui:Label name=\"heroes-note-value\" text=\"Hero controls load from live summary payload.\" class=\"summary-value summary-value--glance\" />"), "Hero desk status should live with the slot-first surface, not in the clipped preflight support cards.");
         }
+        [Test]
+        public void Shell_uses_dark_inline_candidate_picker_instead_of_visible_native_candidate_dropdown()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var appStylePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(appStylePath), Is.True, "AppShell.uss should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(appStylePath);
+
+            Assert.That(uxml, Does.Contain("heroes-candidate-picker"));
+            Assert.That(uxml, Does.Contain("heroes-candidate-choice-list"));
+            Assert.That(uxml, Does.Contain("heroes-manage-candidate-field"));
+            Assert.That(uxml, Does.Contain("heroes-native-picker-hidden"), "Native candidate dropdown should stay bound as a hidden backing control, not a visible bright popup picker.");
+            Assert.That(uss, Does.Contain(".heroes-candidate-choice-list"));
+            Assert.That(uss, Does.Contain(".heroes-candidate-choice"));
+            Assert.That(uss, Does.Contain(".heroes-candidate-choice--selected"));
+            Assert.That(uss, Does.Contain(".heroes-candidate-choice-empty"));
+        }
+
+        [Test]
+        public void Hero_candidate_picker_copy_keeps_black_market_contact_language()
+        {
+            var terminologyType = typeof(HeroScreenController).GetNestedType("HeroTerminology", BindingFlags.NonPublic);
+            Assert.That(terminologyType, Is.Not.Null);
+            var forMethod = terminologyType.GetMethod("For", BindingFlags.Public | BindingFlags.Static);
+            var formatter = typeof(HeroScreenController).GetMethod("BuildCandidateChoiceText", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(forMethod, Is.Not.Null);
+            Assert.That(formatter, Is.Not.Null);
+
+            var terms = forMethod.Invoke(null, new object[]
+            {
+                new ShellSummarySnapshot
+                {
+                    City = new CitySummarySnapshot
+                    {
+                        SettlementLane = "black_market",
+                        SettlementLaneLabel = "Black Market"
+                    }
+                }
+            });
+
+            var copy = (string)formatter.Invoke(null, new object[]
+            {
+                new HeroRecruitCandidateSnapshot
+                {
+                    CandidateId = "contact_1",
+                    DisplayName = "Mirelle the Knife Broker",
+                    ClassName = "rogue",
+                    WealthCost = 25
+                },
+                terms
+            });
+
+            Assert.That(copy, Does.Contain("Mirelle the Knife Broker"));
+            Assert.That(copy, Does.Contain("rogue"));
+            Assert.That(copy, Does.Contain("wealth 25"));
+            Assert.That(copy, Does.Contain("Operative contact from live scouting truth."));
+            Assert.That(copy.ToLowerInvariant(), Does.Not.Contain("hero candidate from live recruitment truth"));
+        }
+
 
 
     }
