@@ -1798,6 +1798,25 @@ namespace PlanarWar.Client.Tests.EditMode
 
 
         [Test]
+        public void Development_building_routing_closeout_keeps_visible_copy_honest_without_future_protection_math()
+        {
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/City/CityScreenController.cs");
+            Assert.That(File.Exists(controllerPath), Is.True, "CityScreenController.cs should be available from the Unity project root.");
+
+            var controller = File.ReadAllText(controllerPath);
+            Assert.That(controller, Does.Contain("Balanced • spread output"));
+            Assert.That(controller, Does.Contain("Local • nearby demand"));
+            Assert.That(controller, Does.Contain("Reserve • protected stock"));
+            Assert.That(controller, Does.Contain("Exchange • trade flow"));
+            Assert.That(controller, Does.Contain("Balanced spreads output; Local feeds nearby demand; Reserve protects stock; Exchange pushes trade."));
+            Assert.That(controller, Does.Not.Contain("NPC attack"), "Routing UI must not claim NPC-attack protection until backend truth exists.");
+            Assert.That(controller, Does.Not.Contain("raid loss"), "Routing UI must not claim raid-loss math until backend truth exists.");
+            Assert.That(controller, Does.Not.Contain("disruption loss"), "Routing UI must not claim disruption-loss math until backend truth exists.");
+            Assert.That(controller, Does.Not.Contain("%"), "Routing UI should not expose fake percentage math before the number-nerd/protection model is implemented.");
+        }
+
+
+        [Test]
         public void Development_surface_closeout_keeps_action_boards_and_inline_building_picker_checkpointed()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
