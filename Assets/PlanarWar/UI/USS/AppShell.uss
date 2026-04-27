@@ -1924,3 +1924,64 @@
 .development-desk-actions-card .button-row {
     margin-top: 0;
 }
+
+/* Development building selector inline picker v1a */
+.development-inline-selector {
+    gap: 5px;
+    margin-top: 6px;
+    flex-shrink: 0;
+}
+
+.development-inline-selector-label {
+    color: rgb(139, 158, 210);
+    font-size: 10px;
+    -unity-font-style: bold;
+}
+
+.development-inline-selector-options {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 5px;
+    align-items: flex-start;
+}
+
+.development-inline-selector-choice {
+    min-height: 26px;
+    min-width: 150px;
+    padding-left: 9px;
+    padding-right: 9px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    background-color: rgba(22, 36, 73, 0.95);
+    color: rgb(210, 222, 255);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgba(95, 126, 210, 0.44);
+    border-right-color: rgba(95, 126, 210, 0.44);
+    border-top-color: rgba(95, 126, 210, 0.44);
+    border-bottom-color: rgba(95, 126, 210, 0.44);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    font-size: 10px;
+    white-space: normal;
+    -unity-text-align: middle-left;
+}
+
+.development-inline-selector-choice:hover {
+    background-color: rgba(46, 72, 139, 0.98);
+    color: rgb(242, 246, 255);
+}
+
+.development-inline-selector-choice--selected {
+    background-color: rgb(62, 96, 187);
+    color: rgb(255, 255, 255);
+    border-left-color: rgb(143, 170, 255);
+    border-right-color: rgb(143, 170, 255);
+    border-top-color: rgb(143, 170, 255);
+    border-bottom-color: rgb(143, 170, 255);
+    -unity-font-style: bold;
+}

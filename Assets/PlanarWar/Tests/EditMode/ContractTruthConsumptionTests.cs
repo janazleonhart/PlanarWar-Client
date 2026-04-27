@@ -1546,6 +1546,29 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
 
+        [Test]
+        public void Development_building_selector_uses_inline_picker_buttons_instead_of_native_dropdown()
+        {
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/City/CityScreenController.cs");
+            var appStylePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            Assert.That(File.Exists(controllerPath), Is.True, "CityScreenController.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(appStylePath), Is.True, "AppShell.uss should be available from the Unity project root.");
+
+            var controller = File.ReadAllText(controllerPath);
+            var uss = File.ReadAllText(appStylePath);
+
+            Assert.That(controller, Does.Contain("development-inline-selector"));
+            Assert.That(controller, Does.Contain("development-inline-selector-choice"));
+            Assert.That(controller, Does.Contain("RenderInlineSelector(view)"));
+            Assert.That(controller, Does.Not.Contain("new DropdownField()"), "Development building selector should not dynamically create a native DropdownField; inline buttons keep the surface shell-native.");
+
+            Assert.That(uss, Does.Contain("Development building selector inline picker v1a"));
+            Assert.That(uss, Does.Contain(".development-inline-selector"));
+            Assert.That(uss, Does.Contain(".development-inline-selector-choice"));
+            Assert.That(uss, Does.Contain(".development-inline-selector-choice--selected"));
+        }
+
+
         private static VisualElement BuildMinimalHeroControllerRoot()
         {
             var root = new VisualElement();

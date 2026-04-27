@@ -2129,7 +2129,9 @@ namespace PlanarWar.Client.UI.Screens.City
             private readonly Label lore;
             private readonly Label note;
             private readonly Button button;
-            private readonly DropdownField selector;
+            private readonly VisualElement selectorShell;
+            private readonly Label selectorLabel;
+            private readonly VisualElement selectorChoicesRoot;
             private VisualElement extraButtonRow;
             private Button secondaryButton;
             private Button tertiaryButton;
@@ -2151,23 +2153,19 @@ namespace PlanarWar.Client.UI.Screens.City
                 button = hasButton ? shellRoot.Q<Button>($"{prefix}-button") : null;
                 if (root != null)
                 {
-                    selector = new DropdownField();
-                    selector.style.marginTop = 4;
-                    selector.style.display = DisplayStyle.None;
-                    selector.RegisterValueChangedCallback(evt =>
-                    {
-                        if (selectorChangeAction == null || selector.choices == null)
-                        {
-                            return;
-                        }
+                    selectorShell = new VisualElement();
+                    selectorShell.AddToClassList("development-inline-selector");
+                    selectorShell.style.display = DisplayStyle.None;
 
-                        var selectedIndex = selector.choices.IndexOf(evt.newValue);
-                        if (selectedIndex >= 0)
-                        {
-                            selectorChangeAction.Invoke(selectedIndex);
-                        }
-                    });
-                    root.Add(selector);
+                    selectorLabel = new Label();
+                    selectorLabel.AddToClassList("development-inline-selector-label");
+                    selectorShell.Add(selectorLabel);
+
+                    selectorChoicesRoot = new VisualElement();
+                    selectorChoicesRoot.AddToClassList("development-inline-selector-options");
+                    selectorShell.Add(selectorChoicesRoot);
+
+                    root.Add(selectorShell);
                 }
 
                 if (root != null && hasButton)
@@ -2203,7 +2201,7 @@ namespace PlanarWar.Client.UI.Screens.City
                         if (targetElement != null
                             && ((button != null && (ReferenceEquals(targetElement, button) || button.Contains(targetElement)))
                                 || (extraButtonRow != null && (ReferenceEquals(targetElement, extraButtonRow) || extraButtonRow.Contains(targetElement)))
-                                || (selector != null && (ReferenceEquals(targetElement, selector) || selector.Contains(targetElement)))))
+                                || (selectorShell != null && (ReferenceEquals(targetElement, selectorShell) || selectorShell.Contains(targetElement)))))
                         {
                             return;
                         }
@@ -2234,28 +2232,7 @@ namespace PlanarWar.Client.UI.Screens.City
                     : string.Empty;
 
                 selectorChangeAction = view.SelectorOnChange;
-                if (selector != null)
-                {
-                    var choices = (view.SelectorOptions ?? Array.Empty<string>())
-                        .Where(choice => !string.IsNullOrWhiteSpace(choice))
-                        .ToList();
-                    if (choices.Count > 0)
-                    {
-                        selector.style.display = DisplayStyle.Flex;
-                        selector.label = string.IsNullOrWhiteSpace(view.SelectorLabel) ? "Select" : view.SelectorLabel;
-                        selector.choices = choices;
-                        var index = Math.Max(0, Math.Min(view.SelectorIndex, choices.Count - 1));
-                        selector.SetValueWithoutNotify(choices[index]);
-                        selector.SetEnabled(selectorChangeAction != null && choices.Count > 1);
-                    }
-                    else
-                    {
-                        selector.style.display = DisplayStyle.None;
-                        selector.choices = new List<string>();
-                        selector.SetValueWithoutNotify(string.Empty);
-                        selector.SetEnabled(false);
-                    }
-                }
+                RenderInlineSelector(view);
                 if (button != null)
                 {
                     button.style.display = string.IsNullOrWhiteSpace(view.ButtonText) ? DisplayStyle.None : DisplayStyle.Flex;
@@ -2288,6 +2265,60 @@ namespace PlanarWar.Client.UI.Screens.City
                         tertiaryButton.SetEnabled(tertiaryClickEnabled);
                     }
                 }
+            }
+
+            private void RenderInlineSelector(CardView view)
+            {
+                if (selectorShell == null || selectorChoicesRoot == null)
+                {
+                    return;
+                }
+
+                selectorChoicesRoot.Clear();
+                var choices = (view.SelectorOptions ?? Array.Empty<string>())
+                    .Where(choice => !string.IsNullOrWhiteSpace(choice))
+                    .ToList();
+
+                if (choices.Count == 0)
+                {
+                    HideInlineSelector();
+                    return;
+                }
+
+                selectorShell.style.display = DisplayStyle.Flex;
+                if (selectorLabel != null)
+                {
+                    selectorLabel.text = string.IsNullOrWhiteSpace(view.SelectorLabel) ? "Select" : view.SelectorLabel;
+                }
+
+                var selectedIndex = Math.Max(0, Math.Min(view.SelectorIndex, choices.Count - 1));
+                var canSelect = selectorChangeAction != null && choices.Count > 1;
+                for (var i = 0; i < choices.Count; i++)
+                {
+                    var choiceIndex = i;
+                    var choice = new Button(() =>
+                    {
+                        if (selectorChangeAction != null)
+                        {
+                            selectorChangeAction.Invoke(choiceIndex);
+                        }
+                    });
+                    choice.text = choices[i];
+                    choice.AddToClassList("development-inline-selector-choice");
+                    choice.EnableInClassList("development-inline-selector-choice--selected", i == selectedIndex);
+                    choice.SetEnabled(canSelect || i == selectedIndex);
+                    selectorChoicesRoot.Add(choice);
+                }
+            }
+
+            private void HideInlineSelector()
+            {
+                if (selectorShell != null)
+                {
+                    selectorShell.style.display = DisplayStyle.None;
+                }
+
+                selectorChoicesRoot?.Clear();
             }
 
             private void InvokeClick()
@@ -2329,13 +2360,7 @@ namespace PlanarWar.Client.UI.Screens.City
                 clickEnabled = false;
                 secondaryClickEnabled = false;
                 tertiaryClickEnabled = false;
-                if (selector != null)
-                {
-                    selector.style.display = DisplayStyle.None;
-                    selector.choices = new List<string>();
-                    selector.SetValueWithoutNotify(string.Empty);
-                    selector.SetEnabled(false);
-                }
+                HideInlineSelector();
 
                 if (extraButtonRow != null)
                 {
