@@ -1727,6 +1727,27 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
 
+
+        [Test]
+        public void Chapter_rail_status_labels_have_separation_styles()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var appStylePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(appStylePath), Is.True, "AppShell.uss should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(appStylePath);
+
+            Assert.That(uxml, Does.Contain("name=\"nav-home-badge\""));
+            Assert.That(uxml, Does.Contain("class=\"chapter-row__action\""));
+            Assert.That(uss, Does.Contain("Chapter rail status polish v1"));
+            Assert.That(uss, Does.Contain(".chapter-row__badge"));
+            Assert.That(uss, Does.Contain(".chapter-row__action"));
+            Assert.That(uss, Does.Contain("margin-left: 8px"));
+            Assert.That(uss, Does.Contain("-unity-text-align: middle-center"));
+        }
+
         private static VisualElement BuildMinimalHeroControllerRoot()
         {
             var root = new VisualElement();
