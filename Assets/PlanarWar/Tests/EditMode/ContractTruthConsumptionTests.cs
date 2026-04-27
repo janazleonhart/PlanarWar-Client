@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
 using System.IO;
+using UnityEngine.UIElements;
 
 namespace PlanarWar.Client.Tests.EditMode
 {
@@ -1365,6 +1366,167 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(copy, Does.Contain("idle"));
             Assert.That(copy.ToLowerInvariant(), Does.Not.Contain("hero"));
         }
+
+        [Test]
+        public void Summary_state_formats_hero_release_receipts_with_returned_gear_effects()
+        {
+            const string response = @"{
+                ""ok"": true,
+                ""release"": {
+                    ""outcome"": ""released"",
+                    ""name"": ""Ser Kael the Stormguard"",
+                    ""returnedItems"": [
+                        { ""itemId"": ""workshop_arcane_focus_1"", ""qty"": 1 }
+                    ]
+                }
+            }";
+
+            var receipt = SummaryState.FormatHeroActionReceipt(response, "Hero released", "hero_1", "Hero");
+
+            Assert.That(receipt, Does.Contain("Hero released"));
+            Assert.That(receipt, Does.Contain("Outcome: released"));
+            Assert.That(receipt, Does.Contain("Hero: Ser Kael the Stormguard"));
+            Assert.That(receipt, Does.Contain("Effects:"));
+            Assert.That(receipt, Does.Contain("item id workshop_arcane_focus_1"));
+            Assert.That(receipt, Does.Contain("qty +1"));
+        }
+
+        [Test]
+        public void Hero_roster_picker_survives_release_snapshot_and_selects_next_visible_member()
+        {
+            var root = BuildMinimalHeroControllerRoot();
+            var state = new SummaryState();
+            var controller = new HeroScreenController(
+                root,
+                state,
+                _ => System.Threading.Tasks.Task.CompletedTask,
+                _ => System.Threading.Tasks.Task.CompletedTask,
+                () => System.Threading.Tasks.Task.CompletedTask,
+                _ => System.Threading.Tasks.Task.CompletedTask,
+                (_, _) => System.Threading.Tasks.Task.CompletedTask,
+                (_, _) => System.Threading.Tasks.Task.CompletedTask,
+                () => { });
+
+            state.ApplySnapshot(new ShellSummarySnapshot
+            {
+                Heroes = new List<HeroSnapshot>
+                {
+                    new HeroSnapshot { Id = "hero_kael", Name = "Ser Kael the Stormguard", Status = "idle", Role = "champion", Level = 1 },
+                    new HeroSnapshot { Id = "hero_lyra", Name = "Lyra of the Veiled Paths", Status = "idle", Role = "scout", Level = 1 }
+                }
+            });
+            controller.Render(state.Snapshot);
+
+            var selectedField = typeof(HeroScreenController).GetField("selectedHeroId", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.That(selectedField, Is.Not.Null);
+            Assert.That(selectedField.GetValue(controller), Is.EqualTo("hero_kael"));
+            Assert.That(root.Q<Button>("heroes-release-button").text, Does.Contain("Ser Kael"));
+
+            state.ApplySnapshot(new ShellSummarySnapshot
+            {
+                Heroes = new List<HeroSnapshot>
+                {
+                    new HeroSnapshot { Id = "hero_lyra", Name = "Lyra of the Veiled Paths", Status = "idle", Role = "scout", Level = 1 }
+                }
+            });
+            controller.Render(state.Snapshot);
+
+            Assert.That(selectedField.GetValue(controller), Is.EqualTo("hero_lyra"), "When the selected hero disappears after release, the client should move selection to the next live roster member instead of leaving gear/release controls pointed at a stale hero.");
+            Assert.That(root.Q<Button>("heroes-release-button").text, Does.Contain("Lyra"));
+            Assert.That(root.Q<Label>("heroes-selected-slot-current-value").text, Does.Not.Contain("Ser Kael"));
+        }
+
+        [Test]
+        public void Shell_hides_all_native_hero_lane_dropdown_backing_controls_from_player_surface()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var hiddenBackers = new[]
+            {
+                "heroes-manage-hero-field",
+                "heroes-gear-slot-field",
+                "heroes-armory-item-field",
+                "heroes-manage-candidate-field",
+            };
+
+            foreach (var id in hiddenBackers)
+            {
+                var idIndex = uxml.IndexOf($"name=\"{id}\"", StringComparison.Ordinal);
+                Assert.That(idIndex, Is.GreaterThanOrEqualTo(0), $"{id} should remain present as a bound backing control.");
+                var elementEnd = uxml.IndexOf("/>", idIndex, StringComparison.Ordinal);
+                Assert.That(elementEnd, Is.GreaterThan(idIndex), $"{id} should be rendered as a single UXML field element.");
+                var element = uxml.Substring(idIndex, elementEnd - idIndex);
+                Assert.That(element, Does.Contain("heroes-native-picker-hidden"), $"{id} should be hidden from the player-facing surface; no bright native dropdown goblins, thank you.");
+            }
+        }
+
+        private static VisualElement BuildMinimalHeroControllerRoot()
+        {
+            var root = new VisualElement();
+
+            void AddLabel(string name) => root.Add(new Label { name = name });
+            void AddDropdown(string name) => root.Add(new DropdownField { name = name });
+            void AddElement(string name) => root.Add(new VisualElement { name = name });
+            void AddButton(string name) => root.Add(new Button { name = name });
+
+            foreach (var name in new[]
+            {
+                "heroes-headline-value",
+                "heroes-copy-value",
+                "heroes-overview-value",
+                "heroes-recruitment-value",
+                "heroes-roster-value",
+                "heroes-availability-value",
+                "heroes-armory-value",
+                "heroes-selected-slot-current-value",
+                "heroes-selected-slot-compatible-value",
+                "heroes-note-value",
+            })
+            {
+                AddLabel(name);
+            }
+
+            foreach (var name in new[]
+            {
+                "heroes-manage-hero-field",
+                "heroes-manage-candidate-field",
+                "heroes-gear-slot-field",
+                "heroes-armory-item-field",
+            })
+            {
+                AddDropdown(name);
+            }
+
+            foreach (var name in new[]
+            {
+                "heroes-roster-picker",
+                "heroes-gear-slot-picker",
+                "heroes-armory-item-picker",
+                "heroes-candidate-picker",
+            })
+            {
+                AddElement(name);
+            }
+
+            foreach (var name in new[]
+            {
+                "heroes-release-button",
+                "heroes-equip-armory-button",
+                "heroes-unequip-gear-button",
+                "heroes-recruit-button",
+                "heroes-candidate-accept-button",
+                "heroes-candidate-dismiss-button",
+                "heroes-refresh-button",
+            })
+            {
+                AddButton(name);
+            }
+
+            return root;
+        }
+
 
 
 
