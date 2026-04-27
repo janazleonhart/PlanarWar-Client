@@ -1217,6 +1217,7 @@ namespace PlanarWar.Client.UI.Screens.City
             var selectedIndex = selectedBuilding == null ? 0 : Math.Max(0, manageableBuildings.FindIndex(b => BuildingSelectorKeysMatch(b, selectedBuilding)));
             var title = selectedBuilding == null ? $"Choose {noun}" : FormatBuildingTitle(selectedBuilding, isBlackMarket);
             var selectedId = selectedBuilding == null ? string.Empty : FirstNonBlank(GetBuildingActionId(selectedBuilding), GetBuildingSelectorKey(selectedBuilding));
+            var selectedLabel = selectedBuilding == null ? string.Empty : FormatBuildingSelectorLabel(selectedBuilding, isBlackMarket);
 
             return new CardView(
                 family: isBlackMarket ? "Front selector" : "Building selector",
@@ -1224,7 +1225,7 @@ namespace PlanarWar.Client.UI.Screens.City
                 lore: $"{manageableBuildings.Count} completed {noun}{(manageableBuildings.Count == 1 ? string.Empty : "s")} can be managed from this selector.",
                 note: string.IsNullOrWhiteSpace(selectedId)
                     ? $"Pick which {noun} to inspect. This entry has no stable backend id, so mutation buttons stay disabled on its management card."
-                    : $"Selected {noun}: {selectedId}. Use the selected management card for upgrade, remodel, or destroy.",
+                    : $"Selected {noun}: {selectedLabel}. Backend id truth stays internal for upgrade, remodel, or destroy actions.",
                 selectorLabel: isBlackMarket ? "Manage front" : "Manage building",
                 selectorOptions: choices,
                 selectorIndex: selectedIndex,
@@ -1481,13 +1482,59 @@ namespace PlanarWar.Client.UI.Screens.City
 
         private static string FormatBuildingSelectorLabel(BuildingSnapshot building, bool isBlackMarket)
         {
-            var title = FormatBuildingTitle(building, isBlackMarket);
-            var key = FirstNonBlank(GetBuildingActionId(building), building?.Slot.HasValue == true ? $"slot {building.Slot.Value}" : string.Empty);
+            var title = FormatBuildingSelectorDisplayTitle(building, isBlackMarket);
             var status = BuildBuildingLifecycleLabel(building, DateTime.UtcNow);
             var parts = new List<string> { title };
-            if (!string.IsNullOrWhiteSpace(key)) parts.Add(key);
             if (!string.IsNullOrWhiteSpace(status)) parts.Add(status);
             return string.Join(" • ", parts);
+        }
+
+        private static string FormatBuildingSelectorDisplayTitle(BuildingSnapshot building, bool isBlackMarket)
+        {
+            var levelSuffix = building?.Level.HasValue == true ? $" Lv {building.Level.Value}" : string.Empty;
+            var name = building?.Name?.Trim() ?? string.Empty;
+            if (IsPlayerFacingBuildingName(name))
+            {
+                return name + levelSuffix;
+            }
+
+            var type = building?.Type?.Trim() ?? string.Empty;
+            if (IsPlayerFacingBuildingType(type))
+            {
+                return HumanizeKey(type) + levelSuffix;
+            }
+
+            var rawFallback = FirstNonBlank(building?.BuildingId, building?.Id, building?.Slot.HasValue == true ? $"slot {building.Slot.Value}" : string.Empty, isBlackMarket ? "Operator front" : "Building");
+            return rawFallback + levelSuffix;
+        }
+
+        private static bool IsPlayerFacingBuildingName(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return false;
+            var value = raw.Trim();
+            if (value.Equals("Building", StringComparison.OrdinalIgnoreCase)) return false;
+            if (value.Equals("Front", StringComparison.OrdinalIgnoreCase)) return false;
+            if (value.Equals("Operator front", StringComparison.OrdinalIgnoreCase)) return false;
+            return !LooksLikeBackendBuildingId(value);
+        }
+
+        private static bool IsPlayerFacingBuildingType(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return false;
+            var value = raw.Trim();
+            if (value.Equals("Building", StringComparison.OrdinalIgnoreCase)) return false;
+            if (value.Equals("Front", StringComparison.OrdinalIgnoreCase)) return false;
+            if (value.Equals("Operator front", StringComparison.OrdinalIgnoreCase)) return false;
+            return !LooksLikeBackendBuildingId(value);
+        }
+
+        private static bool LooksLikeBackendBuildingId(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return false;
+            var value = raw.Trim();
+            return value.StartsWith("bid_", StringComparison.OrdinalIgnoreCase)
+                || value.StartsWith("b_", StringComparison.OrdinalIgnoreCase)
+                || value.StartsWith("building_", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string FormatBuildingCapacity(ShellSummarySnapshot s, bool isBlackMarket, int occupied)

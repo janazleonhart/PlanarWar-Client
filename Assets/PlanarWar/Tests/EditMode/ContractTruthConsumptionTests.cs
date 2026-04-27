@@ -1569,6 +1569,57 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
 
+        [Test]
+        public void Development_building_selector_labels_hide_raw_ids_when_name_or_type_is_available()
+        {
+            var formatter = typeof(CityScreenController).GetMethod("FormatBuildingSelectorLabel", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(formatter, Is.Not.Null);
+
+            var namedBuilding = new BuildingSnapshot
+            {
+                Id = "bid_17737976998318_29296",
+                BuildingId = "b_arcane_1",
+                Type = "arcane_spire",
+                Name = "Arcane Spire",
+                Status = "active",
+                Level = 1,
+            };
+
+            var namedLabel = (string)formatter.Invoke(null, new object[] { namedBuilding, false });
+            Assert.That(namedLabel, Does.Contain("Arcane Spire Lv 1"));
+            Assert.That(namedLabel, Does.Contain("Operational"));
+            Assert.That(namedLabel, Does.Not.Contain("bid_"));
+            Assert.That(namedLabel, Does.Not.Contain("b_arcane_1"));
+
+            var typedBuilding = new BuildingSnapshot
+            {
+                Id = "bid_hidden_123",
+                BuildingId = "b_farmland_4",
+                Type = "farmland_plot",
+                Name = "Building",
+                Status = "active",
+                Level = 2,
+            };
+
+            var typedLabel = (string)formatter.Invoke(null, new object[] { typedBuilding, false });
+            Assert.That(typedLabel, Does.Contain("Farmland Plot Lv 2"));
+            Assert.That(typedLabel, Does.Not.Contain("bid_hidden_123"));
+            Assert.That(typedLabel, Does.Not.Contain("b_farmland_4"));
+
+            var rawFallbackBuilding = new BuildingSnapshot
+            {
+                Id = "bid_only_987",
+                BuildingId = string.Empty,
+                Type = string.Empty,
+                Name = string.Empty,
+                Status = "active",
+            };
+
+            var fallbackLabel = (string)formatter.Invoke(null, new object[] { rawFallbackBuilding, false });
+            Assert.That(fallbackLabel, Does.Contain("bid_only_987"), "Raw ids should only appear as the last honest fallback when no player-facing name or type exists.");
+        }
+
+
         private static VisualElement BuildMinimalHeroControllerRoot()
         {
             var root = new VisualElement();
