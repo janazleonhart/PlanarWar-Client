@@ -110,27 +110,27 @@ namespace PlanarWar.Client.UI.Screens.Heroes
             var unavailableCount = Math.Max(0, heroes.Count - idleCount - onMissionCount);
             var isBusy = summaryState?.IsActionBusy == true;
 
-            if (headline != null) headline.text = IsBlackMarketLane(s) ? "Specialists desk" : "Hero desk";
-            if (copy != null)
-            {
-                copy.text = IsBlackMarketLane(s)
-                    ? "Inspect operators, scout candidates, dismiss candidate slates, and release idle specialists without hiding hero truth inside Development."
-                    : "Inspect heroes, scout candidates, dismiss candidate slates, and release idle heroes without hiding roster truth inside Development.";
-            }
+            var terms = HeroTerminology.For(s);
+
+            if (headline != null) headline.text = terms.DeskTitle;
+            if (copy != null) copy.text = terms.DeskCopy;
 
             if (overview != null)
             {
                 overview.text = heroes.Count == 0
-                    ? "No hero roster is visible in the summary payload."
-                    : $"{heroes.Count} hero{Plural(heroes.Count)} • {idleCount} idle • {onMissionCount} on mission • {unavailableCount} other";
+                    ? $"No {terms.SingularLower} roster is visible in the summary payload."
+                    : $"{heroes.Count} {terms.PluralLower} • {idleCount} idle • {onMissionCount} deployed • {unavailableCount} other";
             }
 
-            if (recruitmentValue != null) recruitmentValue.text = DescribeRecruitment(recruitment, candidates);
-            if (rosterValue != null) rosterValue.text = heroes.Count == 0 ? "No heroes visible yet." : string.Join(" • ", heroes.Take(4).Select(DescribeHeroShort));
-            if (availabilityValue != null) availabilityValue.text = heroes.Count == 0 ? "Availability unknown." : $"Idle {idleCount}/{heroes.Count} • deployed {onMissionCount} • geared {heroes.Count(h => h.AttachmentCount > 0)}";
+            if (recruitmentValue != null) recruitmentValue.text = DescribeRecruitment(recruitment, candidates, terms);
+            if (rosterValue != null) rosterValue.text = heroes.Count == 0 ? $"No {terms.PluralLower} visible yet." : string.Join(" • ", heroes.Take(4).Select(DescribeHeroShort));
+            if (availabilityValue != null) availabilityValue.text = heroes.Count == 0 ? "Availability unknown." : $"Idle {idleCount}/{heroes.Count} • deployed {onMissionCount} • attached {heroes.Count(h => h.AttachmentCount > 0)}";
 
-            SyncHeroDropdown(heroes);
-            SyncCandidateDropdown(candidates);
+            if (heroSelectField != null) heroSelectField.label = terms.SingularTitle;
+            if (candidateSelectField != null) candidateSelectField.label = terms.CandidateTitle;
+
+            SyncHeroDropdown(heroes, terms);
+            SyncCandidateDropdown(candidates, terms);
 
             var selectedHero = heroes.FirstOrDefault(hero => string.Equals(hero.Id, selectedHeroId, StringComparison.OrdinalIgnoreCase));
             if (releaseHeroButton != null)
@@ -138,12 +138,12 @@ namespace PlanarWar.Client.UI.Screens.Heroes
                 var canRelease = selectedHero != null && IsIdleHero(selectedHero) && !isBusy && onReleaseHeroRequested != null;
                 var armed = selectedHero != null && string.Equals(pendingReleaseHeroId, selectedHero.Id, StringComparison.OrdinalIgnoreCase);
                 releaseHeroButton.text = selectedHero == null
-                    ? "Select idle hero"
+                    ? $"Select idle {terms.SingularLower}"
                     : !IsIdleHero(selectedHero)
-                        ? "Hero unavailable"
+                        ? $"{terms.SingularTitle} unavailable"
                         : armed
-                            ? $"Confirm release {selectedHero.Name}"
-                            : $"Release {selectedHero.Name}";
+                            ? $"Confirm {terms.ReleaseVerbLower} {selectedHero.Name}"
+                            : $"{terms.ReleaseVerbTitle} {selectedHero.Name}";
                 releaseHeroButton.SetEnabled(canRelease);
             }
 
@@ -151,23 +151,23 @@ namespace PlanarWar.Client.UI.Screens.Heroes
             {
                 var role = ResolveRecruitRole(recruitment);
                 recruitHeroButton.text = isBusy && !string.IsNullOrWhiteSpace(summaryState?.PendingHeroRecruitRole)
-                    ? "Recruiting..."
+                    ? terms.RecruitingText
                     : recruitment?.StartEligible == true
-                        ? FirstNonBlank(recruitment.CtaLabel, "Scout hero candidate")
-                        : "Recruitment blocked";
+                        ? FirstNonBlank(recruitment.CtaLabel, terms.ScoutCandidateText)
+                        : terms.RecruitmentBlockedText;
                 recruitHeroButton.SetEnabled(recruitment?.StartEligible == true && !isBusy && onRecruitHeroRequested != null && !string.IsNullOrWhiteSpace(role));
             }
 
             if (acceptCandidateButton != null)
             {
                 var selectedCandidate = candidates.FirstOrDefault(candidate => string.Equals(candidate.CandidateId, selectedCandidateId, StringComparison.OrdinalIgnoreCase));
-                acceptCandidateButton.text = selectedCandidate == null ? "Select candidate" : $"Accept {selectedCandidate.DisplayName}";
+                acceptCandidateButton.text = selectedCandidate == null ? $"Select {terms.CandidateLower}" : $"Accept {selectedCandidate.DisplayName}";
                 acceptCandidateButton.SetEnabled(selectedCandidate != null && !isBusy && onAcceptHeroRecruitCandidateRequested != null);
             }
 
             if (dismissCandidatesButton != null)
             {
-                dismissCandidatesButton.text = candidates.Count == 0 ? "No candidates to dismiss" : $"Dismiss {candidates.Count} candidate{Plural(candidates.Count)}";
+                dismissCandidatesButton.text = candidates.Count == 0 ? $"No {terms.CandidatePluralLower} to dismiss" : $"Dismiss {candidates.Count} {terms.CandidateLower}{Plural(candidates.Count)}";
                 dismissCandidatesButton.SetEnabled(candidates.Count > 0 && !isBusy && onDismissHeroRecruitCandidatesRequested != null);
             }
 
@@ -175,10 +175,10 @@ namespace PlanarWar.Client.UI.Screens.Heroes
 
             if (noteValue != null)
             {
-                noteValue.text = BuildDeskNote(selectedHero, candidates, recruitment, isBusy);
+                noteValue.text = BuildDeskNote(selectedHero, candidates, recruitment, isBusy, terms);
             }
 
-            var cards = BuildCards(heroes, recruitment, candidates, isBusy).Take(heroCards.Length).ToList();
+            var cards = BuildCards(heroes, recruitment, candidates, isBusy, terms).Take(heroCards.Length).ToList();
             for (var i = 0; i < heroCards.Length; i++)
             {
                 if (i < cards.Count) heroCards[i].Show(cards[i]);
@@ -186,18 +186,18 @@ namespace PlanarWar.Client.UI.Screens.Heroes
             }
         }
 
-        private List<CardView> BuildCards(List<HeroSnapshot> heroes, HeroRecruitmentSnapshot recruitment, List<HeroRecruitCandidateSnapshot> candidates, bool isBusy)
+        private List<CardView> BuildCards(List<HeroSnapshot> heroes, HeroRecruitmentSnapshot recruitment, List<HeroRecruitCandidateSnapshot> candidates, bool isBusy, HeroTerminology terms)
         {
             var cards = new List<CardView>();
 
             if (recruitment != null && string.Equals(recruitment.Status, "scouting", StringComparison.OrdinalIgnoreCase))
             {
                 cards.Add(new CardView(
-                    "Recruitment",
-                    "Scouting in progress",
-                    FormatRecruitmentTimer(recruitment),
-                    FirstNonBlank(recruitment.Shortfall, recruitment.BlockedReason, "Candidate scouting is underway."),
-                    "Scouting",
+                    terms.RecruitmentFamily,
+                    terms.ScoutingInProgressTitle,
+                    FormatRecruitmentTimer(recruitment, terms),
+                    FirstNonBlank(recruitment.Shortfall, recruitment.BlockedReason, terms.ScoutingUnderwayText),
+                    terms.ScoutingButtonText,
                     false,
                     null));
             }
@@ -206,11 +206,11 @@ namespace PlanarWar.Client.UI.Screens.Heroes
             {
                 var candidateId = candidate.CandidateId;
                 cards.Add(new CardView(
-                    "Candidate",
-                    FirstNonBlank(candidate.DisplayName, candidate.ClassName, candidate.Role, "Recruit candidate"),
+                    terms.CandidateTitle,
+                    FirstNonBlank(candidate.DisplayName, candidate.ClassName, candidate.Role, terms.CandidateTitle),
                     BuildCandidateLore(candidate),
                     BuildCandidateNote(candidate),
-                    summaryState?.IsActionBusy == true && string.Equals(summaryState.PendingHeroRecruitCandidateId, candidateId, StringComparison.OrdinalIgnoreCase) ? "Accepting..." : "Accept candidate",
+                    summaryState?.IsActionBusy == true && string.Equals(summaryState.PendingHeroRecruitCandidateId, candidateId, StringComparison.OrdinalIgnoreCase) ? terms.AcceptingText : terms.AcceptCandidateText,
                     !isBusy && onAcceptHeroRecruitCandidateRequested != null && !string.IsNullOrWhiteSpace(candidateId),
                     () => _ = onAcceptHeroRecruitCandidateRequested.Invoke(candidateId)));
             }
@@ -221,24 +221,24 @@ namespace PlanarWar.Client.UI.Screens.Heroes
                 var canRelease = IsIdleHero(hero) && !isBusy && onReleaseHeroRequested != null && !string.IsNullOrWhiteSpace(heroId);
                 var armed = string.Equals(pendingReleaseHeroId, heroId, StringComparison.OrdinalIgnoreCase);
                 cards.Add(new CardView(
-                    "Roster",
+                    terms.RosterFamily,
                     hero.Name,
-                    BuildHeroLore(hero),
-                    canRelease ? "Idle heroes can be released; equipped/attached items should return through backend hero-release truth." : BuildHeroUnavailableNote(hero),
-                    canRelease ? (armed ? "Confirm release" : "Release hero") : "Unavailable",
+                    BuildHeroLore(hero, terms),
+                    canRelease ? terms.ReleaseNote : BuildHeroUnavailableNote(hero, terms),
+                    canRelease ? (armed ? terms.ConfirmReleaseButton : terms.ReleaseButton) : "Unavailable",
                     canRelease,
                     () => TriggerRelease(heroId)));
             }
 
             if (cards.Count == 0)
             {
-                cards.Add(new CardView("Hero roster", "No heroes visible", "The summary payload did not expose heroes yet.", "Recruitment controls remain visible below when the backend exposes a recruitment surface.", "No action", false, null));
+                cards.Add(new CardView(terms.RosterFamily, $"No {terms.PluralLower} visible", $"The summary payload did not expose {terms.PluralLower} yet.", $"{terms.RecruitmentFamily} controls remain visible below when the backend exposes a recruitment surface.", "No action", false, null));
             }
 
             return cards;
         }
 
-        private void SyncHeroDropdown(List<HeroSnapshot> heroes)
+        private void SyncHeroDropdown(List<HeroSnapshot> heroes, HeroTerminology terms)
         {
             if (heroSelectField == null) return;
             heroChoiceIds.Clear();
@@ -247,7 +247,7 @@ namespace PlanarWar.Client.UI.Screens.Heroes
             {
                 if (string.IsNullOrWhiteSpace(hero.Id)) continue;
                 heroChoiceIds.Add(hero.Id);
-                choices.Add($"{hero.Name} • {FirstNonBlank(hero.Role, "hero")} • {FirstNonBlank(hero.Status, "unknown")}");
+                choices.Add($"{hero.Name} • {FirstNonBlank(hero.Role, terms.SingularLower)} • {FirstNonBlank(hero.Status, "unknown")}");
             }
 
             if (!string.IsNullOrWhiteSpace(selectedHeroId) && heroes.All(hero => !string.Equals(hero.Id, selectedHeroId, StringComparison.OrdinalIgnoreCase)))
@@ -267,7 +267,7 @@ namespace PlanarWar.Client.UI.Screens.Heroes
             heroSelectField.SetEnabled(choices.Count > 0);
         }
 
-        private void SyncCandidateDropdown(List<HeroRecruitCandidateSnapshot> candidates)
+        private void SyncCandidateDropdown(List<HeroRecruitCandidateSnapshot> candidates, HeroTerminology terms)
         {
             if (candidateSelectField == null) return;
             candidateChoiceIds.Clear();
@@ -276,7 +276,7 @@ namespace PlanarWar.Client.UI.Screens.Heroes
             {
                 if (string.IsNullOrWhiteSpace(candidate.CandidateId)) continue;
                 candidateChoiceIds.Add(candidate.CandidateId);
-                choices.Add($"{FirstNonBlank(candidate.DisplayName, candidate.ClassName, candidate.Role, "Candidate")} • {FirstNonBlank(candidate.ClassName, candidate.Role, "class unknown")}");
+                choices.Add($"{FirstNonBlank(candidate.DisplayName, candidate.ClassName, candidate.Role, terms.CandidateTitle)} • {FirstNonBlank(candidate.ClassName, candidate.Role, "class unknown")}");
             }
 
             if (!string.IsNullOrWhiteSpace(selectedCandidateId) && candidates.All(candidate => !string.Equals(candidate.CandidateId, selectedCandidateId, StringComparison.OrdinalIgnoreCase)))
@@ -335,30 +335,30 @@ namespace PlanarWar.Client.UI.Screens.Heroes
             _ = onReleaseHeroRequested.Invoke(heroId.Trim());
         }
 
-        private static string DescribeRecruitment(HeroRecruitmentSnapshot recruitment, List<HeroRecruitCandidateSnapshot> candidates)
+        private static string DescribeRecruitment(HeroRecruitmentSnapshot recruitment, List<HeroRecruitCandidateSnapshot> candidates, HeroTerminology terms)
         {
-            if (recruitment == null) return "No recruitment surface in payload.";
-            if (candidates != null && candidates.Count > 0) return $"{candidates.Count} candidate{Plural(candidates.Count)} ready • expires {FormatTime(recruitment.CandidateExpiresAtUtc)}";
-            if (string.Equals(recruitment.Status, "scouting", StringComparison.OrdinalIgnoreCase)) return FormatRecruitmentTimer(recruitment);
-            if (recruitment.StartEligible) return $"Recruitment ready • {CostText(recruitment.WealthCost, recruitment.UnityCost)}";
-            return FirstNonBlank(recruitment.BlockedReason, recruitment.Shortfall, $"Recruitment {FirstNonBlank(recruitment.Status, "blocked")}");
+            if (recruitment == null) return $"No {terms.RecruitmentFamily.ToLowerInvariant()} surface in payload.";
+            if (candidates != null && candidates.Count > 0) return $"{candidates.Count} {terms.CandidateLower}{Plural(candidates.Count)} ready • expires {FormatTime(recruitment.CandidateExpiresAtUtc)}";
+            if (string.Equals(recruitment.Status, "scouting", StringComparison.OrdinalIgnoreCase)) return FormatRecruitmentTimer(recruitment, terms);
+            if (recruitment.StartEligible) return $"{terms.RecruitmentReadyText} • {CostText(recruitment.WealthCost, recruitment.UnityCost)}";
+            return FirstNonBlank(recruitment.BlockedReason, recruitment.Shortfall, $"{terms.RecruitmentFamily} {FirstNonBlank(recruitment.Status, "blocked")}");
         }
 
-        private string BuildDeskNote(HeroSnapshot selectedHero, List<HeroRecruitCandidateSnapshot> candidates, HeroRecruitmentSnapshot recruitment, bool isBusy)
+        private string BuildDeskNote(HeroSnapshot selectedHero, List<HeroRecruitCandidateSnapshot> candidates, HeroRecruitmentSnapshot recruitment, bool isBusy, HeroTerminology terms)
         {
             if (isBusy && !string.IsNullOrWhiteSpace(summaryState?.ActionStatus)) return summaryState.ActionStatus;
-            if (selectedHero != null && string.Equals(pendingReleaseHeroId, selectedHero.Id, StringComparison.OrdinalIgnoreCase)) return $"Confirm release for {selectedHero.Name}. This removes the hero from the roster; backend release should return equipped items when present.";
-            if (candidates != null && candidates.Count > 0) return "Candidate slate is ready. Accept one candidate or dismiss the slate from this desk.";
-            if (recruitment?.StartEligible == true) return "Recruitment can be opened from this hero desk without returning to Development.";
-            if (selectedHero != null) return $"Selected {selectedHero.Name}: {BuildHeroLore(selectedHero)}";
-            return FirstNonBlank(recruitment?.BlockedReason, recruitment?.Shortfall, "Hero desk is ready, but no actionable roster/candidate truth is visible yet.");
+            if (selectedHero != null && string.Equals(pendingReleaseHeroId, selectedHero.Id, StringComparison.OrdinalIgnoreCase)) return $"Confirm {terms.ReleaseVerbLower} for {selectedHero.Name}. This removes the {terms.SingularLower} from the roster; backend release should return equipped items when present.";
+            if (candidates != null && candidates.Count > 0) return $"{terms.CandidateTitle} slate is ready. Accept one {terms.CandidateLower} or dismiss the slate from this desk.";
+            if (recruitment?.StartEligible == true) return $"{terms.RecruitmentFamily} can be opened from this {terms.DeskTitle.ToLowerInvariant()} without returning to Development.";
+            if (selectedHero != null) return $"Selected {selectedHero.Name}: {BuildHeroLore(selectedHero, terms)}";
+            return FirstNonBlank(recruitment?.BlockedReason, recruitment?.Shortfall, $"{terms.DeskTitle} is ready, but no actionable roster/{terms.CandidateLower} truth is visible yet.");
         }
 
-        private static string BuildHeroLore(HeroSnapshot hero)
+        private static string BuildHeroLore(HeroSnapshot hero, HeroTerminology terms)
         {
             var parts = new List<string>
             {
-                FirstNonBlank(hero.Role, "hero"),
+                FirstNonBlank(hero.Role, terms.SingularLower),
                 FirstNonBlank(hero.Status, "unknown"),
             };
             if (hero.Level.HasValue) parts.Add($"level {hero.Level:0}");
@@ -366,12 +366,12 @@ namespace PlanarWar.Client.UI.Screens.Heroes
             return string.Join(" • ", parts.Where(part => !string.IsNullOrWhiteSpace(part)));
         }
 
-        private static string BuildHeroUnavailableNote(HeroSnapshot hero)
+        private static string BuildHeroUnavailableNote(HeroSnapshot hero, HeroTerminology terms)
         {
-            if (hero == null) return "No hero selected.";
-            if (IsIdleHero(hero)) return "Idle hero is available.";
-            if (string.Equals(hero.Status, "on_mission", StringComparison.OrdinalIgnoreCase)) return "Hero is currently deployed and cannot be released.";
-            return $"Hero status {FirstNonBlank(hero.Status, "unknown")} blocks release.";
+            if (hero == null) return $"No {terms.SingularLower} selected.";
+            if (IsIdleHero(hero)) return $"Idle {terms.SingularLower} is available.";
+            if (string.Equals(hero.Status, "on_mission", StringComparison.OrdinalIgnoreCase)) return $"{terms.SingularTitle} is currently deployed and cannot be {terms.ReleaseVerbPastLower}.";
+            return $"{terms.SingularTitle} status {FirstNonBlank(hero.Status, "unknown")} blocks {terms.ReleaseVerbLower}.";
         }
 
         private static string BuildCandidateLore(HeroRecruitCandidateSnapshot candidate)
@@ -408,16 +408,16 @@ namespace PlanarWar.Client.UI.Screens.Heroes
             return FirstNonBlank(recruitment?.StartRole, recruitment?.Role, "balanced");
         }
 
-        private static string FormatRecruitmentTimer(HeroRecruitmentSnapshot recruitment)
+        private static string FormatRecruitmentTimer(HeroRecruitmentSnapshot recruitment, HeroTerminology terms)
         {
             var finish = recruitment?.FinishesAtUtc ?? recruitment?.ReadyAtUtc;
             if (finish.HasValue)
             {
                 var remaining = finish.Value - DateTime.UtcNow;
-                if (remaining <= TimeSpan.Zero) return "Recruitment scouting is ready now.";
-                return $"Recruitment resolves in {FormatDuration(remaining)}.";
+                if (remaining <= TimeSpan.Zero) return $"{terms.RecruitmentFamily} scouting is ready now.";
+                return $"{terms.RecruitmentFamily} resolves in {FormatDuration(remaining)}.";
             }
-            return "Recruitment scouting is active; finish time not surfaced.";
+            return $"{terms.RecruitmentFamily} scouting is active; finish time not surfaced.";
         }
 
         private static string FormatDuration(TimeSpan remaining)
@@ -463,6 +463,111 @@ namespace PlanarWar.Client.UI.Screens.Heroes
         private static string Plural(int count)
         {
             return count == 1 ? string.Empty : "s";
+        }
+
+        private sealed class HeroTerminology
+        {
+            private HeroTerminology(
+                string singularTitle,
+                string singularLower,
+                string pluralTitle,
+                string pluralLower,
+                string deskTitle,
+                string deskCopy,
+                string rosterFamily,
+                string recruitmentFamily,
+                string candidateTitle,
+                string candidateLower,
+                string candidatePluralLower,
+                string releaseVerbTitle,
+                string releaseVerbLower,
+                string releaseVerbPastLower,
+                string scoutCandidateText)
+            {
+                SingularTitle = singularTitle;
+                SingularLower = singularLower;
+                PluralTitle = pluralTitle;
+                PluralLower = pluralLower;
+                DeskTitle = deskTitle;
+                DeskCopy = deskCopy;
+                RosterFamily = rosterFamily;
+                RecruitmentFamily = recruitmentFamily;
+                CandidateTitle = candidateTitle;
+                CandidateLower = candidateLower;
+                CandidatePluralLower = candidatePluralLower;
+                ReleaseVerbTitle = releaseVerbTitle;
+                ReleaseVerbLower = releaseVerbLower;
+                ReleaseVerbPastLower = releaseVerbPastLower;
+                ScoutCandidateText = scoutCandidateText;
+            }
+
+            public string SingularTitle { get; }
+            public string SingularLower { get; }
+            public string PluralTitle { get; }
+            public string PluralLower { get; }
+            public string DeskTitle { get; }
+            public string DeskCopy { get; }
+            public string RosterFamily { get; }
+            public string RecruitmentFamily { get; }
+            public string CandidateTitle { get; }
+            public string CandidateLower { get; }
+            public string CandidatePluralLower { get; }
+            public string ReleaseVerbTitle { get; }
+            public string ReleaseVerbLower { get; }
+            public string ReleaseVerbPastLower { get; }
+            public string ScoutCandidateText { get; }
+            public string RecruitingText => IsOperative ? "Scouting..." : "Recruiting...";
+            public string RecruitmentBlockedText => IsOperative ? "Scouting blocked" : "Recruitment blocked";
+            public string RecruitmentReadyText => IsOperative ? "Scouting ready" : "Recruitment ready";
+            public string ScoutingInProgressTitle => IsOperative ? "Operative scouting in progress" : "Scouting in progress";
+            public string ScoutingUnderwayText => IsOperative ? "Operative scouting is underway." : "Candidate scouting is underway.";
+            public string ScoutingButtonText => "Scouting";
+            public string AcceptingText => IsOperative ? "Contacting..." : "Accepting...";
+            public string AcceptCandidateText => IsOperative ? "Recruit contact" : "Accept candidate";
+            public string ReleaseNote => $"Idle {PluralLower} can be {ReleaseVerbPastLower}; equipped/attached items should return through backend hero-release truth.";
+            public string ConfirmReleaseButton => $"Confirm {ReleaseVerbLower}";
+            public string ReleaseButton => $"{ReleaseVerbTitle} {SingularLower}";
+            private bool IsOperative => string.Equals(SingularLower, "operative", StringComparison.OrdinalIgnoreCase);
+
+            public static HeroTerminology For(ShellSummarySnapshot snapshot)
+            {
+                if (IsBlackMarketLane(snapshot))
+                {
+                    return new HeroTerminology(
+                        "Operative",
+                        "operative",
+                        "Operatives",
+                        "operatives",
+                        "Operatives desk",
+                        "Inspect named operatives, scout contacts, dismiss contact slates, and retire idle operatives without making the Black Market pretend they are civic heroes.",
+                        "Operative roster",
+                        "Scouting",
+                        "Contact",
+                        "contact",
+                        "contacts",
+                        "Retire",
+                        "retire",
+                        "retired",
+                        "Scout operative contact");
+                }
+
+                return new HeroTerminology(
+                    "Hero",
+                    "hero",
+                    "Heroes",
+                    "heroes",
+                    "Hero desk",
+                    "Inspect heroes, scout candidates, dismiss candidate slates, and release idle heroes without hiding roster truth inside Development.",
+                    "Hero roster",
+                    "Recruitment",
+                    "Candidate",
+                    "candidate",
+                    "candidates",
+                    "Release",
+                    "release",
+                    "released",
+                    "Scout hero candidate");
+            }
         }
 
         private sealed class CardView

@@ -57,6 +57,10 @@ namespace PlanarWar.Client.UI
         private readonly Button navDevelopmentButton;
         private readonly Button navWarfrontButton;
         private readonly Button navHeroesButton;
+        private readonly Label navHeroesKicker;
+        private readonly Label navHeroesBadge;
+        private readonly Label navHeroesTitle;
+        private readonly Label navHeroesCopy;
         private readonly Button navSocialButton;
 
         private readonly Label commsStatusValue;
@@ -115,6 +119,10 @@ namespace PlanarWar.Client.UI
             navDevelopmentButton = root.Q<Button>("nav-development-button");
             navWarfrontButton = root.Q<Button>("nav-warfront-button");
             navHeroesButton = root.Q<Button>("nav-heroes-button");
+            navHeroesKicker = root.Q<Label>("nav-heroes-kicker");
+            navHeroesBadge = root.Q<Label>("nav-heroes-badge");
+            navHeroesTitle = root.Q<Label>("nav-heroes-title");
+            navHeroesCopy = root.Q<Label>("nav-heroes-copy");
             navSocialButton = root.Q<Button>("nav-social-button");
 
             commsStatusValue = root.Q<Label>("comms-status-value");
@@ -176,15 +184,21 @@ namespace PlanarWar.Client.UI
 
         private void RenderChapterState()
         {
+            var heroLane = ResolveHeroLaneText();
             var (title, kicker, copy) = navigationState.ActiveScreen switch
             {
                 ShellScreen.Summary => ("Summary", "Command floor", "This rail stays menu-owned. Use Home to scan the empire, then jump into a desk when something needs action."),
                 ShellScreen.City => ("Development", "Growth desk", "Research, workshop, and growth cadence stay grouped here as a read-only planning desk."),
                 ShellScreen.BlackMarket => ("Operations", "Operations doctrine", "Routes, readiness, holds, and covert deployment stay visible here before deeper operations wiring lands."),
-                ShellScreen.Heroes => ("Heroes", "Roster desk", "Recruitment, candidate review, release safety, and hero availability stay visible here without hiding inside Development."),
+                ShellScreen.Heroes => (heroLane.Title, heroLane.Kicker, heroLane.ChapterCopy),
                 ShellScreen.Social => ("Social", "Shared comms", "Room state, recent lines, and channel posture stay honest here without inventing a full social stack."),
                 _ => ("Summary", "Command floor", "This rail stays menu-owned.")
             };
+
+            if (navHeroesKicker != null) navHeroesKicker.text = heroLane.KickerShort;
+            if (navHeroesBadge != null) navHeroesBadge.text = heroLane.Badge;
+            if (navHeroesTitle != null) navHeroesTitle.text = heroLane.Title;
+            if (navHeroesCopy != null) navHeroesCopy.text = heroLane.RailCopy;
 
             if (currentChapterTitle != null) currentChapterTitle.text = title;
             if (currentChapterKicker != null) currentChapterKicker.text = kicker;
@@ -246,6 +260,48 @@ namespace PlanarWar.Client.UI
                 row.Add(text);
                 chatLogScroll.contentContainer.Add(row);
             }
+        }
+
+        private HeroLaneText ResolveHeroLaneText()
+        {
+            var isBlackMarket = string.Equals(summaryState?.Snapshot?.City?.SettlementLane, "black_market", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(summaryState?.Snapshot?.City?.SettlementLaneLabel, "Black Market", StringComparison.OrdinalIgnoreCase);
+
+            return isBlackMarket
+                ? new HeroLaneText(
+                    "Operatives",
+                    "Roster desk",
+                    "Operatives",
+                    "Roster",
+                    "Scout, review, and retire named operatives here.",
+                    "Scouting, contact review, retirement safety, and operative availability stay visible here without pretending Black Market assets are civic heroes.")
+                : new HeroLaneText(
+                    "Heroes",
+                    "Roster desk",
+                    "Heroes",
+                    "Roster",
+                    "Recruit, review, and dismiss heroes here.",
+                    "Recruitment, candidate review, release safety, and hero availability stay visible here without hiding inside Development.");
+        }
+
+        private readonly struct HeroLaneText
+        {
+            public HeroLaneText(string title, string kicker, string badge, string kickerShort, string railCopy, string chapterCopy)
+            {
+                Title = title;
+                Kicker = kicker;
+                Badge = badge;
+                KickerShort = kickerShort;
+                RailCopy = railCopy;
+                ChapterCopy = chapterCopy;
+            }
+
+            public string Title { get; }
+            public string Kicker { get; }
+            public string Badge { get; }
+            public string KickerShort { get; }
+            public string RailCopy { get; }
+            public string ChapterCopy { get; }
         }
 
         private static void SetNavActive(Button button, bool active)

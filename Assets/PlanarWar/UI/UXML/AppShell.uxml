@@ -78,11 +78,11 @@
                     <ui:Label text="04" class="chapter-row__index" />
                     <ui:VisualElement class="chapter-row__body">
                         <ui:VisualElement class="chapter-row__top">
-                            <ui:Label text="Roster" class="chapter-row__kicker" />
-                            <ui:Label text="Heroes" class="chapter-row__badge" />
+                            <ui:Label name="nav-heroes-kicker" text="Roster" class="chapter-row__kicker" />
+                            <ui:Label name="nav-heroes-badge" text="Heroes" class="chapter-row__badge" />
                         </ui:VisualElement>
-                        <ui:Label text="Heroes" class="chapter-row__title" />
-                        <ui:Label text="Recruit, review, and dismiss heroes here." class="chapter-row__copy" />
+                        <ui:Label name="nav-heroes-title" text="Heroes" class="chapter-row__title" />
+                        <ui:Label name="nav-heroes-copy" text="Recruit, review, and dismiss heroes here." class="chapter-row__copy" />
                     </ui:VisualElement>
                     <ui:Label text="Open" class="chapter-row__action" />
                 </ui:Button>
@@ -599,12 +599,12 @@
                     <ui:VisualElement class="screen-scroll-content heroes-screen-content">
                         <ui:VisualElement class="summary-hero heroes-hero">
                             <ui:Label text="Roster desk" class="eyebrow" />
-                            <ui:Label name="heroes-headline-value" text="Hero desk" class="headline" />
-                            <ui:Label name="heroes-copy-value" text="Recruitment, roster review, candidate decisions, and release controls render here." class="headline-subtext" />
+                            <ui:Label name="heroes-headline-value" text="Hero / Operative desk" class="headline" />
+                            <ui:Label name="heroes-copy-value" text="Recruitment/scouting, roster review, candidate/contact decisions, and release/retire controls render here." class="headline-subtext" />
                         </ui:VisualElement>
 
                         <ui:VisualElement class="summary-card summary-card--full">
-                            <ui:Label text="Hero overview" class="eyebrow" />
+                            <ui:Label text="Roster overview" class="eyebrow" />
                             <ui:Label name="heroes-overview-value" text="Hero roster loads here." class="summary-value summary-value--glance" />
                         </ui:VisualElement>
 
@@ -628,7 +628,7 @@
                         </ui:VisualElement>
 
                         <ui:VisualElement class="summary-card summary-card--full">
-                            <ui:Label text="Visible hero cards" class="eyebrow" />
+                            <ui:Label text="Visible roster cards" class="eyebrow" />
                             <ui:VisualElement class="summary-grid summary-grid--desk-cards">
                                 <ui:VisualElement name="heroes-card-1-root" class="summary-card glance-card">
                                     <ui:Label name="heroes-card-1-family-value" text="Roster" class="eyebrow" />
@@ -662,7 +662,7 @@
                         </ui:VisualElement>
 
                         <ui:VisualElement class="summary-card summary-card--full">
-                            <ui:Label text="Hero management" class="eyebrow" />
+                            <ui:Label text="Roster management" class="eyebrow" />
                             <ui:DropdownField name="heroes-manage-hero-field" label="Hero" />
                             <ui:Button name="heroes-release-button" text="Release selected hero" class="action-button" />
                             <ui:DropdownField name="heroes-manage-candidate-field" label="Recruit candidate" />

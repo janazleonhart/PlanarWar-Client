@@ -36,12 +36,15 @@ namespace PlanarWar.Client.Tests.EditMode
 
             var uxml = File.ReadAllText(appShellPath);
             Assert.That(uxml, Does.Contain("nav-heroes-button"));
+            Assert.That(uxml, Does.Contain("nav-heroes-title"));
+            Assert.That(uxml, Does.Contain("nav-heroes-copy"));
             Assert.That(uxml, Does.Contain("heroes-screen"));
             Assert.That(uxml, Does.Contain("heroes-manage-hero-field"));
             Assert.That(uxml, Does.Contain("heroes-release-button"));
             Assert.That(uxml, Does.Contain("heroes-manage-candidate-field"));
             Assert.That(uxml, Does.Contain("heroes-candidate-accept-button"));
             Assert.That(uxml, Does.Contain("heroes-candidate-dismiss-button"));
+            Assert.That(uxml, Does.Contain("Hero / Operative desk"));
         }
 
         [Test]
