@@ -36,6 +36,10 @@ namespace PlanarWar.Client.Core
         public string RecentMissionTitle { get; private set; } = string.Empty;
         public string RecentMissionInstanceId { get; private set; } = string.Empty;
         public DateTime? RecentMissionReceiptAtUtc { get; private set; }
+        public string RecentHeroReceipt { get; private set; } = string.Empty;
+        public string RecentHeroReceiptTitle { get; private set; } = string.Empty;
+        public string RecentHeroReceiptAction { get; private set; } = string.Empty;
+        public DateTime? RecentHeroReceiptAtUtc { get; private set; }
         public string PendingHeroRecruitRole { get; private set; } = string.Empty;
         public string PendingHeroRecruitCandidateId { get; private set; } = string.Empty;
         public bool PendingHeroRecruitDismiss { get; private set; }
@@ -388,6 +392,209 @@ namespace PlanarWar.Client.Core
             RecentMissionInstanceId = string.Empty;
             RecentMissionReceiptAtUtc = null;
             Changed?.Invoke();
+        }
+
+        public void FinishHeroActionReceipt(string action, string receipt, string title = null)
+        {
+            var trimmedAction = action?.Trim() ?? string.Empty;
+            var trimmedReceipt = string.IsNullOrWhiteSpace(receipt)
+                ? "Roster action completed, but the backend did not return a readable receipt."
+                : receipt.Trim();
+
+            RecentHeroReceiptAction = trimmedAction;
+            RecentHeroReceiptTitle = title?.Trim() ?? string.Empty;
+            RecentHeroReceipt = trimmedReceipt;
+            RecentHeroReceiptAtUtc = DateTime.UtcNow;
+            FinishAction(trimmedReceipt);
+        }
+
+        public bool HasRecentHeroReceipt(DateTime nowUtc, double noticeSeconds = 120)
+        {
+            if (!RecentHeroReceiptAtUtc.HasValue || string.IsNullOrWhiteSpace(RecentHeroReceipt))
+            {
+                return false;
+            }
+
+            return nowUtc - RecentHeroReceiptAtUtc.Value < TimeSpan.FromSeconds(Math.Max(1, noticeSeconds));
+        }
+
+        public void ClearRecentHeroReceipt()
+        {
+            RecentHeroReceipt = string.Empty;
+            RecentHeroReceiptTitle = string.Empty;
+            RecentHeroReceiptAction = string.Empty;
+            RecentHeroReceiptAtUtc = null;
+            Changed?.Invoke();
+        }
+
+        public static string FormatHeroActionReceipt(string responseJson, string fallbackAction, string fallbackSubject, string subjectNoun)
+        {
+            var action = string.IsNullOrWhiteSpace(fallbackAction) ? "Roster action completed" : fallbackAction.Trim();
+            var noun = string.IsNullOrWhiteSpace(subjectNoun) ? "Hero" : subjectNoun.Trim();
+            var subject = string.IsNullOrWhiteSpace(fallbackSubject) ? string.Empty : fallbackSubject.Trim();
+            var fallback = string.IsNullOrWhiteSpace(subject) ? action : $"{action}: {subject}";
+
+            if (string.IsNullOrWhiteSpace(responseJson))
+            {
+                return $"{fallback}. No {noun.ToLowerInvariant()} receipt was returned.";
+            }
+
+            try
+            {
+                var root = JToken.Parse(responseJson);
+                var result = FirstDirectToken(new[] { root }, "result", "hero", "operative", "recruitment", "release", "data");
+                if (result == null || result.Type != JTokenType.Object)
+                {
+                    result = root;
+                }
+
+                var receipt = FirstDirectToken(new[] { result, root }, "receipt", "heroReceipt", "hero_receipt", "operativeReceipt", "operative_receipt", "rosterReceipt", "roster_receipt");
+                if (receipt == null || receipt.Type != JTokenType.Object)
+                {
+                    receipt = null;
+                }
+
+                var parts = new List<string>();
+                var outcome = FirstReceiptText(
+                    Child(Child(result, "outcome"), "kind"),
+                    Child(result, "outcome"),
+                    Child(receipt, "outcome"),
+                    Child(result, "status"),
+                    Child(root, "status"));
+                if (!string.IsNullOrWhiteSpace(outcome))
+                {
+                    parts.Add($"Outcome: {HumanizeReceiptPhrase(outcome)}");
+                }
+
+                var namedSubject = FirstReceiptText(
+                    Child(receipt, "heroName"),
+                    Child(receipt, "hero_name"),
+                    Child(receipt, "operativeName"),
+                    Child(receipt, "operative_name"),
+                    Child(receipt, "candidateName"),
+                    Child(receipt, "candidate_name"),
+                    Child(result, "displayName"),
+                    Child(result, "display_name"),
+                    Child(result, "name"),
+                    Child(root, "displayName"),
+                    Child(root, "display_name"),
+                    Child(root, "name"));
+                if (!string.IsNullOrWhiteSpace(namedSubject))
+                {
+                    parts.Add($"{noun}: {namedSubject}");
+                }
+
+                var roleText = FirstReceiptText(
+                    Child(result, "className"),
+                    Child(result, "class_name"),
+                    Child(result, "role"),
+                    Child(receipt, "className"),
+                    Child(receipt, "class_name"),
+                    Child(receipt, "role"));
+                if (!string.IsNullOrWhiteSpace(roleText))
+                {
+                    parts.Add($"Role: {HumanizeReceiptPhrase(roleText)}");
+                }
+
+                var rewardText = FormatRewardBundle(FirstDirectToken(
+                    new[] { result, receipt, root },
+                    "rewards",
+                    "reward",
+                    "resourceRewards",
+                    "resource_rewards",
+                    "gains",
+                    "gain",
+                    "resourceDelta",
+                    "resource_delta"));
+                if (!string.IsNullOrWhiteSpace(rewardText))
+                {
+                    parts.Add($"Rewards: {rewardText}");
+                }
+
+                var effectText = FormatEffectBundle(FirstDirectToken(
+                    new[] { result, receipt, root },
+                    "effects",
+                    "effect",
+                    "changes",
+                    "impact",
+                    "returnedItems",
+                    "returned_items",
+                    "itemsReturned",
+                    "items_returned",
+                    "equipmentReturned",
+                    "equipment_returned",
+                    "rosterChange",
+                    "roster_change"));
+                if (!string.IsNullOrWhiteSpace(effectText))
+                {
+                    parts.Add($"Effects: {effectText}");
+                }
+
+                var summary = FirstReceiptText(
+                    Child(receipt, "summary"),
+                    Child(result, "summary"),
+                    Child(root, "summary"),
+                    Child(root, "message"),
+                    Child(result, "message"));
+                if (!string.IsNullOrWhiteSpace(summary))
+                {
+                    parts.Add($"Summary: {summary}");
+                }
+
+                var readable = string.Join(" • ", parts.Where(part => !string.IsNullOrWhiteSpace(part)).Distinct());
+                return string.IsNullOrWhiteSpace(readable)
+                    ? $"{fallback}. Backend returned no readable {noun.ToLowerInvariant()} roster receipt."
+                    : $"{action}. {readable}";
+            }
+            catch
+            {
+                return $"{fallback}. Raw receipt: {responseJson.Trim()}";
+            }
+        }
+
+        public static string ExtractHeroActionTitle(string responseJson, string fallbackAction, string subjectNoun)
+        {
+            if (string.IsNullOrWhiteSpace(responseJson))
+            {
+                return string.IsNullOrWhiteSpace(fallbackAction) ? string.Empty : fallbackAction.Trim();
+            }
+
+            try
+            {
+                var root = JToken.Parse(responseJson);
+                var result = FirstDirectToken(new[] { root }, "result", "hero", "operative", "recruitment", "release", "data");
+                if (result == null || result.Type != JTokenType.Object)
+                {
+                    result = root;
+                }
+
+                var receipt = FirstDirectToken(new[] { result, root }, "receipt", "heroReceipt", "hero_receipt", "operativeReceipt", "operative_receipt", "rosterReceipt", "roster_receipt");
+                var name = FirstReceiptText(
+                    Child(receipt, "heroName"),
+                    Child(receipt, "hero_name"),
+                    Child(receipt, "operativeName"),
+                    Child(receipt, "operative_name"),
+                    Child(receipt, "candidateName"),
+                    Child(receipt, "candidate_name"),
+                    Child(result, "displayName"),
+                    Child(result, "display_name"),
+                    Child(result, "name"),
+                    Child(root, "displayName"),
+                    Child(root, "display_name"),
+                    Child(root, "name"));
+
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    var noun = string.IsNullOrWhiteSpace(subjectNoun) ? "Hero" : subjectNoun.Trim();
+                    return $"{noun}: {name.Trim()}";
+                }
+
+                return string.IsNullOrWhiteSpace(fallbackAction) ? string.Empty : fallbackAction.Trim();
+            }
+            catch
+            {
+                return string.IsNullOrWhiteSpace(fallbackAction) ? string.Empty : fallbackAction.Trim();
+            }
         }
 
 

@@ -933,5 +933,47 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(state.RecentMissionInstanceId, Is.EqualTo("mission_1"));
         }
 
+
+        [Test]
+        public void Summary_state_formats_hero_acceptance_receipt_readably()
+        {
+            const string response = @"{
+                ""ok"": true,
+                ""result"": {
+                    ""status"": ""accepted"",
+                    ""displayName"": ""Lyra of the Veiled Paths"",
+                    ""className"": ""scout"",
+                    ""receipt"": {
+                        ""summary"": ""Lyra joined the roster and is ready for assignment.""
+                    },
+                    ""effects"": { ""rosterDelta"": 1 }
+                }
+            }";
+
+            var receipt = SummaryState.FormatHeroActionReceipt(response, "Contact recruited", "candidate_1", "Operative");
+            var title = SummaryState.ExtractHeroActionTitle(response, "Contact recruited", "Operative");
+
+            Assert.That(receipt, Does.Contain("Contact recruited"));
+            Assert.That(receipt, Does.Contain("Outcome: Accepted"));
+            Assert.That(receipt, Does.Contain("Operative: Lyra of the Veiled Paths"));
+            Assert.That(receipt, Does.Contain("Role: Scout"));
+            Assert.That(receipt, Does.Contain("Summary: Lyra joined the roster"));
+            Assert.That(receipt, Does.Not.Contain("display name"));
+            Assert.That(title, Is.EqualTo("Operative: Lyra of the Veiled Paths"));
+        }
+
+        [Test]
+        public void Summary_state_keeps_recent_hero_receipt_visible_briefly()
+        {
+            var state = new SummaryState();
+
+            state.FinishHeroActionReceipt("Hero released", "Hero released. Summary: Ser Kael left the roster.", "Hero: Ser Kael");
+
+            Assert.That(state.HasRecentHeroReceipt(DateTime.UtcNow), Is.True);
+            Assert.That(state.RecentHeroReceipt, Does.Contain("Ser Kael"));
+            Assert.That(state.RecentHeroReceiptTitle, Is.EqualTo("Hero: Ser Kael"));
+            Assert.That(state.RecentHeroReceiptAction, Is.EqualTo("Hero released"));
+        }
+
     }
 }

@@ -501,19 +501,21 @@ namespace PlanarWar.Client.UI
             }
 
             var trimmedRole = role?.Trim() ?? string.Empty;
+            var terms = ResolveHeroActionTerms();
 
             try
             {
                 summaryState.BeginHeroRecruit(trimmedRole);
-                await apiClient.RecruitHeroAsync(trimmedRole);
+                var response = await apiClient.RecruitHeroAsync(trimmedRole);
+                var action = terms.IsOperative ? "Operative scouting started" : "Hero recruitment scouting started";
+                var receipt = SummaryState.FormatHeroActionReceipt(response?.ToString(), action, trimmedRole, terms.SubjectNoun);
+                var title = SummaryState.ExtractHeroActionTitle(response?.ToString(), action, terms.SubjectNoun);
                 await summaryController.RefreshAsync();
-                summaryState.FinishAction(string.IsNullOrWhiteSpace(trimmedRole)
-                    ? "Hero recruitment scouting started."
-                    : $"Hero recruit started: {trimmedRole}");
+                summaryState.FinishHeroActionReceipt(action, receipt, title);
             }
             catch (Exception ex)
             {
-                summaryState.FinishAction($"Hero recruit failed: {ex.Message}", failed: true);
+                summaryState.FinishAction($"{terms.RecruitmentFamily} failed: {ex.Message}", failed: true);
             }
         }
 
@@ -525,16 +527,21 @@ namespace PlanarWar.Client.UI
                 return;
             }
 
+            var trimmedCandidateId = candidateId.Trim();
+            var terms = ResolveHeroActionTerms();
             try
             {
-                summaryState.BeginHeroRecruitAccept(candidateId);
-                await apiClient.AcceptHeroRecruitCandidateAsync(candidateId.Trim());
+                summaryState.BeginHeroRecruitAccept(trimmedCandidateId);
+                var response = await apiClient.AcceptHeroRecruitCandidateAsync(trimmedCandidateId);
+                var action = terms.IsOperative ? "Contact recruited" : "Hero candidate accepted";
+                var receipt = SummaryState.FormatHeroActionReceipt(response?.ToString(), action, trimmedCandidateId, terms.SubjectNoun);
+                var title = SummaryState.ExtractHeroActionTitle(response?.ToString(), action, terms.SubjectNoun);
                 await summaryController.RefreshAsync();
-                summaryState.FinishAction("Hero candidate accepted.");
+                summaryState.FinishHeroActionReceipt(action, receipt, title);
             }
             catch (Exception ex)
             {
-                summaryState.FinishAction($"Hero candidate accept failed: {ex.Message}", failed: true);
+                summaryState.FinishAction($"{terms.AcceptFailureLabel} failed: {ex.Message}", failed: true);
             }
         }
 
@@ -545,16 +552,20 @@ namespace PlanarWar.Client.UI
                 return;
             }
 
+            var terms = ResolveHeroActionTerms();
             try
             {
                 summaryState.BeginHeroRecruitDismiss();
-                await apiClient.DismissHeroRecruitCandidatesAsync();
+                var response = await apiClient.DismissHeroRecruitCandidatesAsync();
+                var action = terms.IsOperative ? "Contact slate dismissed" : "Candidate slate dismissed";
+                var receipt = SummaryState.FormatHeroActionReceipt(response?.ToString(), action, string.Empty, terms.SubjectNoun);
+                var title = SummaryState.ExtractHeroActionTitle(response?.ToString(), action, terms.SubjectNoun);
                 await summaryController.RefreshAsync();
-                summaryState.FinishAction("Hero candidates dismissed.");
+                summaryState.FinishHeroActionReceipt(action, receipt, title);
             }
             catch (Exception ex)
             {
-                summaryState.FinishAction($"Hero candidate dismiss failed: {ex.Message}", failed: true);
+                summaryState.FinishAction($"{terms.DismissFailureLabel} failed: {ex.Message}", failed: true);
             }
         }
 
@@ -566,17 +577,51 @@ namespace PlanarWar.Client.UI
             }
 
             var trimmedHeroId = heroId.Trim();
+            var terms = ResolveHeroActionTerms();
             try
             {
                 summaryState.BeginHeroRelease(trimmedHeroId);
-                await apiClient.ReleaseHeroAsync(trimmedHeroId);
+                var response = await apiClient.ReleaseHeroAsync(trimmedHeroId);
+                var action = terms.IsOperative ? "Operative retired" : "Hero released";
+                var receipt = SummaryState.FormatHeroActionReceipt(response?.ToString(), action, trimmedHeroId, terms.SubjectNoun);
+                var title = SummaryState.ExtractHeroActionTitle(response?.ToString(), action, terms.SubjectNoun);
                 await summaryController.RefreshAsync();
-                summaryState.FinishAction($"Hero released: {trimmedHeroId}");
+                summaryState.FinishHeroActionReceipt(action, receipt, title);
             }
             catch (Exception ex)
             {
-                summaryState.FinishAction($"Hero release failed: {ex.Message}", failed: true);
+                summaryState.FinishAction($"{terms.ReleaseFailureLabel} failed: {ex.Message}", failed: true);
             }
+        }
+
+        private HeroActionTerms ResolveHeroActionTerms()
+        {
+            var isOperative = string.Equals(summaryState?.Snapshot?.City?.SettlementLane, "black_market", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(summaryState?.Snapshot?.City?.SettlementLaneLabel, "Black Market", StringComparison.OrdinalIgnoreCase);
+
+            return isOperative
+                ? new HeroActionTerms(true, "Operative", "operative scouting", "contact recruitment", "contact dismiss", "operative retire")
+                : new HeroActionTerms(false, "Hero", "hero recruitment", "candidate accept", "candidate dismiss", "hero release");
+        }
+
+        private readonly struct HeroActionTerms
+        {
+            public HeroActionTerms(bool isOperative, string subjectNoun, string recruitmentFamily, string acceptFailureLabel, string dismissFailureLabel, string releaseFailureLabel)
+            {
+                IsOperative = isOperative;
+                SubjectNoun = subjectNoun;
+                RecruitmentFamily = recruitmentFamily;
+                AcceptFailureLabel = acceptFailureLabel;
+                DismissFailureLabel = dismissFailureLabel;
+                ReleaseFailureLabel = releaseFailureLabel;
+            }
+
+            public bool IsOperative { get; }
+            public string SubjectNoun { get; }
+            public string RecruitmentFamily { get; }
+            public string AcceptFailureLabel { get; }
+            public string DismissFailureLabel { get; }
+            public string ReleaseFailureLabel { get; }
         }
 
         private async Task HandleStartMissionRequestedAsync(string missionId, string armyId, string heroId, string responsePosture)

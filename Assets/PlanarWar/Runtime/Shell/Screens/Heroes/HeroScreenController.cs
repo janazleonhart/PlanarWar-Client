@@ -111,6 +111,7 @@ namespace PlanarWar.Client.UI.Screens.Heroes
             var isBusy = summaryState?.IsActionBusy == true;
 
             var terms = HeroTerminology.For(s);
+            var nowUtc = DateTime.UtcNow;
 
             if (headline != null) headline.text = terms.DeskTitle;
             if (copy != null) copy.text = terms.DeskCopy;
@@ -175,10 +176,10 @@ namespace PlanarWar.Client.UI.Screens.Heroes
 
             if (noteValue != null)
             {
-                noteValue.text = BuildDeskNote(selectedHero, candidates, recruitment, isBusy, terms);
+                noteValue.text = BuildDeskNote(selectedHero, candidates, recruitment, isBusy, terms, nowUtc);
             }
 
-            var cards = BuildCards(heroes, recruitment, candidates, isBusy, terms).Take(heroCards.Length).ToList();
+            var cards = BuildCards(heroes, recruitment, candidates, isBusy, terms, nowUtc).Take(heroCards.Length).ToList();
             for (var i = 0; i < heroCards.Length; i++)
             {
                 if (i < cards.Count) heroCards[i].Show(cards[i]);
@@ -186,9 +187,14 @@ namespace PlanarWar.Client.UI.Screens.Heroes
             }
         }
 
-        private List<CardView> BuildCards(List<HeroSnapshot> heroes, HeroRecruitmentSnapshot recruitment, List<HeroRecruitCandidateSnapshot> candidates, bool isBusy, HeroTerminology terms)
+        private List<CardView> BuildCards(List<HeroSnapshot> heroes, HeroRecruitmentSnapshot recruitment, List<HeroRecruitCandidateSnapshot> candidates, bool isBusy, HeroTerminology terms, DateTime nowUtc)
         {
             var cards = new List<CardView>();
+
+            if (summaryState?.HasRecentHeroReceipt(nowUtc) == true)
+            {
+                cards.Add(BuildRecentHeroReceiptCard(terms));
+            }
 
             if (recruitment != null && string.Equals(recruitment.Status, "scouting", StringComparison.OrdinalIgnoreCase))
             {
@@ -344,14 +350,28 @@ namespace PlanarWar.Client.UI.Screens.Heroes
             return FirstNonBlank(recruitment.BlockedReason, recruitment.Shortfall, $"{terms.RecruitmentFamily} {FirstNonBlank(recruitment.Status, "blocked")}");
         }
 
-        private string BuildDeskNote(HeroSnapshot selectedHero, List<HeroRecruitCandidateSnapshot> candidates, HeroRecruitmentSnapshot recruitment, bool isBusy, HeroTerminology terms)
+        private string BuildDeskNote(HeroSnapshot selectedHero, List<HeroRecruitCandidateSnapshot> candidates, HeroRecruitmentSnapshot recruitment, bool isBusy, HeroTerminology terms, DateTime nowUtc)
         {
             if (isBusy && !string.IsNullOrWhiteSpace(summaryState?.ActionStatus)) return summaryState.ActionStatus;
+            if (summaryState?.HasRecentHeroReceipt(nowUtc) == true) return Truncate(summaryState.RecentHeroReceipt, 128);
             if (selectedHero != null && string.Equals(pendingReleaseHeroId, selectedHero.Id, StringComparison.OrdinalIgnoreCase)) return $"Confirm {terms.ReleaseVerbLower} for {selectedHero.Name}. This removes the {terms.SingularLower} from the roster; backend release should return equipped items when present.";
             if (candidates != null && candidates.Count > 0) return $"{terms.CandidateTitle} slate is ready. Accept one {terms.CandidateLower} or dismiss the slate from this desk.";
             if (recruitment?.StartEligible == true) return $"{terms.RecruitmentFamily} can be opened from this {terms.DeskTitle.ToLowerInvariant()} without returning to Development.";
             if (selectedHero != null) return $"Selected {selectedHero.Name}: {BuildHeroLore(selectedHero, terms)}";
             return FirstNonBlank(recruitment?.BlockedReason, recruitment?.Shortfall, $"{terms.DeskTitle} is ready, but no actionable roster/{terms.CandidateLower} truth is visible yet.");
+        }
+
+        private CardView BuildRecentHeroReceiptCard(HeroTerminology terms)
+        {
+            var title = FirstNonBlank(summaryState?.RecentHeroReceiptTitle, summaryState?.RecentHeroReceiptAction, $"{terms.SingularTitle} roster updated");
+            return new CardView(
+                $"{terms.SingularTitle} result",
+                title,
+                string.IsNullOrWhiteSpace(summaryState?.RecentHeroReceiptAction) ? "Recent roster action" : summaryState.RecentHeroReceiptAction,
+                Truncate(summaryState?.RecentHeroReceipt, 160),
+                "Receipt visible",
+                false,
+                null);
         }
 
         private static string BuildHeroLore(HeroSnapshot hero, HeroTerminology terms)
@@ -449,6 +469,13 @@ namespace PlanarWar.Client.UI.Screens.Heroes
         {
             return string.Equals(s?.City?.SettlementLane, "black_market", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(s?.City?.SettlementLaneLabel, "Black Market", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string Truncate(string text, int maxLength)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return string.Empty;
+            var trimmed = text.Trim();
+            return trimmed.Length <= maxLength ? trimmed : trimmed.Substring(0, Math.Max(0, maxLength - 1)) + "…";
         }
 
         private static string FirstNonBlank(params string[] values)
