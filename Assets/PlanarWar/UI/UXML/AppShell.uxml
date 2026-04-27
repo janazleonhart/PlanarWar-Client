@@ -669,10 +669,17 @@
                             <ui:Label text="Roster management" class="eyebrow" />
                             <ui:DropdownField name="heroes-manage-hero-field" label="Hero" />
                             <ui:Button name="heroes-release-button" text="Release selected hero" class="action-button" />
-                            <ui:DropdownField name="heroes-armory-item-field" label="Shared armory item" />
-                            <ui:Button name="heroes-equip-armory-button" text="Equip selected gear" class="action-button action-button--primary" />
-                            <ui:DropdownField name="heroes-equipped-slot-field" label="Equipped slot" />
-                            <ui:Button name="heroes-unequip-gear-button" text="Return gear to armory" class="action-button" />
+                            <ui:VisualElement class="summary-card glance-card">
+                                <ui:Label text="Shared equipment slots" class="eyebrow" />
+                                <ui:DropdownField name="heroes-gear-slot-field" label="Gear slot" />
+                                <ui:Label name="heroes-selected-slot-current-value" text="Current slot gear appears here." class="summary-value summary-value--glance" />
+                                <ui:Label name="heroes-selected-slot-compatible-value" text="Compatible shared-armory gear appears here." class="metric-subvalue metric-subvalue--wrap" />
+                                <ui:DropdownField name="heroes-armory-item-field" label="Compatible gear" />
+                                <ui:VisualElement class="button-row">
+                                    <ui:Button name="heroes-equip-armory-button" text="Equip selected gear" class="action-button action-button--primary" />
+                                    <ui:Button name="heroes-unequip-gear-button" text="Return gear to armory" class="action-button" />
+                                </ui:VisualElement>
+                            </ui:VisualElement>
                             <ui:DropdownField name="heroes-manage-candidate-field" label="Recruit candidate" />
                             <ui:VisualElement class="button-row">
                                 <ui:Button name="heroes-recruit-button" text="Scout hero candidate" class="action-button action-button--primary" />

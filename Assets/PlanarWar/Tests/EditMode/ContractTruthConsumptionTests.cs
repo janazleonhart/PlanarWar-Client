@@ -4,6 +4,7 @@ using PlanarWar.Client.Core.Contracts;
 using PlanarWar.Client.Core.Mapping;
 using PlanarWar.Client.Core.Presentation;
 using PlanarWar.Client.UI.Screens.City;
+using PlanarWar.Client.UI.Screens.Heroes;
 using PlanarWar.Client.UI.Screens.Summary;
 using System;
 using System.Collections.Generic;
@@ -985,7 +986,9 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(uxml, Does.Contain("heroes-armory-value"));
             Assert.That(uxml, Does.Contain("heroes-armory-item-field"));
             Assert.That(uxml, Does.Contain("heroes-equip-armory-button"));
-            Assert.That(uxml, Does.Contain("heroes-equipped-slot-field"));
+            Assert.That(uxml, Does.Contain("heroes-gear-slot-field"));
+            Assert.That(uxml, Does.Contain("heroes-selected-slot-current-value"));
+            Assert.That(uxml, Does.Contain("heroes-selected-slot-compatible-value"));
             Assert.That(uxml, Does.Contain("heroes-unequip-gear-button"));
         }
 
@@ -1045,6 +1048,110 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(receipt, Does.Contain("Equipped iron_sword_1"));
         }
 
+
+        [Test]
+        public void Hero_armory_slot_surface_exposes_standard_mud_slot_contract()
+        {
+            Assert.That(HeroArmorySlotWorkflow.StandardSlots.ToArray(), Is.EqualTo(new[]
+            {
+                "head",
+                "chest",
+                "legs",
+                "feet",
+                "hands",
+                "mainhand",
+                "offhand",
+                "ring1",
+                "ring2",
+                "neck",
+            }));
+
+            Assert.That(HeroArmorySlotWorkflow.IsStandardSlot("main hand"), Is.True);
+            Assert.That(HeroArmorySlotWorkflow.IsStandardSlot("ring_1"), Is.True);
+            Assert.That(HeroArmorySlotWorkflow.IsStandardSlot("waist"), Is.False);
+        }
+
+        [Test]
+        public void Hero_armory_compatible_filter_uses_backend_item_slot_truth_only()
+        {
+            var armory = new HeroArmoryBridgeSnapshot
+            {
+                ArmoryItems = new List<HeroArmoryItemSnapshot>
+                {
+                    new HeroArmoryItemSnapshot
+                    {
+                        SlotIndex = 0,
+                        ItemId = "iron_helm",
+                        Template = new HeroEquipmentTemplateSnapshot { Name = "Iron Helm", Slot = "head" }
+                    },
+                    new HeroArmoryItemSnapshot
+                    {
+                        SlotIndex = 1,
+                        ItemId = "iron_chest",
+                        Template = new HeroEquipmentTemplateSnapshot { Name = "Iron Chest", Slot = "chest" }
+                    },
+                    new HeroArmoryItemSnapshot
+                    {
+                        SlotIndex = 2,
+                        ItemId = "plain_ring",
+                        Template = new HeroEquipmentTemplateSnapshot { Name = "Plain Ring", Slot = "ring" }
+                    },
+                    new HeroArmoryItemSnapshot
+                    {
+                        SlotIndex = 3,
+                        ItemId = "unknown_token",
+                        Template = new HeroEquipmentTemplateSnapshot { Name = "Unknown Token" }
+                    },
+                    new HeroArmoryItemSnapshot
+                    {
+                        ItemId = "no_slot_index",
+                        Template = new HeroEquipmentTemplateSnapshot { Name = "No Slot Index", Slot = "head" }
+                    }
+                }
+            };
+
+            var headItems = HeroArmorySlotWorkflow.GetCompatibleArmoryItems(armory, "head");
+            var ringOneItems = HeroArmorySlotWorkflow.GetCompatibleArmoryItems(armory, "ring1");
+
+            Assert.That(headItems.Select(item => item.ItemId).ToArray(), Is.EqualTo(new[] { "iron_helm" }));
+            Assert.That(ringOneItems, Is.Empty, "Generic ring is not silently treated as ring1/ring2 until backend exposes that compatibility explicitly.");
+        }
+
+        [Test]
+        public void Hero_armory_selected_equipped_slot_controls_return_truth()
+        {
+            var equipment = new HeroEquipmentSnapshot
+            {
+                HeroId = "hero_1",
+                Equipment = new List<HeroEquipmentEntrySnapshot>
+                {
+                    new HeroEquipmentEntrySnapshot
+                    {
+                        Slot = "mainhand",
+                        ItemId = "training_blade",
+                        Template = new HeroEquipmentTemplateSnapshot { Name = "Training Blade", Slot = "mainhand" }
+                    }
+                }
+            };
+
+            Assert.That(HeroArmorySlotWorkflow.HasEquippedSlot(equipment, "main hand"), Is.True);
+            Assert.That(HeroArmorySlotWorkflow.HasEquippedSlot(equipment, "offhand"), Is.False);
+            Assert.That(HeroArmorySlotWorkflow.BuildSelectedSlotCurrentText(equipment, "mainhand", false), Does.Contain("Training Blade"));
+            Assert.That(HeroArmorySlotWorkflow.BuildSelectedSlotCurrentText(equipment, "offhand", false), Does.Contain("empty gear slot"));
+        }
+
+        [Test]
+        public void Hero_armory_black_market_slot_copy_uses_operative_kit_language()
+        {
+            var emptyKitText = HeroArmorySlotWorkflow.BuildCompatibleItemSummary(new List<HeroArmoryItemSnapshot>(), "offhand", true);
+            var title = HeroArmorySlotWorkflow.BuildSlotSurfaceTitle(true);
+            var current = HeroArmorySlotWorkflow.BuildSelectedSlotCurrentText(new HeroEquipmentSnapshot(), "head", true);
+
+            Assert.That(title, Is.EqualTo("Operative kit slots"));
+            Assert.That(emptyKitText, Does.Contain("kit"));
+            Assert.That(current, Does.Contain("empty kit slot"));
+            Assert.That(emptyKitText.ToLowerInvariant(), Does.Not.Contain("gear"));
+        }
 
     }
 }
