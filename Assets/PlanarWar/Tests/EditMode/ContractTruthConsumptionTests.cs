@@ -1745,6 +1745,59 @@ namespace PlanarWar.Client.Tests.EditMode
 
 
         [Test]
+        public void Development_building_routing_surface_uses_existing_backend_values_without_fake_options()
+        {
+            var valuesMethod = typeof(CityScreenController).GetMethod("BuildBuildingRoutingPreferenceValues", BindingFlags.NonPublic | BindingFlags.Static);
+            var labelsMethod = typeof(CityScreenController).GetMethod("BuildBuildingRoutingPreferenceLabels", BindingFlags.NonPublic | BindingFlags.Static);
+            var normalizeMethod = typeof(CityScreenController).GetMethod("NormalizeBuildingRoutingPreference", BindingFlags.NonPublic | BindingFlags.Static);
+            var labelMethod = typeof(CityScreenController).GetMethod("BuildBuildingRoutingSelectorLabel", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(valuesMethod, Is.Not.Null);
+            Assert.That(labelsMethod, Is.Not.Null);
+            Assert.That(normalizeMethod, Is.Not.Null);
+            Assert.That(labelMethod, Is.Not.Null);
+
+            var values = ((System.Collections.IEnumerable)valuesMethod.Invoke(null, Array.Empty<object>())).Cast<string>().ToList();
+            var labels = ((System.Collections.IEnumerable)labelsMethod.Invoke(null, Array.Empty<object>())).Cast<string>().ToList();
+
+            CollectionAssert.AreEqual(new[] { "balanced", "prefer_local", "prefer_reserve", "prefer_exchange" }, values);
+            CollectionAssert.AreEqual(new[] { "Balanced • spread output", "Local • nearby demand", "Reserve • protected stock", "Exchange • trade flow" }, labels);
+            Assert.That((string)normalizeMethod.Invoke(null, new object[] { "local" }), Is.EqualTo("prefer_local"));
+            Assert.That((string)normalizeMethod.Invoke(null, new object[] { "protected_reserve" }), Is.EqualTo("prefer_reserve"));
+            Assert.That((string)normalizeMethod.Invoke(null, new object[] { "exchange" }), Is.EqualTo("prefer_exchange"));
+            Assert.That((string)normalizeMethod.Invoke(null, new object[] { "goblin_theater" }), Is.EqualTo("balanced"));
+            var cityRoutingLabel = (string)labelMethod.Invoke(null, new object[] { false, string.Empty });
+            var marketRoutingLabel = (string)labelMethod.Invoke(null, new object[] { true, "prefer_exchange" });
+            Assert.That(cityRoutingLabel, Does.StartWith("Output routing —"));
+            Assert.That(cityRoutingLabel, Does.Contain("Balanced spreads output"));
+            Assert.That(cityRoutingLabel, Does.Contain("Local feeds nearby demand"));
+            Assert.That(cityRoutingLabel, Does.Contain("Reserve protects stock"));
+            Assert.That(cityRoutingLabel, Does.Contain("Exchange pushes trade"));
+            Assert.That(marketRoutingLabel, Does.StartWith("Front output routing • switching to Exchange —"));
+            Assert.That(marketRoutingLabel, Does.Contain("Balanced spreads output"));
+        }
+
+        [Test]
+        public void Development_building_management_card_surfaces_routing_selector_without_backend_renames()
+        {
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/City/CityScreenController.cs");
+            Assert.That(File.Exists(controllerPath), Is.True, "CityScreenController.cs should be available from the Unity project root.");
+
+            var controller = File.ReadAllText(controllerPath);
+            Assert.That(controller, Does.Contain("selectorLabel: BuildBuildingRoutingSelectorLabel"));
+            Assert.That(controller, Does.Contain("selectorOptions: routingLabels"));
+            Assert.That(controller, Does.Contain("TriggerSwitchBuildingRouting(buildingId, nextRouting)"));
+            Assert.That(controller, Does.Contain("PendingBuildingRoutingPreference"));
+            Assert.That(controller, Does.Contain("BuildBuildingRoutingManagementNote"));
+            Assert.That(controller, Does.Contain("Balanced • spread output"));
+            Assert.That(controller, Does.Contain("Local • nearby demand"));
+            Assert.That(controller, Does.Contain("Reserve • protected stock"));
+            Assert.That(controller, Does.Contain("Exchange • trade flow"));
+            Assert.That(controller, Does.Contain("Balanced spreads output; Local feeds nearby demand; Reserve protects stock; Exchange pushes trade."));
+            Assert.That(controller, Does.Not.Contain("/api/buildings/routing"), "Routing controls should use the existing callback seam rather than inventing route strings in the UI controller.");
+        }
+
+
+        [Test]
         public void Development_surface_closeout_keeps_action_boards_and_inline_building_picker_checkpointed()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");

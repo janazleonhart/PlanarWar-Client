@@ -1313,12 +1313,32 @@ namespace PlanarWar.Client.UI.Screens.City
                 && onCancelActiveBuildRequested != null;
             var pendingCancelConfirm = canCancel
                 && summaryState.HasPendingBuildingConfirm("cancel_build", activeBuildId: activeBuildId);
+            var routingValues = BuildBuildingRoutingPreferenceValues();
+            var routingLabels = BuildBuildingRoutingPreferenceLabels();
+            var currentRouting = NormalizeBuildingRoutingPreference(building?.RoutingPreference);
+            var routingIndex = Math.Max(0, routingValues.FindIndex(value => string.Equals(value, currentRouting, StringComparison.OrdinalIgnoreCase)));
+            if (routingIndex >= routingValues.Count)
+            {
+                routingIndex = 0;
+            }
+
+            var routingPending = summaryState.IsActionBusy
+                && string.Equals(summaryState.PendingBuildingId, buildingId, StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(summaryState.PendingBuildingRoutingPreference);
+            var canSwitchRouting = !summaryState.IsActionBusy
+                && !hasTiming
+                && onSwitchBuildingRoutingRequested != null
+                && !string.IsNullOrWhiteSpace(buildingId);
+            var managementNote = BuildBuildingManagementNote(
+                BuildBuildingRoutingManagementNote(BuildBuildingNote(building, isBlackMarket, nowUtc), currentRouting, routingPending ? summaryState.PendingBuildingRoutingPreference : string.Empty, isBlackMarket),
+                canDestroy || canRemodel,
+                canCancel);
 
             return new CardView(
                 family: isBlackMarket ? "Operator front" : "Building",
                 title: FormatBuildingTitle(building, isBlackMarket),
                 lore: BuildBuildingLore(building, nowUtc),
-                note: BuildBuildingManagementNote(BuildBuildingNote(building, isBlackMarket, nowUtc), canDestroy || canRemodel, canCancel),
+                note: managementNote,
                 buttonText: canUpgrade || pendingUpgrade
                     ? pendingUpgrade ? "Upgrading..." : "Upgrade"
                     : BuildBuildingStatusButtonText(building, isBlackMarket, nowUtc),
@@ -1333,7 +1353,21 @@ namespace PlanarWar.Client.UI.Screens.City
                     : canCancel ? () => TriggerCancelActiveBuild(activeBuildId) : null,
                 tertiaryButtonText: canDestroy ? (pendingDestroyConfirm ? "Confirm destroy" : "Destroy") : null,
                 tertiaryButtonEnabled: canDestroy,
-                tertiaryOnClick: canDestroy ? () => TriggerDestroyBuilding(buildingId) : null);
+                tertiaryOnClick: canDestroy ? () => TriggerDestroyBuilding(buildingId) : null,
+                selectorLabel: BuildBuildingRoutingSelectorLabel(isBlackMarket, routingPending ? summaryState.PendingBuildingRoutingPreference : string.Empty),
+                selectorOptions: routingLabels,
+                selectorIndex: routingIndex,
+                selectorOnChange: canSwitchRouting
+                    ? index =>
+                    {
+                        var safeIndex = Math.Max(0, Math.Min(index, routingValues.Count - 1));
+                        var nextRouting = routingValues[safeIndex];
+                        if (!string.Equals(nextRouting, currentRouting, StringComparison.OrdinalIgnoreCase))
+                        {
+                            TriggerSwitchBuildingRouting(buildingId, nextRouting);
+                        }
+                    }
+                    : null);
         }
 
         private CardView BuildBuildTimerCard(CityTimerEntrySnapshot timer, bool isBlackMarket, DateTime nowUtc)
@@ -1588,13 +1622,64 @@ namespace PlanarWar.Client.UI.Screens.City
             return FirstNonBlank(building?.Id, building?.BuildingId);
         }
 
-        private static string GetNextRoutingPreference(string current)
+        private static List<string> BuildBuildingRoutingPreferenceValues()
+        {
+            return new List<string> { "balanced", "prefer_local", "prefer_reserve", "prefer_exchange" };
+        }
+
+        private static List<string> BuildBuildingRoutingPreferenceLabels()
+        {
+            return new List<string>
+            {
+                "Balanced • spread output",
+                "Local • nearby demand",
+                "Reserve • protected stock",
+                "Exchange • trade flow",
+            };
+        }
+
+        private static string NormalizeBuildingRoutingPreference(string current)
         {
             var value = (current ?? string.Empty).Trim();
-            if (value.Equals("prefer_local", StringComparison.OrdinalIgnoreCase)) return "prefer_reserve";
-            if (value.Equals("prefer_reserve", StringComparison.OrdinalIgnoreCase)) return "prefer_exchange";
-            if (value.Equals("prefer_exchange", StringComparison.OrdinalIgnoreCase)) return "balanced";
-            return "prefer_local";
+            if (value.Equals("prefer_local", StringComparison.OrdinalIgnoreCase)) return "prefer_local";
+            if (value.Equals("local", StringComparison.OrdinalIgnoreCase)) return "prefer_local";
+            if (value.Equals("prefer_reserve", StringComparison.OrdinalIgnoreCase)) return "prefer_reserve";
+            if (value.Equals("reserve", StringComparison.OrdinalIgnoreCase)) return "prefer_reserve";
+            if (value.Equals("protected_reserve", StringComparison.OrdinalIgnoreCase)) return "prefer_reserve";
+            if (value.Equals("prefer_exchange", StringComparison.OrdinalIgnoreCase)) return "prefer_exchange";
+            if (value.Equals("exchange", StringComparison.OrdinalIgnoreCase)) return "prefer_exchange";
+            return "balanced";
+        }
+
+        private static string FormatBuildingRoutingPreferenceLabel(string routingPreference)
+        {
+            var normalized = NormalizeBuildingRoutingPreference(routingPreference);
+            if (normalized.Equals("prefer_local", StringComparison.OrdinalIgnoreCase)) return "Local";
+            if (normalized.Equals("prefer_reserve", StringComparison.OrdinalIgnoreCase)) return "Reserve";
+            if (normalized.Equals("prefer_exchange", StringComparison.OrdinalIgnoreCase)) return "Exchange";
+            return "Balanced";
+        }
+
+        private static string BuildBuildingRoutingSelectorLabel(bool isBlackMarket, string pendingRoutingPreference)
+        {
+            var prefix = isBlackMarket ? "Front output routing" : "Output routing";
+            var guide = "Balanced spreads output; Local feeds nearby demand; Reserve protects stock; Exchange pushes trade.";
+            return string.IsNullOrWhiteSpace(pendingRoutingPreference)
+                ? $"{prefix} — {guide}"
+                : $"{prefix} • switching to {FormatBuildingRoutingPreferenceLabel(pendingRoutingPreference)} — {guide}";
+        }
+
+        private static string BuildBuildingRoutingManagementNote(string baseNote, string currentRoutingPreference, string pendingRoutingPreference, bool isBlackMarket)
+        {
+            var noun = isBlackMarket ? "Front output" : "Building output";
+            var note = string.IsNullOrWhiteSpace(baseNote) ? "Building/front truth is visible." : baseNote.Trim();
+            var currentLabel = FormatBuildingRoutingPreferenceLabel(currentRoutingPreference);
+            if (!string.IsNullOrWhiteSpace(pendingRoutingPreference))
+            {
+                return $"{note} {noun} routing: {currentLabel}. Routing switch pending: {FormatBuildingRoutingPreferenceLabel(pendingRoutingPreference)}.";
+            }
+
+            return $"{note} {noun} routing: {currentLabel}.";
         }
 
         private static string BuildBuildingCardsCopy(ShellSummarySnapshot s, bool isBlackMarket, DateTime nowUtc)
