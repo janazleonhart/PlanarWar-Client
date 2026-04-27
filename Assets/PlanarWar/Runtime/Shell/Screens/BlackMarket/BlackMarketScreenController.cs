@@ -24,19 +24,24 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private readonly Label managementCopy;
         private readonly Label managementNote;
         private readonly DropdownField managementArmyField;
+        private readonly VisualElement managementArmyPicker;
         private readonly TextField renameInput;
         private readonly Button renameButton;
         private readonly TextField splitSizeInput;
         private readonly TextField splitNameInput;
         private readonly Button splitButton;
         private readonly DropdownField mergeTargetField;
+        private readonly VisualElement mergeTargetPicker;
         private readonly Button mergeButton;
         private readonly Button disbandButton;
         private readonly DropdownField holdRegionField;
+        private readonly VisualElement holdRegionPicker;
         private readonly DropdownField holdPostureField;
+        private readonly VisualElement holdPosturePicker;
         private readonly Button assignHoldButton;
         private readonly Button releaseHoldButton;
         private readonly DropdownField dispatchHeroField;
+        private readonly VisualElement dispatchHeroPicker;
         private readonly Button dispatchAssaultButton;
         private readonly Button dispatchGarrisonButton;
         private readonly InfoCard[] cards;
@@ -68,6 +73,9 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private string selectedDispatchHeroId = string.Empty;
         private bool suppressManagementEvents;
         private bool useBlackMarketForceTerms = true;
+        private ShellSummarySnapshot lastManagementSummary;
+        private List<ArmySnapshot> lastManagementRankedArmies = new();
+        private string lastManagementTargetArmyId = string.Empty;
 
         public BlackMarketScreenController(VisualElement root, SummaryState summaryState, Func<string, Task> onReinforceArmyRequested, Func<string, string, Task> onRenameArmyRequested, Func<string, int, string, Task> onSplitArmyRequested, Func<string, string, Task> onMergeArmyRequested, Func<string, Task> onDisbandArmyRequested, Func<string, string, string, Task> onAssignArmyHoldRequested, Func<string, Task> onReleaseArmyHoldRequested, Func<string, string, string, Task> onWarfrontAssaultRequested, Func<string, string, string, Task> onGarrisonStrikeRequested, Func<string, string, string, string, Task> onStartMissionRequested, Func<string, Task> onCompleteMissionRequested, Action onRefreshDeskRequested)
         {
@@ -84,19 +92,24 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             managementCopy = root.Q<Label>("warfront-management-copy-value");
             managementNote = root.Q<Label>("warfront-manage-note-value");
             managementArmyField = root.Q<DropdownField>("warfront-manage-army-field");
+            managementArmyPicker = root.Q<VisualElement>("warfront-manage-army-picker");
             renameInput = root.Q<TextField>("warfront-manage-rename-input");
             renameButton = root.Q<Button>("warfront-manage-rename-button");
             splitSizeInput = root.Q<TextField>("warfront-manage-split-size-input");
             splitNameInput = root.Q<TextField>("warfront-manage-split-name-input");
             splitButton = root.Q<Button>("warfront-manage-split-button");
             mergeTargetField = root.Q<DropdownField>("warfront-manage-merge-target-field");
+            mergeTargetPicker = root.Q<VisualElement>("warfront-manage-merge-target-picker");
             mergeButton = root.Q<Button>("warfront-manage-merge-button");
             disbandButton = root.Q<Button>("warfront-manage-disband-button");
             holdRegionField = root.Q<DropdownField>("warfront-manage-hold-region-field");
+            holdRegionPicker = root.Q<VisualElement>("warfront-manage-hold-region-picker");
             holdPostureField = root.Q<DropdownField>("warfront-manage-hold-posture-field");
+            holdPosturePicker = root.Q<VisualElement>("warfront-manage-hold-posture-picker");
             assignHoldButton = root.Q<Button>("warfront-manage-hold-assign-button");
             releaseHoldButton = root.Q<Button>("warfront-manage-hold-release-button");
             dispatchHeroField = root.Q<DropdownField>("warfront-manage-dispatch-hero-field");
+            dispatchHeroPicker = root.Q<VisualElement>("warfront-manage-dispatch-hero-picker");
             dispatchAssaultButton = root.Q<Button>("warfront-manage-dispatch-assault-button");
             dispatchGarrisonButton = root.Q<Button>("warfront-manage-dispatch-garrison-button");
             cards = Enumerable.Range(1, 4).Select(i => new InfoCard(root, $"warfront-card-{i}", hasButton: true)).ToArray();
@@ -269,7 +282,11 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
         private void RenderFormationManagement(ShellSummarySnapshot summary, List<ArmySnapshot> rankedArmies, string targetArmyId)
         {
-            if (managementCopy == null && managementNote == null && managementArmyField == null)
+            lastManagementSummary = summary;
+            lastManagementRankedArmies = rankedArmies ?? new List<ArmySnapshot>();
+            lastManagementTargetArmyId = targetArmyId ?? string.Empty;
+
+            if (managementCopy == null && managementNote == null && managementArmyField == null && managementArmyPicker == null)
             {
                 return;
             }
@@ -283,6 +300,12 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 mergeArmyChoiceIds.Clear();
                 holdRegionChoiceIds.Clear();
                 dispatchHeroChoiceIds.Clear();
+                var postureChoicesWhenEmpty = BuildHoldPostureChoices();
+                RenderPicker(managementArmyPicker, new List<PickerChoice>(), string.Empty, false, LaneText("No live cell is visible yet."), _ => { });
+                RenderPicker(mergeTargetPicker, new List<PickerChoice>(), string.Empty, false, LaneText("No sibling cell is visible for merging."), _ => { });
+                RenderPicker(holdRegionPicker, new List<PickerChoice>(), string.Empty, false, LaneText("No operating region truth is visible."), _ => { });
+                RenderPicker(holdPosturePicker, BuildPickerChoices(postureChoicesWhenEmpty.Select(NormalizeHoldPostureLabel).ToList(), postureChoicesWhenEmpty), selectedHoldPosture, false, LaneText("No posture choices are available."), _ => { });
+                RenderPicker(dispatchHeroPicker, new List<PickerChoice>(), string.Empty, false, LaneText(useBlackMarketForceTerms ? "No idle operative is visible for dispatch." : "No idle hero is visible for dispatch."), _ => { });
                 managementArmyField?.SetEnabled(false);
                 mergeTargetField?.SetEnabled(false);
                 holdRegionField?.SetEnabled(false);
@@ -344,6 +367,19 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 suppressManagementEvents = false;
             }
 
+            RenderPicker(
+                managementArmyPicker,
+                BuildPickerChoices(managementArmyChoiceIds, choices),
+                selectedArmyId,
+                !summaryState.IsActionBusy,
+                LaneText("No live cell is visible yet."),
+                choice =>
+                {
+                    selectedArmyId = choice.Id;
+                    draftedArmyId = string.Empty;
+                    RenderCurrentFormationManagement();
+                });
+
             var mergeCandidates = armies.Where(army => !string.Equals(army.Id, selectedArmy.Id, StringComparison.OrdinalIgnoreCase)).ToList();
             if (mergeCandidates.Count == 0)
             {
@@ -354,25 +390,41 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 selectedMergeArmyId = mergeCandidates[0].Id;
             }
 
-            if (mergeTargetField != null)
+            var mergeChoices = new List<string>();
+            if (mergeTargetField != null || mergeTargetPicker != null)
             {
                 suppressManagementEvents = true;
                 mergeArmyChoiceIds.Clear();
-                var mergeChoices = mergeCandidates.Select(army =>
+                mergeChoices = mergeCandidates.Select(army =>
                 {
                     mergeArmyChoiceIds.Add(army.Id);
                     return LaneText(BuildArmyChoiceLabel(army));
                 }).ToList();
-                mergeTargetField.choices = mergeChoices;
-                var mergeIndex = Math.Max(0, mergeArmyChoiceIds.FindIndex(id => string.Equals(id, selectedMergeArmyId, StringComparison.OrdinalIgnoreCase)));
-                if (mergeIndex >= mergeArmyChoiceIds.Count)
+                if (mergeTargetField != null)
                 {
-                    mergeIndex = mergeArmyChoiceIds.Count > 0 ? 0 : -1;
+                    mergeTargetField.choices = mergeChoices;
+                    var mergeIndex = Math.Max(0, mergeArmyChoiceIds.FindIndex(id => string.Equals(id, selectedMergeArmyId, StringComparison.OrdinalIgnoreCase)));
+                    if (mergeIndex >= mergeArmyChoiceIds.Count)
+                    {
+                        mergeIndex = mergeArmyChoiceIds.Count > 0 ? 0 : -1;
+                    }
+                    mergeTargetField.SetValueWithoutNotify(mergeIndex >= 0 && mergeIndex < mergeChoices.Count ? mergeChoices[mergeIndex] : string.Empty);
+                    mergeTargetField.SetEnabled(!summaryState.IsActionBusy && idle && mergeChoices.Count > 0);
                 }
-                mergeTargetField.SetValueWithoutNotify(mergeIndex >= 0 && mergeIndex < mergeChoices.Count ? mergeChoices[mergeIndex] : string.Empty);
-                mergeTargetField.SetEnabled(!summaryState.IsActionBusy && idle && mergeChoices.Count > 0);
                 suppressManagementEvents = false;
             }
+
+            RenderPicker(
+                mergeTargetPicker,
+                BuildPickerChoices(mergeArmyChoiceIds, mergeChoices),
+                selectedMergeArmyId,
+                !summaryState.IsActionBusy && idle && mergeChoices.Count > 0,
+                LaneText("No sibling cell is available to merge."),
+                choice =>
+                {
+                    selectedMergeArmyId = choice.Id;
+                    RenderCurrentFormationManagement();
+                });
 
             var holdRegions = BuildHoldRegionOptions();
             if (holdRegions.Count == 0)
@@ -384,36 +436,67 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 selectedHoldRegionId = holdRegions[0].RegionId;
             }
 
-            if (holdRegionField != null)
+            var regionChoices = new List<string>();
+            if (holdRegionField != null || holdRegionPicker != null)
             {
                 suppressManagementEvents = true;
                 holdRegionChoiceIds.Clear();
-                var regionChoices = holdRegions.Select(option =>
+                regionChoices = holdRegions.Select(option =>
                 {
                     holdRegionChoiceIds.Add(option.RegionId);
                     return option.Label;
                 }).ToList();
-                holdRegionField.choices = regionChoices;
-                var regionIndex = Math.Max(0, holdRegionChoiceIds.FindIndex(id => string.Equals(id, selectedHoldRegionId, StringComparison.OrdinalIgnoreCase)));
-                if (regionIndex >= holdRegionChoiceIds.Count)
+                if (holdRegionField != null)
                 {
-                    regionIndex = holdRegionChoiceIds.Count > 0 ? 0 : -1;
+                    holdRegionField.choices = regionChoices;
+                    var regionIndex = Math.Max(0, holdRegionChoiceIds.FindIndex(id => string.Equals(id, selectedHoldRegionId, StringComparison.OrdinalIgnoreCase)));
+                    if (regionIndex >= holdRegionChoiceIds.Count)
+                    {
+                        regionIndex = holdRegionChoiceIds.Count > 0 ? 0 : -1;
+                    }
+                    holdRegionField.SetValueWithoutNotify(regionIndex >= 0 && regionIndex < regionChoices.Count ? regionChoices[regionIndex] : string.Empty);
+                    holdRegionField.SetEnabled(!summaryState.IsActionBusy && idle && regionChoices.Count > 0);
                 }
-                holdRegionField.SetValueWithoutNotify(regionIndex >= 0 && regionIndex < regionChoices.Count ? regionChoices[regionIndex] : string.Empty);
-                holdRegionField.SetEnabled(!summaryState.IsActionBusy && idle && regionChoices.Count > 0);
                 suppressManagementEvents = false;
             }
 
-            if (holdPostureField != null)
+            RenderPicker(
+                holdRegionPicker,
+                BuildPickerChoices(holdRegionChoiceIds, regionChoices),
+                selectedHoldRegionId,
+                !summaryState.IsActionBusy && idle && regionChoices.Count > 0,
+                LaneText("No operating region truth is visible."),
+                choice =>
+                {
+                    selectedHoldRegionId = choice.Id;
+                    RenderCurrentFormationManagement();
+                });
+
+            var postureChoices = BuildHoldPostureChoices();
+            if (holdPostureField != null || holdPosturePicker != null)
             {
                 suppressManagementEvents = true;
-                var postureChoices = BuildHoldPostureChoices();
-                holdPostureField.choices = postureChoices;
-                var postureLabel = HoldPostureToLabel(selectedHoldPosture);
-                holdPostureField.SetValueWithoutNotify(postureChoices.Contains(postureLabel) ? postureLabel : postureChoices.FirstOrDefault() ?? string.Empty);
-                holdPostureField.SetEnabled(!summaryState.IsActionBusy && idle);
+                if (holdPostureField != null)
+                {
+                    holdPostureField.choices = postureChoices;
+                    var postureLabel = HoldPostureToLabel(selectedHoldPosture);
+                    holdPostureField.SetValueWithoutNotify(postureChoices.Contains(postureLabel) ? postureLabel : postureChoices.FirstOrDefault() ?? string.Empty);
+                    holdPostureField.SetEnabled(!summaryState.IsActionBusy && idle);
+                }
                 suppressManagementEvents = false;
             }
+
+            RenderPicker(
+                holdPosturePicker,
+                BuildPickerChoices(postureChoices.Select(NormalizeHoldPostureLabel).ToList(), postureChoices),
+                selectedHoldPosture,
+                !summaryState.IsActionBusy && idle,
+                LaneText("No posture choices are available."),
+                choice =>
+                {
+                    selectedHoldPosture = NormalizeHoldPostureLabel(choice.Id);
+                    RenderCurrentFormationManagement();
+                });
 
             var idleHeroes = (summary.Heroes ?? new List<HeroSnapshot>()).Where(hero => hero != null && string.Equals(hero.Status, "idle", StringComparison.OrdinalIgnoreCase)).ToList();
             if (!string.IsNullOrWhiteSpace(selectedDispatchHeroId) && idleHeroes.All(hero => !string.Equals(hero.Id, selectedDispatchHeroId, StringComparison.OrdinalIgnoreCase)))
@@ -421,27 +504,43 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 selectedDispatchHeroId = string.Empty;
             }
 
-            if (dispatchHeroField != null)
+            var dispatchChoices = new List<string>();
+            if (dispatchHeroField != null || dispatchHeroPicker != null)
             {
                 suppressManagementEvents = true;
                 dispatchHeroChoiceIds.Clear();
-                var dispatchChoices = new List<string> { "No explicit hero" };
+                dispatchChoices = new List<string> { useBlackMarketForceTerms ? "No explicit operative" : "No explicit hero" };
                 dispatchHeroChoiceIds.Add(string.Empty);
                 foreach (var hero in idleHeroes)
                 {
                     dispatchHeroChoiceIds.Add(hero.Id);
                     dispatchChoices.Add(BuildHeroChoiceLabel(hero));
                 }
-                dispatchHeroField.choices = dispatchChoices;
-                var heroIndex = Math.Max(0, dispatchHeroChoiceIds.FindIndex(id => string.Equals(id, selectedDispatchHeroId, StringComparison.OrdinalIgnoreCase)));
-                if (heroIndex >= dispatchHeroChoiceIds.Count)
+                if (dispatchHeroField != null)
                 {
-                    heroIndex = 0;
+                    dispatchHeroField.choices = dispatchChoices;
+                    var heroIndex = Math.Max(0, dispatchHeroChoiceIds.FindIndex(id => string.Equals(id, selectedDispatchHeroId, StringComparison.OrdinalIgnoreCase)));
+                    if (heroIndex >= dispatchHeroChoiceIds.Count)
+                    {
+                        heroIndex = 0;
+                    }
+                    dispatchHeroField.SetValueWithoutNotify(dispatchChoices[heroIndex]);
+                    dispatchHeroField.SetEnabled(!summaryState.IsActionBusy && dispatchChoices.Count > 0);
                 }
-                dispatchHeroField.SetValueWithoutNotify(dispatchChoices[heroIndex]);
-                dispatchHeroField.SetEnabled(!summaryState.IsActionBusy && dispatchChoices.Count > 0);
                 suppressManagementEvents = false;
             }
+
+            RenderPicker(
+                dispatchHeroPicker,
+                BuildPickerChoices(dispatchHeroChoiceIds, dispatchChoices),
+                selectedDispatchHeroId,
+                !summaryState.IsActionBusy && dispatchChoices.Count > 0,
+                LaneText(useBlackMarketForceTerms ? "No idle operative is visible for dispatch." : "No idle hero is visible for dispatch."),
+                choice =>
+                {
+                    selectedDispatchHeroId = choice.Id;
+                    RenderCurrentFormationManagement();
+                });
 
             suppressManagementEvents = true;
             renameInput?.SetValueWithoutNotify(renameDraft);
@@ -512,7 +611,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
             if (managementCopy != null)
             {
-                managementCopy.text = LaneText($"Operations controls stay bounded here: rename, split, merge, retire, assign hold posture, and launch direct actions from the selected idle cell. Focus: {PresentArmyName(selectedArmy.Name)} • {BuildFormationLore(selectedArmy)}.");
+                managementCopy.text = LaneText($"Focus: {PresentArmyName(selectedArmy.Name)} • {BuildFormationLore(selectedArmy)}. Inline controls below use live payload truth only.");
             }
 
             if (managementNote != null)
@@ -520,8 +619,63 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 var mergeTarget = mergeCandidates.FirstOrDefault(army => string.Equals(army.Id, selectedMergeArmyId, StringComparison.OrdinalIgnoreCase));
                 var holdLabel = holdRegions.FirstOrDefault(option => string.Equals(option.RegionId, selectedHoldRegionId, StringComparison.OrdinalIgnoreCase)).Label;
                 var dispatchHero = idleHeroes.FirstOrDefault(hero => string.Equals(hero.Id, selectedDispatchHeroId, StringComparison.OrdinalIgnoreCase));
-                managementNote.text = LaneText(BuildFormationManagementNote(selectedArmy, splitSize, maxSplit, mergeTarget, armies.Count, selectedHoldRegionId, selectedHoldPosture, holdLabel, dispatchHero, idleHeroes.Count));
+                managementNote.text = LaneText(Truncate(BuildFormationManagementNote(selectedArmy, splitSize, maxSplit, mergeTarget, armies.Count, selectedHoldRegionId, selectedHoldPosture, holdLabel, dispatchHero, idleHeroes.Count), 260));
             }
+        }
+
+        private void RenderCurrentFormationManagement()
+        {
+            if (lastManagementSummary == null)
+            {
+                return;
+            }
+
+            RenderFormationManagement(lastManagementSummary, lastManagementRankedArmies, lastManagementTargetArmyId);
+        }
+
+        private void RenderPicker(VisualElement picker, IReadOnlyList<PickerChoice> choices, string selectedId, bool enabled, string emptyText, Action<PickerChoice> onSelected)
+        {
+            if (picker == null)
+            {
+                return;
+            }
+
+            picker.Clear();
+            if (choices == null || choices.Count == 0)
+            {
+                var empty = new Label(emptyText ?? string.Empty);
+                empty.AddToClassList("operations-choice-empty");
+                picker.Add(empty);
+                return;
+            }
+
+            foreach (var choice in choices)
+            {
+                var captured = choice;
+                var button = new Button(() => onSelected?.Invoke(captured))
+                {
+                    text = captured.Label
+                };
+                button.AddToClassList("operations-choice");
+                if (string.Equals(captured.Id ?? string.Empty, selectedId ?? string.Empty, StringComparison.OrdinalIgnoreCase))
+                {
+                    button.AddToClassList("operations-choice--selected");
+                }
+                button.SetEnabled(enabled);
+                picker.Add(button);
+            }
+        }
+
+        private static List<PickerChoice> BuildPickerChoices(IReadOnlyList<string> ids, IReadOnlyList<string> labels)
+        {
+            var choices = new List<PickerChoice>();
+            var count = Math.Min(ids?.Count ?? 0, labels?.Count ?? 0);
+            for (var index = 0; index < count; index++)
+            {
+                choices.Add(new PickerChoice(ids[index] ?? string.Empty, labels[index] ?? string.Empty));
+            }
+
+            return choices;
         }
 
         private void TriggerRenameArmy()
@@ -1693,6 +1847,19 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private static string HumanizeRegionLabel(string regionId)
         {
             return HumanizeKey((regionId ?? string.Empty).Replace(".", " "));
+        }
+
+        private sealed class PickerChoice
+        {
+            public PickerChoice(string id, string label)
+            {
+                Id = id ?? string.Empty;
+                Label = label ?? string.Empty;
+            }
+
+            public string Id { get; }
+
+            public string Label { get; }
         }
 
         private sealed class HoldRegionOption

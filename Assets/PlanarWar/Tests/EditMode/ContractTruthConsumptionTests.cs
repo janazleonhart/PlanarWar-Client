@@ -1462,6 +1462,59 @@ namespace PlanarWar.Client.Tests.EditMode
             }
         }
 
+
+        [Test]
+        public void Operations_management_uses_dark_inline_pickers_instead_of_visible_native_dropdowns()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var appStylePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(appStylePath), Is.True, "AppShell.uss should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(appStylePath);
+
+            foreach (var id in new[]
+            {
+                "warfront-manage-army-picker",
+                "warfront-manage-merge-target-picker",
+                "warfront-manage-hold-region-picker",
+                "warfront-manage-hold-posture-picker",
+                "warfront-manage-dispatch-hero-picker",
+            })
+            {
+                Assert.That(uxml, Does.Contain(id), $"{id} should be present as the player-facing operations picker.");
+            }
+
+            Assert.That(uxml, Does.Contain("operations-choice-list"));
+            Assert.That(uxml, Does.Contain("Live payload truth only"));
+            Assert.That(uss, Does.Contain(".operations-choice-list"));
+            Assert.That(uss, Does.Contain(".operations-choice"));
+            Assert.That(uss, Does.Contain(".operations-choice--selected"));
+            Assert.That(uss, Does.Contain(".operations-choice-empty"));
+            Assert.That(uss, Does.Contain("Operations / Dispatch cursed-layout fix v1a"));
+        }
+
+        [Test]
+        public void Operations_management_removes_native_dropdown_backing_controls_after_inline_picker_cutover()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            foreach (var id in new[]
+            {
+                "warfront-manage-army-field",
+                "warfront-manage-merge-target-field",
+                "warfront-manage-hold-region-field",
+                "warfront-manage-hold-posture-field",
+                "warfront-manage-dispatch-hero-field",
+            })
+            {
+                Assert.That(uxml, Does.Not.Contain($"name=\"{id}\""), $"{id} should not survive as a native DropdownField in the player-facing operations surface.");
+            }
+        }
+
         private static VisualElement BuildMinimalHeroControllerRoot()
         {
             var root = new VisualElement();

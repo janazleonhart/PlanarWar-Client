@@ -1572,3 +1572,245 @@
     font-size: 11px;
     white-space: normal;
 }
+
+/* Operations / Dispatch inline picker cleanup v1 */
+.operations-management-card {
+    gap: 10px;
+}
+
+.operations-management-head {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.operations-management-title-stack {
+    flex-grow: 1;
+    gap: 2px;
+}
+
+.operations-pill {
+    flex-shrink: 0;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+    background-color: rgba(46, 72, 139, 0.78);
+    color: rgb(225, 234, 255);
+    border-top-left-radius: 999px;
+    border-top-right-radius: 999px;
+    border-bottom-left-radius: 999px;
+    border-bottom-right-radius: 999px;
+    font-size: 10px;
+    -unity-font-style: bold;
+}
+
+.operations-management-grid {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: stretch;
+}
+
+.operations-management-section {
+    flex-grow: 1;
+    min-width: 300px;
+    gap: 7px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 9px;
+    padding-bottom: 9px;
+    background-color: rgba(10, 19, 43, 0.72);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgba(95, 126, 210, 0.28);
+    border-right-color: rgba(95, 126, 210, 0.28);
+    border-top-color: rgba(95, 126, 210, 0.28);
+    border-bottom-color: rgba(95, 126, 210, 0.28);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.operations-picker-label {
+    margin-bottom: -2px;
+}
+
+.operations-native-picker-hidden {
+    display: none;
+}
+
+.operations-choice-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-height: 32px;
+    align-items: flex-start;
+}
+
+.operations-choice-list--cells .operations-choice {
+    min-width: 210px;
+}
+
+.operations-choice-list--posture .operations-choice {
+    min-width: 120px;
+}
+
+.operations-choice {
+    min-width: 150px;
+    min-height: 30px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    background-color: rgba(22, 36, 73, 0.95);
+    color: rgb(210, 222, 255);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgba(95, 126, 210, 0.44);
+    border-right-color: rgba(95, 126, 210, 0.44);
+    border-top-color: rgba(95, 126, 210, 0.44);
+    border-bottom-color: rgba(95, 126, 210, 0.44);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    font-size: 11px;
+    white-space: normal;
+    -unity-text-align: middle-left;
+}
+
+.operations-choice:hover {
+    background-color: rgba(46, 72, 139, 0.98);
+    color: rgb(242, 246, 255);
+}
+
+.operations-choice--selected {
+    background-color: rgb(62, 96, 187);
+    color: rgb(255, 255, 255);
+    border-left-color: rgb(143, 170, 255);
+    border-right-color: rgb(143, 170, 255);
+    border-top-color: rgb(143, 170, 255);
+    border-bottom-color: rgb(143, 170, 255);
+    -unity-font-style: bold;
+}
+
+.operations-choice-empty {
+    align-self: stretch;
+    min-height: 32px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    background-color: rgba(8, 14, 30, 0.72);
+    color: rgb(165, 178, 214);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    font-size: 11px;
+    white-space: normal;
+}
+
+.operations-inline-form {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: flex-end;
+}
+
+.operations-inline-form TextField {
+    flex-grow: 1;
+    min-width: 160px;
+}
+
+.operations-inline-form .action-button,
+.operations-action-row .action-button {
+    min-width: 150px;
+}
+
+.operations-action-row {
+    margin-top: 2px;
+}
+
+.operations-management-note {
+    min-height: 30px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    background-color: rgba(8, 14, 30, 0.72);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+
+/* Operations / Dispatch cursed-layout fix v1a */
+.operations-management-card {
+    flex-shrink: 0;
+    gap: 8px;
+}
+
+.operations-management-head {
+    flex-shrink: 0;
+    min-height: 34px;
+    margin-bottom: 2px;
+}
+
+.operations-management-title-stack .rail-note-title {
+    white-space: normal;
+    font-size: 12px;
+}
+
+.operations-management-card > .metric-subvalue {
+    flex-shrink: 0;
+}
+
+.operations-management-grid {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 8px;
+    align-items: stretch;
+}
+
+.operations-management-section {
+    flex-shrink: 0;
+    min-width: 0;
+    gap: 6px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+.operations-choice-list {
+    flex-shrink: 0;
+    min-height: 28px;
+    gap: 5px;
+}
+
+.operations-choice-list--cells .operations-choice,
+.operations-choice {
+    min-height: 26px;
+    padding-left: 9px;
+    padding-right: 9px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    font-size: 10px;
+}
+
+.operations-inline-form {
+    flex-shrink: 0;
+}
+
+.operations-management-note {
+    flex-shrink: 0;
+    max-height: 72px;
+    overflow: hidden;
+}

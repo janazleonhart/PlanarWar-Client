@@ -571,26 +571,61 @@
                             </ui:VisualElement>
                         </ui:VisualElement>
 
-                        <ui:VisualElement class="summary-card summary-card--full warfront-management-card">
-                            <ui:Label text="Operations management" class="eyebrow" />
+                        <ui:VisualElement class="summary-card summary-card--full warfront-management-card operations-management-card">
+                            <ui:VisualElement class="operations-management-head">
+                                <ui:VisualElement class="operations-management-title-stack">
+                                    <ui:Label text="Operations management" class="eyebrow" />
+                                    <ui:Label text="Cell, route, posture, and dispatch controls" class="rail-note-title" />
+                                </ui:VisualElement>
+                                <ui:Label text="Live payload truth only" class="operations-pill" />
+                            </ui:VisualElement>
                             <ui:Label name="warfront-management-copy-value" text="Rename an idle cell or split operators into a sibling cell without reopening decorative desk churn." class="metric-subvalue metric-subvalue--wrap" />
-                            <ui:DropdownField name="warfront-manage-army-field" label="Cell" />
-                            <ui:TextField name="warfront-manage-rename-input" label="Rename to" />
-                            <ui:Button name="warfront-manage-rename-button" text="Rename cell" class="action-button action-button--primary" />
-                            <ui:TextField name="warfront-manage-split-size-input" label="Split operators" />
-                            <ui:TextField name="warfront-manage-split-name-input" label="New cell" />
-                            <ui:Button name="warfront-manage-split-button" text="Split cell" class="action-button action-button--primary" />
-                            <ui:DropdownField name="warfront-manage-merge-target-field" label="Merge into" />
-                            <ui:Button name="warfront-manage-merge-button" text="Merge into target" class="action-button action-button--primary" />
-                            <ui:Button name="warfront-manage-disband-button" text="Retire cell" class="action-button" />
-                            <ui:DropdownField name="warfront-manage-hold-region-field" label="Operating region" />
-                            <ui:DropdownField name="warfront-manage-hold-posture-field" label="Operating posture" />
-                            <ui:Button name="warfront-manage-hold-assign-button" text="Assign route" class="action-button action-button--primary" />
-                            <ui:Button name="warfront-manage-hold-release-button" text="Release route" class="action-button" />
-                            <ui:DropdownField name="warfront-manage-dispatch-hero-field" label="Dispatch operative" />
-                            <ui:Button name="warfront-manage-dispatch-assault-button" text="Open pressure line" class="action-button action-button--primary" />
-                            <ui:Button name="warfront-manage-dispatch-garrison-button" text="Run disruption action" class="action-button" />
-                            <ui:Label name="warfront-manage-note-value" text="Operations management details load from live summary payload." class="metric-subvalue metric-subvalue--wrap" />
+
+                            <ui:VisualElement class="operations-management-section">
+                                <ui:Label text="Selected cell" class="eyebrow operations-picker-label" />
+                                <ui:VisualElement name="warfront-manage-army-picker" class="operations-choice-list operations-choice-list--cells" />
+                                <ui:VisualElement class="operations-inline-form">
+                                    <ui:TextField name="warfront-manage-rename-input" label="Rename to" />
+                                    <ui:Button name="warfront-manage-rename-button" text="Rename cell" class="action-button action-button--primary" />
+                                </ui:VisualElement>
+                                <ui:VisualElement class="operations-inline-form">
+                                    <ui:TextField name="warfront-manage-split-size-input" label="Split operators" />
+                                    <ui:TextField name="warfront-manage-split-name-input" label="New cell" />
+                                    <ui:Button name="warfront-manage-split-button" text="Split cell" class="action-button action-button--primary" />
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+
+                            <ui:VisualElement class="operations-management-grid">
+                                <ui:VisualElement class="operations-management-section">
+                                    <ui:Label text="Merge target" class="eyebrow operations-picker-label" />
+                                    <ui:VisualElement name="warfront-manage-merge-target-picker" class="operations-choice-list" />
+                                    <ui:VisualElement class="button-row operations-action-row">
+                                        <ui:Button name="warfront-manage-merge-button" text="Merge into target" class="action-button action-button--primary" />
+                                        <ui:Button name="warfront-manage-disband-button" text="Retire cell" class="action-button" />
+                                    </ui:VisualElement>
+                                </ui:VisualElement>
+
+                                <ui:VisualElement class="operations-management-section">
+                                    <ui:Label text="Route assignment" class="eyebrow operations-picker-label" />
+                                    <ui:VisualElement name="warfront-manage-hold-region-picker" class="operations-choice-list" />
+                                    <ui:VisualElement name="warfront-manage-hold-posture-picker" class="operations-choice-list operations-choice-list--posture" />
+                                    <ui:VisualElement class="button-row operations-action-row">
+                                        <ui:Button name="warfront-manage-hold-assign-button" text="Assign route" class="action-button action-button--primary" />
+                                        <ui:Button name="warfront-manage-hold-release-button" text="Release route" class="action-button" />
+                                    </ui:VisualElement>
+                                </ui:VisualElement>
+
+                                <ui:VisualElement class="operations-management-section">
+                                    <ui:Label text="Dispatch operative" class="eyebrow operations-picker-label" />
+                                    <ui:VisualElement name="warfront-manage-dispatch-hero-picker" class="operations-choice-list" />
+                                    <ui:VisualElement class="button-row operations-action-row">
+                                        <ui:Button name="warfront-manage-dispatch-assault-button" text="Open pressure line" class="action-button action-button--primary" />
+                                        <ui:Button name="warfront-manage-dispatch-garrison-button" text="Run disruption action" class="action-button" />
+                                    </ui:VisualElement>
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+
+                            <ui:Label name="warfront-manage-note-value" text="Operations management details load from live summary payload." class="metric-subvalue metric-subvalue--wrap operations-management-note" />
                         </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:ScrollView>
