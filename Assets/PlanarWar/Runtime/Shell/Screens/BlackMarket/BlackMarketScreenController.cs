@@ -254,12 +254,12 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
             headline.text = warfrontWindows.Count > 0 ? "Operations desk" : summary.WarfrontSignals.Count > 0 ? "Operations snapshot" : "Operations review";
             copy.text = LaneText(warfrontWindows.Count > 0
-                ? $"{warfrontWindows.Count} live operations window(s) open. Review cells, reinforcement truth, route posture, and covert deployment."
+                ? $"{warfrontWindows.Count} live operation window(s) open. Review routes, readiness, and direct actions."
                 : summary.WarfrontSignals.Count > 0
-                    ? "Operations posture is visible from the current summary payload."
+                    ? "Route posture and direct actions are visible from the current payload."
                     : "No active operations snapshot is visible in the current payload.");
-            note.text = LaneText($"Lane {summary.City.SettlementLaneLabel} • windows {warfrontWindows.Count} • timers {warfrontTimers.Count} • fronts {frontBuildings.Count} • front timers {frontTimers.Count} • cells {summary.Armies.Count}");
-            cardsCopy.text = LaneText(BuildCardsCopy(summary.Armies, reinforceState, reinforceTimer, reinforceOp, warfrontWindows.Count, otherWarfrontTimers.Count) + " • " + BuildFrontCardsCopy(frontBuildings, frontTimers, nowUtc));
+            note.text = LaneText($"Lane {summary.City.SettlementLaneLabel} • windows {warfrontWindows.Count} • timers {warfrontTimers.Count} • fronts {frontBuildings.Count} • cells {summary.Armies.Count}");
+            cardsCopy.text = LaneText(Truncate(BuildCardsCopy(summary.Armies, reinforceState, reinforceTimer, reinforceOp, warfrontWindows.Count, otherWarfrontTimers.Count) + " • " + BuildFrontCardsCopy(frontBuildings, frontTimers, nowUtc), 128));
 
             windowsValue.text = LaneText(warfrontWindows.Count > 0 ? $"{warfrontWindows.Count} open • {string.Join(" • ", warfrontWindows.Take(2).Select(window => HumanizeStatus(window.Status)))}" : "No active operations window.");
             readinessValue.text = LaneText(BuildForceReadinessSummary(summary.Armies, reinforceState, reinforceOp));

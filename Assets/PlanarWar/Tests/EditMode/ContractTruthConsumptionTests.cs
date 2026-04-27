@@ -1493,6 +1493,11 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(uss, Does.Contain(".operations-choice--selected"));
             Assert.That(uss, Does.Contain(".operations-choice-empty"));
             Assert.That(uss, Does.Contain("Operations / Dispatch cursed-layout fix v1a"));
+            Assert.That(uxml, Does.Contain("operations-action-board"));
+            Assert.That(uxml, Does.Contain("operations-support-grid--hidden"));
+            Assert.That(uss, Does.Contain(".operations-action-board"));
+            Assert.That(uss, Does.Contain(".operations-support-grid--hidden"));
+            Assert.That(uss, Does.Contain("Operations / Dispatch overview density cleanup v1b"));
         }
 
         [Test]

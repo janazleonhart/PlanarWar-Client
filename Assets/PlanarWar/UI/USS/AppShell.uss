@@ -1814,3 +1814,50 @@
     max-height: 72px;
     overflow: hidden;
 }
+
+
+/* Operations / Dispatch overview density cleanup v1b */
+.operations-overview-card--compact {
+    gap: 4px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.operations-overview-card--compact .summary-value {
+    white-space: normal;
+    font-size: 11px;
+}
+
+.operations-action-board {
+    gap: 8px;
+}
+
+.operations-action-board > .metric-subvalue {
+    max-height: 28px;
+    overflow: hidden;
+}
+
+.operations-action-board .warfront-cards-grid {
+    gap: 10px;
+    margin-top: 0;
+}
+
+.operations-action-board .warfront-desk-card {
+    min-height: 136px;
+    gap: 6px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+}
+
+.operations-action-board .warfront-desk-card .summary-value {
+    max-height: 34px;
+    overflow: hidden;
+}
+
+.operations-action-board .warfront-desk-card .metric-subvalue {
+    display: none;
+}
+
+.operations-support-grid--hidden {
+    display: none;
+}

@@ -504,14 +504,14 @@
                             <ui:Label name="placeholder-headline-value" text="Operations desk" class="headline" />
                             <ui:Label name="placeholder-copy-value" text="Read-only operations review surfaces live routes, timers, and pressure posture without pretending open warfare is the point of this lane." class="headline-subtext" />
                         </ui:VisualElement>
-                        <ui:VisualElement class="summary-card summary-card--full warfront-overview-card">
+                        <ui:VisualElement class="summary-card summary-card--full warfront-overview-card operations-overview-card--compact">
                             <ui:Label text="Operations overview" class="eyebrow" />
                             <ui:Label name="placeholder-note-value" text="Operations read-only desk uses live route timers and summary status instead of fake battlefield theater." class="summary-value summary-value--glance" />
                         </ui:VisualElement>
 
-                        <ui:VisualElement class="summary-card summary-card--full warfront-cards-shell">
-                            <ui:Label text="Visible operation cards" class="eyebrow" />
-                            <ui:Label name="warfront-cards-copy-value" text="No active front windows are visible right now." class="metric-subvalue metric-subvalue--wrap" />
+                        <ui:VisualElement class="summary-card summary-card--full warfront-cards-shell operations-action-board">
+                            <ui:Label text="Action board" class="eyebrow" />
+                            <ui:Label name="warfront-cards-copy-value" text="Live operations, timers, and direct actions surface here." class="metric-subvalue metric-subvalue--wrap" />
                             <ui:VisualElement class="summary-grid summary-grid--desk-cards warfront-cards-grid">
                                 <ui:VisualElement name="warfront-card-1-root" class="summary-card glance-card warfront-desk-card">
                                     <ui:Label name="warfront-card-1-title" text="Operations window" class="eyebrow" />
@@ -544,7 +544,7 @@
                             </ui:VisualElement>
                         </ui:VisualElement>
 
-                        <ui:VisualElement class="summary-grid summary-grid--desk-support warfront-support-grid">
+                        <ui:VisualElement class="summary-grid summary-grid--desk-support warfront-support-grid operations-support-grid--hidden">
                             <ui:VisualElement class="summary-card glance-card warfront-support-card">
                                 <ui:Label text="Open windows" class="eyebrow" />
                                 <ui:Label name="warfront-open-windows-value" text="No active operations window." class="summary-value summary-value--glance" />
