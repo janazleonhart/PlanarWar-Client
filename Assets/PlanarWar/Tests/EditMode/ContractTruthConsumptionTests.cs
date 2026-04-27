@@ -1569,6 +1569,31 @@ namespace PlanarWar.Client.Tests.EditMode
 
 
         [Test]
+        public void Home_timer_diagnostic_controls_are_dev_gated_by_default()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var appStylePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(appStylePath), Is.True, "AppShell.uss should be available from the Unity project root.");
+            Assert.That(File.Exists(controllerPath), Is.True, "SummaryScreenController.cs should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(appStylePath);
+            var source = File.ReadAllText(controllerPath);
+
+            Assert.That(uxml, Does.Contain("name=\"timer-diagnostic-card\""));
+            Assert.That(uxml, Does.Contain("name=\"toggle-timer-diagnostics-button\""));
+            Assert.That(uxml, Does.Contain("home-dev-diagnostic-gated"));
+            Assert.That(uss, Does.Contain("Home dev diagnostic gate v1a"));
+            Assert.That(uss, Does.Contain(".home-dev-diagnostic-gated"));
+            Assert.That(source, Does.Contain("TimerDiagnosticsDevFlagEnabled = false"));
+            Assert.That(source, Does.Contain("RenderTimerDiagnostics"));
+            Assert.That(source, Does.Contain("timerDiagnosticCard.style.display = diagnosticsEnabled ? DisplayStyle.Flex : DisplayStyle.None"));
+            Assert.That(source, Does.Contain("timerDiagnosticsButton.style.display = diagnosticsEnabled ? DisplayStyle.Flex : DisplayStyle.None"));
+        }
+
+        [Test]
         public void Development_surface_uses_compact_action_boards_and_hides_duplicate_support_grid()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");

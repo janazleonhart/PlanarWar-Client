@@ -25,6 +25,8 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private readonly Label timerDiagHeartbeat;
         private readonly Label timerDiagRaw;
         private readonly Label timerDiagComputed;
+        private readonly VisualElement timerDiagnosticCard;
+        private readonly Button timerDiagnosticsButton;
         private readonly Label pressureDeskBadge;
         private readonly Label pressureDeskHeadline;
         private readonly Label pressureDeskDetail;
@@ -49,6 +51,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private readonly Label pressureOperationsCopy;
         private readonly Label pressureOperationsCountBadge;
         private readonly VisualElement pressureOperationsStrip;
+        private const bool TimerDiagnosticsDevFlagEnabled = false;
         private int heartbeat;
 
         public SummaryScreenController(VisualElement root)
@@ -69,6 +72,8 @@ namespace PlanarWar.Client.UI.Screens.Summary
             timerDiagHeartbeat = root.Q<Label>("timer-diag-heartbeat-value");
             timerDiagRaw = root.Q<Label>("timer-diag-raw-value");
             timerDiagComputed = root.Q<Label>("timer-diag-computed-value");
+            timerDiagnosticCard = root.Q<VisualElement>("timer-diagnostic-card");
+            timerDiagnosticsButton = root.Q<Button>("toggle-timer-diagnostics-button");
             pressureDeskBadge = root.Q<Label>("pressure-desk-badge-value");
             pressureDeskHeadline = root.Q<Label>("pressure-desk-headline-value");
             pressureDeskDetail = root.Q<Label>("pressure-desk-detail-value");
@@ -113,12 +118,35 @@ namespace PlanarWar.Client.UI.Screens.Summary
             workshopTimer.text = FormatWorkshopAndBuild(s, nowUtc);
             missionTimer.text = FormatMission(s.ActiveMissions);
             resourceTick.text = FormatTick(s.ResourceTickTiming);
-            timerDiagNow.text = $"Live UI clock {nowUtc:HH:mm:ss} UTC";
-            timerDiagHeartbeat.text = $"Heartbeat #{heartbeat}";
-            timerDiagRaw.text = FormatTimerRaw(s.ResourceTickTiming, isSummaryLoaded);
-            timerDiagComputed.text = $"diag: {FormatTick(s.ResourceTickTiming)}";
+            RenderTimerDiagnostics(s, isSummaryLoaded, nowUtc);
 
             RenderPressureDesk(s);
+        }
+
+        private void RenderTimerDiagnostics(ShellSummarySnapshot s, bool isSummaryLoaded, DateTime nowUtc)
+        {
+            var diagnosticsEnabled = TimerDiagnosticsDevFlagEnabled;
+
+            if (timerDiagnosticCard != null)
+            {
+                timerDiagnosticCard.style.display = diagnosticsEnabled ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            if (timerDiagnosticsButton != null)
+            {
+                timerDiagnosticsButton.style.display = diagnosticsEnabled ? DisplayStyle.Flex : DisplayStyle.None;
+                timerDiagnosticsButton.SetEnabled(diagnosticsEnabled);
+            }
+
+            if (!diagnosticsEnabled)
+            {
+                return;
+            }
+
+            if (timerDiagNow != null) timerDiagNow.text = $"Live UI clock {nowUtc:HH:mm:ss} UTC";
+            if (timerDiagHeartbeat != null) timerDiagHeartbeat.text = $"Heartbeat #{heartbeat}";
+            if (timerDiagRaw != null) timerDiagRaw.text = FormatTimerRaw(s.ResourceTickTiming, isSummaryLoaded);
+            if (timerDiagComputed != null) timerDiagComputed.text = $"diag: {FormatTick(s.ResourceTickTiming)}";
         }
 
         private void RenderPressureDesk(ShellSummarySnapshot summary)

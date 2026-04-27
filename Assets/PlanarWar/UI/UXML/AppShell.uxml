@@ -169,7 +169,7 @@
                         <ui:Button name="start-research-button" text="Start suggested research" class="action-button" />
                         <ui:Button name="whereami-button" text="Where am I" class="action-button" />
                         <ui:Button name="ping-button" text="Ping" class="action-button" />
-                        <ui:Button name="toggle-timer-diagnostics-button" text="Show timer debug" class="action-button" />
+                        <ui:Button name="toggle-timer-diagnostics-button" text="Show timer debug" class="action-button home-dev-diagnostic-gated" />
                     </ui:VisualElement>
                 </ui:VisualElement>
 
@@ -248,7 +248,7 @@
                         <ui:Label name="resource-tick-value" text="Tick timing unavailable." class="summary-value summary-value--glance" />
                     </ui:VisualElement>
 
-                    <ui:VisualElement name="timer-diagnostic-card" class="summary-card timer-card">
+                    <ui:VisualElement name="timer-diagnostic-card" class="summary-card timer-card home-dev-diagnostic-gated">
                         <ui:Label text="Timer diagnostic" class="eyebrow" />
                         <ui:Label name="timer-diag-now-value" text="Live UI clock unavailable." class="summary-value summary-value--glance" />
                         <ui:Label name="timer-diag-heartbeat-value" text="Heartbeat #0" class="metric-subvalue metric-subvalue--wrap" />
