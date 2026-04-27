@@ -1620,6 +1620,41 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
 
+        [Test]
+        public void Development_surface_closeout_keeps_action_boards_and_inline_building_picker_checkpointed()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var appStylePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/City/CityScreenController.cs");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(appStylePath), Is.True, "AppShell.uss should be available from the Unity project root.");
+            Assert.That(File.Exists(controllerPath), Is.True, "CityScreenController.cs should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(appStylePath);
+            var controller = File.ReadAllText(controllerPath);
+
+            foreach (var label in new[]
+            {
+                "Research action board",
+                "Workshop action board",
+                "Building / front action board",
+            })
+            {
+                Assert.That(uxml, Does.Contain(label), $"Development closeout should keep {label} visible as the player-facing action surface.");
+            }
+
+            Assert.That(uxml, Does.Contain("development-action-board"));
+            Assert.That(uxml, Does.Contain("development-support-grid--hidden"));
+            Assert.That(uxml, Does.Not.Contain("dev-building-selector-field"), "Development should not reintroduce a native building DropdownField by UXML id.");
+            Assert.That(controller, Does.Contain("RenderInlineSelector(view)"), "Development card selectors should keep using inline shell-native buttons.");
+            Assert.That(controller, Does.Contain("FormatBuildingSelectorLabel"), "Development building labels should stay behind the player-facing formatter instead of leaking raw ids directly.");
+            Assert.That(controller, Does.Not.Contain("new DropdownField()"), "Development closeout should not regress to dynamic native dropdown creation.");
+            Assert.That(uss, Does.Contain(".development-inline-selector-choice--selected"));
+            Assert.That(uss, Does.Contain(".development-desk-actions-card"));
+        }
+
+
         private static VisualElement BuildMinimalHeroControllerRoot()
         {
             var root = new VisualElement();
