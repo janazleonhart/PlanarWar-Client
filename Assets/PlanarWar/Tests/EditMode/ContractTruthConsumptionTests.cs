@@ -1306,6 +1306,66 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(copy.ToLowerInvariant(), Does.Not.Contain("hero candidate from live recruitment truth"));
         }
 
+        [Test]
+        public void Shell_uses_dark_inline_roster_picker_instead_of_visible_native_roster_dropdown()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var appStylePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(appStylePath), Is.True, "AppShell.uss should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(appStylePath);
+
+            Assert.That(uxml, Does.Contain("heroes-roster-picker"));
+            Assert.That(uxml, Does.Contain("heroes-roster-choice-list"));
+            Assert.That(uxml, Does.Contain("heroes-manage-hero-field"));
+            Assert.That(uxml, Does.Contain("<ui:DropdownField name=\"heroes-manage-hero-field\" label=\"Hero\" class=\"heroes-native-picker-hidden\" />"), "Native roster dropdown should remain as a hidden backing control instead of opening a bright popup menu.");
+            Assert.That(uss, Does.Contain(".heroes-roster-choice-list"));
+            Assert.That(uss, Does.Contain(".heroes-roster-choice"));
+            Assert.That(uss, Does.Contain(".heroes-roster-choice--selected"));
+            Assert.That(uss, Does.Contain(".heroes-roster-choice-empty"));
+        }
+
+        [Test]
+        public void Hero_roster_picker_copy_keeps_black_market_operative_language()
+        {
+            var terminologyType = typeof(HeroScreenController).GetNestedType("HeroTerminology", BindingFlags.NonPublic);
+            Assert.That(terminologyType, Is.Not.Null);
+            var forMethod = terminologyType.GetMethod("For", BindingFlags.Public | BindingFlags.Static);
+            var formatter = typeof(HeroScreenController).GetMethod("BuildHeroChoiceText", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(forMethod, Is.Not.Null);
+            Assert.That(formatter, Is.Not.Null);
+
+            var terms = forMethod.Invoke(null, new object[]
+            {
+                new ShellSummarySnapshot
+                {
+                    City = new CitySummarySnapshot
+                    {
+                        SettlementLane = "black_market",
+                        SettlementLaneLabel = "Black Market"
+                    }
+                }
+            });
+
+            var copy = (string)formatter.Invoke(null, new object[]
+            {
+                new HeroSnapshot
+                {
+                    Id = "op_1",
+                    Name = "Provost Oren Peel",
+                    Status = "idle"
+                },
+                terms
+            });
+
+            Assert.That(copy, Does.Contain("Provost Oren Peel"));
+            Assert.That(copy, Does.Contain("operative"));
+            Assert.That(copy, Does.Contain("idle"));
+            Assert.That(copy.ToLowerInvariant(), Does.Not.Contain("hero"));
+        }
+
 
 
     }

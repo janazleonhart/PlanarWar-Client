@@ -642,7 +642,11 @@
                             </ui:VisualElement>
 
                             <ui:VisualElement class="heroes-selection-card">
-                                <ui:DropdownField name="heroes-manage-hero-field" label="Hero" />
+                                <ui:VisualElement class="heroes-roster-picker-card">
+                                    <ui:Label text="Roster member" class="eyebrow heroes-picker-label" />
+                                    <ui:VisualElement name="heroes-roster-picker" class="heroes-roster-choice-list" />
+                                    <ui:DropdownField name="heroes-manage-hero-field" label="Hero" class="heroes-native-picker-hidden" />
+                                </ui:VisualElement>
                                 <ui:Button name="heroes-release-button" text="Release selected hero" class="action-button heroes-release-action" />
                             </ui:VisualElement>
 

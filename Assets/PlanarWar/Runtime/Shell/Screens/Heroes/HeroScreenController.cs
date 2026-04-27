@@ -33,6 +33,7 @@ namespace PlanarWar.Client.UI.Screens.Heroes
         private readonly DropdownField candidateSelectField;
         private readonly DropdownField gearSlotSelectField;
         private readonly DropdownField armoryItemSelectField;
+        private readonly VisualElement heroPicker;
         private readonly VisualElement gearSlotPicker;
         private readonly VisualElement armoryItemPicker;
         private readonly VisualElement candidatePicker;
@@ -89,6 +90,7 @@ namespace PlanarWar.Client.UI.Screens.Heroes
             candidateSelectField = root.Q<DropdownField>("heroes-manage-candidate-field");
             gearSlotSelectField = root.Q<DropdownField>("heroes-gear-slot-field");
             armoryItemSelectField = root.Q<DropdownField>("heroes-armory-item-field");
+            heroPicker = root.Q<VisualElement>("heroes-roster-picker");
             gearSlotPicker = root.Q<VisualElement>("heroes-gear-slot-picker");
             armoryItemPicker = root.Q<VisualElement>("heroes-armory-item-picker");
             candidatePicker = root.Q<VisualElement>("heroes-candidate-picker");
@@ -188,6 +190,7 @@ namespace PlanarWar.Client.UI.Screens.Heroes
             if (armoryItemSelectField != null) armoryItemSelectField.label = $"Compatible {HeroArmorySlotWorkflow.EquipmentNounLower(terms.IsOperative)}";
 
             SyncHeroDropdown(heroes, terms);
+            SyncHeroButtons(heroes, terms);
             SyncCandidateDropdown(candidates, terms);
             SyncCandidateButtons(candidates, terms);
             SyncGearSlotDropdown();
@@ -355,6 +358,42 @@ namespace PlanarWar.Client.UI.Screens.Heroes
             return armory.HeroEquipment.FirstOrDefault(entry => string.Equals(entry?.HeroId, heroId, StringComparison.OrdinalIgnoreCase));
         }
 
+        private void SyncHeroButtons(List<HeroSnapshot> heroes, HeroTerminology terms)
+        {
+            if (heroPicker == null) return;
+
+            heroPicker.Clear();
+            var visibleHeroes = (heroes ?? new List<HeroSnapshot>())
+                .Where(hero => hero != null && !string.IsNullOrWhiteSpace(hero.Id))
+                .ToList();
+
+            if (visibleHeroes.Count == 0)
+            {
+                var empty = new Label(terms.IsOperative
+                    ? "No operatives are visible in the current roster payload."
+                    : "No heroes are visible in the current roster payload.");
+                empty.AddToClassList("heroes-roster-choice-empty");
+                heroPicker.Add(empty);
+                return;
+            }
+
+            foreach (var hero in visibleHeroes)
+            {
+                var heroId = hero.Id;
+                var button = new Button(() => SelectHero(heroId))
+                {
+                    text = BuildHeroChoiceText(hero, terms)
+                };
+                button.AddToClassList("heroes-roster-choice");
+                if (string.Equals(heroId, selectedHeroId, StringComparison.OrdinalIgnoreCase))
+                {
+                    button.AddToClassList("heroes-roster-choice--selected");
+                }
+
+                heroPicker.Add(button);
+            }
+        }
+
         private void SyncCandidateButtons(List<HeroRecruitCandidateSnapshot> candidates, HeroTerminology terms)
         {
             if (candidatePicker == null) return;
@@ -498,6 +537,14 @@ namespace PlanarWar.Client.UI.Screens.Heroes
 
                 armoryItemPicker.Add(button);
             }
+        }
+
+        private void SelectHero(string heroId)
+        {
+            if (string.IsNullOrWhiteSpace(heroId) || string.Equals(heroId, selectedHeroId, StringComparison.OrdinalIgnoreCase)) return;
+            selectedHeroId = heroId;
+            pendingReleaseHeroId = string.Empty;
+            Render(summaryState?.Snapshot ?? ShellSummarySnapshot.Empty);
         }
 
         private void SelectCandidate(string candidateId)
@@ -724,6 +771,18 @@ namespace PlanarWar.Client.UI.Screens.Heroes
                 "Receipt visible",
                 false,
                 null);
+        }
+
+        private static string BuildHeroChoiceText(HeroSnapshot hero, HeroTerminology terms)
+        {
+            if (hero == null) return terms.SingularTitle;
+            var title = FirstNonBlank(hero.Name, hero.Id, terms.SingularTitle);
+            var role = FirstNonBlank(hero.Role, terms.SingularLower);
+            var status = FirstNonBlank(hero.Status, "unknown");
+            var details = new List<string> { role, status };
+            if (hero.Level.HasValue) details.Add($"level {hero.Level:0}");
+            if (hero.AttachmentCount > 0) details.Add($"{hero.AttachmentCount} attached");
+            return $"{title} • {string.Join(" • ", details.Where(part => !string.IsNullOrWhiteSpace(part)))}";
         }
 
         private static string BuildCandidateChoiceText(HeroRecruitCandidateSnapshot candidate, HeroTerminology terms)
