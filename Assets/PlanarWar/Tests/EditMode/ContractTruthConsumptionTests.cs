@@ -1812,6 +1812,40 @@ namespace PlanarWar.Client.Tests.EditMode
 
 
         [Test]
+        public void Social_comms_closeout_locks_filter_buttons_and_live_truth_copy()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/AppShellController.cs");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(controllerPath), Is.True, "AppShellController.cs should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var controller = File.ReadAllText(controllerPath);
+
+            foreach (var id in new[]
+            {
+                "chat-all-button",
+                "chat-room-button",
+                "chat-system-button",
+            })
+            {
+                Assert.That(uxml, Does.Contain($"name=\"{id}\""), $"{id} should remain wired as a bottom Comms filter control.");
+            }
+
+            Assert.That(controller, Does.Contain("SetFilterActive(chatAllButton"), "All filter should still be wired through SetFilterActive.");
+            Assert.That(controller, Does.Contain("SetFilterActive(chatRoomButton"), "Room filter should still be wired through SetFilterActive.");
+            Assert.That(controller, Does.Contain("SetFilterActive(chatSystemButton"), "System filter should still be wired through SetFilterActive.");
+            Assert.That(controller, Does.Contain("ActiveChatChannel, \"all\""), "All filter should still be driven by live SessionState channel truth.");
+            Assert.That(controller, Does.Contain("ActiveChatChannel, \"room\""), "Room filter should still be driven by live SessionState channel truth.");
+            Assert.That(controller, Does.Contain("ActiveChatChannel, \"system\""), "System filter should still be driven by live SessionState channel truth.");
+            Assert.That(controller, Does.Contain("sessionState.GetVisibleChatLines()"), "Comms board and bottom log should keep consuming filtered live chat lines instead of fake channel rows.");
+            Assert.That(controller, Does.Contain("No chat lines visible for this filter yet."), "Room/System empty states should stay readable when a filter has no visible lines.");
+            Assert.That(controller, Does.Contain("Room comms are live"), "Outbound room chat hint should stay tied to real room attachment state.");
+            Assert.That(controller, Does.Contain("friend roster, DMs, and moderation surfaces remain deferred"), "Social closeout should keep deferred social-system scope explicit.");
+        }
+
+
+        [Test]
         public void Chapter_rail_status_labels_have_separation_styles()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
