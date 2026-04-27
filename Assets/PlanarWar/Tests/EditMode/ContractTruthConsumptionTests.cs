@@ -1593,6 +1593,58 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(source, Does.Contain("timerDiagnosticsButton.style.display = diagnosticsEnabled ? DisplayStyle.Flex : DisplayStyle.None"));
         }
 
+
+        [Test]
+        public void Home_surface_closeout_keeps_command_diagnostics_and_rail_status_checkpointed()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var appStylePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(appStylePath), Is.True, "AppShell.uss should be available from the Unity project root.");
+            Assert.That(File.Exists(controllerPath), Is.True, "SummaryScreenController.cs should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(appStylePath);
+            var source = File.ReadAllText(controllerPath);
+
+            foreach (var className in new[]
+            {
+                "home-command-hero",
+                "home-resource-strip",
+                "home-quick-orders",
+                "home-pressure-desk",
+                "home-fast-option-strip",
+                "home-timer-strip",
+                "home-status-grid",
+                "home-pressure-grid--hidden",
+            })
+            {
+                Assert.That(uxml, Does.Contain(className), $"Home closeout should keep {className} wired into the command surface.");
+            }
+
+            Assert.That(uxml, Does.Contain("Command desk"), "Home should keep the player-facing command desk label.");
+            Assert.That(uxml, Does.Contain("home-dev-diagnostic-gated"), "Home timer diagnostics should stay present but dev-gated.");
+            Assert.That(uxml, Does.Contain("name=\"timer-diagnostic-card\""));
+            Assert.That(uxml, Does.Contain("name=\"toggle-timer-diagnostics-button\""));
+            Assert.That(uxml, Does.Contain("name=\"nav-home-badge\""));
+            Assert.That(uxml, Does.Contain("class=\"chapter-row__action\""));
+
+            Assert.That(uss, Does.Contain("Home command surface cleanup v1"));
+            Assert.That(uss, Does.Contain("Home dev diagnostic gate v1a"));
+            Assert.That(uss, Does.Contain("Chapter rail status polish v1"));
+            Assert.That(uss, Does.Contain(".home-dev-diagnostic-gated"));
+            Assert.That(uss, Does.Contain(".home-pressure-grid--hidden"));
+            Assert.That(uss, Does.Contain(".pressure-op-card--compact"));
+
+            Assert.That(source, Does.Contain("TimerDiagnosticsDevFlagEnabled = false"));
+            Assert.That(source, Does.Contain("RenderTimerDiagnostics"));
+            Assert.That(source, Does.Contain("timerDiagnosticCard.style.display = diagnosticsEnabled ? DisplayStyle.Flex : DisplayStyle.None"));
+            Assert.That(source, Does.Contain("timerDiagnosticsButton.style.display = diagnosticsEnabled ? DisplayStyle.Flex : DisplayStyle.None"));
+            Assert.That(source, Does.Contain("BuildHomeOperationSummary"));
+            Assert.That(source, Does.Contain("BuildHomeOperationSignal"));
+        }
+
         [Test]
         public void Development_surface_uses_compact_action_boards_and_hides_duplicate_support_grid()
         {
