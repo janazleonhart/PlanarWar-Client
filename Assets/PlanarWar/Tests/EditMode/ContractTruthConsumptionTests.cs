@@ -2067,6 +2067,62 @@ namespace PlanarWar.Client.Tests.EditMode
             }
         }
 
+        [Test]
+        public void Operations_mission_board_surfaces_assignment_and_offer_truth()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var appStylePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/BlackMarket/BlackMarketScreenController.cs");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(appStylePath), Is.True, "AppShell.uss should be available from the Unity project root.");
+            Assert.That(File.Exists(controllerPath), Is.True, "BlackMarketScreenController.cs should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(appStylePath);
+            var controller = File.ReadAllText(controllerPath);
+
+            foreach (var marker in new[]
+            {
+                "operations-mission-board",
+                "warfront-mission-board-copy-value",
+                "warfront-mission-board-title-value",
+                "warfront-mission-board-status-value",
+                "warfront-mission-board-effect-value",
+                "warfront-mission-board-assignment-value",
+                "warfront-mission-offer-picker",
+                "warfront-mission-primary-button",
+            })
+            {
+                Assert.That(uxml, Does.Contain(marker), $"Mission board marker {marker} should stay present in Operations.");
+            }
+
+            Assert.That(uss, Does.Contain("Operations mission board / dispatch clarity v1"));
+            Assert.That(uss, Does.Contain(".operations-mission-board"));
+            Assert.That(uss, Does.Contain(".operations-mission-offer-picker"));
+            Assert.That(controller, Does.Contain("RenderMissionBoard(summary, rankedArmies, activeMission, primaryWarning, nowUtc)"));
+            Assert.That(controller, Does.Contain("BuildMissionStartAssignmentSummary"));
+            Assert.That(controller, Does.Contain("selected cell, selected operative/hero, and balanced response posture"));
+            Assert.That(controller, Does.Contain("TriggerStartMission(selectedOffer.Id)"));
+            Assert.That(controller, Does.Contain("TriggerCompleteMission(activeMission.InstanceId)"));
+            Assert.That(controller, Does.Not.Contain("/api/missions/start"), "Operations controller should reuse the existing callback seam instead of hardcoding mission routes.");
+            Assert.That(controller, Does.Not.Contain("/api/missions/complete"), "Operations controller should reuse the existing callback seam instead of hardcoding mission routes.");
+        }
+
+        [Test]
+        public void Operations_mission_board_keeps_black_market_and_city_assignment_language()
+        {
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/BlackMarket/BlackMarketScreenController.cs");
+            Assert.That(File.Exists(controllerPath), Is.True, "BlackMarketScreenController.cs should be available from the Unity project root.");
+
+            var controller = File.ReadAllText(controllerPath);
+            Assert.That(controller, Does.Contain("Cell: no selected idle cell"));
+            Assert.That(controller, Does.Contain("Formation: no selected idle formation"));
+            Assert.That(controller, Does.Contain("Operative: no selected idle operative"));
+            Assert.That(controller, Does.Contain("Hero: no selected idle hero"));
+            Assert.That(controller, Does.Contain("Posture: balanced"));
+            Assert.That(controller, Does.Contain("Mission board stays honest instead of inventing fake work."));
+        }
+
         private static VisualElement BuildMinimalHeroControllerRoot()
         {
             var root = new VisualElement();

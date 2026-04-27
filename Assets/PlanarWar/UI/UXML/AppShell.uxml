@@ -544,6 +544,36 @@
                             </ui:VisualElement>
                         </ui:VisualElement>
 
+
+                        <ui:VisualElement class="summary-card summary-card--full operations-mission-board">
+                            <ui:VisualElement class="operations-management-head">
+                                <ui:VisualElement class="operations-management-title-stack">
+                                    <ui:Label text="Mission board" class="eyebrow" />
+                                    <ui:Label text="Offer, assignment, and active support mission state" class="rail-note-title" />
+                                </ui:VisualElement>
+                                <ui:Label text="Mission payload truth" class="operations-pill" />
+                            </ui:VisualElement>
+                            <ui:Label name="warfront-mission-board-copy-value" text="Mission offers and active mission state load from live payload truth." class="metric-subvalue metric-subvalue--wrap" />
+
+                            <ui:VisualElement class="operations-management-grid operations-mission-board-grid">
+                                <ui:VisualElement class="operations-management-section operations-mission-board-section">
+                                    <ui:Label text="Selected mission" class="eyebrow operations-picker-label" />
+                                    <ui:Label name="warfront-mission-board-title-value" text="No mission selected" class="rail-note-title" />
+                                    <ui:Label name="warfront-mission-board-status-value" text="No active mission or offer is visible." class="summary-value summary-value--glance" />
+                                    <ui:Label name="warfront-mission-board-effect-value" text="Mission risk and payoff details will appear here when payload truth provides them." class="metric-subvalue metric-subvalue--wrap" />
+                                </ui:VisualElement>
+
+                                <ui:VisualElement class="operations-management-section operations-mission-board-section">
+                                    <ui:Label text="Assignment context" class="eyebrow operations-picker-label" />
+                                    <ui:Label name="warfront-mission-board-assignment-value" text="Selected cell and operative context will appear here." class="summary-value summary-value--glance" />
+                                    <ui:VisualElement name="warfront-mission-offer-picker" class="operations-choice-list operations-mission-offer-picker" />
+                                    <ui:VisualElement class="button-row operations-action-row">
+                                        <ui:Button name="warfront-mission-primary-button" text="No mission action" class="action-button action-button--primary" />
+                                    </ui:VisualElement>
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+
                         <ui:VisualElement class="summary-grid summary-grid--desk-support warfront-support-grid operations-support-grid--hidden">
                             <ui:VisualElement class="summary-card glance-card warfront-support-card">
                                 <ui:Label text="Open windows" class="eyebrow" />

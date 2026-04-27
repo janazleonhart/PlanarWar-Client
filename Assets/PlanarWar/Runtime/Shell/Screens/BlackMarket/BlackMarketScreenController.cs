@@ -23,6 +23,13 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private readonly Label noteValue;
         private readonly Label managementCopy;
         private readonly Label managementNote;
+        private readonly Label missionBoardCopy;
+        private readonly Label missionBoardTitle;
+        private readonly Label missionBoardStatus;
+        private readonly Label missionBoardEffect;
+        private readonly Label missionBoardAssignment;
+        private readonly VisualElement missionOfferPicker;
+        private readonly Button missionPrimaryButton;
         private readonly DropdownField managementArmyField;
         private readonly VisualElement managementArmyPicker;
         private readonly TextField renameInput;
@@ -62,6 +69,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private readonly List<string> mergeArmyChoiceIds = new();
         private readonly List<string> holdRegionChoiceIds = new();
         private readonly List<string> dispatchHeroChoiceIds = new();
+        private readonly List<string> missionOfferChoiceIds = new();
         private string selectedArmyId = string.Empty;
         private string draftedArmyId = string.Empty;
         private string renameDraft = string.Empty;
@@ -71,11 +79,17 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private string selectedHoldRegionId = string.Empty;
         private string selectedHoldPosture = "frontier_hold";
         private string selectedDispatchHeroId = string.Empty;
+        private string selectedMissionOfferId = string.Empty;
+        private Action missionPrimaryAction;
+        private bool missionPrimaryActionEnabled;
         private bool suppressManagementEvents;
         private bool useBlackMarketForceTerms = true;
         private ShellSummarySnapshot lastManagementSummary;
         private List<ArmySnapshot> lastManagementRankedArmies = new();
         private string lastManagementTargetArmyId = string.Empty;
+        private ShellSummarySnapshot lastMissionSummary;
+        private List<ArmySnapshot> lastMissionRankedArmies = new();
+        private string lastMissionPrimaryWarning = string.Empty;
 
         public BlackMarketScreenController(VisualElement root, SummaryState summaryState, Func<string, Task> onReinforceArmyRequested, Func<string, string, Task> onRenameArmyRequested, Func<string, int, string, Task> onSplitArmyRequested, Func<string, string, Task> onMergeArmyRequested, Func<string, Task> onDisbandArmyRequested, Func<string, string, string, Task> onAssignArmyHoldRequested, Func<string, Task> onReleaseArmyHoldRequested, Func<string, string, string, Task> onWarfrontAssaultRequested, Func<string, string, string, Task> onGarrisonStrikeRequested, Func<string, string, string, string, Task> onStartMissionRequested, Func<string, Task> onCompleteMissionRequested, Action onRefreshDeskRequested)
         {
@@ -91,6 +105,13 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             noteValue = root.Q<Label>("warfront-note-value");
             managementCopy = root.Q<Label>("warfront-management-copy-value");
             managementNote = root.Q<Label>("warfront-manage-note-value");
+            missionBoardCopy = root.Q<Label>("warfront-mission-board-copy-value");
+            missionBoardTitle = root.Q<Label>("warfront-mission-board-title-value");
+            missionBoardStatus = root.Q<Label>("warfront-mission-board-status-value");
+            missionBoardEffect = root.Q<Label>("warfront-mission-board-effect-value");
+            missionBoardAssignment = root.Q<Label>("warfront-mission-board-assignment-value");
+            missionOfferPicker = root.Q<VisualElement>("warfront-mission-offer-picker");
+            missionPrimaryButton = root.Q<Button>("warfront-mission-primary-button");
             managementArmyField = root.Q<DropdownField>("warfront-manage-army-field");
             managementArmyPicker = root.Q<VisualElement>("warfront-manage-army-picker");
             renameInput = root.Q<TextField>("warfront-manage-rename-input");
@@ -229,6 +250,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             releaseHoldButton?.RegisterCallback<ClickEvent>(_ => TriggerReleaseHold());
             dispatchAssaultButton?.RegisterCallback<ClickEvent>(_ => TriggerWarfrontAssault());
             dispatchGarrisonButton?.RegisterCallback<ClickEvent>(_ => TriggerGarrisonStrike());
+            missionPrimaryButton?.RegisterCallback<ClickEvent>(_ => TriggerMissionPrimaryAction());
         }
 
         public void Render(ShellSummarySnapshot summary)
@@ -277,6 +299,203 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 : BuildReinforcementDeskNote(summary.Armies, reinforceState, reinforceTimer, reinforceOp, warfrontWindows.Count > 0));
             RenderCards(cards, LaneCards(BuildCards(summary, rankedArmies, warfrontWindows, activeMission, primaryWarning, signalPairs, reinforceState, reinforceTimer, reinforceOp)));
             RenderFormationManagement(summary, rankedArmies, targetArmyId);
+            RenderMissionBoard(summary, rankedArmies, activeMission, primaryWarning, nowUtc);
+        }
+
+
+        private void RenderMissionBoard(ShellSummarySnapshot summary, List<ArmySnapshot> rankedArmies, MissionSnapshot activeMission, string primaryWarning, DateTime nowUtc)
+        {
+            lastMissionSummary = summary;
+            lastMissionRankedArmies = rankedArmies ?? new List<ArmySnapshot>();
+            lastMissionPrimaryWarning = primaryWarning ?? string.Empty;
+            missionPrimaryAction = null;
+            missionPrimaryActionEnabled = false;
+
+            if (missionBoardCopy == null && missionBoardTitle == null && missionOfferPicker == null && missionPrimaryButton == null)
+            {
+                return;
+            }
+
+            var offers = (summaryState.MissionOffers ?? new List<MissionOfferSnapshot>())
+                .Where(offer => offer != null && !string.IsNullOrWhiteSpace(offer.Id))
+                .ToList();
+
+            if (activeMission != null)
+            {
+                RenderActiveMissionBoard(activeMission, summary, primaryWarning, nowUtc);
+                return;
+            }
+
+            RenderMissionOfferBoard(summary, rankedArmies, offers);
+        }
+
+        private void RenderActiveMissionBoard(MissionSnapshot activeMission, ShellSummarySnapshot summary, string primaryWarning, DateTime nowUtc)
+        {
+            var hasInstance = !string.IsNullOrWhiteSpace(activeMission?.InstanceId);
+            var ready = activeMission?.FinishesAtUtc.HasValue == true && activeMission.FinishesAtUtc.Value <= nowUtc;
+            var pending = summaryState.IsActionBusy && string.Equals(summaryState.PendingMissionInstanceId, activeMission?.InstanceId, StringComparison.OrdinalIgnoreCase);
+            var remaining = activeMission?.FinishesAtUtc.HasValue == true ? FormatRemaining(activeMission.FinishesAtUtc.Value - nowUtc) : string.Empty;
+
+            if (missionBoardCopy != null)
+            {
+                missionBoardCopy.text = LaneText("Active mission is shown separately from quick action cards so assignment and completion state stay readable.");
+            }
+
+            if (missionBoardTitle != null)
+            {
+                missionBoardTitle.text = FirstNonBlank(activeMission?.Title, activeMission?.Id, "Active mission");
+            }
+
+            if (missionBoardStatus != null)
+            {
+                missionBoardStatus.text = ready
+                    ? "Ready to complete."
+                    : activeMission?.FinishesAtUtc.HasValue == true
+                        ? $"Active • resolves in {remaining}"
+                        : "Active without a finish anchor.";
+            }
+
+            if (missionBoardEffect != null)
+            {
+                missionBoardEffect.text = Truncate(BuildActiveMissionCardNote(activeMission, summary, primaryWarning), 160);
+            }
+
+            if (missionBoardAssignment != null)
+            {
+                missionBoardAssignment.text = LaneText(BuildMissionCommitmentSummary(activeMission, summary?.Armies ?? new List<ArmySnapshot>(), summary?.Heroes ?? new List<HeroSnapshot>()));
+                if (string.IsNullOrWhiteSpace(missionBoardAssignment.text))
+                {
+                    missionBoardAssignment.text = LaneText("Assignment payload is not exposed for this active mission.");
+                }
+            }
+
+            RenderMissionOfferPicker(new List<MissionOfferSnapshot>(), string.Empty, false, LaneText("Mission offers wait while an active mission is running."));
+            missionPrimaryActionEnabled = ready && hasInstance && !summaryState.IsActionBusy && onCompleteMissionRequested != null;
+            missionPrimaryAction = missionPrimaryActionEnabled ? () => TriggerCompleteMission(activeMission.InstanceId) : null;
+            if (missionPrimaryButton != null)
+            {
+                missionPrimaryButton.text = pending ? "Completing..." : ready ? "Complete mission" : "Mission active";
+                missionPrimaryButton.SetEnabled(missionPrimaryActionEnabled);
+            }
+        }
+
+        private void RenderMissionOfferBoard(ShellSummarySnapshot summary, IReadOnlyList<ArmySnapshot> rankedArmies, List<MissionOfferSnapshot> offers)
+        {
+            if (offers.Count == 0)
+            {
+                selectedMissionOfferId = string.Empty;
+                if (missionBoardCopy != null) missionBoardCopy.text = LaneText("No mission offers are visible in the current payload.");
+                if (missionBoardTitle != null) missionBoardTitle.text = summaryState.HasRecentMissionReceipt(DateTime.UtcNow) ? FirstNonBlank(summaryState.RecentMissionTitle, "Recent mission result") : "No mission offer";
+                if (missionBoardStatus != null) missionBoardStatus.text = summaryState.HasRecentMissionReceipt(DateTime.UtcNow) ? Truncate(summaryState.RecentMissionReceipt, 128) : "No active mission or mission offer is available.";
+                if (missionBoardEffect != null) missionBoardEffect.text = "Mission board stays honest instead of inventing fake work.";
+                if (missionBoardAssignment != null) missionBoardAssignment.text = BuildMissionStartAssignmentSummary(summary, rankedArmies);
+                RenderMissionOfferPicker(offers, string.Empty, false, LaneText("No mission offers available."));
+                missionPrimaryAction = null;
+                missionPrimaryActionEnabled = false;
+                if (missionPrimaryButton != null)
+                {
+                    missionPrimaryButton.text = "No mission action";
+                    missionPrimaryButton.SetEnabled(false);
+                }
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(selectedMissionOfferId) || offers.All(offer => !string.Equals(offer.Id, selectedMissionOfferId, StringComparison.OrdinalIgnoreCase)))
+            {
+                selectedMissionOfferId = offers[0].Id;
+            }
+
+            var selectedOffer = offers.FirstOrDefault(offer => string.Equals(offer.Id, selectedMissionOfferId, StringComparison.OrdinalIgnoreCase)) ?? offers[0];
+            selectedMissionOfferId = selectedOffer.Id;
+            var pending = summaryState.IsActionBusy && string.Equals(summaryState.PendingMissionOfferId, selectedOffer.Id, StringComparison.OrdinalIgnoreCase);
+
+            if (missionBoardCopy != null)
+            {
+                missionBoardCopy.text = LaneText($"{offers.Count} mission offer(s) visible. Start uses the selected cell, selected operative/hero, and balanced response posture.");
+            }
+
+            if (missionBoardTitle != null)
+            {
+                missionBoardTitle.text = FirstNonBlank(selectedOffer.Title, selectedOffer.Id, "Mission offer");
+            }
+
+            if (missionBoardStatus != null)
+            {
+                missionBoardStatus.text = BuildMissionOfferMeta(selectedOffer);
+            }
+
+            if (missionBoardEffect != null)
+            {
+                missionBoardEffect.text = Truncate(FirstNonBlank(BuildMissionEffectSummary(selectedOffer.Summary, selectedOffer.Payoff, selectedOffer.Risk), "No risk/payoff summary is exposed for this offer."), 160);
+            }
+
+            if (missionBoardAssignment != null)
+            {
+                missionBoardAssignment.text = BuildMissionStartAssignmentSummary(summary, rankedArmies);
+            }
+
+            RenderMissionOfferPicker(offers, selectedOffer.Id, !summaryState.IsActionBusy, LaneText("No mission offers available."));
+            missionPrimaryActionEnabled = !summaryState.IsActionBusy && onStartMissionRequested != null && !string.IsNullOrWhiteSpace(selectedOffer.Id);
+            missionPrimaryAction = missionPrimaryActionEnabled ? () => TriggerStartMission(selectedOffer.Id) : null;
+            if (missionPrimaryButton != null)
+            {
+                missionPrimaryButton.text = pending ? "Starting..." : $"Start {FirstNonBlank(selectedOffer.Title, "mission")}";
+                missionPrimaryButton.SetEnabled(missionPrimaryActionEnabled);
+            }
+        }
+
+        private void RenderMissionOfferPicker(List<MissionOfferSnapshot> offers, string selectedOfferId, bool canSelect, string emptyText)
+        {
+            if (missionOfferPicker == null)
+            {
+                return;
+            }
+
+            missionOfferPicker.Clear();
+            missionOfferChoiceIds.Clear();
+            if (offers == null || offers.Count == 0)
+            {
+                var empty = new Label(emptyText ?? "No mission offers available.");
+                empty.AddToClassList("operations-choice-empty");
+                missionOfferPicker.Add(empty);
+                return;
+            }
+
+            foreach (var offer in offers)
+            {
+                missionOfferChoiceIds.Add(offer.Id);
+                var offerId = offer.Id;
+                var button = new Button(() =>
+                {
+                    selectedMissionOfferId = offerId;
+                    RenderCurrentMissionBoard();
+                });
+                button.text = BuildMissionOfferPickerLabel(offer);
+                button.AddToClassList("operations-choice");
+                button.EnableInClassList("operations-choice--selected", string.Equals(offer.Id, selectedOfferId, StringComparison.OrdinalIgnoreCase));
+                button.SetEnabled(canSelect || string.Equals(offer.Id, selectedOfferId, StringComparison.OrdinalIgnoreCase));
+                missionOfferPicker.Add(button);
+            }
+        }
+
+        private void RenderCurrentMissionBoard()
+        {
+            if (lastMissionSummary == null)
+            {
+                return;
+            }
+
+            RenderMissionBoard(lastMissionSummary, lastMissionRankedArmies, lastMissionSummary.ActiveMissions.FirstOrDefault(), lastMissionPrimaryWarning, DateTime.UtcNow);
+        }
+
+        private void TriggerMissionPrimaryAction()
+        {
+            if (!missionPrimaryActionEnabled || missionPrimaryAction == null)
+            {
+                return;
+            }
+
+            missionPrimaryAction.Invoke();
         }
 
 
@@ -1248,16 +1467,65 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             return useBlackMarketForceTerms ? "Release route hold" : "Release regional hold";
         }
 
+        private string BuildMissionStartAssignmentSummary(ShellSummarySnapshot summary, IReadOnlyList<ArmySnapshot> rankedArmies)
+        {
+            var parts = new List<string>();
+            var army = ResolveActionArmy(summary, rankedArmies ?? new List<ArmySnapshot>());
+            var hero = ResolveActionHero(summary);
+            if (army != null)
+            {
+                parts.Add(useBlackMarketForceTerms ? $"Cell: {PresentArmyName(army.Name)}" : $"Formation: {PresentArmyName(army.Name)}");
+            }
+            else
+            {
+                parts.Add(useBlackMarketForceTerms ? "Cell: no selected idle cell" : "Formation: no selected idle formation");
+            }
+
+            if (hero != null)
+            {
+                parts.Add(useBlackMarketForceTerms ? $"Operative: {hero.Name}" : $"Hero: {hero.Name}");
+            }
+            else
+            {
+                parts.Add(useBlackMarketForceTerms ? "Operative: no selected idle operative" : "Hero: no selected idle hero");
+            }
+
+            parts.Add("Posture: balanced");
+            return LaneText(string.Join(" • ", parts.Where(part => !string.IsNullOrWhiteSpace(part))));
+        }
+
+        private static string BuildMissionOfferPickerLabel(MissionOfferSnapshot offer)
+        {
+            if (offer == null)
+            {
+                return "Mission offer";
+            }
+
+            var title = FirstNonBlank(offer.Title, offer.Id, "Mission offer");
+            var meta = BuildMissionOfferMeta(offer);
+            return string.IsNullOrWhiteSpace(meta) ? title : $"{title} • {meta}";
+        }
+
+        private static string BuildMissionOfferMeta(MissionOfferSnapshot offer)
+        {
+            if (offer == null)
+            {
+                return string.Empty;
+            }
+
+            return string.Join(" • ", new[]
+            {
+                HumanizeStatus(offer.BoardCategory),
+                HumanizeStatus(offer.Difficulty),
+                HumanizeRegionId(offer.RegionId)
+            }.Where(part => !string.IsNullOrWhiteSpace(part) && part != "-"));
+        }
+
         private CardView BuildMissionOfferCard(MissionOfferSnapshot offer)
         {
             var pending = summaryState.IsActionBusy && string.Equals(summaryState.PendingMissionOfferId, offer?.Id, StringComparison.OrdinalIgnoreCase);
             var title = FirstNonBlank(offer?.Title, offer?.Id, "Mission offer");
-            var meta = string.Join(" • ", new[]
-            {
-                HumanizeStatus(offer?.BoardCategory),
-                HumanizeStatus(offer?.Difficulty),
-                HumanizeRegionId(offer?.RegionId)
-            }.Where(part => !string.IsNullOrWhiteSpace(part) && part != "-"));
+            var meta = BuildMissionOfferMeta(offer);
             var note = FirstNonBlank(BuildMissionEffectSummary(offer?.Summary, offer?.Payoff, offer?.Risk), "Mission board offer surfaced from /api/missions/offers.");
             return new CardView(
                 family: "Mission offer",
