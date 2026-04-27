@@ -353,25 +353,25 @@ namespace PlanarWar.Client.UI
                 var roomJoined = sessionState.HasJoinedChatRoom;
                 var roomText = roomJoined ? sessionState.ChatRoomId : "(unattached)";
 
-                headline.text = roomJoined || visibleLines.Count > 0 ? "Social desk" : "Social review";
+                headline.text = roomJoined || visibleLines.Count > 0 ? "Comms desk" : "Comms review";
                 copy.text = roomJoined
-                    ? $"Room {roomText} is visible. Review recent lines, active filter, and connection posture without inventing a larger social stack."
-                    : "No room is attached yet. This read-only desk stays honest about comms posture and recent system chatter.";
-                overview.text = $"Shard {sessionState.ShardId} • room {roomText} • filter {sessionState.ActiveChatChannel} • {allLines.Count} stored line(s)";
+                    ? $"Room {roomText} is live. Review filter, traffic, and recent lines here."
+                    : "No room is attached yet. System chatter and filter posture stay visible.";
+                overview.text = $"Shard {sessionState.ShardId} • room {roomText} • filter {sessionState.ActiveChatChannel.ToUpperInvariant()} • {visibleLines.Count}/{allLines.Count} visible";
 
-                roomValue.text = roomJoined ? $"Room {roomText} • chat attached" : "No room attached yet.";
-                channelValue.text = $"{sessionState.ActiveChatChannel.ToUpperInvariant()} filter active";
-                trafficValue.text = visibleLines.Count > 0 ? $"{visibleLines.Count} visible line(s) • {allLines.Count} stored" : "No visible lines for this filter.";
-                connectionValue.text = sessionState.IsConnected ? $"Connected • last op {sessionState.LastInboundOp}" : "Disconnected";
+                roomValue.text = roomJoined ? $"Room {roomText} • attached" : "No room attached yet.";
+                channelValue.text = $"{sessionState.ActiveChatChannel.ToUpperInvariant()} filter";
+                trafficValue.text = visibleLines.Count > 0 ? $"{visibleLines.Count}/{allLines.Count} visible line(s)" : "No visible lines for this filter.";
+                connectionValue.text = sessionState.IsConnected ? $"Connected • {sessionState.LastInboundOp}" : "Disconnected";
                 systemValue.text = systemLine != null ? systemLine.ToDisplayText() : "No system notice yet.";
-                noteValue.text = roomJoined ? "Room chat is live here; broader friend roster and cross-channel surfaces remain deferred." : "This desk keeps live room/system posture honest while broader friend and outbound channel surfaces stay deferred until they are real." ;
+                noteValue.text = roomJoined ? "Room chat is live; friend roster, DMs, and moderation surfaces remain deferred." : "Live comms posture stays honest while broader social systems remain deferred." ;
 
                 var cardViews = new[]
                 {
-                    new CardView("Room state", roomJoined ? $"Room {roomText}" : "No attached room", roomJoined ? "Chat room is attached through WS session state." : "Where-am-I is live, but no room is attached yet.", $"Shard {sessionState.ShardId} • account {sessionState.DisplayName}"),
-                    new CardView("Channel filter", sessionState.ActiveChatChannel.ToUpperInvariant(), visibleLines.Count > 0 ? $"Showing {visibleLines.Count} recent line(s) for this filter." : "This filter has no visible lines yet.", $"Available filters: all, room, system."),
-                    BuildLineCard(visibleLines.ElementAtOrDefault(0), "Recent line", "No recent chat line is visible yet."),
-                    BuildLineCard(visibleLines.ElementAtOrDefault(1) ?? systemLine, "Secondary line", "No secondary line is visible yet.")
+                    new CardView("Room", roomJoined ? roomText : "Unattached", roomJoined ? "Room chat is attached through WS session state." : "Use Home / where-am-I to attach when available.", $"Shard {sessionState.ShardId} • {sessionState.DisplayName}"),
+                    new CardView("Filter", sessionState.ActiveChatChannel.ToUpperInvariant(), visibleLines.Count > 0 ? $"Showing {visibleLines.Count} of {allLines.Count} stored line(s)." : "No visible lines for this filter yet.", "Filters: all, room, system"),
+                    BuildLineCard(visibleLines.ElementAtOrDefault(0), "Recent", "No recent chat line is visible yet."),
+                    BuildLineCard(visibleLines.ElementAtOrDefault(1) ?? systemLine, "Secondary", "No secondary line is visible yet.")
                 };
 
                 for (var i = 0; i < cards.Length; i++)
@@ -384,11 +384,11 @@ namespace PlanarWar.Client.UI
             {
                 if (line == null)
                 {
-                    return new CardView(family, "No entry", emptyLore, "Read-only social desk keeps empty states honest.");
+                    return new CardView(family, "No entry", emptyLore, "Empty state uses live chat truth only.");
                 }
 
                 var speaker = string.IsNullOrWhiteSpace(line.From) ? line.ChannelLabel : line.From;
-                return new CardView(family, speaker, line.ToDisplayText(), $"Channel {line.ChannelLabel} • {line.TimestampUtc:HH:mm:ss} UTC");
+                return new CardView(family, speaker, line.ToDisplayText(), $"{line.ChannelLabel} • {line.TimestampUtc:HH:mm:ss} UTC");
             }
 
             private sealed class InfoCard

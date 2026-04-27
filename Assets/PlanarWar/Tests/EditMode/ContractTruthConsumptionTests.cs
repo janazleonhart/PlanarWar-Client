@@ -1781,6 +1781,37 @@ namespace PlanarWar.Client.Tests.EditMode
 
 
         [Test]
+        public void Social_comms_surface_uses_compact_board_and_hidden_duplicate_support_grid()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var appStylePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/AppShellController.cs");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(appStylePath), Is.True, "AppShell.uss should be available from the Unity project root.");
+            Assert.That(File.Exists(controllerPath), Is.True, "AppShellController.cs should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(appStylePath);
+            var controller = File.ReadAllText(controllerPath);
+
+            Assert.That(uxml, Does.Contain("social-command-hero"));
+            Assert.That(uxml, Does.Contain("social-overview-strip"));
+            Assert.That(uxml, Does.Contain("social-comms-board"));
+            Assert.That(uxml, Does.Contain("social-comms-card-grid"));
+            Assert.That(uxml, Does.Contain("social-support-grid--hidden"));
+            Assert.That(uxml, Does.Contain("Comms board"));
+
+            Assert.That(uss, Does.Contain("Social / Comms surface cleanup v1"));
+            Assert.That(uss, Does.Contain(".social-comms-card"));
+            Assert.That(uss, Does.Contain(".social-support-grid--hidden"));
+            Assert.That(uss, Does.Contain(".comms-panel"));
+
+            Assert.That(controller, Does.Contain("Comms desk"));
+            Assert.That(controller, Does.Contain("friend roster, DMs, and moderation surfaces remain deferred"));
+        }
+
+
+        [Test]
         public void Chapter_rail_status_labels_have_separation_styles()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");

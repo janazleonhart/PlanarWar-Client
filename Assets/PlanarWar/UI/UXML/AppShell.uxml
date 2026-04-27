@@ -776,40 +776,40 @@
                 </ui:ScrollView>
 
                 <ui:ScrollView name="social-screen" class="screen-panel screen-scroll" mode="Vertical">
-                    <ui:VisualElement class="screen-scroll-content social-screen-content">
-                        <ui:VisualElement class="summary-hero">
+                    <ui:VisualElement class="screen-scroll-content social-screen-content social-surface-content">
+                        <ui:VisualElement class="summary-hero social-command-hero">
                             <ui:Label text="Shared comms" class="eyebrow" />
-                            <ui:Label name="social-headline-value" text="Social desk" class="headline" />
-                            <ui:Label name="social-copy-value" text="Read-only room state, filter posture, and recent lines render here." class="headline-subtext" />
+                            <ui:Label name="social-headline-value" text="Comms desk" class="headline" />
+                            <ui:Label name="social-copy-value" text="Room state, filter posture, and recent lines render here." class="headline-subtext" />
                         </ui:VisualElement>
 
-                        <ui:VisualElement class="summary-card summary-card--full">
+                        <ui:VisualElement class="summary-card summary-card--full social-overview-strip">
                             <ui:Label text="Comms overview" class="eyebrow" />
                             <ui:Label name="social-overview-value" text="Room and filter posture load here." class="summary-value summary-value--glance" />
                         </ui:VisualElement>
 
-                        <ui:VisualElement class="summary-card summary-card--full">
-                            <ui:Label text="Visible social cards" class="eyebrow" />
-                            <ui:VisualElement class="summary-grid summary-grid--desk-cards">
-                                <ui:VisualElement name="social-card-1-root" class="summary-card glance-card">
+                        <ui:VisualElement class="summary-card summary-card--full social-comms-board">
+                            <ui:Label text="Comms board" class="eyebrow" />
+                            <ui:VisualElement class="summary-grid summary-grid--desk-cards social-comms-card-grid">
+                                <ui:VisualElement name="social-card-1-root" class="summary-card glance-card social-comms-card">
                                     <ui:Label name="social-card-1-title" text="Room state" class="eyebrow" />
                                     <ui:Label name="social-card-1-title-value" text="No room state" class="rail-note-title" />
                                     <ui:Label name="social-card-1-lore-value" text="Room truth will appear here." class="summary-value summary-value--glance" />
                                     <ui:Label name="social-card-1-note-value" text="Read-only social desk." class="metric-subvalue metric-subvalue--wrap" />
                                 </ui:VisualElement>
-                                <ui:VisualElement name="social-card-2-root" class="summary-card glance-card">
+                                <ui:VisualElement name="social-card-2-root" class="summary-card glance-card social-comms-card">
                                     <ui:Label name="social-card-2-title" text="Channel filter" class="eyebrow" />
                                     <ui:Label name="social-card-2-title-value" text="No filter state" class="rail-note-title" />
                                     <ui:Label name="social-card-2-lore-value" text="Filter truth will appear here." class="summary-value summary-value--glance" />
                                     <ui:Label name="social-card-2-note-value" text="Read-only social desk." class="metric-subvalue metric-subvalue--wrap" />
                                 </ui:VisualElement>
-                                <ui:VisualElement name="social-card-3-root" class="summary-card glance-card">
+                                <ui:VisualElement name="social-card-3-root" class="summary-card glance-card social-comms-card">
                                     <ui:Label name="social-card-3-title" text="Recent line" class="eyebrow" />
                                     <ui:Label name="social-card-3-title-value" text="No entry" class="rail-note-title" />
                                     <ui:Label name="social-card-3-lore-value" text="Recent comms truth will appear here." class="summary-value summary-value--glance" />
                                     <ui:Label name="social-card-3-note-value" text="Read-only social desk." class="metric-subvalue metric-subvalue--wrap" />
                                 </ui:VisualElement>
-                                <ui:VisualElement name="social-card-4-root" class="summary-card glance-card">
+                                <ui:VisualElement name="social-card-4-root" class="summary-card glance-card social-comms-card">
                                     <ui:Label name="social-card-4-title" text="Secondary line" class="eyebrow" />
                                     <ui:Label name="social-card-4-title-value" text="No entry" class="rail-note-title" />
                                     <ui:Label name="social-card-4-lore-value" text="Secondary comms truth will appear here." class="summary-value summary-value--glance" />
@@ -818,7 +818,7 @@
                             </ui:VisualElement>
                         </ui:VisualElement>
 
-                        <ui:VisualElement class="summary-grid summary-grid--desk-support">
+                        <ui:VisualElement class="summary-grid summary-grid--desk-support social-support-grid--hidden">
                             <ui:VisualElement class="summary-card glance-card">
                                 <ui:Label text="Room state" class="eyebrow" />
                                 <ui:Label name="social-room-value" text="No room attached yet." class="summary-value summary-value--glance" />
