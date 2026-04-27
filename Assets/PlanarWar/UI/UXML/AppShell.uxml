@@ -20,7 +20,7 @@
 
             <ui:VisualElement class="rail-section-head">
                 <ui:Label text="Chapter menu" class="eyebrow" />
-                <ui:Label text="4 lanes" class="rail-section-head__meta" />
+                <ui:Label text="5 lanes" class="rail-section-head__meta" />
             </ui:VisualElement>
 
             <ui:VisualElement class="rail-active-card rail-version-card">
@@ -74,8 +74,21 @@
                     <ui:Label text="Route" class="chapter-row__action" />
                 </ui:Button>
 
-                <ui:Button name="nav-social-button" class="chapter-row rail-button">
+                <ui:Button name="nav-heroes-button" class="chapter-row rail-button">
                     <ui:Label text="04" class="chapter-row__index" />
+                    <ui:VisualElement class="chapter-row__body">
+                        <ui:VisualElement class="chapter-row__top">
+                            <ui:Label text="Roster" class="chapter-row__kicker" />
+                            <ui:Label text="Heroes" class="chapter-row__badge" />
+                        </ui:VisualElement>
+                        <ui:Label text="Heroes" class="chapter-row__title" />
+                        <ui:Label text="Recruit, review, and dismiss heroes here." class="chapter-row__copy" />
+                    </ui:VisualElement>
+                    <ui:Label text="Open" class="chapter-row__action" />
+                </ui:Button>
+
+                <ui:Button name="nav-social-button" class="chapter-row rail-button">
+                    <ui:Label text="05" class="chapter-row__index" />
                     <ui:VisualElement class="chapter-row__body">
                         <ui:VisualElement class="chapter-row__top">
                             <ui:Label text="Shared" class="chapter-row__kicker" />
@@ -578,6 +591,87 @@
                             <ui:Button name="warfront-manage-dispatch-assault-button" text="Open pressure line" class="action-button action-button--primary" />
                             <ui:Button name="warfront-manage-dispatch-garrison-button" text="Run disruption action" class="action-button" />
                             <ui:Label name="warfront-manage-note-value" text="Operations management details load from live summary payload." class="metric-subvalue metric-subvalue--wrap" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:ScrollView>
+
+                <ui:ScrollView name="heroes-screen" class="screen-panel screen-scroll" mode="Vertical">
+                    <ui:VisualElement class="screen-scroll-content heroes-screen-content">
+                        <ui:VisualElement class="summary-hero heroes-hero">
+                            <ui:Label text="Roster desk" class="eyebrow" />
+                            <ui:Label name="heroes-headline-value" text="Hero desk" class="headline" />
+                            <ui:Label name="heroes-copy-value" text="Recruitment, roster review, candidate decisions, and release controls render here." class="headline-subtext" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card summary-card--full">
+                            <ui:Label text="Hero overview" class="eyebrow" />
+                            <ui:Label name="heroes-overview-value" text="Hero roster loads here." class="summary-value summary-value--glance" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-grid summary-grid--desk-support">
+                            <ui:VisualElement class="summary-card glance-card">
+                                <ui:Label text="Recruitment" class="eyebrow" />
+                                <ui:Label name="heroes-recruitment-value" text="Recruitment surface unavailable." class="summary-value summary-value--glance" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="summary-card glance-card">
+                                <ui:Label text="Roster" class="eyebrow" />
+                                <ui:Label name="heroes-roster-value" text="No heroes visible." class="summary-value summary-value--glance" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="summary-card glance-card">
+                                <ui:Label text="Availability" class="eyebrow" />
+                                <ui:Label name="heroes-availability-value" text="Availability unknown." class="summary-value summary-value--glance" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="summary-card glance-card">
+                                <ui:Label text="Desk note" class="eyebrow" />
+                                <ui:Label name="heroes-note-value" text="Hero controls load from live summary payload." class="summary-value summary-value--glance" />
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card summary-card--full">
+                            <ui:Label text="Visible hero cards" class="eyebrow" />
+                            <ui:VisualElement class="summary-grid summary-grid--desk-cards">
+                                <ui:VisualElement name="heroes-card-1-root" class="summary-card glance-card">
+                                    <ui:Label name="heroes-card-1-family-value" text="Roster" class="eyebrow" />
+                                    <ui:Label name="heroes-card-1-title-value" text="Hero card" class="rail-note-title" />
+                                    <ui:Label name="heroes-card-1-lore-value" text="Hero truth appears here." class="summary-value summary-value--glance" />
+                                    <ui:Label name="heroes-card-1-note-value" text="Hero desk." class="metric-subvalue metric-subvalue--wrap" />
+                                    <ui:Button name="heroes-card-1-button" text="Hero action" class="action-button action-button--primary" />
+                                </ui:VisualElement>
+                                <ui:VisualElement name="heroes-card-2-root" class="summary-card glance-card">
+                                    <ui:Label name="heroes-card-2-family-value" text="Roster" class="eyebrow" />
+                                    <ui:Label name="heroes-card-2-title-value" text="Hero card" class="rail-note-title" />
+                                    <ui:Label name="heroes-card-2-lore-value" text="Hero truth appears here." class="summary-value summary-value--glance" />
+                                    <ui:Label name="heroes-card-2-note-value" text="Hero desk." class="metric-subvalue metric-subvalue--wrap" />
+                                    <ui:Button name="heroes-card-2-button" text="Hero action" class="action-button action-button--primary" />
+                                </ui:VisualElement>
+                                <ui:VisualElement name="heroes-card-3-root" class="summary-card glance-card">
+                                    <ui:Label name="heroes-card-3-family-value" text="Roster" class="eyebrow" />
+                                    <ui:Label name="heroes-card-3-title-value" text="Hero card" class="rail-note-title" />
+                                    <ui:Label name="heroes-card-3-lore-value" text="Hero truth appears here." class="summary-value summary-value--glance" />
+                                    <ui:Label name="heroes-card-3-note-value" text="Hero desk." class="metric-subvalue metric-subvalue--wrap" />
+                                    <ui:Button name="heroes-card-3-button" text="Hero action" class="action-button action-button--primary" />
+                                </ui:VisualElement>
+                                <ui:VisualElement name="heroes-card-4-root" class="summary-card glance-card">
+                                    <ui:Label name="heroes-card-4-family-value" text="Roster" class="eyebrow" />
+                                    <ui:Label name="heroes-card-4-title-value" text="Hero card" class="rail-note-title" />
+                                    <ui:Label name="heroes-card-4-lore-value" text="Hero truth appears here." class="summary-value summary-value--glance" />
+                                    <ui:Label name="heroes-card-4-note-value" text="Hero desk." class="metric-subvalue metric-subvalue--wrap" />
+                                    <ui:Button name="heroes-card-4-button" text="Hero action" class="action-button action-button--primary" />
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card summary-card--full">
+                            <ui:Label text="Hero management" class="eyebrow" />
+                            <ui:DropdownField name="heroes-manage-hero-field" label="Hero" />
+                            <ui:Button name="heroes-release-button" text="Release selected hero" class="action-button" />
+                            <ui:DropdownField name="heroes-manage-candidate-field" label="Recruit candidate" />
+                            <ui:VisualElement class="button-row">
+                                <ui:Button name="heroes-recruit-button" text="Scout hero candidate" class="action-button action-button--primary" />
+                                <ui:Button name="heroes-candidate-accept-button" text="Accept candidate" class="action-button action-button--primary" />
+                                <ui:Button name="heroes-candidate-dismiss-button" text="Dismiss candidates" class="action-button" />
+                                <ui:Button name="heroes-refresh-button" text="Refresh heroes" class="action-button" />
+                            </ui:VisualElement>
                         </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:ScrollView>

@@ -96,6 +96,7 @@ namespace PlanarWar.Client.UI
                     HandleGarrisonStrikeRequestedAsync,
                     HandleStartMissionRequestedAsync,
                     HandleCompleteMissionRequestedAsync,
+                    HandleReleaseHeroRequestedAsync,
                     RefreshSummary,
                     () => navigationState.SetActive(ShellScreen.Summary));
             }
@@ -557,6 +558,27 @@ namespace PlanarWar.Client.UI
             }
         }
 
+        private async Task HandleReleaseHeroRequestedAsync(string heroId)
+        {
+            if (summaryState == null || apiClient == null || string.IsNullOrWhiteSpace(heroId) || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            var trimmedHeroId = heroId.Trim();
+            try
+            {
+                summaryState.BeginHeroRelease(trimmedHeroId);
+                await apiClient.ReleaseHeroAsync(trimmedHeroId);
+                await summaryController.RefreshAsync();
+                summaryState.FinishAction($"Hero released: {trimmedHeroId}");
+            }
+            catch (Exception ex)
+            {
+                summaryState.FinishAction($"Hero release failed: {ex.Message}", failed: true);
+            }
+        }
+
         private async Task HandleStartMissionRequestedAsync(string missionId, string armyId, string heroId, string responsePosture)
         {
             if (summaryState == null || apiClient == null || string.IsNullOrWhiteSpace(missionId) || summaryState.IsActionBusy)
@@ -908,6 +930,7 @@ namespace PlanarWar.Client.UI
             root.Q<Button>("nav-home-button")?.RegisterCallback<ClickEvent>(_ => navigationState.SetActive(ShellScreen.Summary));
             root.Q<Button>("nav-development-button")?.RegisterCallback<ClickEvent>(_ => navigationState.SetActive(ShellScreen.City));
             root.Q<Button>("nav-warfront-button")?.RegisterCallback<ClickEvent>(_ => navigationState.SetActive(ShellScreen.BlackMarket));
+            root.Q<Button>("nav-heroes-button")?.RegisterCallback<ClickEvent>(_ => navigationState.SetActive(ShellScreen.Heroes));
             root.Q<Button>("nav-social-button")?.RegisterCallback<ClickEvent>(_ => navigationState.SetActive(ShellScreen.Social));
 
             root.Q<Button>("chat-all-button")?.RegisterCallback<ClickEvent>(_ => sessionState.SetActiveChatChannel("all"));

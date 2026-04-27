@@ -271,6 +271,21 @@ namespace PlanarWar.Client.Network
             return PostJsonAsync(BuildUrl("/api/heroes/recruit/dismiss"), new JObject(), includeBearerToken: true);
         }
 
+        public Task<JObject> ReleaseHeroAsync(string heroId)
+        {
+            if (string.IsNullOrWhiteSpace(heroId))
+            {
+                throw new ArgumentException("heroId is required", nameof(heroId));
+            }
+
+            var body = new JObject
+            {
+                ["heroId"] = heroId.Trim()
+            };
+
+            return PostJsonAsync(BuildUrl("/api/heroes/release"), body, includeBearerToken: true);
+        }
+
         public Task<JObject> ReinforceArmyAsync(string armyId = null)
         {
             var body = new JObject();

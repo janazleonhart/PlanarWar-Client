@@ -2,6 +2,7 @@ using PlanarWar.Client.Core;
 using PlanarWar.Client.Core.Application;
 using PlanarWar.Client.UI.Screens.BlackMarket;
 using PlanarWar.Client.UI.Screens.City;
+using PlanarWar.Client.UI.Screens.Heroes;
 using PlanarWar.Client.UI.Screens.Summary;
 using System;
 using System.Linq;
@@ -19,11 +20,13 @@ namespace PlanarWar.Client.UI
         private readonly SummaryScreenController summaryScreen;
         private readonly CityScreenController cityScreen;
         private readonly BlackMarketScreenController blackMarketScreen;
+        private readonly HeroScreenController heroScreen;
         private readonly SocialScreenController socialScreen;
 
         private readonly VisualElement summaryRoot;
         private readonly VisualElement cityRoot;
         private readonly VisualElement blackMarketRoot;
+        private readonly VisualElement heroesRoot;
         private readonly VisualElement socialRoot;
 
         private readonly Label connectionValue;
@@ -53,6 +56,7 @@ namespace PlanarWar.Client.UI
         private readonly Button navHomeButton;
         private readonly Button navDevelopmentButton;
         private readonly Button navWarfrontButton;
+        private readonly Button navHeroesButton;
         private readonly Button navSocialButton;
 
         private readonly Label commsStatusValue;
@@ -64,7 +68,7 @@ namespace PlanarWar.Client.UI
         private readonly Button sendChatButton;
         private readonly TextField chatInputField;
 
-        public AppShellController(VisualElement root, SessionState sessionState, SummaryState summaryState, ShellNavigationState navigationState, ClientVersionState versionState, Func<string, System.Threading.Tasks.Task> onStartResearchRequested, Func<string, System.Threading.Tasks.Task> onStartWorkshopCraftRequested, Func<string, System.Threading.Tasks.Task> onCollectWorkshopRequested, Func<string, System.Threading.Tasks.Task> onRecruitHeroRequested, Func<string, System.Threading.Tasks.Task> onAcceptHeroRecruitCandidateRequested, Func<System.Threading.Tasks.Task> onDismissHeroRecruitCandidatesRequested, Func<string, System.Threading.Tasks.Task> onConstructBuildingRequested, Func<string, System.Threading.Tasks.Task> onUpgradeBuildingRequested, Func<string, string, System.Threading.Tasks.Task> onSwitchBuildingRoutingRequested, Func<string, System.Threading.Tasks.Task> onDestroyBuildingRequested, Func<string, string, System.Threading.Tasks.Task> onRemodelBuildingRequested, Func<string, System.Threading.Tasks.Task> onCancelActiveBuildRequested, Func<string, System.Threading.Tasks.Task> onReinforceArmyRequested, Func<string, string, System.Threading.Tasks.Task> onRenameArmyRequested, Func<string, int, string, System.Threading.Tasks.Task> onSplitArmyRequested, Func<string, string, System.Threading.Tasks.Task> onMergeArmyRequested, Func<string, System.Threading.Tasks.Task> onDisbandArmyRequested, Func<string, string, string, System.Threading.Tasks.Task> onAssignArmyHoldRequested, Func<string, System.Threading.Tasks.Task> onReleaseArmyHoldRequested, Func<string, string, string, System.Threading.Tasks.Task> onWarfrontAssaultRequested, Func<string, string, string, System.Threading.Tasks.Task> onGarrisonStrikeRequested, Func<string, string, string, string, System.Threading.Tasks.Task> onStartMissionRequested, Func<string, System.Threading.Tasks.Task> onCompleteMissionRequested, Action onRefreshDeskRequested, Action onBackHomeRequested)
+        public AppShellController(VisualElement root, SessionState sessionState, SummaryState summaryState, ShellNavigationState navigationState, ClientVersionState versionState, Func<string, System.Threading.Tasks.Task> onStartResearchRequested, Func<string, System.Threading.Tasks.Task> onStartWorkshopCraftRequested, Func<string, System.Threading.Tasks.Task> onCollectWorkshopRequested, Func<string, System.Threading.Tasks.Task> onRecruitHeroRequested, Func<string, System.Threading.Tasks.Task> onAcceptHeroRecruitCandidateRequested, Func<System.Threading.Tasks.Task> onDismissHeroRecruitCandidatesRequested, Func<string, System.Threading.Tasks.Task> onConstructBuildingRequested, Func<string, System.Threading.Tasks.Task> onUpgradeBuildingRequested, Func<string, string, System.Threading.Tasks.Task> onSwitchBuildingRoutingRequested, Func<string, System.Threading.Tasks.Task> onDestroyBuildingRequested, Func<string, string, System.Threading.Tasks.Task> onRemodelBuildingRequested, Func<string, System.Threading.Tasks.Task> onCancelActiveBuildRequested, Func<string, System.Threading.Tasks.Task> onReinforceArmyRequested, Func<string, string, System.Threading.Tasks.Task> onRenameArmyRequested, Func<string, int, string, System.Threading.Tasks.Task> onSplitArmyRequested, Func<string, string, System.Threading.Tasks.Task> onMergeArmyRequested, Func<string, System.Threading.Tasks.Task> onDisbandArmyRequested, Func<string, string, string, System.Threading.Tasks.Task> onAssignArmyHoldRequested, Func<string, System.Threading.Tasks.Task> onReleaseArmyHoldRequested, Func<string, string, string, System.Threading.Tasks.Task> onWarfrontAssaultRequested, Func<string, string, string, System.Threading.Tasks.Task> onGarrisonStrikeRequested, Func<string, string, string, string, System.Threading.Tasks.Task> onStartMissionRequested, Func<string, System.Threading.Tasks.Task> onCompleteMissionRequested, Func<string, System.Threading.Tasks.Task> onReleaseHeroRequested, Action onRefreshDeskRequested, Action onBackHomeRequested)
         {
             this.sessionState = sessionState;
             this.summaryState = summaryState;
@@ -74,11 +78,13 @@ namespace PlanarWar.Client.UI
             summaryRoot = root.Q<VisualElement>("summary-screen");
             cityRoot = root.Q<VisualElement>("development-screen");
             blackMarketRoot = root.Q<VisualElement>("placeholder-screen");
+            heroesRoot = root.Q<VisualElement>("heroes-screen");
             socialRoot = root.Q<VisualElement>("social-screen");
 
             summaryScreen = new SummaryScreenController(root);
             cityScreen = new CityScreenController(root, summaryState, onStartResearchRequested, onStartWorkshopCraftRequested, onCollectWorkshopRequested, onRecruitHeroRequested, onAcceptHeroRecruitCandidateRequested, onDismissHeroRecruitCandidatesRequested, onConstructBuildingRequested, onUpgradeBuildingRequested, onSwitchBuildingRoutingRequested, onDestroyBuildingRequested, onRemodelBuildingRequested, onCancelActiveBuildRequested, onRefreshDeskRequested, onBackHomeRequested);
             blackMarketScreen = new BlackMarketScreenController(root, summaryState, onReinforceArmyRequested, onRenameArmyRequested, onSplitArmyRequested, onMergeArmyRequested, onDisbandArmyRequested, onAssignArmyHoldRequested, onReleaseArmyHoldRequested, onWarfrontAssaultRequested, onGarrisonStrikeRequested, onStartMissionRequested, onCompleteMissionRequested, onRefreshDeskRequested);
+            heroScreen = new HeroScreenController(root, summaryState, onRecruitHeroRequested, onAcceptHeroRecruitCandidateRequested, onDismissHeroRecruitCandidatesRequested, onReleaseHeroRequested, onRefreshDeskRequested);
             socialScreen = new SocialScreenController(root);
 
             connectionValue = root.Q<Label>("connection-value");
@@ -108,6 +114,7 @@ namespace PlanarWar.Client.UI
             navHomeButton = root.Q<Button>("nav-home-button");
             navDevelopmentButton = root.Q<Button>("nav-development-button");
             navWarfrontButton = root.Q<Button>("nav-warfront-button");
+            navHeroesButton = root.Q<Button>("nav-heroes-button");
             navSocialButton = root.Q<Button>("nav-social-button");
 
             commsStatusValue = root.Q<Label>("comms-status-value");
@@ -154,11 +161,13 @@ namespace PlanarWar.Client.UI
             summaryScreen.Render(summaryState.Snapshot, summaryState.IsLoaded);
             cityScreen.Render(summaryState.Snapshot, summaryState);
             blackMarketScreen.Render(summaryState.Snapshot);
+            heroScreen.Render(summaryState.Snapshot);
             socialScreen.Render(sessionState);
 
             summaryRoot.style.display = navigationState.ActiveScreen == ShellScreen.Summary ? DisplayStyle.Flex : DisplayStyle.None;
             cityRoot.style.display = navigationState.ActiveScreen == ShellScreen.City ? DisplayStyle.Flex : DisplayStyle.None;
             blackMarketRoot.style.display = navigationState.ActiveScreen == ShellScreen.BlackMarket ? DisplayStyle.Flex : DisplayStyle.None;
+            if (heroesRoot != null) heroesRoot.style.display = navigationState.ActiveScreen == ShellScreen.Heroes ? DisplayStyle.Flex : DisplayStyle.None;
             if (socialRoot != null) socialRoot.style.display = navigationState.ActiveScreen == ShellScreen.Social ? DisplayStyle.Flex : DisplayStyle.None;
 
             RenderChapterState();
@@ -172,6 +181,7 @@ namespace PlanarWar.Client.UI
                 ShellScreen.Summary => ("Summary", "Command floor", "This rail stays menu-owned. Use Home to scan the empire, then jump into a desk when something needs action."),
                 ShellScreen.City => ("Development", "Growth desk", "Research, workshop, and growth cadence stay grouped here as a read-only planning desk."),
                 ShellScreen.BlackMarket => ("Operations", "Operations doctrine", "Routes, readiness, holds, and covert deployment stay visible here before deeper operations wiring lands."),
+                ShellScreen.Heroes => ("Heroes", "Roster desk", "Recruitment, candidate review, release safety, and hero availability stay visible here without hiding inside Development."),
                 ShellScreen.Social => ("Social", "Shared comms", "Room state, recent lines, and channel posture stay honest here without inventing a full social stack."),
                 _ => ("Summary", "Command floor", "This rail stays menu-owned.")
             };
@@ -184,6 +194,7 @@ namespace PlanarWar.Client.UI
             SetNavActive(navHomeButton, navigationState.ActiveScreen == ShellScreen.Summary);
             SetNavActive(navDevelopmentButton, navigationState.ActiveScreen == ShellScreen.City);
             SetNavActive(navWarfrontButton, navigationState.ActiveScreen == ShellScreen.BlackMarket);
+            SetNavActive(navHeroesButton, navigationState.ActiveScreen == ShellScreen.Heroes);
             SetNavActive(navSocialButton, navigationState.ActiveScreen == ShellScreen.Social);
         }
 

@@ -7,6 +7,7 @@ namespace PlanarWar.Client.Core.Application
         Summary,
         City,
         BlackMarket,
+        Heroes,
         Social
     }
 

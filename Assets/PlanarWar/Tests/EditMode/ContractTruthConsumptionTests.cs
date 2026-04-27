@@ -29,6 +29,22 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
         [Test]
+        public void Shell_has_dedicated_hero_roster_lane_and_controls()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            Assert.That(uxml, Does.Contain("nav-heroes-button"));
+            Assert.That(uxml, Does.Contain("heroes-screen"));
+            Assert.That(uxml, Does.Contain("heroes-manage-hero-field"));
+            Assert.That(uxml, Does.Contain("heroes-release-button"));
+            Assert.That(uxml, Does.Contain("heroes-manage-candidate-field"));
+            Assert.That(uxml, Does.Contain("heroes-candidate-accept-button"));
+            Assert.That(uxml, Does.Contain("heroes-candidate-dismiss-button"));
+        }
+
+        [Test]
         public void Operations_city_lane_translates_shadow_force_terms_to_troop_language()
         {
             var formatter = typeof(PlanarWar.Client.UI.Screens.BlackMarket.BlackMarketScreenController)

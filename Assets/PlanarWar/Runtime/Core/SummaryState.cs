@@ -39,6 +39,7 @@ namespace PlanarWar.Client.Core
         public string PendingHeroRecruitRole { get; private set; } = string.Empty;
         public string PendingHeroRecruitCandidateId { get; private set; } = string.Empty;
         public bool PendingHeroRecruitDismiss { get; private set; }
+        public string PendingHeroReleaseId { get; private set; } = string.Empty;
         public string PendingArmyReinforcementId { get; private set; } = string.Empty;
         public string PendingBuildingKind { get; private set; } = string.Empty;
         public string PendingBuildingId { get; private set; } = string.Empty;
@@ -964,6 +965,12 @@ namespace PlanarWar.Client.Core
             PendingHeroRecruitDismiss = true;
         }
 
+        public void BeginHeroRelease(string heroId)
+        {
+            BeginAction(string.IsNullOrWhiteSpace(heroId) ? "Releasing hero..." : $"Releasing hero: {heroId.Trim()}");
+            PendingHeroReleaseId = heroId?.Trim() ?? string.Empty;
+        }
+
         public void BeginArmyReinforcement(string armyId)
         {
             BeginAction(string.IsNullOrWhiteSpace(armyId) ? "Reinforcing army..." : $"Reinforcing army: {armyId.Trim()}");
@@ -1070,6 +1077,7 @@ namespace PlanarWar.Client.Core
             PendingHeroRecruitRole = string.Empty;
             PendingHeroRecruitCandidateId = string.Empty;
             PendingHeroRecruitDismiss = false;
+            PendingHeroReleaseId = string.Empty;
             PendingArmyReinforcementId = string.Empty;
             PendingBuildingKind = string.Empty;
             PendingBuildingId = string.Empty;
@@ -1090,6 +1098,7 @@ namespace PlanarWar.Client.Core
             PendingHeroRecruitRole = string.Empty;
             PendingHeroRecruitCandidateId = string.Empty;
             PendingHeroRecruitDismiss = false;
+            PendingHeroReleaseId = string.Empty;
             PendingArmyReinforcementId = string.Empty;
             PendingBuildingKind = string.Empty;
             PendingBuildingId = string.Empty;
