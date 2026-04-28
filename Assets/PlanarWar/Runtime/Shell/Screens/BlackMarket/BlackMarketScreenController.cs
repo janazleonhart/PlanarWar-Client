@@ -326,7 +326,54 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 return;
             }
 
+            if (summaryState.HasRecentMissionReceipt(nowUtc))
+            {
+                RenderRecentMissionReceiptBoard(summary, rankedArmies, offers, nowUtc);
+                return;
+            }
+
             RenderMissionOfferBoard(summary, rankedArmies, offers);
+        }
+
+        private void RenderRecentMissionReceiptBoard(ShellSummarySnapshot summary, IReadOnlyList<ArmySnapshot> rankedArmies, IReadOnlyList<MissionOfferSnapshot> offers, DateTime nowUtc)
+        {
+            missionPrimaryAction = null;
+            missionPrimaryActionEnabled = false;
+
+            if (missionBoardCopy != null)
+            {
+                missionBoardCopy.text = LaneText("Latest completion report is shown before the next mission offer so the result is not buried in quick action cards.");
+            }
+
+            if (missionBoardTitle != null)
+            {
+                missionBoardTitle.text = BuildRecentMissionDisplayTitle();
+            }
+
+            if (missionBoardStatus != null)
+            {
+                missionBoardStatus.text = BuildRecentMissionReceiptStatus(nowUtc);
+            }
+
+            if (missionBoardEffect != null)
+            {
+                missionBoardEffect.text = Truncate(BuildRecentMissionReceiptDetail(), 260);
+            }
+
+            if (missionBoardAssignment != null)
+            {
+                var offerText = offers != null && offers.Count > 0
+                    ? $"{offers.Count} mission offer(s) remain available after the report window."
+                    : "No follow-up mission offer is visible yet.";
+                missionBoardAssignment.text = LaneText($"{BuildRecentMissionReceiptAnchor(nowUtc)} • {offerText}");
+            }
+
+            RenderMissionOfferPicker(new List<MissionOfferSnapshot>(), string.Empty, false, LaneText("Mission offers wait while the completion report is visible."));
+            if (missionPrimaryButton != null)
+            {
+                missionPrimaryButton.text = "Report received";
+                missionPrimaryButton.SetEnabled(false);
+            }
         }
 
         private void RenderActiveMissionBoard(MissionSnapshot activeMission, ShellSummarySnapshot summary, string primaryWarning, DateTime nowUtc)
@@ -1355,17 +1402,82 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private CardView BuildRecentMissionReceiptCard()
         {
             return new CardView(
-                family: "Mission result",
+                family: "Mission report",
                 title: BuildRecentMissionDisplayTitle(),
-                lore: "Completion receipt",
-                note: Truncate(summaryState.RecentMissionReceipt, 160),
-                buttonText: "Receipt visible",
+                lore: BuildRecentMissionReceiptStatus(DateTime.UtcNow),
+                note: Truncate(BuildRecentMissionReceiptDetail(), 192),
+                buttonText: "Report received",
                 buttonEnabled: false);
         }
 
         private string BuildRecentMissionDisplayTitle()
         {
             return NormalizeEmbeddedDisplayKeys(FirstNonBlank(summaryState?.RecentMissionTitle, "Recent mission result"));
+        }
+
+        private string BuildRecentMissionReceiptStatus(DateTime nowUtc)
+        {
+            var receipt = summaryState?.RecentMissionReceipt ?? string.Empty;
+            var outcome = ExtractReceiptSegment(receipt, "Outcome");
+            if (!string.IsNullOrWhiteSpace(outcome))
+            {
+                return $"Completion report • Outcome: {outcome}";
+            }
+
+            var status = ExtractReceiptSegment(receipt, "Status");
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                return $"Completion report • Status: {status}";
+            }
+
+            return "Completion report received.";
+        }
+
+        private string BuildRecentMissionReceiptDetail()
+        {
+            var receipt = NormalizeEmbeddedDisplayKeys(summaryState?.RecentMissionReceipt ?? string.Empty);
+            if (string.IsNullOrWhiteSpace(receipt))
+            {
+                return "Mission completed, but no readable backend receipt was returned.";
+            }
+
+            return receipt;
+        }
+
+        private string BuildRecentMissionReceiptAnchor(DateTime nowUtc)
+        {
+            if (summaryState?.RecentMissionReceiptAtUtc.HasValue != true)
+            {
+                return "Completion report received";
+            }
+
+            var elapsed = nowUtc - summaryState.RecentMissionReceiptAtUtc.Value;
+            if (elapsed < TimeSpan.Zero)
+            {
+                elapsed = TimeSpan.Zero;
+            }
+
+            return $"Completion report received {FormatRemaining(elapsed)} ago";
+        }
+
+        private static string ExtractReceiptSegment(string receipt, string segmentName)
+        {
+            if (string.IsNullOrWhiteSpace(receipt) || string.IsNullOrWhiteSpace(segmentName))
+            {
+                return string.Empty;
+            }
+
+            var marker = segmentName.Trim() + ":";
+            var index = receipt.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+            if (index < 0)
+            {
+                return string.Empty;
+            }
+
+            var start = index + marker.Length;
+            var end = receipt.IndexOf(" • ", start, StringComparison.Ordinal);
+            var value = end >= 0 ? receipt.Substring(start, end - start) : receipt.Substring(start);
+            return value.Trim();
         }
         private CardView BuildActiveMissionCard(MissionSnapshot activeMission, ShellSummarySnapshot summary, string primaryWarning, DateTime nowUtc)
         {

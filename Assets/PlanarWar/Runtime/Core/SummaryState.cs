@@ -665,9 +665,10 @@ namespace PlanarWar.Client.Core
 
         public static string FormatMissionCompletionReceipt(string responseJson, string fallbackInstanceId)
         {
-            var fallback = string.IsNullOrWhiteSpace(fallbackInstanceId)
+            var fallbackLabel = fallbackInstanceId?.Trim() ?? string.Empty;
+            var fallback = string.IsNullOrWhiteSpace(fallbackLabel)
                 ? "Mission completed."
-                : $"Mission completed: {fallbackInstanceId.Trim()}";
+                : $"Mission completed: {fallbackLabel}";
 
             if (string.IsNullOrWhiteSpace(responseJson))
             {
@@ -690,6 +691,23 @@ namespace PlanarWar.Client.Core
                 }
 
                 var parts = new List<string>();
+                var missionTitle = FirstReceiptText(
+                    Child(receipt, "missionTitle"),
+                    Child(receipt, "mission_title"),
+                    Child(result, "missionTitle"),
+                    Child(result, "mission_title"),
+                    Child(root, "missionTitle"),
+                    Child(root, "mission_title"));
+                if (string.IsNullOrWhiteSpace(missionTitle))
+                {
+                    missionTitle = fallbackLabel;
+                }
+
+                if (!string.IsNullOrWhiteSpace(missionTitle))
+                {
+                    parts.Add($"Mission: {missionTitle}");
+                }
+
                 var outcome = FirstReceiptText(
                     Child(Child(result, "outcome"), "kind"),
                     Child(receipt, "outcome"),
@@ -697,6 +715,18 @@ namespace PlanarWar.Client.Core
                 if (!string.IsNullOrWhiteSpace(outcome))
                 {
                     parts.Add($"Outcome: {HumanizeReceiptPhrase(outcome)}");
+                }
+                else
+                {
+                    var status = FirstReceiptText(
+                        Child(receipt, "status"),
+                        Child(result, "status"),
+                        Child(root, "status"));
+                    var normalizedStatus = NormalizeCompletionStatus(status, Child(root, "ok"));
+                    if (!string.IsNullOrWhiteSpace(normalizedStatus))
+                    {
+                        parts.Add($"Status: {normalizedStatus}");
+                    }
                 }
 
                 var rewardText = FormatRewardBundle(FirstDirectToken(
@@ -1062,6 +1092,35 @@ namespace PlanarWar.Client.Core
             }
 
             return FirstReceiptText(Child(token, "title"), Child(token, "name"), Child(token, "summary"), token);
+        }
+
+        private static string NormalizeCompletionStatus(string status, JToken okToken)
+        {
+            var trimmed = status?.Trim() ?? string.Empty;
+            if (string.Equals(trimmed, "ok", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(trimmed, "success", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(trimmed, "accepted", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Completion accepted";
+            }
+
+            if (string.Equals(trimmed, "complete", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(trimmed, "completed", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Completed";
+            }
+
+            if (!string.IsNullOrWhiteSpace(trimmed))
+            {
+                return HumanizeReceiptPhrase(trimmed);
+            }
+
+            if (okToken != null && okToken.Type == JTokenType.Boolean && okToken.Value<bool>())
+            {
+                return "Completion accepted";
+            }
+
+            return string.Empty;
         }
 
         private static bool SameId(string left, string right)

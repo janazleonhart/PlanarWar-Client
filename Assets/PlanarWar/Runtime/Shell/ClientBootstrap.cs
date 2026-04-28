@@ -792,6 +792,11 @@ namespace PlanarWar.Client.UI
                 var responseText = response?.ToString();
                 var receipt = SummaryState.FormatMissionCompletionReceipt(responseText, missionLabel);
                 var title = SummaryState.ExtractMissionCompletionTitle(responseText);
+                if (string.IsNullOrWhiteSpace(title))
+                {
+                    title = missionLabel;
+                }
+
                 summaryState.FinishMissionCompletion(trimmedInstanceId, receipt, title);
                 await summaryController.RefreshAsync();
             }

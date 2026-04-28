@@ -1009,12 +1009,40 @@ namespace PlanarWar.Client.Tests.EditMode
             var receipt = SummaryState.FormatMissionCompletionReceipt(response, "active_1");
             var title = SummaryState.ExtractMissionCompletionTitle(response);
 
+            Assert.That(receipt, Does.Contain("Mission: Frontline Assault: Heartland Basin"));
             Assert.That(receipt, Does.Contain("Outcome: Success"));
             Assert.That(receipt, Does.Contain("Rewards: wealth +12, materials +8"));
             Assert.That(receipt, Does.Contain("Summary: Frontline assault pushed hostile pressure back."));
             Assert.That(receipt, Does.Not.Contain("created at"));
             Assert.That(receipt, Does.Not.Contain("mission title"));
             Assert.That(title, Is.EqualTo("Frontline Assault: Heartland Basin"));
+        }
+
+        [Test]
+        public void Summary_state_formats_sparse_mission_completion_as_a_status_report()
+        {
+            const string response = @"{ ""ok"": true, ""result"": { ""status"": ""ok"" } }";
+
+            var receipt = SummaryState.FormatMissionCompletionReceipt(response, "Contain the Fallout in Heartland Basin — Escalation 2");
+
+            Assert.That(receipt, Does.Contain("Mission: Contain the Fallout in Heartland Basin — Escalation 2"));
+            Assert.That(receipt, Does.Contain("Status: Completion accepted"));
+            Assert.That(receipt, Does.Contain("Rewards: no direct resource reward returned"));
+            Assert.That(receipt, Does.Not.Contain("active_"));
+        }
+
+        [Test]
+        public void Operations_recent_mission_receipt_is_promoted_into_the_mission_board()
+        {
+            var screenPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/BlackMarket/BlackMarketScreenController.cs");
+            Assert.That(File.Exists(screenPath), Is.True, "BlackMarketScreenController.cs should be available from the Unity project root.");
+
+            var screen = File.ReadAllText(screenPath);
+            Assert.That(screen, Does.Contain("RenderRecentMissionReceiptBoard"));
+            Assert.That(screen, Does.Contain("Latest completion report is shown before the next mission offer"));
+            Assert.That(screen, Does.Contain("BuildRecentMissionReceiptDetail()"));
+            Assert.That(screen, Does.Contain("Report received"));
+            Assert.That(screen, Does.Not.Contain("Receipt visible"));
         }
 
         [Test]
