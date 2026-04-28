@@ -1452,12 +1452,17 @@ namespace PlanarWar.Client.UI.Screens.City
             var buildingId = GetBuildingActionId(building);
             var activeBuildId = FirstNonBlank(building?.Id, buildingId);
             var hasTiming = HasBuildingTimingAnchor(building);
+            var readyBuild = IsBuildingReady(building, nowUtc);
+            var canRefreshCompletedBuild = readyBuild
+                && hasTiming
+                && !summaryState.IsActionBusy
+                && onRefreshDeskRequested != null;
             var pendingUpgrade = summaryState.IsActionBusy && string.Equals(summaryState.PendingBuildingId, buildingId, StringComparison.OrdinalIgnoreCase);
             var canUpgrade = allowUpgrade
                 && !summaryState.IsActionBusy
                 && !string.IsNullOrWhiteSpace(buildingId)
                 && onUpgradeBuildingRequested != null
-                && !IsBuildingReady(building, nowUtc)
+                && !readyBuild
                 && !hasTiming;
 
             var remodelTarget = SelectRemodelTarget(s, isBlackMarket, building, allBuildings);
@@ -1476,6 +1481,7 @@ namespace PlanarWar.Client.UI.Screens.City
                 && summaryState.HasPendingBuildingConfirm("destroy", buildingId);
             var canCancel = !summaryState.IsActionBusy
                 && hasTiming
+                && !readyBuild
                 && onCancelActiveBuildRequested != null;
             var pendingCancelConfirm = canCancel
                 && summaryState.HasPendingBuildingConfirm("cancel_build", activeBuildId: activeBuildId);
@@ -1503,13 +1509,15 @@ namespace PlanarWar.Client.UI.Screens.City
             return new CardView(
                 family: isBlackMarket ? "Operator front" : "Building",
                 title: FormatBuildingTitle(building, isBlackMarket),
-                lore: BuildBuildingLore(building, nowUtc),
+                lore: BuildBuildingLore(building, isBlackMarket, nowUtc),
                 note: managementNote,
-                buttonText: canUpgrade || pendingUpgrade
-                    ? pendingUpgrade ? "Upgrading..." : "Upgrade"
-                    : BuildBuildingStatusButtonText(building, isBlackMarket, nowUtc),
-                buttonEnabled: canUpgrade,
-                onClick: canUpgrade ? () => TriggerUpgradeBuilding(buildingId) : null,
+                buttonText: canRefreshCompletedBuild
+                    ? BuildBuildingCompletionRefreshButtonText(isBlackMarket)
+                    : canUpgrade || pendingUpgrade
+                        ? pendingUpgrade ? "Upgrading..." : "Upgrade"
+                        : BuildBuildingStatusButtonText(building, isBlackMarket, nowUtc),
+                buttonEnabled: canRefreshCompletedBuild || canUpgrade,
+                onClick: canRefreshCompletedBuild ? TriggerRefreshDesk : canUpgrade ? () => TriggerUpgradeBuilding(buildingId) : null,
                 secondaryButtonText: pendingRemodelConfirm
                     ? $"Confirm remodel → {remodelTarget.Value.Label}"
                     : canRemodel ? $"Remodel → {remodelTarget.Value.Label}" : canCancel ? (pendingCancelConfirm ? "Confirm cancel" : "Cancel project") : null,
@@ -1539,20 +1547,27 @@ namespace PlanarWar.Client.UI.Screens.City
         private CardView BuildBuildTimerCard(CityTimerEntrySnapshot timer, bool isBlackMarket, DateTime nowUtc)
         {
             var activeBuildId = FirstNonBlank(timer?.Id);
+            var readyTimer = IsBuildTimerReady(timer, nowUtc);
+            var canRefreshCompletedTimer = readyTimer
+                && !summaryState.IsActionBusy
+                && onRefreshDeskRequested != null;
             var canCancel = !summaryState.IsActionBusy
                 && onCancelActiveBuildRequested != null
                 && !string.IsNullOrWhiteSpace(activeBuildId)
-                && !(timer?.FinishesAtUtc.HasValue == true && timer.FinishesAtUtc.Value <= nowUtc);
+                && !readyTimer;
             var pendingCancelConfirm = canCancel
                 && summaryState.HasPendingBuildingConfirm("cancel_build", activeBuildId: activeBuildId);
 
             return new CardView(
                 family: isBlackMarket ? "Front timer" : "Build timer",
                 title: isBlackMarket ? NormalizeBlackMarketTimerLabel(timer.Label, timer.Category) : FirstNonBlank(timer.Label, HumanizeCategory(timer.Category)),
-                lore: FormatTimerState(timer.Status, timer.FinishesAtUtc, nowUtc),
-                note: FirstNonBlank(timer.Detail, isBlackMarket ? "Operator-front timing is visible from cityTimers." : "Construction timing is visible from cityTimers."),
-                buttonText: timer.FinishesAtUtc.HasValue && timer.FinishesAtUtc.Value <= nowUtc ? "Ready" : "Timed",
-                buttonEnabled: false,
+                lore: readyTimer ? BuildBuildingCompletionStatusText(isBlackMarket) : FormatTimerState(timer.Status, timer.FinishesAtUtc, nowUtc),
+                note: readyTimer
+                    ? BuildBuildingCompletionRefreshNote(isBlackMarket)
+                    : FirstNonBlank(timer.Detail, isBlackMarket ? "Operator-front timing is visible from cityTimers." : "Construction timing is visible from cityTimers."),
+                buttonText: readyTimer ? BuildBuildingCompletionRefreshButtonText(isBlackMarket) : "Timed",
+                buttonEnabled: canRefreshCompletedTimer,
+                onClick: canRefreshCompletedTimer ? TriggerRefreshDesk : null,
                 secondaryButtonText: canCancel ? (pendingCancelConfirm ? "Confirm cancel" : "Cancel project") : null,
                 secondaryButtonEnabled: canCancel,
                 secondaryOnClick: canCancel ? () => TriggerCancelActiveBuild(activeBuildId) : null);
@@ -2056,6 +2071,11 @@ namespace PlanarWar.Client.UI.Screens.City
             return IsReadyStatus(building?.Status) || (building?.FinishesAtUtc.HasValue == true && building.FinishesAtUtc.Value <= nowUtc);
         }
 
+        private static bool IsBuildTimerReady(CityTimerEntrySnapshot timer, DateTime nowUtc)
+        {
+            return IsReadyStatus(timer?.Status) || (timer?.FinishesAtUtc.HasValue == true && timer.FinishesAtUtc.Value <= nowUtc);
+        }
+
         private static bool IsActiveStatus(string status)
         {
             var value = (status ?? string.Empty).Trim();
@@ -2138,8 +2158,30 @@ namespace PlanarWar.Client.UI.Screens.City
             return "Visible";
         }
 
-        private static string BuildBuildingLore(BuildingSnapshot building, DateTime nowUtc)
+        private static string BuildBuildingCompletionStatusText(bool isBlackMarket)
         {
+            return isBlackMarket ? "Front successfully opened." : "Building successfully completed.";
+        }
+
+        private static string BuildBuildingCompletionRefreshButtonText(bool isBlackMarket)
+        {
+            return isBlackMarket ? "Update front list" : "Update building list";
+        }
+
+        private static string BuildBuildingCompletionRefreshNote(bool isBlackMarket)
+        {
+            return isBlackMarket
+                ? "Timer elapsed. Refresh this desk to pull the finished front into the live front list from backend truth."
+                : "Timer elapsed. Refresh this desk to pull the completed building into the building list from backend truth.";
+        }
+
+        private static string BuildBuildingLore(BuildingSnapshot building, bool isBlackMarket, DateTime nowUtc)
+        {
+            if (IsBuildingReady(building, nowUtc) && HasBuildingTimingAnchor(building))
+            {
+                return BuildBuildingCompletionStatusText(isBlackMarket);
+            }
+
             var parts = new List<string>();
             var statusLabel = BuildBuildingLifecycleLabel(building, nowUtc);
             if (!string.IsNullOrWhiteSpace(statusLabel)) parts.Add(statusLabel);
@@ -2166,7 +2208,7 @@ namespace PlanarWar.Client.UI.Screens.City
 
         private static string BuildBuildingNote(BuildingSnapshot building, bool isBlackMarket, DateTime nowUtc)
         {
-            if (IsBuildingReady(building, nowUtc)) return isBlackMarket ? "Front timer elapsed; refresh or claim flow can surface next." : "Build timer elapsed; refresh or claim flow can surface next.";
+            if (IsBuildingReady(building, nowUtc)) return BuildBuildingCompletionRefreshNote(isBlackMarket);
             if (!string.IsNullOrWhiteSpace(building?.EffectSummary)) return building.EffectSummary;
             if (!string.IsNullOrWhiteSpace(building?.Detail)) return building.Detail;
             if (building?.StartedAtUtc.HasValue == true) return isBlackMarket ? $"Front opened {building.StartedAtUtc.Value:HH:mm:ss} UTC." : $"Construction started {building.StartedAtUtc.Value:HH:mm:ss} UTC.";

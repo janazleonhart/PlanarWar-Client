@@ -2116,6 +2116,59 @@ namespace PlanarWar.Client.Tests.EditMode
 
 
         [Test]
+        public void Development_completed_build_projects_surface_refresh_cta_without_fake_claim_endpoint()
+        {
+            var statusMethod = typeof(CityScreenController).GetMethod("BuildBuildingCompletionStatusText", BindingFlags.NonPublic | BindingFlags.Static);
+            var buttonMethod = typeof(CityScreenController).GetMethod("BuildBuildingCompletionRefreshButtonText", BindingFlags.NonPublic | BindingFlags.Static);
+            var noteMethod = typeof(CityScreenController).GetMethod("BuildBuildingCompletionRefreshNote", BindingFlags.NonPublic | BindingFlags.Static);
+            var timerReadyMethod = typeof(CityScreenController).GetMethod("IsBuildTimerReady", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(statusMethod, Is.Not.Null);
+            Assert.That(buttonMethod, Is.Not.Null);
+            Assert.That(noteMethod, Is.Not.Null);
+            Assert.That(timerReadyMethod, Is.Not.Null);
+
+            Assert.That((string)statusMethod.Invoke(null, new object[] { false }), Is.EqualTo("Building successfully completed."));
+            Assert.That((string)buttonMethod.Invoke(null, new object[] { false }), Is.EqualTo("Update building list"));
+            Assert.That((string)statusMethod.Invoke(null, new object[] { true }), Is.EqualTo("Front successfully opened."));
+            Assert.That((string)buttonMethod.Invoke(null, new object[] { true }), Is.EqualTo("Update front list"));
+
+            var cityNote = (string)noteMethod.Invoke(null, new object[] { false });
+            Assert.That(cityNote, Does.Contain("completed building"));
+            Assert.That(cityNote, Does.Contain("backend truth"));
+            Assert.That(cityNote, Does.Not.Contain("claim"));
+
+            var readyTimer = new CityTimerEntrySnapshot
+            {
+                Id = "build_timer_1",
+                Category = "construction",
+                Label = "Works Quarry",
+                Status = "active",
+                FinishesAtUtc = DateTime.UtcNow.AddSeconds(-1),
+            };
+            Assert.That((bool)timerReadyMethod.Invoke(null, new object[] { readyTimer, DateTime.UtcNow }), Is.True);
+        }
+
+        [Test]
+        public void Development_completed_build_projects_refresh_instead_of_canceling_ready_work()
+        {
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/City/CityScreenController.cs");
+            Assert.That(File.Exists(controllerPath), Is.True, "CityScreenController.cs should be available from the Unity project root.");
+
+            var controller = File.ReadAllText(controllerPath);
+            Assert.That(controller, Does.Contain("var readyBuild = IsBuildingReady(building, nowUtc);"));
+            Assert.That(controller, Does.Contain("var canRefreshCompletedBuild = readyBuild"));
+            Assert.That(controller, Does.Contain("var readyTimer = IsBuildTimerReady(timer, nowUtc);"));
+            Assert.That(controller, Does.Contain("buttonText: readyTimer ? BuildBuildingCompletionRefreshButtonText(isBlackMarket) : \"Timed\""));
+            Assert.That(controller, Does.Contain("onClick: canRefreshCompletedTimer ? TriggerRefreshDesk : null"));
+            Assert.That(controller, Does.Contain("onClick: canRefreshCompletedBuild ? TriggerRefreshDesk : canUpgrade ? () => TriggerUpgradeBuilding(buildingId) : null"));
+            Assert.That(controller, Does.Contain("&& !readyBuild\n                && onCancelActiveBuildRequested != null"), "Ready building projects should not keep offering cancel as the primary visible resolution path.");
+            Assert.That(controller, Does.Contain("&& !readyTimer;"), "Ready build timers should refresh the desk, not keep offering cancellation.");
+            Assert.That(controller, Does.Not.Contain("Complete building"), "Do not fake a completion/claim endpoint when the client only has refresh truth.");
+            Assert.That(controller, Does.Not.Contain("Claim building"), "Do not fake a completion/claim endpoint when the client only has refresh truth.");
+        }
+
+
+        [Test]
         public void Development_building_routing_closeout_keeps_visible_copy_honest_without_future_protection_math()
         {
             var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/City/CityScreenController.cs");
