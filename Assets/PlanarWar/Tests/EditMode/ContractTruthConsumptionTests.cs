@@ -940,6 +940,64 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
         [Test]
+        public void Summary_state_resolves_development_action_labels_from_loaded_snapshot_truth()
+        {
+            var state = new SummaryState();
+            state.ApplySnapshot(new ShellSummarySnapshot
+            {
+                AvailableTechs = new List<TechOptionSnapshot>
+                {
+                    new TechOptionSnapshot { Id = "civic_foundation_v1", Name = "Civic Foundation" }
+                },
+                ActiveResearches = new List<ResearchSnapshot>
+                {
+                    new ResearchSnapshot { Id = "urban_planning_1", Name = "Urban Planning I" }
+                },
+                Buildings = new List<BuildingSnapshot>
+                {
+                    new BuildingSnapshot { Id = "building_abc123", BuildingId = "housing", Type = "housing", Name = "Charter Ward", Level = 2 },
+                    new BuildingSnapshot { Id = "front_1", BuildingId = "safehouse", Type = "safehouse", Name = "Safehouse Ring" }
+                },
+                CityTimers = new List<CityTimerEntrySnapshot>
+                {
+                    new CityTimerEntrySnapshot { Id = "active_build_1", Label = "Beacon Tower" }
+                }
+            });
+
+            Assert.That(state.ResolveResearchReceiptLabel("civic_foundation_v1"), Is.EqualTo("Civic Foundation"));
+            Assert.That(state.ResolveResearchReceiptLabel("urban_planning_1"), Is.EqualTo("Urban Planning I"));
+            Assert.That(state.ResolveBuildingKindReceiptLabel("safehouse"), Is.EqualTo("Safehouse Ring"));
+            Assert.That(state.ResolveBuildingReceiptLabel("building_abc123"), Is.EqualTo("Charter Ward"));
+            Assert.That(state.ResolveBuildingReceiptLabel("front_1"), Is.EqualTo("Safehouse Ring"));
+            Assert.That(state.ResolveActiveBuildReceiptLabel("active_build_1"), Is.EqualTo("Beacon Tower"));
+            Assert.That(SummaryState.ResolveBuildingRoutingReceiptLabel("prefer_reserve"), Is.EqualTo("Reserve • protected stock"));
+
+            state.BeginResearchAction("civic_foundation_v1");
+            Assert.That(state.ActionStatus, Is.EqualTo("Starting research: Civic Foundation"));
+            Assert.That(state.ActionStatus, Does.Not.Contain("civic_foundation_v1"));
+            state.FinishAction("done");
+
+            state.BeginBuildingRouting("building_abc123", "prefer_reserve");
+            Assert.That(state.ActionStatus, Does.Contain("Charter Ward"));
+            Assert.That(state.ActionStatus, Does.Contain("Reserve • protected stock"));
+            Assert.That(state.ActionStatus, Does.Not.Contain("building_abc123"));
+            Assert.That(state.ActionStatus, Does.Not.Contain("prefer_reserve"));
+        }
+
+        [Test]
+        public void Summary_state_humanizes_development_action_label_fallbacks_without_inventing_snapshot_truth()
+        {
+            var state = new SummaryState();
+            state.ApplySnapshot(new ShellSummarySnapshot());
+
+            Assert.That(state.ResolveResearchReceiptLabel("civic_foundation_v1"), Is.EqualTo("Civic Foundation V1"));
+            Assert.That(state.ResolveBuildingKindReceiptLabel("quiet_provisioning"), Is.EqualTo("Quiet Provisioning Cell"));
+            Assert.That(state.ResolveBuildingReceiptLabel("building_abc123"), Is.EqualTo("Building Abc123"));
+            Assert.That(state.ResolveActiveBuildReceiptLabel("active_build_1"), Is.EqualTo("Active Build 1"));
+            Assert.That(SummaryState.ResolveBuildingRoutingReceiptLabel("exchange"), Is.EqualTo("Exchange • trade flow"));
+        }
+
+        [Test]
         public void Operations_action_receipt_cleanup_uses_summary_label_resolvers_without_hardcoded_client_routes()
         {
             var bootstrapPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/ClientBootstrap.cs");
@@ -967,6 +1025,34 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(bootstrap, Does.Not.Contain("Regional hold released: {trimmedArmyId}"));
             Assert.That(bootstrap, Does.Not.Contain("Pressure deployment opened for {trimmedRegionId} with {trimmedArmyId}"));
             Assert.That(bootstrap, Does.Not.Contain("Disruption action opened for {trimmedRegionId} with {trimmedArmyId}"));
+        }
+
+        [Test]
+        public void Development_action_receipt_cleanup_uses_summary_label_resolvers_without_hardcoded_client_routes()
+        {
+            var bootstrapPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/ClientBootstrap.cs");
+            Assert.That(File.Exists(bootstrapPath), Is.True, "ClientBootstrap.cs should be available from the Unity project root.");
+
+            var bootstrap = File.ReadAllText(bootstrapPath);
+            foreach (var marker in new[]
+            {
+                "ResolveResearchReceiptLabel",
+                "ResolveBuildingKindReceiptLabel",
+                "ResolveBuildingReceiptLabel",
+                "ResolveActiveBuildReceiptLabel",
+                "ResolveBuildingRoutingReceiptLabel",
+            })
+            {
+                Assert.That(bootstrap, Does.Contain(marker), $"Development receipt cleanup should route visible action text through {marker}.");
+            }
+
+            Assert.That(bootstrap, Does.Not.Contain("Research started: {trimmedTechId}"));
+            Assert.That(bootstrap, Does.Not.Contain("Construction started: {trimmedKind}"));
+            Assert.That(bootstrap, Does.Not.Contain("Building upgrade started: {trimmedBuildingId}"));
+            Assert.That(bootstrap, Does.Not.Contain("Building routing switched: {trimmedBuildingId} -> {trimmedRoutingPreference}"));
+            Assert.That(bootstrap, Does.Not.Contain("Building demolished: {trimmedBuildingId}"));
+            Assert.That(bootstrap, Does.Not.Contain("Building remodel started: {trimmedBuildingId} -> {trimmedTargetKind}"));
+            Assert.That(bootstrap, Does.Not.Contain("Active building project canceled: {trimmedActiveBuildId}"));
         }
 
         [Test]

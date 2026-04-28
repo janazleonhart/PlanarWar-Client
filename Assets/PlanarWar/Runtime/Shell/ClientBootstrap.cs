@@ -271,11 +271,14 @@ namespace PlanarWar.Client.UI
             try
             {
                 var trimmedTechId = techId.Trim();
+                var researchLabel = summaryState.ResolveResearchReceiptLabel(trimmedTechId);
                 summaryState.BeginResearchAction(trimmedTechId);
                 await apiClient.StartResearchAsync(trimmedTechId);
                 summaryState.MarkResearchStartAccepted(trimmedTechId);
                 await summaryController.RefreshAsync();
-                summaryState.FinishAction($"Research started: {trimmedTechId}");
+                summaryState.FinishAction(string.IsNullOrWhiteSpace(researchLabel)
+                    ? "Research started."
+                    : $"Research started: {researchLabel}");
             }
             catch (Exception ex)
             {
@@ -293,12 +296,15 @@ namespace PlanarWar.Client.UI
             }
 
             var trimmedKind = kind.Trim();
+            var kindLabel = summaryState.ResolveBuildingKindReceiptLabel(trimmedKind);
             try
             {
                 summaryState.BeginBuildingConstruct(trimmedKind);
                 await apiClient.ConstructBuildingAsync(trimmedKind);
                 await summaryController.RefreshAsync();
-                summaryState.FinishAction($"Construction started: {trimmedKind}");
+                summaryState.FinishAction(string.IsNullOrWhiteSpace(kindLabel)
+                    ? "Construction started."
+                    : $"Construction started: {kindLabel}");
             }
             catch (Exception ex)
             {
@@ -314,12 +320,15 @@ namespace PlanarWar.Client.UI
             }
 
             var trimmedBuildingId = buildingId.Trim();
+            var buildingLabel = summaryState.ResolveBuildingReceiptLabel(trimmedBuildingId);
             try
             {
                 summaryState.BeginBuildingUpgrade(trimmedBuildingId);
                 await apiClient.UpgradeBuildingAsync(trimmedBuildingId);
                 await summaryController.RefreshAsync();
-                summaryState.FinishAction($"Building upgrade started: {trimmedBuildingId}");
+                summaryState.FinishAction(string.IsNullOrWhiteSpace(buildingLabel)
+                    ? "Building upgrade started."
+                    : $"Building upgrade started: {buildingLabel}");
             }
             catch (Exception ex)
             {
@@ -336,13 +345,17 @@ namespace PlanarWar.Client.UI
 
             var trimmedBuildingId = buildingId.Trim();
             var trimmedRoutingPreference = routingPreference.Trim();
+            var buildingLabel = summaryState.ResolveBuildingReceiptLabel(trimmedBuildingId);
+            var routingLabel = SummaryState.ResolveBuildingRoutingReceiptLabel(trimmedRoutingPreference);
             try
             {
                 summaryState.BeginBuildingRouting(trimmedBuildingId, trimmedRoutingPreference);
                 await apiClient.SetBuildingRoutingPreferenceAsync(trimmedBuildingId, trimmedRoutingPreference);
                 await summaryController.RefreshAsync();
                 summaryState.ClearBuildingConfirm();
-                summaryState.FinishAction($"Building routing switched: {trimmedBuildingId} -> {trimmedRoutingPreference}");
+                summaryState.FinishAction(string.IsNullOrWhiteSpace(buildingLabel)
+                    ? $"Building routing switched to {routingLabel}"
+                    : $"{buildingLabel} routing switched to {routingLabel}");
             }
             catch (Exception ex)
             {
@@ -358,6 +371,7 @@ namespace PlanarWar.Client.UI
             }
 
             var trimmedBuildingId = buildingId.Trim();
+            var buildingLabel = summaryState.ResolveBuildingReceiptLabel(trimmedBuildingId);
             var confirm = summaryState.GetPendingBuildingConfirmToken("destroy", trimmedBuildingId);
             try
             {
@@ -365,11 +379,15 @@ namespace PlanarWar.Client.UI
                 await apiClient.DestroyBuildingAsync(trimmedBuildingId, confirm);
                 await summaryController.RefreshAsync();
                 summaryState.ClearBuildingConfirm();
-                summaryState.FinishAction($"Building demolished: {trimmedBuildingId}");
+                summaryState.FinishAction(string.IsNullOrWhiteSpace(buildingLabel)
+                    ? "Building demolished."
+                    : $"Building demolished: {buildingLabel}");
             }
             catch (PlanarWarApiException ex) when (TryCaptureBuildingConfirm("destroy", ex, trimmedBuildingId))
             {
-                summaryState.FinishAction($"Confirm demolition required: {CleanApiError(ex)}");
+                summaryState.FinishAction(string.IsNullOrWhiteSpace(buildingLabel)
+                    ? $"Confirm demolition required: {CleanApiError(ex)}"
+                    : $"Confirm demolition required for {buildingLabel}: {CleanApiError(ex)}");
             }
             catch (Exception ex)
             {
@@ -387,6 +405,8 @@ namespace PlanarWar.Client.UI
 
             var trimmedBuildingId = buildingId.Trim();
             var trimmedTargetKind = targetKind.Trim();
+            var buildingLabel = summaryState.ResolveBuildingReceiptLabel(trimmedBuildingId);
+            var targetKindLabel = summaryState.ResolveBuildingKindReceiptLabel(trimmedTargetKind);
             var confirm = summaryState.GetPendingBuildingConfirmToken("remodel", trimmedBuildingId, trimmedTargetKind);
             try
             {
@@ -394,11 +414,15 @@ namespace PlanarWar.Client.UI
                 await apiClient.RemodelBuildingAsync(trimmedBuildingId, trimmedTargetKind, confirm);
                 await summaryController.RefreshAsync();
                 summaryState.ClearBuildingConfirm();
-                summaryState.FinishAction($"Building remodel started: {trimmedBuildingId} -> {trimmedTargetKind}");
+                summaryState.FinishAction(string.IsNullOrWhiteSpace(buildingLabel)
+                    ? $"Building remodel started: {targetKindLabel}"
+                    : $"Building remodel started: {buildingLabel} -> {targetKindLabel}");
             }
             catch (PlanarWarApiException ex) when (TryCaptureBuildingConfirm("remodel", ex, trimmedBuildingId, trimmedTargetKind))
             {
-                summaryState.FinishAction($"Confirm remodel required: {CleanApiError(ex)}");
+                summaryState.FinishAction(string.IsNullOrWhiteSpace(buildingLabel)
+                    ? $"Confirm remodel required: {CleanApiError(ex)}"
+                    : $"Confirm remodel required for {buildingLabel}: {CleanApiError(ex)}");
             }
             catch (Exception ex)
             {
@@ -415,6 +439,7 @@ namespace PlanarWar.Client.UI
             }
 
             var trimmedActiveBuildId = activeBuildId?.Trim() ?? string.Empty;
+            var activeBuildLabel = summaryState.ResolveActiveBuildReceiptLabel(trimmedActiveBuildId);
             var confirm = summaryState.GetPendingBuildingConfirmToken("cancel_build", activeBuildId: trimmedActiveBuildId);
             try
             {
@@ -422,11 +447,13 @@ namespace PlanarWar.Client.UI
                 await apiClient.CancelActiveBuildAsync(trimmedActiveBuildId, confirm);
                 await summaryController.RefreshAsync();
                 summaryState.ClearBuildingConfirm();
-                summaryState.FinishAction(string.IsNullOrWhiteSpace(trimmedActiveBuildId) ? "Active building project canceled." : $"Active building project canceled: {trimmedActiveBuildId}");
+                summaryState.FinishAction(string.IsNullOrWhiteSpace(activeBuildLabel) ? "Active building project canceled." : $"Active building project canceled: {activeBuildLabel}");
             }
             catch (PlanarWarApiException ex) when (TryCaptureBuildingConfirm("cancel_build", ex, activeBuildId: trimmedActiveBuildId))
             {
-                summaryState.FinishAction($"Confirm cancellation required: {CleanApiError(ex)}");
+                summaryState.FinishAction(string.IsNullOrWhiteSpace(activeBuildLabel)
+                    ? $"Confirm cancellation required: {CleanApiError(ex)}"
+                    : $"Confirm cancellation required for {activeBuildLabel}: {CleanApiError(ex)}");
             }
             catch (Exception ex)
             {

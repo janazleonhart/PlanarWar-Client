@@ -89,7 +89,8 @@ namespace PlanarWar.Client.Core
 
         public void BeginResearchAction(string techId)
         {
-            BeginAction(string.IsNullOrWhiteSpace(techId) ? "Starting research..." : $"Starting research: {techId.Trim()}");
+            var label = ResolveResearchReceiptLabel(techId);
+            BeginAction(string.IsNullOrWhiteSpace(label) ? "Starting research..." : $"Starting research: {label}");
             PendingResearchTechId = techId?.Trim() ?? string.Empty;
         }
 
@@ -245,39 +246,52 @@ namespace PlanarWar.Client.Core
 
         public void BeginBuildingConstruct(string kind)
         {
-            BeginAction(string.IsNullOrWhiteSpace(kind) ? "Starting construction..." : $"Starting construction: {kind.Trim()}");
+            var label = ResolveBuildingKindReceiptLabel(kind);
+            BeginAction(string.IsNullOrWhiteSpace(label) ? "Starting construction..." : $"Starting construction: {label}");
             PendingBuildingKind = kind?.Trim() ?? string.Empty;
         }
 
         public void BeginBuildingUpgrade(string buildingId)
         {
-            BeginAction(string.IsNullOrWhiteSpace(buildingId) ? "Starting building upgrade..." : $"Starting building upgrade: {buildingId.Trim()}");
+            var label = ResolveBuildingReceiptLabel(buildingId);
+            BeginAction(string.IsNullOrWhiteSpace(label) ? "Starting building upgrade..." : $"Starting building upgrade: {label}");
             PendingBuildingId = buildingId?.Trim() ?? string.Empty;
         }
 
         public void BeginBuildingRouting(string buildingId, string routingPreference)
         {
-            BeginAction(string.IsNullOrWhiteSpace(buildingId) ? "Switching building routing..." : $"Switching building routing: {buildingId.Trim()}");
+            var buildingLabel = ResolveBuildingReceiptLabel(buildingId);
+            var routingLabel = ResolveBuildingRoutingReceiptLabel(routingPreference);
+            var label = string.IsNullOrWhiteSpace(buildingLabel) ? "Switching building routing..." : $"Switching building routing: {buildingLabel}";
+            if (!string.IsNullOrWhiteSpace(routingLabel))
+            {
+                label += $" -> {routingLabel}";
+            }
+
+            BeginAction(label);
             PendingBuildingId = buildingId?.Trim() ?? string.Empty;
             PendingBuildingRoutingPreference = routingPreference?.Trim() ?? string.Empty;
         }
 
         public void BeginBuildingDestroy(string buildingId, bool confirming = false)
         {
-            BeginAction(string.IsNullOrWhiteSpace(buildingId)
+            var label = ResolveBuildingReceiptLabel(buildingId);
+            BeginAction(string.IsNullOrWhiteSpace(label)
                 ? (confirming ? "Confirming demolition..." : "Requesting demolition confirmation...")
-                : confirming ? $"Confirming demolition: {buildingId.Trim()}" : $"Requesting demolition confirmation: {buildingId.Trim()}");
+                : confirming ? $"Confirming demolition: {label}" : $"Requesting demolition confirmation: {label}");
             PendingBuildingId = buildingId?.Trim() ?? string.Empty;
         }
 
         public void BeginBuildingRemodel(string buildingId, string targetKind, bool confirming = false)
         {
-            var label = string.IsNullOrWhiteSpace(buildingId)
+            var buildingLabel = ResolveBuildingReceiptLabel(buildingId);
+            var targetLabel = ResolveBuildingKindReceiptLabel(targetKind);
+            var label = string.IsNullOrWhiteSpace(buildingLabel)
                 ? (confirming ? "Confirming remodel..." : "Requesting remodel confirmation...")
-                : confirming ? $"Confirming remodel: {buildingId.Trim()}" : $"Requesting remodel confirmation: {buildingId.Trim()}";
-            if (!string.IsNullOrWhiteSpace(targetKind))
+                : confirming ? $"Confirming remodel: {buildingLabel}" : $"Requesting remodel confirmation: {buildingLabel}";
+            if (!string.IsNullOrWhiteSpace(targetLabel))
             {
-                label += $" -> {targetKind.Trim()}";
+                label += $" -> {targetLabel}";
             }
 
             BeginAction(label);
@@ -287,9 +301,10 @@ namespace PlanarWar.Client.Core
 
         public void BeginActiveBuildCancel(string activeBuildId, bool confirming = false)
         {
-            BeginAction(string.IsNullOrWhiteSpace(activeBuildId)
+            var label = ResolveActiveBuildReceiptLabel(activeBuildId);
+            BeginAction(string.IsNullOrWhiteSpace(label)
                 ? (confirming ? "Confirming build cancellation..." : "Requesting build cancellation confirmation...")
-                : confirming ? $"Confirming build cancellation: {activeBuildId.Trim()}" : $"Requesting build cancellation confirmation: {activeBuildId.Trim()}");
+                : confirming ? $"Confirming build cancellation: {label}" : $"Requesting build cancellation confirmation: {label}");
             PendingBuildingId = activeBuildId?.Trim() ?? string.Empty;
         }
 
@@ -347,6 +362,49 @@ namespace PlanarWar.Client.Core
             return HasPendingBuildingConfirm(action, buildingId, targetKind, activeBuildId)
                 ? PendingBuildingConfirmToken
                 : string.Empty;
+        }
+
+        public string ResolveResearchReceiptLabel(string techId)
+        {
+            var id = techId?.Trim() ?? string.Empty;
+            var available = Snapshot?.AvailableTechs?.FirstOrDefault(tech => SameId(tech?.Id, id));
+            var active = Snapshot?.ActiveResearches?.FirstOrDefault(research => SameId(research?.Id, id))
+                ?? (SameId(Snapshot?.ActiveResearch?.Id, id) ? Snapshot.ActiveResearch : null);
+            var timer = Snapshot?.CityTimers?.FirstOrDefault(candidate => SameId(candidate?.Id, id) || SameId(candidate?.Label, id));
+            return BuildReceiptLabel(id, FirstUsableReceiptLabel(id, "research", available?.Name, active?.Name, timer?.Label), "research");
+        }
+
+        public string ResolveBuildingKindReceiptLabel(string kind)
+        {
+            var id = kind?.Trim() ?? string.Empty;
+            return BuildReceiptLabel(id, FirstUsableReceiptLabel(id, "building", ResolveKnownBuildingKindLabel(id)), "building");
+        }
+
+        public string ResolveBuildingReceiptLabel(string buildingId)
+        {
+            var id = buildingId?.Trim() ?? string.Empty;
+            var building = Snapshot?.Buildings?.FirstOrDefault(candidate => SameId(candidate?.Id, id) || SameId(candidate?.BuildingId, id));
+            var timer = Snapshot?.CityTimers?.FirstOrDefault(candidate => SameId(candidate?.Id, id));
+            var kindLabel = ResolveKnownBuildingKindLabel(FirstNonBlankText(building?.Type, building?.BuildingId));
+            return BuildReceiptLabel(id, FirstUsableReceiptLabel(id, "building", building?.Name, kindLabel, building?.Type, building?.BuildingId, timer?.Label), "building");
+        }
+
+        public string ResolveActiveBuildReceiptLabel(string activeBuildId)
+        {
+            var id = activeBuildId?.Trim() ?? string.Empty;
+            var timer = Snapshot?.CityTimers?.FirstOrDefault(candidate => SameId(candidate?.Id, id));
+            var building = Snapshot?.Buildings?.FirstOrDefault(candidate => SameId(candidate?.Id, id) || SameId(candidate?.BuildingId, id));
+            var kindLabel = ResolveKnownBuildingKindLabel(FirstNonBlankText(building?.Type, building?.BuildingId));
+            return BuildReceiptLabel(id, FirstUsableReceiptLabel(id, "building", timer?.Label, building?.Name, kindLabel, building?.Type), "building");
+        }
+
+        public static string ResolveBuildingRoutingReceiptLabel(string routingPreference)
+        {
+            var normalized = NormalizeBuildingRoutingPreference(routingPreference);
+            if (normalized.Equals("prefer_local", StringComparison.OrdinalIgnoreCase)) return "Local • nearby demand";
+            if (normalized.Equals("prefer_reserve", StringComparison.OrdinalIgnoreCase)) return "Reserve • protected stock";
+            if (normalized.Equals("prefer_exchange", StringComparison.OrdinalIgnoreCase)) return "Exchange • trade flow";
+            return "Balanced • spread output";
         }
 
         public string ResolveMissionOfferReceiptLabel(string missionId)
@@ -1121,6 +1179,38 @@ namespace PlanarWar.Client.Core
             }
 
             return string.Empty;
+        }
+
+        private static string ResolveKnownBuildingKindLabel(string kind)
+        {
+            var normalized = NormalizeReceiptIdentity(kind);
+            return normalized switch
+            {
+                "housing" => "Charter Ward",
+                "farmland" => "Granary Fields",
+                "mine" => "Works Quarry",
+                "arcanespire" => "Beacon Tower",
+                "hallofrecords" => "Hall of Records",
+                "watchbarracks" => "Watch Barracks",
+                "provincialoffice" => "Provincial Office",
+                "safehouse" => "Safehouse Ring",
+                "quietprovisioning" => "Quiet Provisioning Cell",
+                "illicitextraction" => "Illicit Extraction Cell",
+                "occultrelay" => "Occult Relay",
+                "fronthouse" => "Front House",
+                "debthouse" => "Debt House",
+                "cutoutbureau" => "Cutout Bureau",
+                _ => string.Empty,
+            };
+        }
+
+        private static string NormalizeBuildingRoutingPreference(string routingPreference)
+        {
+            var value = routingPreference?.Trim() ?? string.Empty;
+            if (value.Equals("prefer_local", StringComparison.OrdinalIgnoreCase) || value.Equals("local", StringComparison.OrdinalIgnoreCase)) return "prefer_local";
+            if (value.Equals("prefer_reserve", StringComparison.OrdinalIgnoreCase) || value.Equals("reserve", StringComparison.OrdinalIgnoreCase) || value.Equals("protected_reserve", StringComparison.OrdinalIgnoreCase)) return "prefer_reserve";
+            if (value.Equals("prefer_exchange", StringComparison.OrdinalIgnoreCase) || value.Equals("exchange", StringComparison.OrdinalIgnoreCase)) return "prefer_exchange";
+            return "balanced";
         }
 
         private static bool SameId(string left, string right)
