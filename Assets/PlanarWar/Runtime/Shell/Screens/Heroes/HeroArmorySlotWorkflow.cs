@@ -8,6 +8,19 @@ namespace PlanarWar.Client.UI.Screens.Heroes
 {
     public static class HeroArmorySlotWorkflow
     {
+        private static readonly IReadOnlyDictionary<string, string> StatLabels = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["str"] = "Str",
+            ["dex"] = "Dex",
+            ["con"] = "Con",
+            ["int"] = "Int",
+            ["wis"] = "Wis",
+            ["cha"] = "Cha",
+            ["hp"] = "HP",
+            ["mp"] = "MP",
+            ["ac"] = "AC",
+        };
+
         private static readonly string[] OrderedSlots =
         {
             "head",
@@ -138,13 +151,30 @@ namespace PlanarWar.Client.UI.Screens.Heroes
         public static string BuildArmoryItemChoice(HeroArmoryItemSnapshot item, bool isOperative)
         {
             if (item == null) return string.Empty;
-            var noun = EquipmentNounLower(isOperative);
             var slotLabel = FormatSlotLabel(item.Template?.Slot);
             var name = DescribeItemName(item.Template, item.ItemId);
             var stats = FormatStats(item.Template);
             var quantity = item.Qty ?? 1;
             var statText = string.IsNullOrWhiteSpace(stats) ? string.Empty : $" • {stats}";
-            return $"[{item.SlotIndex.GetValueOrDefault()}] {name} x{quantity} • {slotLabel} {noun}{statText}";
+            return $"{name} x{quantity} • {slotLabel}{statText}";
+        }
+
+        public static string BuildEquipButtonText(HeroArmoryItemSnapshot selectedItem, string actorName, string selectedSlot, bool isOperative)
+        {
+            var noun = EquipmentNounLower(isOperative);
+            var actor = ActorNounLower(isOperative);
+
+            if (string.IsNullOrWhiteSpace(actorName))
+            {
+                return $"Select {actor} for {noun}";
+            }
+
+            if (selectedItem == null)
+            {
+                return $"Select compatible {FormatSlotLabel(selectedSlot)} {noun}";
+            }
+
+            return $"Equip {DescribeItemName(selectedItem.Template, selectedItem.ItemId)} to {actorName.Trim()}";
         }
 
         public static string BuildNoArmoryChoiceText(string selectedSlot, bool isOperative)
@@ -175,7 +205,38 @@ namespace PlanarWar.Client.UI.Screens.Heroes
         public static string FormatStats(HeroEquipmentTemplateSnapshot template)
         {
             if (template?.Stats == null || template.Stats.Count == 0) return string.Empty;
-            return string.Join(", ", template.Stats.Take(4).Select(pair => $"{pair.Key} {pair.Value:0.##}"));
+            return string.Join(", ", template.Stats
+                .Where(pair => !string.IsNullOrWhiteSpace(pair.Key))
+                .Take(4)
+                .Select(pair => $"{FormatStatLabel(pair.Key)} {FormatSignedStatValue(pair.Value)}"));
+        }
+
+        private static string FormatStatLabel(string key)
+        {
+            var normalized = key?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(normalized)) return "Stat";
+
+            var parts = normalized
+                .Replace('-', '_')
+                .Replace(' ', '_')
+                .Split(new[] { '_' }, StringSplitOptions.RemoveEmptyEntries);
+
+            if (parts.Length == 0) return "Stat";
+
+            return string.Join(" ", parts.Select(part =>
+            {
+                if (StatLabels.TryGetValue(part, out var label)) return label;
+                return part.Length == 1
+                    ? part.ToUpperInvariant()
+                    : char.ToUpperInvariant(part[0]) + part.Substring(1).ToLowerInvariant();
+            }));
+        }
+
+        private static string FormatSignedStatValue(double value)
+        {
+            if (value > 0) return $"+{value:0.##}";
+            if (value < 0) return $"{value:0.##}";
+            return "0";
         }
 
         private static string FirstNonBlank(params string[] values)

@@ -228,11 +228,11 @@ namespace PlanarWar.Client.UI.Screens.Heroes
             {
                 var selectedCompatibleItem = compatibleArmoryItems.FirstOrDefault(item => item?.SlotIndex == selectedArmorySlotIndex);
                 var canEquip = selectedHero != null && selectedCompatibleItem != null && !isBusy && onEquipHeroFromArmoryRequested != null;
-                equipArmoryButton.text = selectedHero == null
-                    ? $"Select {terms.SingularLower} for {HeroArmorySlotWorkflow.EquipmentNounLower(terms.IsOperative)}"
-                    : selectedCompatibleItem == null
-                        ? $"Select compatible {HeroArmorySlotWorkflow.FormatSlotLabel(selectedGearSlot)} {HeroArmorySlotWorkflow.EquipmentNounLower(terms.IsOperative)}"
-                        : $"Equip selected {HeroArmorySlotWorkflow.EquipmentNounLower(terms.IsOperative)} to {selectedHero.Name}";
+                equipArmoryButton.text = HeroArmorySlotWorkflow.BuildEquipButtonText(
+                    selectedCompatibleItem,
+                    selectedHero?.Name,
+                    selectedGearSlot,
+                    terms.IsOperative);
                 equipArmoryButton.SetEnabled(canEquip);
             }
 

@@ -1543,6 +1543,53 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
         [Test]
+        public void Hero_armory_item_choice_hides_internal_slot_index_and_formats_stats_for_players()
+        {
+            var item = new HeroArmoryItemSnapshot
+            {
+                SlotIndex = 0,
+                ItemId = "arcane_focus",
+                Qty = 1,
+                Template = new HeroEquipmentTemplateSnapshot
+                {
+                    Name = "Arcane Focus",
+                    Slot = "offhand",
+                    Stats = new Dictionary<string, double>
+                    {
+                        ["int"] = 3,
+                        ["wis"] = 1,
+                    }
+                }
+            };
+
+            var choice = HeroArmorySlotWorkflow.BuildArmoryItemChoice(item, false);
+
+            Assert.That(choice, Is.EqualTo("Arcane Focus x1 • Off Hand • Int +3, Wis +1"));
+            Assert.That(choice, Does.Not.Contain("[0]"), "The armory slot index is API truth, not player-facing item copy.");
+            Assert.That(choice, Does.Not.Contain("Off Hand gear"));
+            Assert.That(choice, Does.Not.Contain("int 3"));
+        }
+
+        [Test]
+        public void Hero_armory_equip_button_names_selected_item_when_available()
+        {
+            var item = new HeroArmoryItemSnapshot
+            {
+                SlotIndex = 0,
+                ItemId = "arcane_focus",
+                Template = new HeroEquipmentTemplateSnapshot { Name = "Arcane Focus", Slot = "offhand" }
+            };
+
+            Assert.That(
+                HeroArmorySlotWorkflow.BuildEquipButtonText(item, "Lyra of the Veiled Paths", "offhand", false),
+                Is.EqualTo("Equip Arcane Focus to Lyra of the Veiled Paths"));
+
+            Assert.That(
+                HeroArmorySlotWorkflow.BuildEquipButtonText(null, "Lyra of the Veiled Paths", "head", false),
+                Is.EqualTo("Select compatible Head gear"));
+        }
+
+        [Test]
         public void Shell_uses_dark_inline_gear_pickers_instead_of_visible_native_dropdown_popups()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
