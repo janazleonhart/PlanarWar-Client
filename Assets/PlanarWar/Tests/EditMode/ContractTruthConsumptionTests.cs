@@ -2429,11 +2429,39 @@ namespace PlanarWar.Client.Tests.EditMode
                 "Mission offer"
             });
 
-            Assert.That(falloutTitle, Is.EqualTo("Contain the Fallout in Heartland basin"));
+            Assert.That(falloutTitle, Is.EqualTo("Contain the Fallout in Heartland Basin"));
             Assert.That(falloutTitle, Does.Not.Contain("heartland_basin"));
-            Assert.That(borderTitle, Is.EqualTo("Quiet Border Petitioners in Ancient elwynn"));
+            Assert.That(borderTitle, Is.EqualTo("Quiet Border Petitioners in Ancient Elwynn"));
             Assert.That(borderTitle, Does.Not.Contain("ancient-elwynn"));
-            Assert.That(fallbackTitle, Is.EqualTo("Counterfeit trace 1"));
+            Assert.That(fallbackTitle, Is.EqualTo("Counterfeit Trace 1"));
+        }
+
+        [Test]
+        public void Operations_surface_humanizes_embedded_region_keys_in_timer_and_recent_result_titles()
+        {
+            var controllerType = typeof(PlanarWar.Client.UI.Screens.BlackMarket.BlackMarketScreenController);
+            var timerMethod = controllerType.GetMethod("NormalizeOperationsTimerLabel", BindingFlags.NonPublic | BindingFlags.Static);
+            var titleMethod = controllerType.GetMethod("BuildMissionDisplayTitle", BindingFlags.NonPublic | BindingFlags.Static);
+
+            Assert.That(timerMethod, Is.Not.Null, "Operations timer label formatter should stay available for raw region-key cleanup coverage.");
+            Assert.That(titleMethod, Is.Not.Null, "Mission title formatter should stay available for raw region-key cleanup coverage.");
+
+            var heartlandTimer = (string)timerMethod.Invoke(null, new object[] { "Warfront window heartland_basin" });
+            var sunfallTimer = (string)timerMethod.Invoke(null, new object[] { "Warfront window sunfall_coast" });
+            var recentTitle = (string)titleMethod.Invoke(null, new object[]
+            {
+                "Contain the Fallout in heartland_basin — Escalation 2",
+                "active_1",
+                string.Empty,
+                "Recent mission result"
+            });
+
+            Assert.That(heartlandTimer, Is.EqualTo("Operations window Heartland Basin"));
+            Assert.That(sunfallTimer, Is.EqualTo("Operations window Sunfall Coast"));
+            Assert.That(recentTitle, Is.EqualTo("Contain the Fallout in Heartland Basin — Escalation 2"));
+            Assert.That(heartlandTimer, Does.Not.Contain("heartland_basin"));
+            Assert.That(sunfallTimer, Does.Not.Contain("sunfall_coast"));
+            Assert.That(recentTitle, Does.Not.Contain("heartland_basin"));
         }
 
         [Test]

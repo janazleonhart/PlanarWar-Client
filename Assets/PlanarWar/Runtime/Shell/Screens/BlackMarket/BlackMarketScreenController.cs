@@ -385,7 +385,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             {
                 selectedMissionOfferId = string.Empty;
                 if (missionBoardCopy != null) missionBoardCopy.text = LaneText("No mission offers are visible in the current payload.");
-                if (missionBoardTitle != null) missionBoardTitle.text = summaryState.HasRecentMissionReceipt(DateTime.UtcNow) ? FirstNonBlank(summaryState.RecentMissionTitle, "Recent mission result") : "No mission offer";
+                if (missionBoardTitle != null) missionBoardTitle.text = summaryState.HasRecentMissionReceipt(DateTime.UtcNow) ? BuildRecentMissionDisplayTitle() : "No mission offer";
                 if (missionBoardStatus != null) missionBoardStatus.text = summaryState.HasRecentMissionReceipt(DateTime.UtcNow) ? Truncate(summaryState.RecentMissionReceipt, 128) : "No active mission or mission offer is available.";
                 if (missionBoardEffect != null) missionBoardEffect.text = "Mission board stays honest instead of inventing fake work.";
                 if (missionBoardAssignment != null) missionBoardAssignment.text = BuildMissionStartAssignmentSummary(summary, rankedArmies);
@@ -1134,7 +1134,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 {
                     cards.Add(new CardView(
                         family: "Front timer",
-                        title: FirstNonBlank(timer.Label, HumanizeStatus(timer.Category), "Front timer"),
+                        title: NormalizeOperationsTimerLabel(FirstNonBlank(timer.Label, HumanizeStatus(timer.Category), "Front timer")),
                         lore: timer.FinishesAtUtc.HasValue ? $"{HumanizeStatus(timer.Status)} • {FormatRemaining(timer.FinishesAtUtc.Value - nowUtc)}" : HumanizeStatus(timer.Status),
                         note: Truncate(FirstNonBlank(timer.Detail, "Operator-front timing is visible from cityTimers."), 96)));
                 }
@@ -1250,7 +1250,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             cleaned = cleaned.Replace("Warfront window", "Operations window", StringComparison.OrdinalIgnoreCase);
             cleaned = cleaned.Replace("Warfront Window", "Operations window", StringComparison.OrdinalIgnoreCase);
             cleaned = cleaned.Replace("warfront window", "operations window", StringComparison.OrdinalIgnoreCase);
-            return cleaned;
+            return NormalizeEmbeddedDisplayKeys(cleaned);
         }
 
         private CardView BuildFormationCard(ArmySnapshot army, bool isTarget)
@@ -1354,15 +1354,18 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
         private CardView BuildRecentMissionReceiptCard()
         {
-            var title = FirstNonBlank(summaryState.RecentMissionTitle, "Mission completed");
-            var instance = summaryState.RecentMissionInstanceId;
             return new CardView(
                 family: "Mission result",
-                title: title,
-                lore: string.IsNullOrWhiteSpace(instance) ? "Completion receipt" : $"Receipt • {instance}",
+                title: BuildRecentMissionDisplayTitle(),
+                lore: "Completion receipt",
                 note: Truncate(summaryState.RecentMissionReceipt, 160),
                 buttonText: "Receipt visible",
                 buttonEnabled: false);
+        }
+
+        private string BuildRecentMissionDisplayTitle()
+        {
+            return NormalizeEmbeddedDisplayKeys(FirstNonBlank(summaryState?.RecentMissionTitle, "Recent mission result"));
         }
         private CardView BuildActiveMissionCard(MissionSnapshot activeMission, ShellSummarySnapshot summary, string primaryWarning, DateTime nowUtc)
         {
@@ -1507,18 +1510,21 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                     ? HumanizeKey(fallbackIdentity)
                     : fallback ?? string.Empty;
 
+            if (string.IsNullOrWhiteSpace(displayTitle))
+            {
+                return string.Empty;
+            }
+
             var regionLabel = HumanizeRegionId(regionId);
-            if (string.IsNullOrWhiteSpace(displayTitle) || string.IsNullOrWhiteSpace(regionId) || string.IsNullOrWhiteSpace(regionLabel))
+            if (!string.IsNullOrWhiteSpace(regionId) && !string.IsNullOrWhiteSpace(regionLabel))
             {
-                return displayTitle;
+                foreach (var rawRegionKey in BuildRawRegionTitleKeys(regionId))
+                {
+                    displayTitle = ReplaceTextIgnoreCase(displayTitle, rawRegionKey, regionLabel);
+                }
             }
 
-            foreach (var rawRegionKey in BuildRawRegionTitleKeys(regionId))
-            {
-                displayTitle = ReplaceTextIgnoreCase(displayTitle, rawRegionKey, regionLabel);
-            }
-
-            return displayTitle.Trim();
+            return NormalizeEmbeddedDisplayKeys(displayTitle.Trim());
         }
 
         private static IEnumerable<string> BuildRawRegionTitleKeys(string regionId)
@@ -2154,16 +2160,59 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
         private static string HumanizeRegionId(string regionId)
         {
-            if (string.IsNullOrWhiteSpace(regionId)) return string.Empty;
-            var cleaned = regionId.Replace('_', ' ').Replace('-', ' ').Trim();
-            return cleaned.Length == 0 ? string.Empty : char.ToUpperInvariant(cleaned[0]) + cleaned.Substring(1);
+            return HumanizeKey(regionId);
         }
 
         private static string HumanizeKey(string value)
         {
             if (string.IsNullOrWhiteSpace(value)) return string.Empty;
-            var cleaned = value.Replace('_', ' ').Replace('-', ' ').Trim();
-            return cleaned.Length == 0 ? string.Empty : char.ToUpperInvariant(cleaned[0]) + cleaned.Substring(1);
+            var cleaned = value.Replace('_', ' ').Replace('-', ' ').Replace('.', ' ').Trim();
+            var words = cleaned.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            if (words.Length == 0) return string.Empty;
+            return string.Join(" ", words.Select(TitleCaseWord));
+        }
+
+        private static string NormalizeEmbeddedDisplayKeys(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return string.Empty;
+
+            var output = new System.Text.StringBuilder();
+            var token = new System.Text.StringBuilder();
+
+            void FlushToken()
+            {
+                if (token.Length == 0)
+                {
+                    return;
+                }
+
+                var rawToken = token.ToString();
+                output.Append(rawToken.Contains("_") || rawToken.Contains("-") ? HumanizeKey(rawToken) : rawToken);
+                token.Clear();
+            }
+
+            foreach (var c in value.Trim())
+            {
+                if (char.IsLetterOrDigit(c) || c == '_' || c == '-')
+                {
+                    token.Append(c);
+                    continue;
+                }
+
+                FlushToken();
+                output.Append(c);
+            }
+
+            FlushToken();
+            return output.ToString().Trim();
+        }
+
+        private static string TitleCaseWord(string word)
+        {
+            if (string.IsNullOrWhiteSpace(word)) return string.Empty;
+            if (word.All(char.IsUpper) || word.All(char.IsDigit)) return word;
+            var lower = word.ToLowerInvariant();
+            return char.ToUpperInvariant(lower[0]) + (lower.Length > 1 ? lower.Substring(1) : string.Empty);
         }
 
         private static string ResolveArmyName(IReadOnlyList<ArmySnapshot> armies, string armyId)
@@ -2185,7 +2234,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         {
             if (string.Equals(army.Status, "holding", StringComparison.OrdinalIgnoreCase))
             {
-                var holdLine = string.IsNullOrWhiteSpace(army.HoldRegionId) ? "a regional line" : army.HoldRegionId;
+                var holdLine = string.IsNullOrWhiteSpace(army.HoldRegionId) ? "a regional line" : HumanizeRegionLabel(army.HoldRegionId);
                 return $"{PresentArmyName(army.Name)} is currently holding {holdLine} as {HumanizeKey(army.HoldPosture)} duty. Release the route before reassigning region/posture, renaming, splitting, merging, or retiring the cell.";
             }
 
@@ -2216,7 +2265,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
             parts.Add(string.IsNullOrWhiteSpace(holdRegionId)
                 ? "Choose a region and posture before assigning a hold or launching a warfront action."
-                : $"Region desk: {(string.IsNullOrWhiteSpace(holdRegionLabel) ? holdRegionId : holdRegionLabel)} as {HumanizeKey(holdPosture)} duty. Hold posture is a standing assignment; warfront assault and quick strike are direct timed actions.");
+                : $"Region desk: {(string.IsNullOrWhiteSpace(holdRegionLabel) ? HumanizeRegionLabel(holdRegionId) : holdRegionLabel)} as {HumanizeKey(holdPosture)} duty. Hold posture is a standing assignment; warfront assault and quick strike are direct timed actions.");
             if (dispatchHero != null)
             {
                 parts.Add($"Dispatch hero: {dispatchHero.Name} • {BuildHeroDispatchLore(dispatchHero)}.");
