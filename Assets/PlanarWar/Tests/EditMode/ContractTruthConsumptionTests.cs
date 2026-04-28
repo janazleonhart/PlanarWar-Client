@@ -2146,6 +2146,88 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(controller, Does.Contain("Mission board stays honest instead of inventing fake work."));
         }
 
+        [Test]
+        public void Operations_mission_board_closeout_keeps_dispatch_surface_checkpointed()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var appStylePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/BlackMarket/BlackMarketScreenController.cs");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(appStylePath), Is.True, "AppShell.uss should be available from the Unity project root.");
+            Assert.That(File.Exists(controllerPath), Is.True, "BlackMarketScreenController.cs should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(appStylePath);
+            var controller = File.ReadAllText(controllerPath);
+
+            foreach (var marker in new[]
+            {
+                "operations-mission-board",
+                "warfront-mission-board-copy-value",
+                "warfront-mission-board-title-value",
+                "warfront-mission-board-status-value",
+                "warfront-mission-board-effect-value",
+                "warfront-mission-board-assignment-value",
+                "warfront-mission-offer-picker",
+                "warfront-mission-primary-button",
+            })
+            {
+                Assert.That(uxml, Does.Contain(marker), $"Mission dispatch board marker {marker} must remain present.");
+            }
+
+            foreach (var styleMarker in new[]
+            {
+                ".operations-mission-board",
+                ".operations-mission-card",
+                ".operations-mission-offer-picker",
+                ".operations-mission-offer-choice",
+                ".operations-mission-offer-choice--selected",
+            })
+            {
+                Assert.That(uss, Does.Contain(styleMarker), $"Mission dispatch board style {styleMarker} must remain present.");
+            }
+
+            foreach (var callbackMarker in new[]
+            {
+                "RenderMissionBoard(summary, rankedArmies, activeMission, primaryWarning, nowUtc)",
+                "BuildMissionStartAssignmentSummary",
+                "TriggerStartMission(selectedOffer.Id)",
+                "TriggerCompleteMission(activeMission.InstanceId)",
+            })
+            {
+                Assert.That(controller, Does.Contain(callbackMarker), $"Mission board should keep using the existing callback seam: {callbackMarker}");
+            }
+
+            Assert.That(controller, Does.Contain("CleanMissionPayloadText"));
+            Assert.That(controller, Does.Contain("LooksLikeRawMissionPayload"));
+            Assert.That(controller, Does.Contain("Posture: balanced"));
+            Assert.That(controller, Does.Not.Contain("/api/missions/start"), "UI controller should not invent or hardcode mission start routes.");
+            Assert.That(controller, Does.Not.Contain("/api/missions/complete"), "UI controller should not invent or hardcode mission complete routes.");
+        }
+
+        [Test]
+        public void Operations_mission_board_closeout_keeps_raw_payload_text_sanitized()
+        {
+            var effectMethod = typeof(PlanarWar.Client.UI.Screens.BlackMarket.BlackMarketScreenController)
+                .GetMethod("BuildMissionEffectSummary", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(effectMethod, Is.Not.Null, "Mission effect summary formatter should remain available for closeout coverage.");
+
+            var effect = (string)effectMethod.Invoke(null, new object[]
+            {
+                "{ \"summary\": \"Recover evidence before pressure spreads.\" }",
+                "{ \"payoff\": \"public relief\" }",
+                "{ \"notes\": \"Nested notes should not leak.\", \"severity\": \"extreme\" }"
+            });
+
+            Assert.That(effect, Does.Contain("Recover evidence before pressure spreads."));
+            Assert.That(effect, Does.Contain("Gain/effect: public relief"));
+            Assert.That(effect, Does.Contain("Risk: extreme"));
+            Assert.That(effect, Does.Not.Contain("{"));
+            Assert.That(effect, Does.Not.Contain("}"));
+            Assert.That(effect, Does.Not.Contain("\"notes\""));
+            Assert.That(effect, Does.Not.Contain("Nested notes should not leak."));
+        }
+
         private static VisualElement BuildMinimalHeroControllerRoot()
         {
             var root = new VisualElement();
