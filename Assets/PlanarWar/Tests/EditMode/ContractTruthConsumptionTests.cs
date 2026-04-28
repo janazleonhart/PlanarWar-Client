@@ -2399,6 +2399,44 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
         [Test]
+        public void Operations_mission_board_humanizes_embedded_region_keys_in_mission_titles()
+        {
+            var titleMethod = typeof(PlanarWar.Client.UI.Screens.BlackMarket.BlackMarketScreenController)
+                .GetMethod("BuildMissionDisplayTitle", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(titleMethod, Is.Not.Null, "Mission title formatter should stay available for region-key cleanup coverage.");
+
+            var falloutTitle = (string)titleMethod.Invoke(null, new object[]
+            {
+                "Contain the Fallout in heartland_basin",
+                "contain_fallout_1",
+                "heartland_basin",
+                "Mission offer"
+            });
+
+            var borderTitle = (string)titleMethod.Invoke(null, new object[]
+            {
+                "Quiet Border Petitioners in ancient-elwynn",
+                "quiet_border_1",
+                "ancient_elwynn",
+                "Mission offer"
+            });
+
+            var fallbackTitle = (string)titleMethod.Invoke(null, new object[]
+            {
+                string.Empty,
+                "counterfeit_trace_1",
+                string.Empty,
+                "Mission offer"
+            });
+
+            Assert.That(falloutTitle, Is.EqualTo("Contain the Fallout in Heartland basin"));
+            Assert.That(falloutTitle, Does.Not.Contain("heartland_basin"));
+            Assert.That(borderTitle, Is.EqualTo("Quiet Border Petitioners in Ancient elwynn"));
+            Assert.That(borderTitle, Does.Not.Contain("ancient-elwynn"));
+            Assert.That(fallbackTitle, Is.EqualTo("Counterfeit trace 1"));
+        }
+
+        [Test]
         public void Operations_mission_board_closeout_keeps_dispatch_surface_checkpointed()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");

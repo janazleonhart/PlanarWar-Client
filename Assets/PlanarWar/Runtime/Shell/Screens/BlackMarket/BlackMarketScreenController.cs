@@ -287,7 +287,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             readinessValue.text = LaneText(BuildForceReadinessSummary(summary.Armies, reinforceState, reinforceOp));
             signalValue.text = LaneText(signalPairs.Count > 0 ? CompactSignalSummary(signalPairs) : frontBuildings.Count > 0 ? BuildFrontSignalSummary(frontBuildings, frontTimers, nowUtc) : "No operations status signals.");
             missionValue.text = LaneText(activeMission != null
-                ? $"{activeMission.Title} • {(activeMission.FinishesAtUtc.HasValue ? FormatRemaining(activeMission.FinishesAtUtc.Value - nowUtc) : "anchor missing")}" 
+                ? $"{BuildMissionDisplayTitle(activeMission.Title, activeMission.Id, activeMission.RegionId, "Active mission")} • {(activeMission.FinishesAtUtc.HasValue ? FormatRemaining(activeMission.FinishesAtUtc.Value - nowUtc) : "anchor missing")}"
                 : summaryState.HasRecentMissionReceipt(nowUtc)
                     ? Truncate(summaryState.RecentMissionReceipt, 96)
                     : summaryState.MissionOffers.Count > 0
@@ -343,7 +343,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
             if (missionBoardTitle != null)
             {
-                missionBoardTitle.text = FirstNonBlank(activeMission?.Title, activeMission?.Id, "Active mission");
+                missionBoardTitle.text = BuildMissionDisplayTitle(activeMission?.Title, activeMission?.Id, activeMission?.RegionId, "Active mission");
             }
 
             if (missionBoardStatus != null)
@@ -416,7 +416,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
             if (missionBoardTitle != null)
             {
-                missionBoardTitle.text = FirstNonBlank(selectedOffer.Title, selectedOffer.Id, "Mission offer");
+                missionBoardTitle.text = BuildMissionOfferDisplayTitle(selectedOffer);
             }
 
             if (missionBoardStatus != null)
@@ -439,7 +439,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             missionPrimaryAction = missionPrimaryActionEnabled ? () => TriggerStartMission(selectedOffer.Id) : null;
             if (missionPrimaryButton != null)
             {
-                missionPrimaryButton.text = pending ? "Starting..." : $"Start {FirstNonBlank(selectedOffer.Title, "mission")}";
+                missionPrimaryButton.text = pending ? "Starting..." : $"Start {BuildMissionOfferDisplayTitle(selectedOffer, "mission")}";
                 missionPrimaryButton.SetEnabled(missionPrimaryActionEnabled);
             }
         }
@@ -1373,7 +1373,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var region = HumanizeRegionId(activeMission?.RegionId);
             return new CardView(
                 family: "Support operation",
-                title: FirstNonBlank(activeMission?.Title, activeMission?.Id, "Mission"),
+                title: BuildMissionDisplayTitle(activeMission?.Title, activeMission?.Id, activeMission?.RegionId, "Mission"),
                 lore: ready
                     ? "Mission ready to complete"
                     : activeMission?.FinishesAtUtc.HasValue == true
@@ -1494,6 +1494,79 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             return LaneText(string.Join(" • ", parts.Where(part => !string.IsNullOrWhiteSpace(part))));
         }
 
+        private static string BuildMissionOfferDisplayTitle(MissionOfferSnapshot offer, string fallback = "Mission offer")
+        {
+            return BuildMissionDisplayTitle(offer?.Title, offer?.Id, offer?.RegionId, fallback);
+        }
+
+        private static string BuildMissionDisplayTitle(string title, string fallbackIdentity, string regionId, string fallback)
+        {
+            var displayTitle = !string.IsNullOrWhiteSpace(title)
+                ? title.Trim()
+                : !string.IsNullOrWhiteSpace(fallbackIdentity)
+                    ? HumanizeKey(fallbackIdentity)
+                    : fallback ?? string.Empty;
+
+            var regionLabel = HumanizeRegionId(regionId);
+            if (string.IsNullOrWhiteSpace(displayTitle) || string.IsNullOrWhiteSpace(regionId) || string.IsNullOrWhiteSpace(regionLabel))
+            {
+                return displayTitle;
+            }
+
+            foreach (var rawRegionKey in BuildRawRegionTitleKeys(regionId))
+            {
+                displayTitle = ReplaceTextIgnoreCase(displayTitle, rawRegionKey, regionLabel);
+            }
+
+            return displayTitle.Trim();
+        }
+
+        private static IEnumerable<string> BuildRawRegionTitleKeys(string regionId)
+        {
+            if (string.IsNullOrWhiteSpace(regionId))
+            {
+                yield break;
+            }
+
+            var trimmed = regionId.Trim();
+            foreach (var key in new[]
+            {
+                trimmed,
+                trimmed.Replace('_', '-'),
+                trimmed.Replace('-', '_')
+            })
+            {
+                if (!string.IsNullOrWhiteSpace(key))
+                {
+                    yield return key;
+                }
+            }
+        }
+
+        private static string ReplaceTextIgnoreCase(string source, string search, string replacement)
+        {
+            if (string.IsNullOrWhiteSpace(source) || string.IsNullOrWhiteSpace(search) || replacement == null)
+            {
+                return source ?? string.Empty;
+            }
+
+            var result = source;
+            var startIndex = 0;
+            while (startIndex < result.Length)
+            {
+                var index = result.IndexOf(search, startIndex, StringComparison.OrdinalIgnoreCase);
+                if (index < 0)
+                {
+                    break;
+                }
+
+                result = result.Substring(0, index) + replacement + result.Substring(index + search.Length);
+                startIndex = index + replacement.Length;
+            }
+
+            return result;
+        }
+
         private static string BuildMissionOfferPickerLabel(MissionOfferSnapshot offer)
         {
             if (offer == null)
@@ -1501,7 +1574,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 return "Mission offer";
             }
 
-            var title = FirstNonBlank(offer.Title, offer.Id, "Mission offer");
+            var title = BuildMissionOfferDisplayTitle(offer);
             var meta = BuildMissionOfferMeta(offer);
             return string.IsNullOrWhiteSpace(meta) ? title : $"{title} • {meta}";
         }
@@ -1524,7 +1597,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private CardView BuildMissionOfferCard(MissionOfferSnapshot offer)
         {
             var pending = summaryState.IsActionBusy && string.Equals(summaryState.PendingMissionOfferId, offer?.Id, StringComparison.OrdinalIgnoreCase);
-            var title = FirstNonBlank(offer?.Title, offer?.Id, "Mission offer");
+            var title = BuildMissionOfferDisplayTitle(offer);
             var meta = BuildMissionOfferMeta(offer);
             var note = FirstNonBlank(BuildMissionEffectSummary(offer?.Summary, offer?.Payoff, offer?.Risk), "Mission board offer surfaced from /api/missions/offers.");
             return new CardView(
