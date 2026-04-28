@@ -876,6 +876,100 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
         [Test]
+        public void Summary_state_resolves_operations_action_labels_from_loaded_snapshot_truth()
+        {
+            var state = new SummaryState();
+            state.ApplySnapshot(new ShellSummarySnapshot
+            {
+                MissionOffers = new List<MissionOfferSnapshot>
+                {
+                    new MissionOfferSnapshot { Id = "counterfeit_trace_1", Title = "Trace Counterfeit Scrip", RegionId = "heartland_basin" }
+                },
+                ActiveMissions = new List<MissionSnapshot>
+                {
+                    new MissionSnapshot
+                    {
+                        InstanceId = "mission_123",
+                        Title = "Lair Strike: Heartland Basin",
+                        AssignedArmyId = "army_1",
+                        AssignedHeroId = "hero_1"
+                    }
+                },
+                Armies = new List<ArmySnapshot>
+                {
+                    new ArmySnapshot { Id = "army_1", Name = "First Tempest Cell" }
+                },
+                Heroes = new List<HeroSnapshot>
+                {
+                    new HeroSnapshot { Id = "hero_1", Name = "Lyra of the Veiled Paths" }
+                }
+            });
+
+            Assert.That(state.ResolveMissionOfferReceiptLabel("counterfeit_trace_1"), Is.EqualTo("Trace Counterfeit Scrip"));
+            Assert.That(state.ResolveMissionInstanceReceiptLabel("mission_123"), Is.EqualTo("Lair Strike: Heartland Basin"));
+            Assert.That(state.ResolveArmyReceiptLabel("army_1"), Is.EqualTo("First Tempest Cell"));
+            Assert.That(state.ResolveHeroReceiptLabel("hero_1"), Is.EqualTo("Lyra of the Veiled Paths"));
+            Assert.That(state.ResolveRegionReceiptLabel("heartland_basin"), Is.EqualTo("Heartland Basin"));
+            Assert.That(SummaryState.ResolvePostureReceiptLabel("frontier_hold"), Is.EqualTo("Frontier Hold"));
+
+            state.BeginMissionStartAction("counterfeit_trace_1");
+            Assert.That(state.ActionStatus, Is.EqualTo("Starting mission: Trace Counterfeit Scrip"));
+            Assert.That(state.ActionStatus, Does.Not.Contain("counterfeit_trace_1"));
+            state.FinishAction("done");
+
+            state.BeginArmyHoldAssign("army_1", "heartland_basin", "frontier_hold");
+            Assert.That(state.ActionStatus, Does.Contain("First Tempest Cell"));
+            Assert.That(state.ActionStatus, Does.Contain("Heartland Basin"));
+            Assert.That(state.ActionStatus, Does.Contain("Frontier Hold"));
+            Assert.That(state.ActionStatus, Does.Not.Contain("army_1"));
+            Assert.That(state.ActionStatus, Does.Not.Contain("heartland_basin"));
+            Assert.That(state.ActionStatus, Does.Not.Contain("frontier_hold"));
+        }
+
+        [Test]
+        public void Summary_state_humanizes_operations_action_label_fallbacks_without_inventing_snapshot_truth()
+        {
+            var state = new SummaryState();
+            state.ApplySnapshot(new ShellSummarySnapshot());
+
+            Assert.That(state.ResolveMissionOfferReceiptLabel("counterfeit_trace_1"), Is.EqualTo("Counterfeit Trace 1"));
+            Assert.That(state.ResolveArmyReceiptLabel("army_1"), Is.EqualTo("Army 1"));
+            Assert.That(state.ResolveHeroReceiptLabel("hero_1"), Is.EqualTo("Hero 1"));
+            Assert.That(state.ResolveRegionReceiptLabel("heartland_basin"), Is.EqualTo("Heartland Basin"));
+            Assert.That(SummaryState.ResolvePostureReceiptLabel("balanced_response"), Is.EqualTo("Balanced Response"));
+        }
+
+        [Test]
+        public void Operations_action_receipt_cleanup_uses_summary_label_resolvers_without_hardcoded_client_routes()
+        {
+            var bootstrapPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/ClientBootstrap.cs");
+            Assert.That(File.Exists(bootstrapPath), Is.True, "ClientBootstrap.cs should be available from the Unity project root.");
+
+            var bootstrap = File.ReadAllText(bootstrapPath);
+            foreach (var marker in new[]
+            {
+                "ResolveMissionOfferReceiptLabel",
+                "ResolveMissionInstanceReceiptLabel",
+                "ResolveArmyReceiptLabel",
+                "ResolveHeroReceiptLabel",
+                "ResolveRegionReceiptLabel",
+                "ResolvePostureReceiptLabel",
+            })
+            {
+                Assert.That(bootstrap, Does.Contain(marker), $"Operations receipt cleanup should route visible action text through {marker}.");
+            }
+
+            Assert.That(bootstrap, Does.Not.Contain("Mission started: {trimmedMissionId}"));
+            Assert.That(bootstrap, Does.Not.Contain("Cell reinforcement started: {trimmedArmyId}"));
+            Assert.That(bootstrap, Does.Not.Contain("Formation merged into {trimmedTargetArmyId}"));
+            Assert.That(bootstrap, Does.Not.Contain("Formation disbanded: {trimmedArmyId}"));
+            Assert.That(bootstrap, Does.Not.Contain("Regional hold assigned: {trimmedRegionId}"));
+            Assert.That(bootstrap, Does.Not.Contain("Regional hold released: {trimmedArmyId}"));
+            Assert.That(bootstrap, Does.Not.Contain("Pressure deployment opened for {trimmedRegionId} with {trimmedArmyId}"));
+            Assert.That(bootstrap, Does.Not.Contain("Disruption action opened for {trimmedRegionId} with {trimmedArmyId}"));
+        }
+
+        [Test]
         public void Summary_state_formats_mission_completion_receipt_from_reward_payload()
         {
             const string response = "{ \"summary\": \"Raid resolved cleanly.\", \"rewards\": { \"wealth\": 15, \"materials\": 4 }, \"effects\": { \"controlDelta\": 2, \"threatDelta\": -1 } }";

@@ -762,9 +762,12 @@ namespace PlanarWar.Client.UI
             try
             {
                 var trimmedMissionId = missionId.Trim();
+                var missionLabel = summaryState.ResolveMissionOfferReceiptLabel(trimmedMissionId);
                 summaryState.BeginMissionStartAction(trimmedMissionId);
                 await apiClient.StartMissionAsync(trimmedMissionId, armyId, heroId, responsePosture);
-                summaryState.FinishAction($"Mission started: {trimmedMissionId}");
+                summaryState.FinishAction(string.IsNullOrWhiteSpace(missionLabel)
+                    ? "Mission started."
+                    : $"Mission started: {missionLabel}");
                 await summaryController.RefreshAsync();
             }
             catch (Exception ex)
@@ -783,10 +786,11 @@ namespace PlanarWar.Client.UI
             try
             {
                 var trimmedInstanceId = instanceId.Trim();
+                var missionLabel = summaryState.ResolveMissionInstanceReceiptLabel(trimmedInstanceId);
                 summaryState.BeginMissionCompleteAction(trimmedInstanceId);
                 var response = await apiClient.CompleteMissionAsync(trimmedInstanceId);
                 var responseText = response?.ToString();
-                var receipt = SummaryState.FormatMissionCompletionReceipt(responseText, trimmedInstanceId);
+                var receipt = SummaryState.FormatMissionCompletionReceipt(responseText, missionLabel);
                 var title = SummaryState.ExtractMissionCompletionTitle(responseText);
                 summaryState.FinishMissionCompletion(trimmedInstanceId, receipt, title);
                 await summaryController.RefreshAsync();
@@ -806,15 +810,16 @@ namespace PlanarWar.Client.UI
             }
 
             var trimmedArmyId = armyId?.Trim() ?? string.Empty;
+            var armyLabel = summaryState.ResolveArmyReceiptLabel(trimmedArmyId);
 
             try
             {
                 summaryState.BeginArmyReinforcement(trimmedArmyId);
                 await apiClient.ReinforceArmyAsync(trimmedArmyId);
                 await summaryController.RefreshAsync();
-                summaryState.FinishAction(string.IsNullOrWhiteSpace(trimmedArmyId)
+                summaryState.FinishAction(string.IsNullOrWhiteSpace(armyLabel)
                     ? "Cell reinforcement started."
-                    : $"Cell reinforcement started: {trimmedArmyId}");
+                    : $"Cell reinforcement started: {armyLabel}");
             }
             catch (Exception ex)
             {
@@ -858,6 +863,7 @@ namespace PlanarWar.Client.UI
 
             var trimmedArmyId = armyId?.Trim() ?? string.Empty;
             var trimmedName = requestedName?.Trim() ?? string.Empty;
+            var armyLabel = summaryState.ResolveArmyReceiptLabel(trimmedArmyId);
             if (string.IsNullOrWhiteSpace(trimmedArmyId) || requestedSize <= 0)
             {
                 return;
@@ -869,7 +875,9 @@ namespace PlanarWar.Client.UI
                 await apiClient.SplitArmyAsync(trimmedArmyId, requestedSize, trimmedName);
                 await summaryController.RefreshAsync();
                 summaryState.FinishAction(string.IsNullOrWhiteSpace(trimmedName)
-                    ? $"Formation split: {requestedSize} troops."
+                    ? (string.IsNullOrWhiteSpace(armyLabel)
+                        ? $"Formation split: {requestedSize} troops."
+                        : $"Formation split from {armyLabel}: {requestedSize} troops.")
                     : $"Formation split into {trimmedName}: {requestedSize} troops.");
             }
             catch (Exception ex)
@@ -888,6 +896,7 @@ namespace PlanarWar.Client.UI
 
             var trimmedSourceArmyId = sourceArmyId?.Trim() ?? string.Empty;
             var trimmedTargetArmyId = targetArmyId?.Trim() ?? string.Empty;
+            var targetArmyLabel = summaryState.ResolveArmyReceiptLabel(trimmedTargetArmyId);
             if (string.IsNullOrWhiteSpace(trimmedSourceArmyId) || string.IsNullOrWhiteSpace(trimmedTargetArmyId))
             {
                 return;
@@ -898,7 +907,9 @@ namespace PlanarWar.Client.UI
                 summaryState.BeginArmyMerge(trimmedSourceArmyId, trimmedTargetArmyId);
                 await apiClient.MergeArmyAsync(trimmedSourceArmyId, trimmedTargetArmyId);
                 await summaryController.RefreshAsync();
-                summaryState.FinishAction($"Formation merged into {trimmedTargetArmyId}.");
+                summaryState.FinishAction(string.IsNullOrWhiteSpace(targetArmyLabel)
+                    ? "Formation merged."
+                    : $"Formation merged into {targetArmyLabel}.");
             }
             catch (Exception ex)
             {
@@ -914,6 +925,7 @@ namespace PlanarWar.Client.UI
             }
 
             var trimmedArmyId = armyId?.Trim() ?? string.Empty;
+            var armyLabel = summaryState.ResolveArmyReceiptLabel(trimmedArmyId);
             if (string.IsNullOrWhiteSpace(trimmedArmyId))
             {
                 return;
@@ -924,7 +936,9 @@ namespace PlanarWar.Client.UI
                 summaryState.BeginArmyDisband(trimmedArmyId);
                 await apiClient.DisbandArmyAsync(trimmedArmyId);
                 await summaryController.RefreshAsync();
-                summaryState.FinishAction($"Formation disbanded: {trimmedArmyId}.");
+                summaryState.FinishAction(string.IsNullOrWhiteSpace(armyLabel)
+                    ? "Formation disbanded."
+                    : $"Formation disbanded: {armyLabel}.");
             }
             catch (Exception ex)
             {
@@ -942,6 +956,9 @@ namespace PlanarWar.Client.UI
             var trimmedArmyId = armyId?.Trim() ?? string.Empty;
             var trimmedRegionId = regionId?.Trim() ?? string.Empty;
             var trimmedPosture = posture?.Trim() ?? string.Empty;
+            var armyLabel = summaryState.ResolveArmyReceiptLabel(trimmedArmyId);
+            var regionLabel = summaryState.ResolveRegionReceiptLabel(trimmedRegionId);
+            var postureLabel = SummaryState.ResolvePostureReceiptLabel(trimmedPosture);
             if (string.IsNullOrWhiteSpace(trimmedArmyId) || string.IsNullOrWhiteSpace(trimmedRegionId))
             {
                 return;
@@ -952,7 +969,9 @@ namespace PlanarWar.Client.UI
                 summaryState.BeginArmyHoldAssign(trimmedArmyId, trimmedRegionId, trimmedPosture);
                 await apiClient.AssignArmyHoldAsync(trimmedArmyId, trimmedRegionId, trimmedPosture);
                 await summaryController.RefreshAsync();
-                summaryState.FinishAction($"Regional hold assigned: {trimmedRegionId}." + (string.IsNullOrWhiteSpace(trimmedPosture) ? string.Empty : $" Posture {trimmedPosture}."));
+                summaryState.FinishAction($"Regional hold assigned: {regionLabel}."
+                    + (string.IsNullOrWhiteSpace(armyLabel) ? string.Empty : $" Formation {armyLabel}.")
+                    + (string.IsNullOrWhiteSpace(postureLabel) ? string.Empty : $" Posture {postureLabel}."));
             }
             catch (Exception ex)
             {
@@ -968,6 +987,7 @@ namespace PlanarWar.Client.UI
             }
 
             var trimmedArmyId = armyId?.Trim() ?? string.Empty;
+            var armyLabel = summaryState.ResolveArmyReceiptLabel(trimmedArmyId);
             if (string.IsNullOrWhiteSpace(trimmedArmyId))
             {
                 return;
@@ -978,7 +998,9 @@ namespace PlanarWar.Client.UI
                 summaryState.BeginArmyHoldRelease(trimmedArmyId);
                 await apiClient.ReleaseArmyHoldAsync(trimmedArmyId);
                 await summaryController.RefreshAsync();
-                summaryState.FinishAction($"Regional hold released: {trimmedArmyId}.");
+                summaryState.FinishAction(string.IsNullOrWhiteSpace(armyLabel)
+                    ? "Regional hold released."
+                    : $"Regional hold released: {armyLabel}.");
             }
             catch (Exception ex)
             {
@@ -996,6 +1018,9 @@ namespace PlanarWar.Client.UI
             var trimmedRegionId = regionId?.Trim() ?? string.Empty;
             var trimmedArmyId = armyId?.Trim() ?? string.Empty;
             var trimmedHeroId = heroId?.Trim() ?? string.Empty;
+            var regionLabel = summaryState.ResolveRegionReceiptLabel(trimmedRegionId);
+            var armyLabel = summaryState.ResolveArmyReceiptLabel(trimmedArmyId);
+            var heroLabel = summaryState.ResolveHeroReceiptLabel(trimmedHeroId);
             if (string.IsNullOrWhiteSpace(trimmedRegionId) || string.IsNullOrWhiteSpace(trimmedArmyId))
             {
                 return;
@@ -1006,9 +1031,9 @@ namespace PlanarWar.Client.UI
                 summaryState.BeginFrontlineDispatch("pressure deployment", trimmedRegionId, trimmedArmyId, trimmedHeroId);
                 await apiClient.StartWarfrontAssaultAsync(trimmedRegionId, trimmedArmyId, trimmedHeroId);
                 await summaryController.RefreshAsync();
-                summaryState.FinishAction(string.IsNullOrWhiteSpace(trimmedHeroId)
-                    ? $"Pressure deployment opened for {trimmedRegionId} with {trimmedArmyId}."
-                    : $"Pressure deployment opened for {trimmedRegionId} with {trimmedArmyId} under {trimmedHeroId}.");
+                summaryState.FinishAction(string.IsNullOrWhiteSpace(heroLabel)
+                    ? $"Pressure deployment opened for {regionLabel} with {armyLabel}."
+                    : $"Pressure deployment opened for {regionLabel} with {armyLabel} under {heroLabel}.");
             }
             catch (Exception ex)
             {
@@ -1026,6 +1051,9 @@ namespace PlanarWar.Client.UI
             var trimmedRegionId = regionId?.Trim() ?? string.Empty;
             var trimmedArmyId = armyId?.Trim() ?? string.Empty;
             var trimmedHeroId = heroId?.Trim() ?? string.Empty;
+            var regionLabel = summaryState.ResolveRegionReceiptLabel(trimmedRegionId);
+            var armyLabel = summaryState.ResolveArmyReceiptLabel(trimmedArmyId);
+            var heroLabel = summaryState.ResolveHeroReceiptLabel(trimmedHeroId);
             if (string.IsNullOrWhiteSpace(trimmedRegionId) || string.IsNullOrWhiteSpace(trimmedArmyId))
             {
                 return;
@@ -1036,9 +1064,9 @@ namespace PlanarWar.Client.UI
                 summaryState.BeginFrontlineDispatch("disruption action", trimmedRegionId, trimmedArmyId, trimmedHeroId);
                 await apiClient.StartGarrisonStrikeAsync(trimmedRegionId, trimmedArmyId, trimmedHeroId);
                 await summaryController.RefreshAsync();
-                summaryState.FinishAction(string.IsNullOrWhiteSpace(trimmedHeroId)
-                    ? $"Disruption action opened for {trimmedRegionId} with {trimmedArmyId}."
-                    : $"Disruption action opened for {trimmedRegionId} with {trimmedArmyId} under {trimmedHeroId}.");
+                summaryState.FinishAction(string.IsNullOrWhiteSpace(heroLabel)
+                    ? $"Disruption action opened for {regionLabel} with {armyLabel}."
+                    : $"Disruption action opened for {regionLabel} with {armyLabel} under {heroLabel}.");
             }
             catch (Exception ex)
             {

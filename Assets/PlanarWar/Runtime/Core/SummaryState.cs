@@ -349,15 +349,63 @@ namespace PlanarWar.Client.Core
                 : string.Empty;
         }
 
+        public string ResolveMissionOfferReceiptLabel(string missionId)
+        {
+            var id = missionId?.Trim() ?? string.Empty;
+            var offer = MissionOffers?.FirstOrDefault(mission => SameId(mission?.Id, id))
+                ?? Snapshot?.MissionOffers?.FirstOrDefault(mission => SameId(mission?.Id, id));
+            var operation = Snapshot?.OpeningOperations?.FirstOrDefault(operation => SameId(operation?.MissionId, id));
+            return BuildReceiptLabel(id, FirstUsableReceiptLabel(id, "mission", offer?.Title, operation?.Title), "mission");
+        }
+
+        public string ResolveMissionInstanceReceiptLabel(string instanceId)
+        {
+            var id = instanceId?.Trim() ?? string.Empty;
+            var activeMission = Snapshot?.ActiveMissions?.FirstOrDefault(mission => SameId(mission?.InstanceId, id));
+            return BuildReceiptLabel(id, FirstUsableReceiptLabel(id, "mission", activeMission?.Title), "mission");
+        }
+
+        public string ResolveArmyReceiptLabel(string armyId)
+        {
+            var id = armyId?.Trim() ?? string.Empty;
+            var army = Snapshot?.Armies?.FirstOrDefault(candidate => SameId(candidate?.Id, id));
+            var reinforcement = Snapshot?.ArmyReinforcement;
+            var reinforcementName = reinforcement != null && SameId(reinforcement.ArmyId, id)
+                ? reinforcement.ArmyName
+                : string.Empty;
+            var activeMission = Snapshot?.ActiveMissions?.FirstOrDefault(mission => SameId(mission?.AssignedArmyId, id));
+            return BuildReceiptLabel(id, FirstUsableReceiptLabel(id, "formation", army?.Name, reinforcementName, activeMission?.AssignedArmyName), "formation");
+        }
+
+        public string ResolveHeroReceiptLabel(string heroId)
+        {
+            var id = heroId?.Trim() ?? string.Empty;
+            var hero = Snapshot?.Heroes?.FirstOrDefault(candidate => SameId(candidate?.Id, id));
+            var activeMission = Snapshot?.ActiveMissions?.FirstOrDefault(mission => SameId(mission?.AssignedHeroId, id));
+            return BuildReceiptLabel(id, FirstUsableReceiptLabel(id, "hero", hero?.Name, activeMission?.AssignedHeroName), "hero");
+        }
+
+        public string ResolveRegionReceiptLabel(string regionId)
+        {
+            return BuildReceiptLabel(regionId?.Trim() ?? string.Empty, string.Empty, "region");
+        }
+
+        public static string ResolvePostureReceiptLabel(string posture)
+        {
+            return BuildReceiptLabel(posture?.Trim() ?? string.Empty, string.Empty, "posture");
+        }
+
         public void BeginMissionStartAction(string missionId)
         {
-            BeginAction(string.IsNullOrWhiteSpace(missionId) ? "Starting mission..." : $"Starting mission: {missionId.Trim()}");
+            var label = ResolveMissionOfferReceiptLabel(missionId);
+            BeginAction(string.IsNullOrWhiteSpace(label) ? "Starting mission..." : $"Starting mission: {label}");
             PendingMissionOfferId = missionId?.Trim() ?? string.Empty;
         }
 
         public void BeginMissionCompleteAction(string instanceId)
         {
-            BeginAction(string.IsNullOrWhiteSpace(instanceId) ? "Completing mission..." : $"Completing mission: {instanceId.Trim()}");
+            var label = ResolveMissionInstanceReceiptLabel(instanceId);
+            BeginAction(string.IsNullOrWhiteSpace(label) ? "Completing mission..." : $"Completing mission: {label}");
             PendingMissionInstanceId = instanceId?.Trim() ?? string.Empty;
         }
 
@@ -1016,6 +1064,130 @@ namespace PlanarWar.Client.Core
             return FirstReceiptText(Child(token, "title"), Child(token, "name"), Child(token, "summary"), token);
         }
 
+        private static bool SameId(string left, string right)
+        {
+            return !string.IsNullOrWhiteSpace(left)
+                && !string.IsNullOrWhiteSpace(right)
+                && string.Equals(left.Trim(), right.Trim(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string FirstNonBlankText(params string[] values)
+        {
+            return values?.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))?.Trim() ?? string.Empty;
+        }
+
+        private static string FirstUsableReceiptLabel(string id, string fallbackNoun, params string[] values)
+        {
+            if (values == null)
+            {
+                return string.Empty;
+            }
+
+            foreach (var value in values)
+            {
+                var trimmed = value?.Trim() ?? string.Empty;
+                if (!string.IsNullOrWhiteSpace(trimmed)
+                    && !LooksLikePlaceholderLabel(trimmed, fallbackNoun)
+                    && !LooksLikeSameIdentity(trimmed, id))
+                {
+                    return trimmed;
+                }
+            }
+
+            return FirstNonBlankText(values);
+        }
+
+        private static string BuildReceiptLabel(string id, string preferredLabel, string fallbackNoun)
+        {
+            var trimmedId = id?.Trim() ?? string.Empty;
+            var trimmedLabel = preferredLabel?.Trim() ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(trimmedLabel)
+                && !LooksLikePlaceholderLabel(trimmedLabel, fallbackNoun)
+                && !LooksLikeSameIdentity(trimmedLabel, trimmedId))
+            {
+                return trimmedLabel;
+            }
+
+            if (!string.IsNullOrWhiteSpace(trimmedId))
+            {
+                return HumanizeReceiptIdentifier(trimmedId);
+            }
+
+            return string.Empty;
+        }
+
+        private static bool LooksLikePlaceholderLabel(string label, string fallbackNoun)
+        {
+            if (string.IsNullOrWhiteSpace(label))
+            {
+                return true;
+            }
+
+            var normalized = NormalizeReceiptIdentity(label);
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return true;
+            }
+
+            var noun = NormalizeReceiptIdentity(fallbackNoun);
+            return normalized == noun
+                || normalized == "army"
+                || normalized == "hero"
+                || normalized == "mission"
+                || normalized == "operation"
+                || normalized == "formation";
+        }
+
+        private static bool LooksLikeSameIdentity(string label, string id)
+        {
+            if (string.IsNullOrWhiteSpace(label) || string.IsNullOrWhiteSpace(id))
+            {
+                return false;
+            }
+
+            return NormalizeReceiptIdentity(label) == NormalizeReceiptIdentity(id);
+        }
+
+        private static string NormalizeReceiptIdentity(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            var chars = value.Trim()
+                .Where(c => !char.IsWhiteSpace(c) && c != '_' && c != '-' && c != ':' && c != '.' && c != '/')
+                .Select(char.ToLowerInvariant)
+                .ToArray();
+            return new string(chars);
+        }
+
+        private static string HumanizeReceiptIdentifier(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            var cleaned = value.Trim().Replace('_', ' ').Replace('-', ' ').Replace(':', ' ').Replace('/', ' ');
+            var words = cleaned.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            if (words.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            return string.Join(" ", words.Select(word =>
+            {
+                if (word.All(char.IsUpper) || word.All(char.IsDigit))
+                {
+                    return word;
+                }
+
+                var lower = word.ToLowerInvariant();
+                return char.ToUpperInvariant(lower[0]) + (lower.Length > 1 ? lower.Substring(1) : string.Empty);
+            }));
+        }
+
         private static string JoinDistinctReceiptParts(params string[] parts)
         {
             return string.Join(", ", (parts ?? Array.Empty<string>())
@@ -1238,13 +1410,15 @@ namespace PlanarWar.Client.Core
 
         public void BeginArmyReinforcement(string armyId)
         {
-            BeginAction(string.IsNullOrWhiteSpace(armyId) ? "Reinforcing army..." : $"Reinforcing army: {armyId.Trim()}");
+            var label = ResolveArmyReceiptLabel(armyId);
+            BeginAction(string.IsNullOrWhiteSpace(label) ? "Reinforcing army..." : $"Reinforcing army: {label}");
             PendingArmyReinforcementId = armyId?.Trim() ?? string.Empty;
         }
 
         public void BeginArmyRename(string armyId, string requestedName)
         {
-            var label = string.IsNullOrWhiteSpace(armyId) ? "Renaming formation..." : $"Renaming formation: {armyId.Trim()}";
+            var armyLabel = ResolveArmyReceiptLabel(armyId);
+            var label = string.IsNullOrWhiteSpace(armyLabel) ? "Renaming formation..." : $"Renaming formation: {armyLabel}";
             if (!string.IsNullOrWhiteSpace(requestedName))
             {
                 label += $" -> {requestedName.Trim()}";
@@ -1255,9 +1429,10 @@ namespace PlanarWar.Client.Core
 
         public void BeginArmySplit(string armyId, int requestedSize, string requestedName)
         {
-            var label = string.IsNullOrWhiteSpace(armyId)
+            var armyLabel = ResolveArmyReceiptLabel(armyId);
+            var label = string.IsNullOrWhiteSpace(armyLabel)
                 ? $"Splitting formation ({requestedSize})..."
-                : $"Splitting formation: {armyId.Trim()} ({requestedSize})";
+                : $"Splitting formation: {armyLabel} ({requestedSize})";
             if (!string.IsNullOrWhiteSpace(requestedName))
             {
                 label += $" -> {requestedName.Trim()}";
@@ -1268,12 +1443,14 @@ namespace PlanarWar.Client.Core
 
         public void BeginArmyMerge(string sourceArmyId, string targetArmyId)
         {
-            var label = string.IsNullOrWhiteSpace(sourceArmyId)
+            var sourceLabel = ResolveArmyReceiptLabel(sourceArmyId);
+            var targetLabel = ResolveArmyReceiptLabel(targetArmyId);
+            var label = string.IsNullOrWhiteSpace(sourceLabel)
                 ? "Merging formation..."
-                : $"Merging formation: {sourceArmyId.Trim()}";
-            if (!string.IsNullOrWhiteSpace(targetArmyId))
+                : $"Merging formation: {sourceLabel}";
+            if (!string.IsNullOrWhiteSpace(targetLabel))
             {
-                label += $" -> {targetArmyId.Trim()}";
+                label += $" -> {targetLabel}";
             }
 
             BeginAction(label);
@@ -1281,24 +1458,28 @@ namespace PlanarWar.Client.Core
 
         public void BeginArmyDisband(string armyId)
         {
-            BeginAction(string.IsNullOrWhiteSpace(armyId)
+            var armyLabel = ResolveArmyReceiptLabel(armyId);
+            BeginAction(string.IsNullOrWhiteSpace(armyLabel)
                 ? "Disbanding formation..."
-                : $"Disbanding formation: {armyId.Trim()}");
+                : $"Disbanding formation: {armyLabel}");
         }
 
         public void BeginArmyHoldAssign(string armyId, string regionId, string posture)
         {
-            var label = string.IsNullOrWhiteSpace(armyId)
+            var armyLabel = ResolveArmyReceiptLabel(armyId);
+            var regionLabel = ResolveRegionReceiptLabel(regionId);
+            var postureLabel = ResolvePostureReceiptLabel(posture);
+            var label = string.IsNullOrWhiteSpace(armyLabel)
                 ? "Assigning regional hold..."
-                : $"Assigning regional hold: {armyId.Trim()}";
-            if (!string.IsNullOrWhiteSpace(regionId))
+                : $"Assigning regional hold: {armyLabel}";
+            if (!string.IsNullOrWhiteSpace(regionLabel))
             {
-                label += $" -> {regionId.Trim()}";
+                label += $" -> {regionLabel}";
             }
 
-            if (!string.IsNullOrWhiteSpace(posture))
+            if (!string.IsNullOrWhiteSpace(postureLabel))
             {
-                label += $" ({posture.Trim()})";
+                label += $" ({postureLabel})";
             }
 
             BeginAction(label);
@@ -1306,25 +1487,29 @@ namespace PlanarWar.Client.Core
 
         public void BeginArmyHoldRelease(string armyId)
         {
-            BeginAction(string.IsNullOrWhiteSpace(armyId)
+            var armyLabel = ResolveArmyReceiptLabel(armyId);
+            BeginAction(string.IsNullOrWhiteSpace(armyLabel)
                 ? "Releasing regional hold..."
-                : $"Releasing regional hold: {armyId.Trim()}");
+                : $"Releasing regional hold: {armyLabel}");
         }
 
         public void BeginFrontlineDispatch(string actionLabel, string regionId, string armyId, string heroId = null)
         {
+            var regionLabel = ResolveRegionReceiptLabel(regionId);
+            var armyLabel = ResolveArmyReceiptLabel(armyId);
+            var heroLabel = ResolveHeroReceiptLabel(heroId);
             var label = string.IsNullOrWhiteSpace(actionLabel) ? "Dispatching frontline action..." : $"Dispatching {actionLabel.Trim()}";
-            if (!string.IsNullOrWhiteSpace(regionId))
+            if (!string.IsNullOrWhiteSpace(regionLabel))
             {
-                label += $" -> {regionId.Trim()}";
+                label += $" -> {regionLabel}";
             }
-            if (!string.IsNullOrWhiteSpace(armyId))
+            if (!string.IsNullOrWhiteSpace(armyLabel))
             {
-                label += $" with {armyId.Trim()}";
+                label += $" with {armyLabel}";
             }
-            if (!string.IsNullOrWhiteSpace(heroId))
+            if (!string.IsNullOrWhiteSpace(heroLabel))
             {
-                label += $" under {heroId.Trim()}";
+                label += $" under {heroLabel}";
             }
 
             BeginAction(label);
