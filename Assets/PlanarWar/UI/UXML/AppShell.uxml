@@ -173,6 +173,32 @@
                     </ui:VisualElement>
                 </ui:VisualElement>
 
+                <ui:VisualElement name="founder-setup-card" class="summary-card summary-card--full summary-card--action founder-setup-card">
+                    <ui:VisualElement class="development-actions-head">
+                        <ui:Label text="Settlement setup" class="eyebrow" />
+                        <ui:Label text="Live bootstrap" class="chapter-row__badge" />
+                    </ui:VisualElement>
+                    <ui:Label name="founder-setup-headline-value" text="Choose how this account enters the world." class="rail-note-title" />
+                    <ui:Label name="founder-setup-copy-value" text="City and Black Market setup choices appear here only when /api/me exposes real founder truth." class="summary-value summary-value--glance" />
+                    <ui:TextField name="founder-city-name-field" label="Settlement name" class="founder-name-field" />
+
+                    <ui:VisualElement class="summary-grid founder-choice-grid">
+                        <ui:VisualElement class="summary-card glance-card founder-choice-card">
+                            <ui:Label text="City" class="eyebrow" />
+                            <ui:Label name="founder-city-choice-value" text="Public growth, buildings, production, and civic development." class="summary-value summary-value--glance" />
+                            <ui:Label name="founder-city-choice-note" text="Setup details load from backend setup truth." class="metric-subvalue metric-subvalue--wrap" />
+                            <ui:Button name="founder-city-button" text="Found City" class="action-button action-button--primary" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card glance-card founder-choice-card">
+                            <ui:Label text="Black Market" class="eyebrow" />
+                            <ui:Label name="founder-market-choice-value" text="Shadow operations, contacts, covert pressure, and deniable routing." class="summary-value summary-value--glance" />
+                            <ui:Label name="founder-market-choice-note" text="Setup details load from backend setup truth." class="metric-subvalue metric-subvalue--wrap" />
+                            <ui:Button name="founder-market-button" text="Found Black Market" class="action-button" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
                 <ui:VisualElement class="summary-card summary-card--full summary-card--action home-pressure-desk">
                     <ui:VisualElement class="development-actions-head">
                         <ui:Label text="Command desk" class="eyebrow" />

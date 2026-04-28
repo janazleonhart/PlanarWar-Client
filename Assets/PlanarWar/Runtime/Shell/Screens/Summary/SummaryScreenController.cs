@@ -3,6 +3,7 @@ using PlanarWar.Client.Core.Presentation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using UnityEngine.UIElements;
 
 namespace PlanarWar.Client.UI.Screens.Summary
@@ -51,10 +52,21 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private readonly Label pressureOperationsCopy;
         private readonly Label pressureOperationsCountBadge;
         private readonly VisualElement pressureOperationsStrip;
+        private readonly VisualElement founderSetupCard;
+        private readonly TextField founderCityNameField;
+        private readonly Label founderSetupHeadline;
+        private readonly Label founderSetupCopy;
+        private readonly Label founderCityChoiceValue;
+        private readonly Label founderCityChoiceNote;
+        private readonly Label founderMarketChoiceValue;
+        private readonly Label founderMarketChoiceNote;
+        private readonly Button founderCityButton;
+        private readonly Button founderMarketButton;
+        private bool founderNameSeeded;
         private const bool TimerDiagnosticsDevFlagEnabled = false;
         private int heartbeat;
 
-        public SummaryScreenController(VisualElement root)
+        public SummaryScreenController(VisualElement root, Func<string, string, Task> onBootstrapCityRequested = null)
         {
             statusHeadline = root.Q<Label>("status-headline-value");
             resources = root.Q<Label>("resources-value");
@@ -98,9 +110,22 @@ namespace PlanarWar.Client.UI.Screens.Summary
             pressureOperationsCopy = root.Q<Label>("pressure-operations-copy-value");
             pressureOperationsCountBadge = root.Q<Label>("pressure-operations-count-badge-value");
             pressureOperationsStrip = root.Q<VisualElement>("pressure-operations-strip");
+            founderSetupCard = root.Q<VisualElement>("founder-setup-card");
+            founderCityNameField = root.Q<TextField>("founder-city-name-field");
+            founderSetupHeadline = root.Q<Label>("founder-setup-headline-value");
+            founderSetupCopy = root.Q<Label>("founder-setup-copy-value");
+            founderCityChoiceValue = root.Q<Label>("founder-city-choice-value");
+            founderCityChoiceNote = root.Q<Label>("founder-city-choice-note");
+            founderMarketChoiceValue = root.Q<Label>("founder-market-choice-value");
+            founderMarketChoiceNote = root.Q<Label>("founder-market-choice-note");
+            founderCityButton = root.Q<Button>("founder-city-button");
+            founderMarketButton = root.Q<Button>("founder-market-button");
+
+            founderCityButton?.RegisterCallback<ClickEvent>(_ => RequestSettlementBootstrap("city", onBootstrapCityRequested));
+            founderMarketButton?.RegisterCallback<ClickEvent>(_ => RequestSettlementBootstrap("black_market", onBootstrapCityRequested));
         }
 
-        public void Render(ShellSummarySnapshot s, bool isSummaryLoaded)
+        public void Render(ShellSummarySnapshot s, bool isSummaryLoaded, bool isActionBusy = false)
         {
             heartbeat++;
             var nowUtc = DateTime.UtcNow;
@@ -119,8 +144,140 @@ namespace PlanarWar.Client.UI.Screens.Summary
             missionTimer.text = FormatMission(s.ActiveMissions);
             resourceTick.text = FormatTick(s.ResourceTickTiming);
             RenderTimerDiagnostics(s, isSummaryLoaded, nowUtc);
+            RenderFounderSetup(s, isSummaryLoaded, isActionBusy);
 
             RenderPressureDesk(s);
+        }
+
+        private async void RequestSettlementBootstrap(string lane, Func<string, string, Task> onBootstrapCityRequested)
+        {
+            if (onBootstrapCityRequested == null)
+            {
+                return;
+            }
+
+            var cityName = founderCityNameField?.value?.Trim() ?? string.Empty;
+            await onBootstrapCityRequested(cityName, lane);
+        }
+
+        private void RenderFounderSetup(ShellSummarySnapshot summary, bool isSummaryLoaded, bool isActionBusy)
+        {
+            var shouldShow = summary != null
+                && !summary.HasCity
+                && (summary.CanCreateCity
+                    || !string.IsNullOrWhiteSpace(summary.SuggestedCityName)
+                    || (summary.CitySetupChoices != null && summary.CitySetupChoices.Count > 0));
+
+            if (founderSetupCard != null)
+            {
+                founderSetupCard.style.display = shouldShow ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            if (!shouldShow)
+            {
+                return;
+            }
+
+            if (founderCityNameField != null && !founderNameSeeded && !string.IsNullOrWhiteSpace(summary.SuggestedCityName))
+            {
+                founderCityNameField.value = summary.SuggestedCityName.Trim();
+                founderNameSeeded = true;
+            }
+
+            if (founderSetupHeadline != null)
+            {
+                founderSetupHeadline.text = summary.CanCreateCity
+                    ? "Choose how this account enters the world."
+                    : "Settlement setup truth is visible, but creation is not open yet.";
+            }
+
+            if (founderSetupCopy != null)
+            {
+                founderSetupCopy.text = summary.CanCreateCity
+                    ? "Pick City for public growth or Black Market for a shadow operation. This calls the live bootstrap route; no settlement is invented locally."
+                    : "The client can read setup choices, but the backend has not marked this account as eligible to found one yet.";
+            }
+
+            var cityChoice = FindSetupChoice(summary, "city");
+            var marketChoice = FindSetupChoice(summary, "black_market");
+            if (founderCityChoiceValue != null) founderCityChoiceValue.text = FormatSetupChoiceValue(cityChoice, "City", "Public growth, buildings, production, and civic development.");
+            if (founderCityChoiceNote != null) founderCityChoiceNote.text = FormatSetupChoiceNote(cityChoice, "Uses the public settlement lane when the backend exposes setup truth.");
+            if (founderMarketChoiceValue != null) founderMarketChoiceValue.text = FormatSetupChoiceValue(marketChoice, "Black Market", "Shadow operations, contacts, covert pressure, and deniable routing.");
+            if (founderMarketChoiceNote != null) founderMarketChoiceNote.text = FormatSetupChoiceNote(marketChoice, "Uses the black-market settlement lane when the backend exposes setup truth.");
+
+            if (founderCityButton != null)
+            {
+                founderCityButton.text = FirstNonBlank(cityChoice?.CtaLabel, "Found City");
+                founderCityButton.SetEnabled(isSummaryLoaded && summary.CanCreateCity && !isActionBusy);
+            }
+
+            if (founderMarketButton != null)
+            {
+                founderMarketButton.text = FirstNonBlank(marketChoice?.CtaLabel, "Found Black Market");
+                founderMarketButton.SetEnabled(isSummaryLoaded && summary.CanCreateCity && !isActionBusy);
+            }
+        }
+
+        private static SettlementSetupChoiceSnapshot FindSetupChoice(ShellSummarySnapshot summary, string lane)
+        {
+            if (summary?.CitySetupChoices == null || string.IsNullOrWhiteSpace(lane))
+            {
+                return null;
+            }
+
+            return summary.CitySetupChoices.FirstOrDefault(choice => SameSetupLane(choice?.Lane, lane));
+        }
+
+        private static bool SameSetupLane(string left, string right)
+        {
+            return string.Equals(NormalizeSetupLane(left), NormalizeSetupLane(right), StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string NormalizeSetupLane(string lane)
+        {
+            return (lane ?? string.Empty).Trim().Replace("-", string.Empty).Replace("_", string.Empty).Replace(" ", string.Empty).ToLowerInvariant();
+        }
+
+        private static string ResolveSetupLaneLabel(string lane, string fallback)
+        {
+            var normalized = NormalizeSetupLane(lane);
+            if (normalized == "blackmarket")
+            {
+                return "Black Market";
+            }
+
+            if (normalized == "city")
+            {
+                return "City";
+            }
+
+            return HumanizeWords(lane, fallback);
+        }
+
+        private static string FormatSetupChoiceValue(SettlementSetupChoiceSnapshot choice, string fallbackLabel, string fallbackSummary)
+        {
+            var label = FirstNonBlank(choice?.Label, ResolveSetupLaneLabel(choice?.Lane, fallbackLabel), fallbackLabel);
+            var summary = FirstNonBlank(choice?.Summary, choice?.Detail, fallbackSummary);
+            return string.IsNullOrWhiteSpace(summary) ? label : $"{label} • {summary}";
+        }
+
+        private static string FormatSetupChoiceNote(SettlementSetupChoiceSnapshot choice, string fallback)
+        {
+            var checklist = choice?.Checklist == null || choice.Checklist.Count == 0
+                ? string.Empty
+                : string.Join(" • ", choice.Checklist.Where(item => !string.IsNullOrWhiteSpace(item)).Take(3));
+
+            return FirstNonBlank(
+                JoinSetupParts("Strength", choice?.Strength),
+                JoinSetupParts("Liability", choice?.Liability),
+                checklist,
+                choice?.Detail,
+                fallback);
+        }
+
+        private static string JoinSetupParts(string label, string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : $"{label}: {value.Trim()}";
         }
 
         private void RenderTimerDiagnostics(ShellSummarySnapshot s, bool isSummaryLoaded, DateTime nowUtc)

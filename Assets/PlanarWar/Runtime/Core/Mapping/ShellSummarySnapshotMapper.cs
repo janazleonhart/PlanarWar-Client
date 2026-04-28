@@ -176,7 +176,10 @@ namespace PlanarWar.Client.Core.Mapping
             var mapped = new ShellSummarySnapshot
             {
                 Username = summary["username"]?.Read<string>() ?? "Anon",
-                FounderMode = summary["founderMode"]?.Read<bool>() ?? false,
+                FounderMode = summary["founderMode"]?.Read<bool>() ?? summary["founder_mode"]?.Read<bool>() ?? false,
+                CanCreateCity = summary["canCreateCity"]?.Read<bool>() ?? summary["can_create_city"]?.Read<bool>() ?? false,
+                SuggestedCityName = summary["suggestedCityName"]?.Read<string>() ?? summary["suggested_city_name"]?.Read<string>() ?? string.Empty,
+                CitySetupChoices = MapSettlementSetupChoices(summary["citySetupChoices"] ?? summary["city_setup_choices"] ?? summary["setupChoices"] ?? summary["setup_choices"]),
                 HasCity = summary["hasCity"]?.Read<bool>() ?? false,
                 City = new CitySummarySnapshot
                 {
@@ -219,6 +222,66 @@ namespace PlanarWar.Client.Core.Mapping
 
             ResolveActiveMissionAssignments(mapped);
             return mapped;
+        }
+
+
+        private static List<SettlementSetupChoiceSnapshot> MapSettlementSetupChoices(JToken token)
+        {
+            if (token == null || token.Type == JTokenType.Null || token.Type == JTokenType.Undefined)
+            {
+                return new List<SettlementSetupChoiceSnapshot>();
+            }
+
+            if (token is JArray array)
+            {
+                return array
+                    .OfType<JObject>()
+                    .Select(choice => MapSettlementSetupChoice(choice, string.Empty))
+                    .Where(choice => choice != null && !string.IsNullOrWhiteSpace(choice.Lane))
+                    .ToList();
+            }
+
+            if (token is JObject obj)
+            {
+                var directChoice = MapSettlementSetupChoice(obj, string.Empty);
+                if (!string.IsNullOrWhiteSpace(directChoice?.Lane))
+                {
+                    return new List<SettlementSetupChoiceSnapshot> { directChoice };
+                }
+
+                return obj.Properties()
+                    .Select(prop => MapSettlementSetupChoice(prop.Value as JObject, prop.Name))
+                    .Where(choice => choice != null && !string.IsNullOrWhiteSpace(choice.Lane))
+                    .ToList();
+            }
+
+            return new List<SettlementSetupChoiceSnapshot>();
+        }
+
+        private static SettlementSetupChoiceSnapshot MapSettlementSetupChoice(JObject obj, string fallbackLane)
+        {
+            if (obj == null) return null;
+
+            var lane = FirstNonBlank(
+                obj["lane"]?.Read<string>(),
+                obj["settlementLane"]?.Read<string>(),
+                obj["settlement_lane"]?.Read<string>(),
+                obj["id"]?.Read<string>(),
+                fallbackLane);
+
+            if (string.IsNullOrWhiteSpace(lane)) return null;
+
+            return new SettlementSetupChoiceSnapshot
+            {
+                Lane = lane.Trim(),
+                Label = FirstNonBlank(obj["label"]?.Read<string>(), obj["title"]?.Read<string>(), obj["name"]?.Read<string>()),
+                Summary = FirstNonBlank(obj["summary"]?.Read<string>(), obj["description"]?.Read<string>(), obj["copy"]?.Read<string>()),
+                Detail = FirstNonBlank(obj["detail"]?.Read<string>(), obj["note"]?.Read<string>(), obj["operatorNote"]?.Read<string>(), obj["operator_note"]?.Read<string>()),
+                Strength = FirstNonBlank(obj["strength"]?.Read<string>(), obj["strengths"]?.Read<string>(), obj["advantage"]?.Read<string>(), obj["advantageSummary"]?.Read<string>(), obj["advantage_summary"]?.Read<string>()),
+                Liability = FirstNonBlank(obj["liability"]?.Read<string>(), obj["liabilities"]?.Read<string>(), obj["risk"]?.Read<string>(), obj["riskSummary"]?.Read<string>(), obj["risk_summary"]?.Read<string>()),
+                CtaLabel = FirstNonBlank(obj["ctaLabel"]?.Read<string>(), obj["cta_label"]?.Read<string>(), obj["actionLabel"]?.Read<string>(), obj["action_label"]?.Read<string>()),
+                Checklist = MapStringArray(FirstArray(obj["checklist"], obj["checks"], obj["requirements"], obj["setupChecklist"], obj["setup_checklist"])),
+            };
         }
 
 

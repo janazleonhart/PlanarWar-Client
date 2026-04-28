@@ -3280,6 +3280,87 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(combined, Does.Not.Contain("Ready timer"));
         }
 
+
+        [Test]
+        public void Client_summary_mapper_captures_settlement_setup_choices()
+        {
+            var snapshot = ShellSummarySnapshotMapper.Map(
+                "{" +
+                "\"username\":\"Rimuru\"," +
+                "\"founderMode\":true," +
+                "\"canCreateCity\":true," +
+                "\"suggestedCityName\":\"Tempest\"," +
+                "\"citySetupChoices\":[" +
+                "{\"lane\":\"city\",\"label\":\"City\",\"summary\":\"Public growth lane\",\"strength\":\"Visible production\",\"liability\":\"Public pressure\",\"ctaLabel\":\"Found City\",\"checklist\":[\"Name settlement\",\"Choose civic lane\"]}," +
+                "{\"lane\":\"black_market\",\"label\":\"Black Market\",\"summary\":\"Shadow operation lane\",\"strength\":\"Covert contacts\",\"liability\":\"Deniable risk\",\"ctaLabel\":\"Found Black Market\"}" +
+                "]" +
+                "}");
+
+            Assert.That(snapshot.HasCity, Is.False);
+            Assert.That(snapshot.FounderMode, Is.True);
+            Assert.That(snapshot.CanCreateCity, Is.True);
+            Assert.That(snapshot.SuggestedCityName, Is.EqualTo("Tempest"));
+            Assert.That(snapshot.CitySetupChoices, Has.Count.EqualTo(2));
+            Assert.That(snapshot.CitySetupChoices[0].Lane, Is.EqualTo("city"));
+            Assert.That(snapshot.CitySetupChoices[0].Checklist, Does.Contain("Name settlement"));
+            Assert.That(snapshot.CitySetupChoices[1].Lane, Is.EqualTo("black_market"));
+            Assert.That(snapshot.CitySetupChoices[1].Strength, Is.EqualTo("Covert contacts"));
+        }
+
+        [Test]
+        public void Client_has_city_bootstrap_http_contract()
+        {
+            var apiClientPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Network/Http/PlanarWarApiClient.cs");
+            Assert.That(File.Exists(apiClientPath), Is.True, "PlanarWarApiClient.cs should be available from the Unity project root.");
+
+            var source = File.ReadAllText(apiClientPath);
+            Assert.That(source, Does.Contain("BootstrapCityAsync"));
+            Assert.That(source, Does.Contain("/api/city/bootstrap"));
+            Assert.That(source, Does.Contain("[\"name\"]"));
+            Assert.That(source, Does.Contain("[\"settlementLane\"]"));
+            Assert.That(source, Does.Contain("includeBearerToken: true"));
+        }
+
+        [Test]
+        public void Home_surface_exposes_founder_setup_controls_without_fake_layout_claims()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            Assert.That(uxml, Does.Contain("founder-setup-card"));
+            Assert.That(uxml, Does.Contain("founder-city-name-field"));
+            Assert.That(uxml, Does.Contain("founder-city-button"));
+            Assert.That(uxml, Does.Contain("founder-market-button"));
+            Assert.That(uxml, Does.Contain("Live bootstrap"));
+            Assert.That(uxml, Does.Not.Contain("2D town layout"));
+            Assert.That(uxml, Does.Not.Contain("generated town layout"));
+            Assert.That(uxml, Does.Not.Contain("protection percentage"));
+        }
+
+        [Test]
+        public void Client_bootstrap_wires_settlement_setup_action_to_live_bootstrap_route()
+        {
+            var bootstrapPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/ClientBootstrap.cs");
+            var shellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/AppShellController.cs");
+            var summaryPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs");
+            Assert.That(File.Exists(bootstrapPath), Is.True, "ClientBootstrap.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(shellPath), Is.True, "AppShellController.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(summaryPath), Is.True, "SummaryScreenController.cs should be available from the Unity project root.");
+
+            var bootstrap = File.ReadAllText(bootstrapPath);
+            var shell = File.ReadAllText(shellPath);
+            var summary = File.ReadAllText(summaryPath);
+
+            Assert.That(bootstrap, Does.Contain("HandleBootstrapCityRequestedAsync"));
+            Assert.That(bootstrap, Does.Contain("BeginSettlementBootstrap"));
+            Assert.That(bootstrap, Does.Contain("BootstrapCityAsync"));
+            Assert.That(shell, Does.Contain("onBootstrapCityRequested"));
+            Assert.That(summary, Does.Contain("RequestSettlementBootstrap"));
+            Assert.That(summary, Does.Contain("\"city\""));
+            Assert.That(summary, Does.Contain("\"black_market\""));
+        }
+
         private static VisualElement BuildMinimalHeroControllerRoot()
         {
             var root = new VisualElement();

@@ -99,6 +99,7 @@ namespace PlanarWar.Client.UI
                     HandleReleaseHeroRequestedAsync,
                     HandleEquipHeroFromArmoryRequestedAsync,
                     HandleUnequipHeroToArmoryRequestedAsync,
+                    HandleBootstrapCityRequestedAsync,
                     RefreshSummary,
                     () => navigationState.SetActive(ShellScreen.Summary));
             }
@@ -1104,6 +1105,51 @@ namespace PlanarWar.Client.UI
             {
                 summaryState.FinishAction($"Disruption action failed: {ex.Message}", failed: true);
             }
+        }
+
+        private async Task HandleBootstrapCityRequestedAsync(string name, string settlementLane)
+        {
+            if (summaryState == null || apiClient == null || summaryState.IsActionBusy)
+            {
+                return;
+            }
+
+            var trimmedLane = string.IsNullOrWhiteSpace(settlementLane) ? "city" : settlementLane.Trim();
+            var trimmedName = name?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(trimmedName) && summaryState.Snapshot != null && !string.IsNullOrWhiteSpace(summaryState.Snapshot.SuggestedCityName))
+            {
+                trimmedName = summaryState.Snapshot.SuggestedCityName.Trim();
+            }
+
+            if (string.IsNullOrWhiteSpace(trimmedName))
+            {
+                summaryState.FinishAction("Choose a settlement name before founding.", failed: true);
+                return;
+            }
+
+            var laneLabel = ResolveSettlementLaneLabel(trimmedLane);
+            try
+            {
+                summaryState.BeginSettlementBootstrap(trimmedName, trimmedLane);
+                await apiClient.BootstrapCityAsync(trimmedName, trimmedLane);
+                await summaryController.RefreshAsync();
+                summaryState.FinishAction($"Founded {laneLabel}: {trimmedName}.");
+            }
+            catch (Exception ex)
+            {
+                summaryState.FinishAction($"{laneLabel} founding failed: {ex.Message}", failed: true);
+            }
+        }
+
+        private static string ResolveSettlementLaneLabel(string settlementLane)
+        {
+            var normalized = (settlementLane ?? string.Empty).Trim().Replace("-", "_").Replace(" ", "_").ToLowerInvariant();
+            if (normalized == "black_market" || normalized == "blackmarket")
+            {
+                return "Black Market";
+            }
+
+            return "City";
         }
 
         private static void EnsureFallbackCamera()

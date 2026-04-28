@@ -87,6 +87,26 @@ namespace PlanarWar.Client.Core
             Changed?.Invoke();
         }
 
+        public void BeginSettlementBootstrap(string name, string settlementLane)
+        {
+            var trimmedName = name?.Trim() ?? string.Empty;
+            var laneLabel = ResolveSettlementLaneLabel(settlementLane);
+            BeginAction(string.IsNullOrWhiteSpace(trimmedName)
+                ? $"Founding {laneLabel}..."
+                : $"Founding {laneLabel}: {trimmedName}");
+        }
+
+        private static string ResolveSettlementLaneLabel(string settlementLane)
+        {
+            var normalized = (settlementLane ?? string.Empty).Trim().Replace("-", "_").Replace(" ", "_").ToLowerInvariant();
+            if (normalized == "black_market" || normalized == "blackmarket")
+            {
+                return "Black Market";
+            }
+
+            return "City";
+        }
+
         public void BeginResearchAction(string techId)
         {
             var label = ResolveResearchReceiptLabel(techId);

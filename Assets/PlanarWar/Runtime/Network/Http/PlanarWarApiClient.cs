@@ -70,6 +70,28 @@ namespace PlanarWar.Client.Network
             return PostJsonAsync(BuildUrl("/api/auth/login"), body, includeBearerToken: false);
         }
 
+        public Task<JObject> BootstrapCityAsync(string name, string settlementLane)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentException("name is required", nameof(name));
+            }
+
+            if (string.IsNullOrWhiteSpace(settlementLane))
+            {
+                throw new ArgumentException("settlementLane is required", nameof(settlementLane));
+            }
+
+            var body = new JObject
+            {
+                ["name"] = name.Trim(),
+                ["settlementLane"] = settlementLane.Trim()
+            };
+
+            return PostJsonAsync(BuildUrl("/api/city/bootstrap"), body, includeBearerToken: true);
+        }
+
+
         public Task<JObject> StartResearchAsync(string techId)
         {
             if (string.IsNullOrWhiteSpace(techId))
