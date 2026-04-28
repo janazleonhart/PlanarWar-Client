@@ -2101,11 +2101,34 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(uss, Does.Contain(".operations-mission-offer-picker"));
             Assert.That(controller, Does.Contain("RenderMissionBoard(summary, rankedArmies, activeMission, primaryWarning, nowUtc)"));
             Assert.That(controller, Does.Contain("BuildMissionStartAssignmentSummary"));
+            Assert.That(controller, Does.Contain("CleanMissionPayloadText"));
+            Assert.That(controller, Does.Contain("LooksLikeRawMissionPayload"));
             Assert.That(controller, Does.Contain("selected cell, selected operative/hero, and balanced response posture"));
             Assert.That(controller, Does.Contain("TriggerStartMission(selectedOffer.Id)"));
             Assert.That(controller, Does.Contain("TriggerCompleteMission(activeMission.InstanceId)"));
             Assert.That(controller, Does.Not.Contain("/api/missions/start"), "Operations controller should reuse the existing callback seam instead of hardcoding mission routes.");
             Assert.That(controller, Does.Not.Contain("/api/missions/complete"), "Operations controller should reuse the existing callback seam instead of hardcoding mission routes.");
+        }
+
+        [Test]
+        public void Operations_mission_board_sanitizes_raw_payload_text_before_rendering()
+        {
+            var effectMethod = typeof(PlanarWar.Client.UI.Screens.BlackMarket.BlackMarketScreenController).GetMethod("BuildMissionEffectSummary", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(effectMethod, Is.Not.Null, "Mission effect summary formatter should be available for payload-text cleanup coverage.");
+
+            var effect = (string)effectMethod.Invoke(null, new object[]
+            {
+                "{ \"summary\": \"Contain the fallout before pressure spreads.\" }",
+                "{ \"effect\": \"relief support\" }",
+                "{ \"notes\": \"Raw object should not leak.\", \"severity\": \"high\" }"
+            });
+
+            Assert.That(effect, Does.Contain("Contain the fallout before pressure spreads."));
+            Assert.That(effect, Does.Contain("Gain/effect: relief support"));
+            Assert.That(effect, Does.Contain("Risk: high"));
+            Assert.That(effect, Does.Not.Contain("{"), "Mission board should never render raw object braces in player-facing copy.");
+            Assert.That(effect, Does.Not.Contain("\"notes\""), "Mission board should not render raw JSON-ish keys in player-facing copy.");
+            Assert.That(effect, Does.Not.Contain("Raw object should not leak."), "Risk should prefer severity/threat fields over debug-ish nested notes when available.");
         }
 
         [Test]

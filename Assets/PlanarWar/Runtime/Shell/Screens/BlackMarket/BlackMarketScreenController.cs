@@ -1573,10 +1573,175 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private static string BuildMissionEffectSummary(string summary, string payoff, string risk)
         {
             var parts = new List<string>();
-            if (!string.IsNullOrWhiteSpace(summary)) parts.Add(summary.Trim());
-            if (!string.IsNullOrWhiteSpace(payoff)) parts.Add($"Gain/effect: {payoff.Trim()}");
-            if (!string.IsNullOrWhiteSpace(risk)) parts.Add($"Risk: {risk.Trim()}");
+            var cleanSummary = CleanMissionPayloadText(summary, "summary");
+            var cleanPayoff = CleanMissionPayloadText(payoff, "payoff");
+            var cleanRisk = CleanMissionPayloadText(risk, "risk");
+            if (!string.IsNullOrWhiteSpace(cleanSummary)) parts.Add(cleanSummary);
+            if (!string.IsNullOrWhiteSpace(cleanPayoff)) parts.Add($"Gain/effect: {cleanPayoff}");
+            if (!string.IsNullOrWhiteSpace(cleanRisk)) parts.Add($"Risk: {cleanRisk}");
             return string.Join(" • ", parts.Where(part => !string.IsNullOrWhiteSpace(part)));
+        }
+
+        private static string CleanMissionPayloadText(string raw, string fieldName)
+        {
+            var compact = CompactMissionPayloadText(raw);
+            if (string.IsNullOrWhiteSpace(compact))
+            {
+                return string.Empty;
+            }
+
+            if (LooksLikeRawMissionPayload(compact))
+            {
+                var extracted = ExtractMissionPayloadPrimitive(compact, fieldName);
+                return string.IsNullOrWhiteSpace(extracted) ? "details available" : extracted;
+            }
+
+            return UnquoteMissionPayloadText(compact);
+        }
+
+        private static string CompactMissionPayloadText(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return string.Empty;
+            }
+
+            var compact = raw.Replace("\r", " ").Replace("\n", " ").Replace("\t", " ").Trim();
+            while (compact.Contains("  ", StringComparison.Ordinal))
+            {
+                compact = compact.Replace("  ", " ");
+            }
+
+            return compact;
+        }
+
+        private static bool LooksLikeRawMissionPayload(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            var trimmed = value.Trim();
+            return (trimmed.StartsWith("{", StringComparison.Ordinal) && trimmed.EndsWith("}", StringComparison.Ordinal))
+                || (trimmed.StartsWith("[", StringComparison.Ordinal) && trimmed.EndsWith("]", StringComparison.Ordinal))
+                || trimmed.Contains("\":", StringComparison.Ordinal);
+        }
+
+        private static string ExtractMissionPayloadPrimitive(string rawPayload, string fieldName)
+        {
+            foreach (var key in MissionPayloadPreferredKeys(fieldName))
+            {
+                var value = TryExtractMissionPayloadValue(rawPayload, key);
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    return value;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private static IReadOnlyList<string> MissionPayloadPreferredKeys(string fieldName)
+        {
+            var normalized = (fieldName ?? string.Empty).Trim().ToLowerInvariant();
+            if (normalized == "risk")
+            {
+                return new[] { "risk", "severity", "threat", "level", "state", "summary", "note", "notes", "detail", "message" };
+            }
+
+            if (normalized == "payoff")
+            {
+                return new[] { "payoff", "effect", "gain", "reward", "summary", "note", "notes", "detail", "message" };
+            }
+
+            return new[] { "summary", "headline", "title", "note", "notes", "detail", "message", "description" };
+        }
+
+        private static string TryExtractMissionPayloadValue(string rawPayload, string key)
+        {
+            if (string.IsNullOrWhiteSpace(rawPayload) || string.IsNullOrWhiteSpace(key))
+            {
+                return string.Empty;
+            }
+
+            var quotedKey = "\"" + key.Trim() + "\"";
+            var keyIndex = rawPayload.IndexOf(quotedKey, StringComparison.OrdinalIgnoreCase);
+            if (keyIndex < 0)
+            {
+                return string.Empty;
+            }
+
+            var colonIndex = rawPayload.IndexOf(':', keyIndex + quotedKey.Length);
+            if (colonIndex < 0 || colonIndex + 1 >= rawPayload.Length)
+            {
+                return string.Empty;
+            }
+
+            var valueStart = colonIndex + 1;
+            while (valueStart < rawPayload.Length && char.IsWhiteSpace(rawPayload[valueStart]))
+            {
+                valueStart++;
+            }
+
+            if (valueStart >= rawPayload.Length)
+            {
+                return string.Empty;
+            }
+
+            if (rawPayload[valueStart] == '{' || rawPayload[valueStart] == '[')
+            {
+                return string.Empty;
+            }
+
+            if (rawPayload[valueStart] == '"')
+            {
+                var valueEnd = valueStart + 1;
+                while (valueEnd < rawPayload.Length)
+                {
+                    if (rawPayload[valueEnd] == '"' && rawPayload[valueEnd - 1] != '\\')
+                    {
+                        break;
+                    }
+
+                    valueEnd++;
+                }
+
+                if (valueEnd <= valueStart + 1 || valueEnd >= rawPayload.Length)
+                {
+                    return string.Empty;
+                }
+
+                return UnquoteMissionPayloadText(rawPayload.Substring(valueStart, valueEnd - valueStart + 1));
+            }
+
+            var primitiveEnd = valueStart;
+            while (primitiveEnd < rawPayload.Length && rawPayload[primitiveEnd] != ',' && rawPayload[primitiveEnd] != '}')
+            {
+                primitiveEnd++;
+            }
+
+            return UnquoteMissionPayloadText(rawPayload.Substring(valueStart, primitiveEnd - valueStart));
+        }
+
+        private static string UnquoteMissionPayloadText(string value)
+        {
+            var cleaned = CompactMissionPayloadText(value)
+                .Trim()
+                .Trim(',')
+                .Trim();
+            if (cleaned.Length >= 2 && cleaned[0] == '"' && cleaned[cleaned.Length - 1] == '"')
+            {
+                cleaned = cleaned.Substring(1, cleaned.Length - 2);
+            }
+
+            cleaned = cleaned.Replace("\\\"", "\"")
+                .Replace("\\n", " ")
+                .Replace("\\r", " ")
+                .Replace("\\t", " ")
+                .Trim();
+
+            return LooksLikeRawMissionPayload(cleaned) ? string.Empty : cleaned;
         }
 
         private static string BuildMissionCommitmentSummary(MissionSnapshot mission, IReadOnlyList<ArmySnapshot> armies, IReadOnlyList<HeroSnapshot> heroes)
