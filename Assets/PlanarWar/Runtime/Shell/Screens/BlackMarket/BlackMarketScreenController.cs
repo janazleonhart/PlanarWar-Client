@@ -1638,12 +1638,23 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
         private static string BuildActiveMissionCardNote(MissionSnapshot activeMission, ShellSummarySnapshot summary, string fallbackWarning)
         {
+            _ = fallbackWarning;
             var commitment = BuildMissionCommitmentSummary(activeMission, summary?.Armies ?? new List<ArmySnapshot>(), summary?.Heroes ?? new List<HeroSnapshot>());
-            var effect = BuildMissionEffectSummary(activeMission?.Summary, activeMission?.Payoff, activeMission?.Risk);
             var parts = new List<string>();
-            if (!string.IsNullOrWhiteSpace(commitment)) parts.Add(commitment);
-            if (!string.IsNullOrWhiteSpace(effect)) parts.Add(effect);
-            if (!string.IsNullOrWhiteSpace(fallbackWarning)) parts.Add(fallbackWarning);
+            if (!string.IsNullOrWhiteSpace(commitment))
+            {
+                parts.Add(commitment);
+            }
+
+            if (activeMission?.FinishesAtUtc.HasValue == true)
+            {
+                parts.Add("Outcome report appears after completion.");
+            }
+            else
+            {
+                parts.Add("Mission is active; completion report waits for backend closeout.");
+            }
+
             return parts.Count > 0
                 ? string.Join(" • ", parts)
                 : "Active support pressure remains part of the current operations posture.";

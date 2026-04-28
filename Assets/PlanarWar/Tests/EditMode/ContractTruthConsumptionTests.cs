@@ -2465,6 +2465,44 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
         [Test]
+        public void Operations_active_mission_note_defers_outcome_copy_until_completion()
+        {
+            var noteMethod = typeof(PlanarWar.Client.UI.Screens.BlackMarket.BlackMarketScreenController)
+                .GetMethod("BuildActiveMissionCardNote", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(noteMethod, Is.Not.Null, "Active mission note formatter should stay available for outcome-deferral coverage.");
+
+            var activeMission = new MissionSnapshot
+            {
+                Id = "contain_fallout_1",
+                Title = "Contain the Fallout in Heartland Basin",
+                InstanceId = "active_1",
+                RegionId = "heartland_basin",
+                AssignedArmyId = "army_1",
+                AssignedArmyName = "TestTest",
+                Summary = "The mission failed loudly enough that the aftermath is now its own problem.",
+                Payoff = "public relief",
+                Risk = "extreme",
+                FinishesAtUtc = DateTime.UtcNow.AddMinutes(8)
+            };
+            var summary = new ShellSummarySnapshot
+            {
+                Armies = new List<ArmySnapshot>
+                {
+                    new ArmySnapshot { Id = "army_1", Name = "TestTest", Status = "on_mission" }
+                }
+            };
+
+            var note = (string)noteMethod.Invoke(null, new object[] { activeMission, summary, "The mission failed before the player pressed complete." });
+
+            Assert.That(note, Does.Contain("Outcome report appears after completion."));
+            Assert.That(note, Does.Contain("Cell: TestTest").Or.Contain("Formation: TestTest"));
+            Assert.That(note, Does.Not.Contain("failed loudly"));
+            Assert.That(note, Does.Not.Contain("failed before"));
+            Assert.That(note, Does.Not.Contain("Gain/effect"));
+            Assert.That(note, Does.Not.Contain("Risk:"));
+        }
+
+        [Test]
         public void Operations_mission_board_closeout_keeps_dispatch_surface_checkpointed()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
