@@ -1532,13 +1532,19 @@ namespace PlanarWar.Client.UI.Screens.Summary
             var recipeId = job?.RecipeId?.Trim();
             if (!string.IsNullOrWhiteSpace(recipeId))
             {
-                return recipeId;
+                return HumanizeWords(recipeId, "Workshop job");
+            }
+
+            var outputItemId = job?.OutputItemId?.Trim();
+            if (!string.IsNullOrWhiteSpace(outputItemId))
+            {
+                return HumanizeWords(outputItemId, "Workshop item");
             }
 
             var attachmentKind = job?.AttachmentKind?.Trim();
             if (!string.IsNullOrWhiteSpace(attachmentKind))
             {
-                return attachmentKind;
+                return HumanizeWords(attachmentKind, "Workshop job");
             }
 
             return "workshop job";

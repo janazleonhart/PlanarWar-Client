@@ -325,7 +325,7 @@ namespace PlanarWar.Client.UI.Screens.City
 
             cards.AddRange(activeJobs.Take(2).Select(job => new CardView(
                 family: isBlackMarket ? ShadowLaneText.BuildWorkshopJobFamily(ready: false) : "Active job",
-                title: GetWorkshopJobTitle(job),
+                title: GetWorkshopJobTitle(job, summaryState.WorkshopRecipes),
                 lore: isBlackMarket ? ShadowLaneText.BuildWorkshopJobLore(job, ready: false, nowUtc) : job.FinishesAtUtc.HasValue ? $"Ready in {FormatRemaining(job.FinishesAtUtc.Value - nowUtc)}" : "Job surfaced without a finish anchor.",
                 note: isBlackMarket ? ShadowLaneText.BuildWorkshopJobNote(job, ready: false) : "Queued workshop job from summary payload.",
                 buttonText: "In flight",
@@ -333,18 +333,18 @@ namespace PlanarWar.Client.UI.Screens.City
 
             cards.AddRange(readyJobs.Take(2).Select(job => new CardView(
                 family: isBlackMarket ? ShadowLaneText.BuildWorkshopJobFamily(ready: true) : "Ready pickup",
-                title: GetWorkshopJobTitle(job),
+                title: GetWorkshopJobTitle(job, summaryState.WorkshopRecipes),
                 lore: isBlackMarket ? ShadowLaneText.BuildWorkshopJobLore(job, ready: true, nowUtc) : "Crafting time elapsed. Collect to deliver the item into city armory storage.",
                 note: isBlackMarket
                     ? ShadowLaneText.BuildWorkshopJobNote(job, ready: true)
-                    : job.Id == "job" ? "Ready workshop item surfaced without a stable job id." : $"Ready job {job.Id} can now be collected into storage.",
+                    : BuildWorkshopReadyPickupNote(job, summaryState.WorkshopRecipes),
                 buttonText: summaryState.IsActionBusy && string.Equals(summaryState.PendingWorkshopJobId, job.Id, StringComparison.OrdinalIgnoreCase) ? "Collecting..." : "Collect",
                 buttonEnabled: !summaryState.IsActionBusy && !string.IsNullOrWhiteSpace(job.Id) && job.Id != "job" && onCollectWorkshopRequested != null,
                 onClick: () => TriggerCollectWorkshop(job.Id))));
 
             cards.AddRange(workshopTimers.Take(4 - cards.Count).Select(timer => new CardView(
                 family: isBlackMarket ? ShadowLaneText.BuildWorkshopTimerFamily(timer) : "Workshop timer",
-                title: timer.Label,
+                title: GetWorkshopTimerTitle(timer, summaryState.WorkshopRecipes),
                 lore: isBlackMarket ? ShadowLaneText.BuildWorkshopTimerLore(timer, nowUtc) : timer.FinishesAtUtc.HasValue ? $"{timer.Status} • {FormatRemaining(timer.FinishesAtUtc.Value - DateTime.UtcNow)}" : timer.Status,
                 note: isBlackMarket ? ShadowLaneText.BuildWorkshopTimerNote(timer) : FirstNonBlank(timer.Detail, "Timer surfaced from cityTimers."))));
 
@@ -840,25 +840,189 @@ namespace PlanarWar.Client.UI.Screens.City
 
         private static string GetWorkshopJobTitle(WorkshopJobSnapshot job)
         {
-            var outputName = job?.OutputName?.Trim();
+            return GetWorkshopJobTitle(job, null);
+        }
+
+        private static string GetWorkshopJobTitle(WorkshopJobSnapshot job, IReadOnlyList<WorkshopRecipeSnapshot> recipes)
+        {
+            var outputName = CleanWorkshopDisplayName(job?.OutputName);
             if (!string.IsNullOrWhiteSpace(outputName))
             {
                 return outputName;
             }
 
-            var recipeId = job?.RecipeId?.Trim();
-            if (!string.IsNullOrWhiteSpace(recipeId))
+            var recipe = ResolveWorkshopRecipe(job, recipes);
+            var recipeName = CleanWorkshopDisplayName(recipe?.Name);
+            if (!string.IsNullOrWhiteSpace(recipeName))
             {
-                return HumanizeKey(recipeId);
+                return recipeName;
             }
 
-            var attachmentKind = job?.AttachmentKind?.Trim();
+            var recipeId = CleanWorkshopDisplayName(job?.RecipeId);
+            if (!string.IsNullOrWhiteSpace(recipeId))
+            {
+                return recipeId;
+            }
+
+            var outputItemId = CleanWorkshopDisplayName(job?.OutputItemId);
+            if (!string.IsNullOrWhiteSpace(outputItemId))
+            {
+                return outputItemId;
+            }
+
+            var attachmentKind = CleanWorkshopDisplayName(job?.AttachmentKind);
             if (!string.IsNullOrWhiteSpace(attachmentKind))
             {
-                return HumanizeKey(attachmentKind);
+                return attachmentKind;
             }
 
             return "Workshop job";
+        }
+
+        private static string BuildWorkshopReadyPickupNote(WorkshopJobSnapshot job, IReadOnlyList<WorkshopRecipeSnapshot> recipes)
+        {
+            if (job?.Id == "job")
+            {
+                return "Ready workshop item surfaced without a stable job id.";
+            }
+
+            return $"Ready pickup: {GetWorkshopJobTitle(job, recipes)} can now be collected into storage.";
+        }
+
+        private static string GetWorkshopTimerTitle(CityTimerEntrySnapshot timer, IReadOnlyList<WorkshopRecipeSnapshot> recipes)
+        {
+            var raw = FirstNonBlank(timer?.Label, timer?.Detail, timer?.Id, "Workshop timer");
+            var payloadName = ExtractWorkshopTimerPayloadName(raw);
+            var resolvedRecipeName = ResolveWorkshopRecipeDisplayName(payloadName, recipes);
+            if (!string.IsNullOrWhiteSpace(resolvedRecipeName))
+            {
+                return resolvedRecipeName;
+            }
+
+            var cleanedPayloadName = CleanWorkshopDisplayName(payloadName);
+            if (!string.IsNullOrWhiteSpace(cleanedPayloadName)
+                && !cleanedPayloadName.Equals("Workshop", StringComparison.OrdinalIgnoreCase)
+                && !cleanedPayloadName.Equals("Timer", StringComparison.OrdinalIgnoreCase))
+            {
+                return cleanedPayloadName;
+            }
+
+            return "Workshop timer";
+        }
+
+        private static string ExtractWorkshopTimerPayloadName(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return string.Empty;
+            }
+
+            var value = raw.Trim();
+            foreach (var prefix in new[]
+            {
+                "Workshop timer",
+                "Workshop job",
+                "Workshop",
+                "Crafting",
+                "Craft",
+                "Timer",
+            })
+            {
+                if (value.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    value = value.Substring(prefix.Length).Trim(' ', ':', '-', '—');
+                    break;
+                }
+            }
+
+            return value;
+        }
+
+        private static string ResolveWorkshopRecipeDisplayName(string raw, IReadOnlyList<WorkshopRecipeSnapshot> recipes)
+        {
+            if (string.IsNullOrWhiteSpace(raw) || recipes == null || recipes.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            var normalizedRaw = NormalizeIdentity(raw);
+            if (string.IsNullOrWhiteSpace(normalizedRaw))
+            {
+                return string.Empty;
+            }
+
+            var recipe = recipes.FirstOrDefault(candidate => WorkshopRecipeMatchesIdentity(candidate, normalizedRaw));
+            return CleanWorkshopDisplayName(recipe?.Name);
+        }
+
+        private static bool WorkshopRecipeMatchesIdentity(WorkshopRecipeSnapshot recipe, string normalizedRaw)
+        {
+            if (recipe == null || string.IsNullOrWhiteSpace(normalizedRaw))
+            {
+                return false;
+            }
+
+            foreach (var candidate in new[] { recipe.RecipeId, recipe.OutputItemId, recipe.Name })
+            {
+                var normalizedCandidate = NormalizeIdentity(candidate);
+                if (string.IsNullOrWhiteSpace(normalizedCandidate))
+                {
+                    continue;
+                }
+
+                if (normalizedCandidate.Equals(normalizedRaw, StringComparison.OrdinalIgnoreCase)
+                    || normalizedCandidate.IndexOf(normalizedRaw, StringComparison.OrdinalIgnoreCase) >= 0
+                    || normalizedRaw.IndexOf(normalizedCandidate, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static WorkshopRecipeSnapshot ResolveWorkshopRecipe(WorkshopJobSnapshot job, IReadOnlyList<WorkshopRecipeSnapshot> recipes)
+        {
+            if (job == null || recipes == null || recipes.Count == 0)
+            {
+                return null;
+            }
+
+            var recipeId = job.RecipeId?.Trim() ?? string.Empty;
+            var outputItemId = job.OutputItemId?.Trim() ?? string.Empty;
+            return recipes.FirstOrDefault(recipe => recipe != null
+                    && !string.IsNullOrWhiteSpace(recipeId)
+                    && string.Equals(recipe.RecipeId, recipeId, StringComparison.OrdinalIgnoreCase))
+                ?? recipes.FirstOrDefault(recipe => recipe != null
+                    && !string.IsNullOrWhiteSpace(outputItemId)
+                    && string.Equals(recipe.OutputItemId, outputItemId, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static string CleanWorkshopDisplayName(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return string.Empty;
+            }
+
+            var value = raw.Trim();
+            if (LooksLikeBackendWorkshopId(value))
+            {
+                return HumanizeKey(value);
+            }
+
+            return value;
+        }
+
+        private static bool LooksLikeBackendWorkshopId(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return false;
+            var value = raw.Trim();
+            return value.StartsWith("workshop_", StringComparison.OrdinalIgnoreCase)
+                || value.StartsWith("recipe_", StringComparison.OrdinalIgnoreCase)
+                || value.StartsWith("item_", StringComparison.OrdinalIgnoreCase)
+                || value.StartsWith("gear_", StringComparison.OrdinalIgnoreCase)
+                || value.IndexOf('_') >= 0;
         }
 
         private static string BuildHeroRecruitCandidateLore(HeroRecruitCandidateSnapshot candidate)

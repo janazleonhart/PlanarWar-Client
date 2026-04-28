@@ -1817,6 +1817,130 @@ namespace PlanarWar.Client.Tests.EditMode
 
 
         [Test]
+        public void Development_workshop_jobs_prefer_player_facing_recipe_labels_over_raw_ids()
+        {
+            var titleMethod = typeof(CityScreenController)
+                .GetMethods(BindingFlags.NonPublic | BindingFlags.Static)
+                .FirstOrDefault(method => method.Name == "GetWorkshopJobTitle"
+                    && method.GetParameters().Length == 2);
+            var noteMethod = typeof(CityScreenController).GetMethod("BuildWorkshopReadyPickupNote", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(titleMethod, Is.Not.Null);
+            Assert.That(noteMethod, Is.Not.Null);
+
+            var recipes = new List<WorkshopRecipeSnapshot>
+            {
+                new WorkshopRecipeSnapshot
+                {
+                    RecipeId = "recipe_arcane_focus_1",
+                    Name = "Arcane Focus",
+                    OutputItemId = "workshop_arcane_focus_1",
+                }
+            };
+            var job = new WorkshopJobSnapshot
+            {
+                Id = "job_very_raw_123",
+                RecipeId = "recipe_arcane_focus_1",
+                OutputItemId = "workshop_arcane_focus_1",
+                AttachmentKind = "workshop_job",
+                Completed = true,
+            };
+
+            var title = (string)titleMethod.Invoke(null, new object[] { job, recipes });
+            var note = (string)noteMethod.Invoke(null, new object[] { job, recipes });
+
+            Assert.That(title, Is.EqualTo("Arcane Focus"));
+            Assert.That(note, Does.Contain("Ready pickup: Arcane Focus"));
+            Assert.That(note, Does.Not.Contain("job_very_raw_123"));
+            Assert.That(note, Does.Not.Contain("recipe_arcane_focus_1"));
+        }
+
+        [Test]
+        public void Development_workshop_jobs_humanize_raw_recipe_fallbacks_without_losing_truth()
+        {
+            var titleMethod = typeof(CityScreenController)
+                .GetMethods(BindingFlags.NonPublic | BindingFlags.Static)
+                .FirstOrDefault(method => method.Name == "GetWorkshopJobTitle"
+                    && method.GetParameters().Length == 2);
+            Assert.That(titleMethod, Is.Not.Null);
+
+            var job = new WorkshopJobSnapshot
+            {
+                Id = "job_without_recipe_name",
+                RecipeId = "workshop_command_standard_1",
+                AttachmentKind = "workshop_job",
+            };
+
+            var title = (string)titleMethod.Invoke(null, new object[] { job, new List<WorkshopRecipeSnapshot>() });
+
+            Assert.That(title, Is.EqualTo("Workshop Command Standard 1"));
+            Assert.That(title, Does.Not.Contain("_"));
+        }
+
+        [Test]
+        public void Development_workshop_timer_titles_hide_database_like_payload_names()
+        {
+            var titleMethod = typeof(CityScreenController).GetMethod("GetWorkshopTimerTitle", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(titleMethod, Is.Not.Null);
+
+            var recipes = new List<WorkshopRecipeSnapshot>
+            {
+                new WorkshopRecipeSnapshot
+                {
+                    RecipeId = "recipe_arcane_focus_1",
+                    Name = "Arcane Focus",
+                    OutputItemId = "workshop_arcane_focus_1",
+                }
+            };
+            var timer = new CityTimerEntrySnapshot
+            {
+                Id = "timer_workshop_arcane_focus",
+                Category = "workshop_job",
+                Label = "Workshop arcane_focus",
+                Status = "active",
+            };
+
+            var title = (string)titleMethod.Invoke(null, new object[] { timer, recipes });
+
+            Assert.That(title, Is.EqualTo("Arcane Focus"));
+            Assert.That(title, Does.Not.Contain("arcane_focus"));
+            Assert.That(title.StartsWith("Workshop ", StringComparison.OrdinalIgnoreCase), Is.False);
+        }
+
+        [Test]
+        public void Home_workshop_timer_summary_humanizes_workshop_job_fallback_ids()
+        {
+            var titleMethod = typeof(SummaryScreenController).GetMethod("GetWorkshopJobTitle", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(titleMethod, Is.Not.Null);
+
+            var job = new WorkshopJobSnapshot
+            {
+                RecipeId = "workshop_courier_boots_1",
+                AttachmentKind = "workshop_job",
+            };
+
+            var title = (string)titleMethod.Invoke(null, new object[] { job });
+
+            Assert.That(title, Is.EqualTo("Workshop Courier Boots 1"));
+            Assert.That(title, Does.Not.Contain("_"));
+        }
+
+        [Test]
+        public void Workshop_action_receipts_use_resolved_labels_instead_of_raw_recipe_or_job_ids()
+        {
+            var bootstrapPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/ClientBootstrap.cs");
+            Assert.That(File.Exists(bootstrapPath), Is.True, "ClientBootstrap.cs should be available from the Unity project root.");
+
+            var source = File.ReadAllText(bootstrapPath);
+            Assert.That(source, Does.Contain("var craftLabel = ResolveWorkshopRecipeLabel(recipeId);"));
+            Assert.That(source, Does.Contain("var collectLabel = ResolveWorkshopJobLabel(jobId);"));
+            Assert.That(source, Does.Contain("Workshop craft started: {craftLabel}"));
+            Assert.That(source, Does.Contain("Workshop collect complete: {collectLabel}"));
+            Assert.That(source, Does.Not.Contain("Workshop craft started: {recipeId.Trim()}"));
+            Assert.That(source, Does.Not.Contain("Workshop collect complete: {jobId.Trim()}"));
+        }
+
+
+        [Test]
         public void Development_surface_closeout_keeps_action_boards_and_inline_building_picker_checkpointed()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");

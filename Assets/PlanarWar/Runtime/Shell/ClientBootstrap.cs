@@ -453,6 +453,79 @@ namespace PlanarWar.Client.UI
         }
 
 
+        private string ResolveWorkshopRecipeLabel(string recipeId)
+        {
+            var trimmedRecipeId = recipeId?.Trim() ?? string.Empty;
+            var recipe = summaryState?.WorkshopRecipes?.FirstOrDefault(candidate => candidate != null
+                && string.Equals(candidate.RecipeId, trimmedRecipeId, StringComparison.OrdinalIgnoreCase));
+
+            return FirstCleanWorkshopLabel(recipe?.Name, recipe?.OutputItemId, trimmedRecipeId, "workshop recipe");
+        }
+
+        private string ResolveWorkshopJobLabel(string jobId)
+        {
+            var trimmedJobId = jobId?.Trim() ?? string.Empty;
+            var job = summaryState?.Snapshot?.WorkshopJobs?.FirstOrDefault(candidate => candidate != null
+                && string.Equals(candidate.Id, trimmedJobId, StringComparison.OrdinalIgnoreCase));
+            var recipe = summaryState?.WorkshopRecipes?.FirstOrDefault(candidate => candidate != null
+                    && !string.IsNullOrWhiteSpace(job?.RecipeId)
+                    && string.Equals(candidate.RecipeId, job.RecipeId, StringComparison.OrdinalIgnoreCase))
+                ?? summaryState?.WorkshopRecipes?.FirstOrDefault(candidate => candidate != null
+                    && !string.IsNullOrWhiteSpace(job?.OutputItemId)
+                    && string.Equals(candidate.OutputItemId, job.OutputItemId, StringComparison.OrdinalIgnoreCase));
+
+            return FirstCleanWorkshopLabel(job?.OutputName, recipe?.Name, job?.RecipeId, job?.OutputItemId, job?.AttachmentKind, trimmedJobId, "workshop job");
+        }
+
+        private static string FirstCleanWorkshopLabel(params string[] values)
+        {
+            foreach (var raw in values)
+            {
+                var cleaned = CleanWorkshopLabel(raw);
+                if (!string.IsNullOrWhiteSpace(cleaned))
+                {
+                    return cleaned;
+                }
+            }
+
+            return "workshop item";
+        }
+
+        private static string CleanWorkshopLabel(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return string.Empty;
+            }
+
+            var value = raw.Trim();
+            if (LooksLikeWorkshopId(value))
+            {
+                return HumanizeKey(value);
+            }
+
+            return value;
+        }
+
+        private static bool LooksLikeWorkshopId(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return false;
+            var value = raw.Trim();
+            return value.StartsWith("workshop_", StringComparison.OrdinalIgnoreCase)
+                || value.StartsWith("recipe_", StringComparison.OrdinalIgnoreCase)
+                || value.StartsWith("item_", StringComparison.OrdinalIgnoreCase)
+                || value.StartsWith("gear_", StringComparison.OrdinalIgnoreCase)
+                || value.IndexOf('_') >= 0;
+        }
+
+        private static string HumanizeKey(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
+            var cleaned = raw.Replace('_', ' ').Trim();
+            return string.Join(" ", cleaned.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(part => char.ToUpperInvariant(part[0]) + (part.Length > 1 ? part.Substring(1) : string.Empty)));
+        }
+
         private async Task HandleStartWorkshopCraftRequestedAsync(string recipeId)
         {
             if (summaryState == null || apiClient == null || string.IsNullOrWhiteSpace(recipeId) || summaryState.IsActionBusy)
@@ -462,10 +535,11 @@ namespace PlanarWar.Client.UI
 
             try
             {
+                var craftLabel = ResolveWorkshopRecipeLabel(recipeId);
                 summaryState.BeginWorkshopCraft(recipeId);
                 await apiClient.StartWorkshopCraftAsync(recipeId.Trim());
                 await summaryController.RefreshAsync();
-                summaryState.FinishAction($"Workshop craft started: {recipeId.Trim()}");
+                summaryState.FinishAction($"Workshop craft started: {craftLabel}");
             }
             catch (Exception ex)
             {
@@ -482,10 +556,11 @@ namespace PlanarWar.Client.UI
 
             try
             {
+                var collectLabel = ResolveWorkshopJobLabel(jobId);
                 summaryState.BeginWorkshopCollect(jobId);
                 await apiClient.CollectWorkshopAsync(jobId.Trim());
                 await summaryController.RefreshAsync();
-                summaryState.FinishAction($"Workshop collect complete: {jobId.Trim()}");
+                summaryState.FinishAction($"Workshop collect complete: {collectLabel}");
             }
             catch (Exception ex)
             {
