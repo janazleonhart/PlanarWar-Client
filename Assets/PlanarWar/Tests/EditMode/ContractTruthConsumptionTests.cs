@@ -1941,6 +1941,40 @@ namespace PlanarWar.Client.Tests.EditMode
 
 
         [Test]
+        public void Workshop_label_cleanup_closeout_keeps_player_facing_labels_without_mutating_backend_ids()
+        {
+            var cityControllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/City/CityScreenController.cs");
+            var summaryControllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs");
+            var bootstrapPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/ClientBootstrap.cs");
+            Assert.That(File.Exists(cityControllerPath), Is.True, "CityScreenController.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(summaryControllerPath), Is.True, "SummaryScreenController.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(bootstrapPath), Is.True, "ClientBootstrap.cs should be available from the Unity project root.");
+
+            var citySource = File.ReadAllText(cityControllerPath);
+            var summarySource = File.ReadAllText(summaryControllerPath);
+            var bootstrapSource = File.ReadAllText(bootstrapPath);
+
+            Assert.That(citySource, Does.Contain("GetWorkshopJobTitle(job, summaryState.WorkshopRecipes)"));
+            Assert.That(citySource, Does.Contain("BuildWorkshopReadyPickupNote(job, summaryState.WorkshopRecipes)"));
+            Assert.That(citySource, Does.Contain("GetWorkshopTimerTitle(timer, summaryState.WorkshopRecipes)"));
+            Assert.That(citySource, Does.Contain("FindWorkshopRecipeForTimer(timer, recipes)"));
+            Assert.That(citySource, Does.Contain("StripWorkshopTimerPrefix"));
+            Assert.That(citySource, Does.Contain("HumanizeWorkshopKey"));
+            Assert.That(citySource, Does.Not.Contain("title: FirstNonBlank(timer.Label"), "Workshop timer cards should not route raw timer labels directly to player-facing titles.");
+
+            Assert.That(summarySource, Does.Contain("HumanizeWorkshopKey"));
+            Assert.That(summarySource, Does.Not.Contain("job.RecipeId ?? job.AttachmentKind"), "Home workshop summaries should not fall back to raw job ids before humanizing them.");
+
+            Assert.That(bootstrapSource, Does.Contain("ResolveWorkshopRecipeLabel(recipeId)"));
+            Assert.That(bootstrapSource, Does.Contain("ResolveWorkshopJobLabel(jobId)"));
+            Assert.That(bootstrapSource, Does.Contain("Workshop craft started: {craftLabel}"));
+            Assert.That(bootstrapSource, Does.Contain("Workshop collect complete: {collectLabel}"));
+            Assert.That(bootstrapSource, Does.Not.Contain("Workshop craft started: {recipeId.Trim()}"));
+            Assert.That(bootstrapSource, Does.Not.Contain("Workshop collect complete: {jobId.Trim()}"));
+        }
+
+
+        [Test]
         public void Development_surface_closeout_keeps_action_boards_and_inline_building_picker_checkpointed()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
