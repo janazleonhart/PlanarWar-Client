@@ -203,8 +203,8 @@ namespace PlanarWar.Client.UI.Screens.Heroes
             var selectedHeroEquipment = FindHeroEquipment(armory, selectedHero?.Id);
             var selectedEquippedEntry = HeroArmorySlotWorkflow.FindEquippedEntry(selectedHeroEquipment, selectedGearSlot);
             var compatibleArmoryItems = HeroArmorySlotWorkflow.GetCompatibleArmoryItems(armory, selectedGearSlot);
-            SyncArmoryDropdown(compatibleArmoryItems, terms);
-            SyncArmoryItemButtons(compatibleArmoryItems, terms);
+            SyncArmoryDropdown(compatibleArmoryItems, selectedEquippedEntry, terms);
+            SyncArmoryItemButtons(compatibleArmoryItems, selectedEquippedEntry, terms);
 
             if (slotCurrentValue != null) slotCurrentValue.text = selectedHero == null
                 ? $"Select a {terms.SingularLower} to inspect equipped {HeroArmorySlotWorkflow.EquipmentNounLower(terms.IsOperative)} by slot."
@@ -227,9 +227,11 @@ namespace PlanarWar.Client.UI.Screens.Heroes
             if (equipArmoryButton != null)
             {
                 var selectedCompatibleItem = compatibleArmoryItems.FirstOrDefault(item => item?.SlotIndex == selectedArmorySlotIndex);
-                var canEquip = selectedHero != null && selectedCompatibleItem != null && !isBusy && onEquipHeroFromArmoryRequested != null;
+                var selectedItemAlreadyEquipped = HeroArmorySlotWorkflow.IsSameEquippedItem(selectedCompatibleItem, selectedEquippedEntry);
+                var canEquip = selectedHero != null && selectedCompatibleItem != null && !selectedItemAlreadyEquipped && !isBusy && onEquipHeroFromArmoryRequested != null;
                 equipArmoryButton.text = HeroArmorySlotWorkflow.BuildEquipButtonText(
                     selectedCompatibleItem,
+                    selectedEquippedEntry,
                     selectedHero?.Name,
                     selectedGearSlot,
                     terms.IsOperative);
@@ -453,7 +455,7 @@ namespace PlanarWar.Client.UI.Screens.Heroes
             gearSlotSelectField.SetEnabled(choices.Count > 0);
         }
 
-        private void SyncArmoryDropdown(List<HeroArmoryItemSnapshot> compatibleItems, HeroTerminology terms)
+        private void SyncArmoryDropdown(List<HeroArmoryItemSnapshot> compatibleItems, HeroEquipmentEntrySnapshot selectedEquippedEntry, HeroTerminology terms)
         {
             if (armoryItemSelectField == null) return;
             armoryChoiceSlotIndexes.Clear();
@@ -461,7 +463,7 @@ namespace PlanarWar.Client.UI.Screens.Heroes
             foreach (var item in (compatibleItems ?? new List<HeroArmoryItemSnapshot>()).Where(item => item != null && item.SlotIndex.HasValue))
             {
                 armoryChoiceSlotIndexes.Add(item.SlotIndex.Value);
-                choices.Add(HeroArmorySlotWorkflow.BuildArmoryItemChoice(item, terms.IsOperative));
+                choices.Add(HeroArmorySlotWorkflow.BuildArmoryItemChoice(item, terms.IsOperative, selectedEquippedEntry));
             }
 
             if (selectedArmorySlotIndex >= 0 && !armoryChoiceSlotIndexes.Contains(selectedArmorySlotIndex))
@@ -505,7 +507,7 @@ namespace PlanarWar.Client.UI.Screens.Heroes
             }
         }
 
-        private void SyncArmoryItemButtons(List<HeroArmoryItemSnapshot> compatibleItems, HeroTerminology terms)
+        private void SyncArmoryItemButtons(List<HeroArmoryItemSnapshot> compatibleItems, HeroEquipmentEntrySnapshot selectedEquippedEntry, HeroTerminology terms)
         {
             if (armoryItemPicker == null) return;
 
@@ -528,7 +530,7 @@ namespace PlanarWar.Client.UI.Screens.Heroes
                 var slotIndex = item.SlotIndex.Value;
                 var button = new Button(() => SelectArmorySlotIndex(slotIndex))
                 {
-                    text = HeroArmorySlotWorkflow.BuildArmoryItemChoice(item, terms.IsOperative)
+                    text = HeroArmorySlotWorkflow.BuildArmoryItemChoice(item, terms.IsOperative, selectedEquippedEntry)
                 };
                 button.AddToClassList("heroes-armory-choice");
                 if (slotIndex == selectedArmorySlotIndex)
@@ -709,7 +711,10 @@ namespace PlanarWar.Client.UI.Screens.Heroes
         {
             if (summaryState?.IsActionBusy == true || onEquipHeroFromArmoryRequested == null || string.IsNullOrWhiteSpace(selectedHeroId) || selectedArmorySlotIndex < 0) return;
             var compatibleItems = HeroArmorySlotWorkflow.GetCompatibleArmoryItems(summaryState?.Snapshot?.HeroArmoryBridge, selectedGearSlot);
-            if (!compatibleItems.Any(item => item?.SlotIndex == selectedArmorySlotIndex)) return;
+            var selectedCompatibleItem = compatibleItems.FirstOrDefault(item => item?.SlotIndex == selectedArmorySlotIndex);
+            var equipment = FindHeroEquipment(summaryState?.Snapshot?.HeroArmoryBridge, selectedHeroId);
+            var equippedEntry = HeroArmorySlotWorkflow.FindEquippedEntry(equipment, selectedGearSlot);
+            if (selectedCompatibleItem == null || HeroArmorySlotWorkflow.IsSameEquippedItem(selectedCompatibleItem, equippedEntry)) return;
             _ = onEquipHeroFromArmoryRequested.Invoke(selectedHeroId, selectedArmorySlotIndex);
         }
 

@@ -150,16 +150,27 @@ namespace PlanarWar.Client.UI.Screens.Heroes
 
         public static string BuildArmoryItemChoice(HeroArmoryItemSnapshot item, bool isOperative)
         {
+            return BuildArmoryItemChoice(item, isOperative, null);
+        }
+
+        public static string BuildArmoryItemChoice(HeroArmoryItemSnapshot item, bool isOperative, HeroEquipmentEntrySnapshot equippedEntry)
+        {
             if (item == null) return string.Empty;
             var slotLabel = FormatSlotLabel(item.Template?.Slot);
             var name = DescribeItemName(item.Template, item.ItemId);
             var stats = FormatStats(item.Template);
             var quantity = item.Qty ?? 1;
             var statText = string.IsNullOrWhiteSpace(stats) ? string.Empty : $" • {stats}";
-            return $"{name} x{quantity} • {slotLabel}{statText}";
+            var equippedText = IsSameEquippedItem(item, equippedEntry) ? " • already equipped" : string.Empty;
+            return $"{name} x{quantity} • {slotLabel}{statText}{equippedText}";
         }
 
         public static string BuildEquipButtonText(HeroArmoryItemSnapshot selectedItem, string actorName, string selectedSlot, bool isOperative)
+        {
+            return BuildEquipButtonText(selectedItem, null, actorName, selectedSlot, isOperative);
+        }
+
+        public static string BuildEquipButtonText(HeroArmoryItemSnapshot selectedItem, HeroEquipmentEntrySnapshot equippedEntry, string actorName, string selectedSlot, bool isOperative)
         {
             var noun = EquipmentNounLower(isOperative);
             var actor = ActorNounLower(isOperative);
@@ -174,7 +185,27 @@ namespace PlanarWar.Client.UI.Screens.Heroes
                 return $"Select compatible {FormatSlotLabel(selectedSlot)} {noun}";
             }
 
-            return $"Equip {DescribeItemName(selectedItem.Template, selectedItem.ItemId)} to {actorName.Trim()}";
+            var itemName = DescribeItemName(selectedItem.Template, selectedItem.ItemId);
+            if (IsSameEquippedItem(selectedItem, equippedEntry))
+            {
+                return $"{itemName} already equipped";
+            }
+
+            return $"Equip {itemName} to {actorName.Trim()}";
+        }
+
+        public static bool IsSameEquippedItem(HeroArmoryItemSnapshot item, HeroEquipmentEntrySnapshot equippedEntry)
+        {
+            if (item == null || equippedEntry == null) return false;
+            if (!SlotsMatch(item.Template?.Slot, equippedEntry.Slot)) return false;
+
+            if (SameNonBlank(item.GenesisId, equippedEntry.GenesisId)) return true;
+            if (SameNonBlank(item.ItemId, equippedEntry.ItemId)) return true;
+            if (SameNonBlank(item.Template?.Id, equippedEntry.Template?.Id)) return true;
+
+            var itemName = DescribeItemName(item.Template, item.ItemId);
+            var equippedName = DescribeItemName(equippedEntry.Template, equippedEntry.ItemId);
+            return SameNonBlank(itemName, equippedName);
         }
 
         public static string BuildNoArmoryChoiceText(string selectedSlot, bool isOperative)
@@ -246,6 +277,13 @@ namespace PlanarWar.Client.UI.Screens.Heroes
                 if (!string.IsNullOrWhiteSpace(value)) return value.Trim();
             }
             return string.Empty;
+        }
+
+        private static bool SameNonBlank(string left, string right)
+        {
+            return !string.IsNullOrWhiteSpace(left)
+                && !string.IsNullOrWhiteSpace(right)
+                && string.Equals(left.Trim(), right.Trim(), StringComparison.OrdinalIgnoreCase);
         }
 
         private static string Plural(int count)
