@@ -752,7 +752,11 @@ namespace PlanarWar.Client.UI.Screens.Heroes
         private string BuildDeskNote(HeroSnapshot selectedHero, List<HeroRecruitCandidateSnapshot> candidates, HeroRecruitmentSnapshot recruitment, bool isBusy, HeroTerminology terms, DateTime nowUtc)
         {
             if (isBusy && !string.IsNullOrWhiteSpace(summaryState?.ActionStatus)) return summaryState.ActionStatus;
-            if (summaryState?.HasRecentHeroReceipt(nowUtc) == true) return Truncate(summaryState.RecentHeroReceipt, 128);
+            if (summaryState?.HasRecentHeroReceipt(nowUtc) == true)
+            {
+                var title = FirstNonBlank(summaryState?.RecentHeroReceiptTitle, summaryState?.RecentHeroReceiptAction, $"{terms.SingularTitle} roster report");
+                return $"Latest {terms.SingularLower} report received: {title}. Review the report card before it rotates out.";
+            }
             if (selectedHero != null && string.Equals(pendingReleaseHeroId, selectedHero.Id, StringComparison.OrdinalIgnoreCase)) return $"Confirm {terms.ReleaseVerbLower} for {selectedHero.Name}. This removes the {terms.SingularLower} from the roster; backend release should return equipped items when present.";
             if (candidates != null && candidates.Count > 0) return $"{terms.CandidateTitle} slate is ready. Accept one {terms.CandidateLower} or dismiss the slate from this desk.";
             if (recruitment?.StartEligible == true) return $"{terms.RecruitmentFamily} can be opened from this {terms.DeskTitle.ToLowerInvariant()} without returning to Development.";
@@ -763,14 +767,78 @@ namespace PlanarWar.Client.UI.Screens.Heroes
         private CardView BuildRecentHeroReceiptCard(HeroTerminology terms)
         {
             var title = FirstNonBlank(summaryState?.RecentHeroReceiptTitle, summaryState?.RecentHeroReceiptAction, $"{terms.SingularTitle} roster updated");
+            var action = FirstNonBlank(summaryState?.RecentHeroReceiptAction, "Recent roster action");
             return new CardView(
-                $"{terms.SingularTitle} result",
+                $"{terms.RosterFamily} report",
                 title,
-                string.IsNullOrWhiteSpace(summaryState?.RecentHeroReceiptAction) ? "Recent roster action" : summaryState.RecentHeroReceiptAction,
-                Truncate(summaryState?.RecentHeroReceipt, 160),
-                "Receipt visible",
+                $"{action} • Report received",
+                BuildRecentHeroReceiptReportBody(summaryState?.RecentHeroReceipt, terms),
+                "Report received",
                 false,
                 null);
+        }
+
+        private static string BuildRecentHeroReceiptReportBody(string receipt, HeroTerminology terms)
+        {
+            var noun = terms?.SingularLower ?? "hero";
+            if (string.IsNullOrWhiteSpace(receipt))
+            {
+                return $"Roster action completed. Backend returned no readable {noun} report.";
+            }
+
+            var normalized = receipt.Trim().Replace("\r\n", "\n").Replace('\r', '\n');
+            var lines = new List<string>();
+            foreach (var part in normalized.Split(new[] { " • " }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                foreach (var line in SplitReceiptReportLine(part))
+                {
+                    if (!string.IsNullOrWhiteSpace(line) && !lines.Contains(line, StringComparer.OrdinalIgnoreCase))
+                    {
+                        lines.Add(line);
+                    }
+                }
+            }
+
+            return lines.Count == 0 ? normalized : string.Join("\n", lines);
+        }
+
+        private static IEnumerable<string> SplitReceiptReportLine(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) yield break;
+
+            var trimmed = text.Trim();
+            foreach (var label in new[]
+            {
+                "Outcome:",
+                "Status:",
+                "Hero:",
+                "Operative:",
+                "Candidate:",
+                "Contact:",
+                "Role:",
+                "Rewards:",
+                "Gear:",
+                "Effects:",
+                "Summary:"
+            })
+            {
+                var marker = ". " + label;
+                var index = trimmed.IndexOf(marker, StringComparison.Ordinal);
+                if (index > 0)
+                {
+                    var lead = trimmed.Substring(0, index + 1).Trim();
+                    var rest = trimmed.Substring(index + 2).Trim();
+                    if (!string.IsNullOrWhiteSpace(lead)) yield return lead;
+                    if (!string.IsNullOrWhiteSpace(rest)) yield return rest;
+                    yield break;
+                }
+            }
+
+            foreach (var line in trimmed.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                var clean = line.Trim();
+                if (!string.IsNullOrWhiteSpace(clean)) yield return clean;
+            }
         }
 
         private static string BuildHeroChoiceText(HeroSnapshot hero, HeroTerminology terms)

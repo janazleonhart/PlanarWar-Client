@@ -1207,6 +1207,41 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
         [Test]
+        public void Hero_screen_recent_roster_receipt_renders_as_readable_report()
+        {
+            var screenPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Heroes/HeroScreenController.cs");
+            Assert.That(File.Exists(screenPath), Is.True, "HeroScreenController.cs should be available from the Unity project root.");
+
+            var screen = File.ReadAllText(screenPath);
+            Assert.That(screen, Does.Contain("BuildRecentHeroReceiptReportBody(summaryState?.RecentHeroReceipt, terms)"));
+            Assert.That(screen, Does.Contain("Report received"));
+            Assert.That(screen, Does.Contain("Latest {terms.SingularLower} report received"));
+            Assert.That(screen, Does.Not.Contain("Truncate(summaryState?.RecentHeroReceipt, 160)"));
+            Assert.That(screen, Does.Not.Contain("Receipt visible"));
+        }
+
+        [Test]
+        public void Hero_screen_recent_roster_receipt_body_keeps_full_report_readable()
+        {
+            var method = typeof(PlanarWar.Client.UI.Screens.Heroes.HeroScreenController)
+                .GetMethod("BuildRecentHeroReceiptReportBody", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(method, Is.Not.Null, "Hero/operative reports should be formatted as readable report bodies instead of clipped one-line receipts.");
+
+            const string receipt = "Hero released. Outcome: Released • Hero: Ser Kael the Stormguard • Gear: returned Training Blade, returned Worn Shield • Effects: roster -1, shared armory +2 • Summary: Ser Kael left the roster cleanly and equipped gear returned through backend truth without inventing extra rewards.";
+
+            var body = (string)method.Invoke(null, new object[] { receipt, null });
+
+            Assert.That(body, Does.Contain("Hero released."));
+            Assert.That(body, Does.Contain("Outcome: Released"));
+            Assert.That(body, Does.Contain("Hero: Ser Kael the Stormguard"));
+            Assert.That(body, Does.Contain("Gear: returned Training Blade, returned Worn Shield"));
+            Assert.That(body, Does.Contain("Effects: roster -1, shared armory +2"));
+            Assert.That(body, Does.Contain("equipped gear returned through backend truth"));
+            Assert.That(body, Does.Contain("\nOutcome: Released"));
+            Assert.That(body, Does.Not.Contain(" • "));
+        }
+
+        [Test]
         public void Shell_has_hero_armory_controls()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
