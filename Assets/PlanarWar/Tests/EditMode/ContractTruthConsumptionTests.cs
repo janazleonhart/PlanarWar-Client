@@ -1206,6 +1206,128 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(state.RecentHeroReceiptAction, Is.EqualTo("Hero released"));
         }
 
+
+        [Test]
+        public void Hero_recruitment_button_explains_slate_scouting_and_roster_cap()
+        {
+            var terminologyType = typeof(HeroScreenController).GetNestedType("HeroTerminology", BindingFlags.NonPublic);
+            Assert.That(terminologyType, Is.Not.Null);
+            var forMethod = terminologyType.GetMethod("For", BindingFlags.Public | BindingFlags.Static);
+            var formatter = typeof(HeroScreenController).GetMethod("BuildRecruitmentButtonText", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(forMethod, Is.Not.Null);
+            Assert.That(formatter, Is.Not.Null);
+
+            var heroTerms = forMethod.Invoke(null, new object[] { new ShellSummarySnapshot() });
+            var openSlateText = (string)formatter.Invoke(null, new object[]
+            {
+                new HeroRecruitmentSnapshot { Status = "ready", StartEligible = false },
+                new List<HeroRecruitCandidateSnapshot> { new HeroRecruitCandidateSnapshot { CandidateId = "candidate_1", DisplayName = "Provost Sel Varo" } },
+                heroTerms,
+                false,
+                false
+            });
+            var scoutingText = (string)formatter.Invoke(null, new object[]
+            {
+                new HeroRecruitmentSnapshot { Status = "scouting", StartEligible = false },
+                new List<HeroRecruitCandidateSnapshot>(),
+                heroTerms,
+                false,
+                false
+            });
+            var rosterFullText = (string)formatter.Invoke(null, new object[]
+            {
+                new HeroRecruitmentSnapshot { Status = "ready", StartEligible = true, CtaLabel = "Open provost recruitment" },
+                new List<HeroRecruitCandidateSnapshot>(),
+                heroTerms,
+                false,
+                true
+            });
+
+            Assert.That(openSlateText, Is.EqualTo("Recruitment slate open"));
+            Assert.That(scoutingText, Is.EqualTo("Recruitment scouting in progress"));
+            Assert.That(rosterFullText, Is.EqualTo("Release a hero to recruit"));
+            Assert.That(rosterFullText, Does.Not.Contain("blocked"));
+        }
+
+        [Test]
+        public void Hero_recruitment_description_surfaces_roster_cap_without_fake_backend_fields()
+        {
+            var terminologyType = typeof(HeroScreenController).GetNestedType("HeroTerminology", BindingFlags.NonPublic);
+            Assert.That(terminologyType, Is.Not.Null);
+            var forMethod = terminologyType.GetMethod("For", BindingFlags.Public | BindingFlags.Static);
+            var formatter = typeof(HeroScreenController).GetMethod("DescribeRecruitment", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(forMethod, Is.Not.Null);
+            Assert.That(formatter, Is.Not.Null);
+
+            var heroTerms = forMethod.Invoke(null, new object[] { new ShellSummarySnapshot() });
+            var fullRoster = (string)formatter.Invoke(null, new object[]
+            {
+                new HeroRecruitmentSnapshot { Status = "ready", StartEligible = true },
+                new List<HeroRecruitCandidateSnapshot>(),
+                heroTerms,
+                5,
+                true
+            });
+            var fullRosterWithSlate = (string)formatter.Invoke(null, new object[]
+            {
+                new HeroRecruitmentSnapshot { Status = "ready", StartEligible = false },
+                new List<HeroRecruitCandidateSnapshot> { new HeroRecruitCandidateSnapshot { CandidateId = "candidate_1" } },
+                heroTerms,
+                5,
+                true
+            });
+
+            Assert.That(fullRoster, Does.Contain("Hero roster full"));
+            Assert.That(fullRoster, Does.Contain("5/5 heroes"));
+            Assert.That(fullRosterWithSlate, Does.Contain("1 candidate ready"));
+            Assert.That(fullRosterWithSlate, Does.Contain("roster full 5/5 heroes"));
+            Assert.That(fullRosterWithSlate, Does.Not.Contain("Recruitment blocked"));
+        }
+
+        [Test]
+        public void Hero_recruitment_state_copy_keeps_black_market_contact_language()
+        {
+            var terminologyType = typeof(HeroScreenController).GetNestedType("HeroTerminology", BindingFlags.NonPublic);
+            Assert.That(terminologyType, Is.Not.Null);
+            var forMethod = terminologyType.GetMethod("For", BindingFlags.Public | BindingFlags.Static);
+            var formatter = typeof(HeroScreenController).GetMethod("BuildRecruitmentButtonText", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(forMethod, Is.Not.Null);
+            Assert.That(formatter, Is.Not.Null);
+
+            var operativeTerms = forMethod.Invoke(null, new object[]
+            {
+                new ShellSummarySnapshot
+                {
+                    City = new CitySummarySnapshot
+                    {
+                        SettlementLane = "black_market",
+                        SettlementLaneLabel = "Black Market"
+                    }
+                }
+            });
+            var openSlateText = (string)formatter.Invoke(null, new object[]
+            {
+                new HeroRecruitmentSnapshot { Status = "ready", StartEligible = false },
+                new List<HeroRecruitCandidateSnapshot> { new HeroRecruitCandidateSnapshot { CandidateId = "contact_1" } },
+                operativeTerms,
+                false,
+                false
+            });
+            var rosterFullText = (string)formatter.Invoke(null, new object[]
+            {
+                new HeroRecruitmentSnapshot { Status = "ready", StartEligible = true },
+                new List<HeroRecruitCandidateSnapshot>(),
+                operativeTerms,
+                false,
+                true
+            });
+
+            Assert.That(openSlateText, Is.EqualTo("Contact slate open"));
+            Assert.That(rosterFullText, Is.EqualTo("Retire an operative to scout"));
+            Assert.That(openSlateText.ToLowerInvariant(), Does.Not.Contain("hero"));
+            Assert.That(rosterFullText.ToLowerInvariant(), Does.Not.Contain("hero"));
+        }
+
         [Test]
         public void Hero_screen_recent_roster_receipt_renders_as_readable_report()
         {
