@@ -605,14 +605,15 @@
                             <ui:VisualElement class="operations-management-head">
                                 <ui:VisualElement class="operations-management-title-stack">
                                     <ui:Label text="Operations management" class="eyebrow" />
-                                    <ui:Label text="Cell, route, posture, and dispatch controls" class="rail-note-title" />
+                                    <ui:Label name="warfront-management-subtitle-value" text="Cell, route, posture, and dispatch controls" class="rail-note-title" />
                                 </ui:VisualElement>
                                 <ui:Label text="Live payload truth only" class="operations-pill" />
                             </ui:VisualElement>
                             <ui:Label name="warfront-management-copy-value" text="Rename an idle cell or split operators into a sibling cell without reopening decorative desk churn." class="metric-subvalue metric-subvalue--wrap" />
 
                             <ui:VisualElement class="operations-management-section">
-                                <ui:Label text="Selected cell" class="eyebrow operations-picker-label" />
+                                <ui:Label name="warfront-manage-selected-label-value" text="Selected cell" class="eyebrow operations-picker-label" />
+                                <ui:Label name="warfront-manage-selected-hint-value" text="Pick the live cell to rename, split, merge, route, or dispatch." class="operations-section-hint" />
                                 <ui:VisualElement name="warfront-manage-army-picker" class="operations-choice-list operations-choice-list--cells" />
                                 <ui:VisualElement class="operations-inline-form">
                                     <ui:TextField name="warfront-manage-rename-input" label="Rename to" />
@@ -627,7 +628,8 @@
 
                             <ui:VisualElement class="operations-management-grid">
                                 <ui:VisualElement class="operations-management-section">
-                                    <ui:Label text="Merge target" class="eyebrow operations-picker-label" />
+                                    <ui:Label name="warfront-manage-merge-label-value" text="Merge / retire cell" class="eyebrow operations-picker-label" />
+                                    <ui:Label name="warfront-manage-merge-hint-value" text="Fold another idle cell into the selected one, or retire it when another remains." class="operations-section-hint" />
                                     <ui:VisualElement name="warfront-manage-merge-target-picker" class="operations-choice-list" />
                                     <ui:VisualElement class="button-row operations-action-row">
                                         <ui:Button name="warfront-manage-merge-button" text="Merge into target" class="action-button action-button--primary" />
@@ -636,7 +638,8 @@
                                 </ui:VisualElement>
 
                                 <ui:VisualElement class="operations-management-section">
-                                    <ui:Label text="Route assignment" class="eyebrow operations-picker-label" />
+                                    <ui:Label name="warfront-manage-hold-label-value" text="Route hold" class="eyebrow operations-picker-label" />
+                                    <ui:Label name="warfront-manage-hold-hint-value" text="Choose the route and standing posture before assigning or releasing a hold." class="operations-section-hint" />
                                     <ui:VisualElement name="warfront-manage-hold-region-picker" class="operations-choice-list" />
                                     <ui:VisualElement name="warfront-manage-hold-posture-picker" class="operations-choice-list operations-choice-list--posture" />
                                     <ui:VisualElement class="button-row operations-action-row">
@@ -646,7 +649,8 @@
                                 </ui:VisualElement>
 
                                 <ui:VisualElement class="operations-management-section">
-                                    <ui:Label text="Dispatch operative" class="eyebrow operations-picker-label" />
+                                    <ui:Label name="warfront-manage-dispatch-label-value" text="Deniable dispatch" class="eyebrow operations-picker-label" />
+                                    <ui:Label name="warfront-manage-dispatch-hint-value" text="Use the selected route and an idle operative for pressure or disruption actions." class="operations-section-hint" />
                                     <ui:VisualElement name="warfront-manage-dispatch-hero-picker" class="operations-choice-list" />
                                     <ui:VisualElement class="button-row operations-action-row">
                                         <ui:Button name="warfront-manage-dispatch-assault-button" text="Open pressure line" class="action-button action-button--primary" />

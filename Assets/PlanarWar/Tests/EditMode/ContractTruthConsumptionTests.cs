@@ -1663,6 +1663,78 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
         [Test]
+        public void Operations_management_surfaces_named_control_groups_and_lane_copy()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var appStylePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/BlackMarket/BlackMarketScreenController.cs");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(appStylePath), Is.True, "AppShell.uss should be available from the Unity project root.");
+            Assert.That(File.Exists(controllerPath), Is.True, "BlackMarketScreenController.cs should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(appStylePath);
+            var controller = File.ReadAllText(controllerPath);
+
+            foreach (var marker in new[]
+            {
+                "warfront-management-subtitle-value",
+                "warfront-manage-selected-label-value",
+                "warfront-manage-selected-hint-value",
+                "warfront-manage-merge-label-value",
+                "warfront-manage-merge-hint-value",
+                "warfront-manage-hold-label-value",
+                "warfront-manage-hold-hint-value",
+                "warfront-manage-dispatch-label-value",
+                "warfront-manage-dispatch-hint-value",
+            })
+            {
+                Assert.That(uxml, Does.Contain(marker), $"Operations management should keep named control-copy binding: {marker}");
+                Assert.That(controller, Does.Contain(marker), $"Operations management controller should bind and update {marker}.");
+            }
+
+            Assert.That(uss, Does.Contain(".operations-section-hint"));
+            Assert.That(uss, Does.Contain("max-height: 116px"));
+            Assert.That(controller, Does.Contain("RenderFormationManagementControlText"));
+            Assert.That(controller, Does.Contain("Selected formation"));
+            Assert.That(controller, Does.Contain("Deniable dispatch"));
+            Assert.That(controller, Does.Contain("Troops to split"));
+            Assert.That(controller, Does.Contain("Agents to split"));
+        }
+
+        [Test]
+        public void Operations_management_note_formats_controls_as_readable_lines()
+        {
+            var noteMethod = typeof(PlanarWar.Client.UI.Screens.BlackMarket.BlackMarketScreenController)
+                .GetMethod("BuildFormationManagementNote", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(noteMethod, Is.Not.Null, "Operations management note formatter should stay available for readability coverage.");
+
+            var note = (string)noteMethod.Invoke(null, new object[]
+            {
+                new ArmySnapshot { Id = "army_1", Name = "TestTest", Status = "idle", Size = 160, Power = 500, Readiness = 91 },
+                60,
+                120,
+                new ArmySnapshot { Id = "army_2", Name = "Reserve Cell", Status = "idle", Size = 80, Power = 200, Readiness = 80 },
+                2,
+                "heartland_basin",
+                "frontier_hold",
+                "Heartland Basin",
+                new HeroSnapshot { Id = "hero_1", Name = "Lyra of the Veiled Paths", Status = "idle", Role = "scout", ResponseRoles = new List<string> { "relief", "pressure" } },
+                1
+            });
+
+            Assert.That(note, Does.Contain("Split:"));
+            Assert.That(note, Does.Contain("Merge:"));
+            Assert.That(note, Does.Contain("Hold:"));
+            Assert.That(note, Does.Contain("Dispatch:"));
+            Assert.That(note, Does.Contain("Roster:"));
+            Assert.That(note, Does.Contain(Environment.NewLine));
+            Assert.That(note, Does.Contain("Heartland Basin"));
+            Assert.That(note, Does.Contain("Lyra of the Veiled Paths"));
+            Assert.That(note, Does.Not.Contain("Current draft:"));
+        }
+
+        [Test]
         public void Home_surface_uses_compact_command_overview_classes()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");

@@ -23,6 +23,15 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private readonly Label noteValue;
         private readonly Label managementCopy;
         private readonly Label managementNote;
+        private readonly Label managementSubtitle;
+        private readonly Label managementSelectedLabel;
+        private readonly Label managementSelectedHint;
+        private readonly Label managementMergeLabel;
+        private readonly Label managementMergeHint;
+        private readonly Label managementHoldLabel;
+        private readonly Label managementHoldHint;
+        private readonly Label managementDispatchLabel;
+        private readonly Label managementDispatchHint;
         private readonly Label missionBoardCopy;
         private readonly Label missionBoardTitle;
         private readonly Label missionBoardStatus;
@@ -105,6 +114,15 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             noteValue = root.Q<Label>("warfront-note-value");
             managementCopy = root.Q<Label>("warfront-management-copy-value");
             managementNote = root.Q<Label>("warfront-manage-note-value");
+            managementSubtitle = root.Q<Label>("warfront-management-subtitle-value");
+            managementSelectedLabel = root.Q<Label>("warfront-manage-selected-label-value");
+            managementSelectedHint = root.Q<Label>("warfront-manage-selected-hint-value");
+            managementMergeLabel = root.Q<Label>("warfront-manage-merge-label-value");
+            managementMergeHint = root.Q<Label>("warfront-manage-merge-hint-value");
+            managementHoldLabel = root.Q<Label>("warfront-manage-hold-label-value");
+            managementHoldHint = root.Q<Label>("warfront-manage-hold-hint-value");
+            managementDispatchLabel = root.Q<Label>("warfront-manage-dispatch-label-value");
+            managementDispatchHint = root.Q<Label>("warfront-manage-dispatch-hint-value");
             missionBoardCopy = root.Q<Label>("warfront-mission-board-copy-value");
             missionBoardTitle = root.Q<Label>("warfront-mission-board-title-value");
             missionBoardStatus = root.Q<Label>("warfront-mission-board-status-value");
@@ -557,6 +575,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 return;
             }
 
+            RenderFormationManagementControlText();
+
             var armies = (rankedArmies ?? new List<ArmySnapshot>()).Where(army => army != null).ToList();
             if (armies.Count == 0)
             {
@@ -809,9 +829,21 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 });
 
             suppressManagementEvents = true;
-            renameInput?.SetValueWithoutNotify(renameDraft);
-            splitSizeInput?.SetValueWithoutNotify(splitSizeDraft);
-            splitNameInput?.SetValueWithoutNotify(splitNameDraft);
+            if (renameInput != null)
+            {
+                renameInput.label = useBlackMarketForceTerms ? "Rename to" : "Rename formation to";
+                renameInput.SetValueWithoutNotify(renameDraft);
+            }
+            if (splitSizeInput != null)
+            {
+                splitSizeInput.label = useBlackMarketForceTerms ? "Agents to split" : "Troops to split";
+                splitSizeInput.SetValueWithoutNotify(splitSizeDraft);
+            }
+            if (splitNameInput != null)
+            {
+                splitNameInput.label = useBlackMarketForceTerms ? "New cell" : "New formation";
+                splitNameInput.SetValueWithoutNotify(splitNameDraft);
+            }
             suppressManagementEvents = false;
 
             var splitSize = ParsePositiveInt(splitSizeDraft);
@@ -877,7 +909,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
             if (managementCopy != null)
             {
-                managementCopy.text = LaneText($"Focus: {PresentArmyName(selectedArmy.Name)} • {BuildFormationLore(selectedArmy)}. Inline controls below use live payload truth only.");
+                managementCopy.text = LaneText($"Focus: {PresentArmyName(selectedArmy.Name)} • {BuildFormationLore(selectedArmy)}. Pick one order group below; locked controls mean the selected cell is busy or the needed payload truth is missing.");
             }
 
             if (managementNote != null)
@@ -885,7 +917,61 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 var mergeTarget = mergeCandidates.FirstOrDefault(army => string.Equals(army.Id, selectedMergeArmyId, StringComparison.OrdinalIgnoreCase));
                 var holdLabel = holdRegions.FirstOrDefault(option => string.Equals(option.RegionId, selectedHoldRegionId, StringComparison.OrdinalIgnoreCase)).Label;
                 var dispatchHero = idleHeroes.FirstOrDefault(hero => string.Equals(hero.Id, selectedDispatchHeroId, StringComparison.OrdinalIgnoreCase));
-                managementNote.text = LaneText(Truncate(BuildFormationManagementNote(selectedArmy, splitSize, maxSplit, mergeTarget, armies.Count, selectedHoldRegionId, selectedHoldPosture, holdLabel, dispatchHero, idleHeroes.Count), 260));
+                managementNote.text = LaneText(Truncate(BuildFormationManagementNote(selectedArmy, splitSize, maxSplit, mergeTarget, armies.Count, selectedHoldRegionId, selectedHoldPosture, holdLabel, dispatchHero, idleHeroes.Count), 520));
+            }
+        }
+
+        private void RenderFormationManagementControlText()
+        {
+            if (managementSubtitle != null)
+            {
+                managementSubtitle.text = useBlackMarketForceTerms
+                    ? "Cells, route holds, and deniable dispatch"
+                    : "Formations, regional holds, and field dispatch";
+            }
+
+            if (managementSelectedLabel != null)
+            {
+                managementSelectedLabel.text = useBlackMarketForceTerms ? "Selected cell" : "Selected formation";
+            }
+            if (managementSelectedHint != null)
+            {
+                managementSelectedHint.text = useBlackMarketForceTerms
+                    ? "Pick the live cell to rename, split, merge, route, or dispatch."
+                    : "Pick the live formation to rename, split, merge, hold, or dispatch.";
+            }
+
+            if (managementMergeLabel != null)
+            {
+                managementMergeLabel.text = useBlackMarketForceTerms ? "Merge / retire cell" : "Merge / disband formation";
+            }
+            if (managementMergeHint != null)
+            {
+                managementMergeHint.text = useBlackMarketForceTerms
+                    ? "Fold another idle cell into the selected one, or retire the selected idle cell when another remains."
+                    : "Fold another idle formation into the selected one, or disband the selected idle formation when another remains.";
+            }
+
+            if (managementHoldLabel != null)
+            {
+                managementHoldLabel.text = useBlackMarketForceTerms ? "Route hold" : "Regional hold";
+            }
+            if (managementHoldHint != null)
+            {
+                managementHoldHint.text = useBlackMarketForceTerms
+                    ? "Choose the route and standing posture before assigning or releasing a hold."
+                    : "Choose the region and standing posture before assigning or releasing a hold.";
+            }
+
+            if (managementDispatchLabel != null)
+            {
+                managementDispatchLabel.text = useBlackMarketForceTerms ? "Deniable dispatch" : "Direct action dispatch";
+            }
+            if (managementDispatchHint != null)
+            {
+                managementDispatchHint.text = useBlackMarketForceTerms
+                    ? "Use the selected route and an idle operative for pressure or disruption actions."
+                    : "Use the selected region and an idle hero for warfront assault or quick strike actions.";
             }
         }
 
@@ -1365,6 +1451,11 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             result = result.Replace("operative", "troop", StringComparison.OrdinalIgnoreCase);
             result = result.Replace("operator count", "troop count", StringComparison.OrdinalIgnoreCase);
             result = result.Replace("covert deployment", "field deployment", StringComparison.OrdinalIgnoreCase);
+            result = result.Replace("route holds", "regional holds", StringComparison.OrdinalIgnoreCase);
+            result = result.Replace("route hold", "regional hold", StringComparison.OrdinalIgnoreCase);
+            result = result.Replace("route orders", "regional orders", StringComparison.OrdinalIgnoreCase);
+            result = result.Replace("pressure/strike actions", "warfront assault/quick strike actions", StringComparison.OrdinalIgnoreCase);
+            result = result.Replace("live pressure actions", "live warfront actions", StringComparison.OrdinalIgnoreCase);
             result = result.Replace("assign routes", "assign lines", StringComparison.OrdinalIgnoreCase);
             result = result.Replace("Assign route", "Assign line", StringComparison.OrdinalIgnoreCase);
             result = result.Replace("Release route", "Release line", StringComparison.OrdinalIgnoreCase);
@@ -2405,53 +2496,58 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             if (string.Equals(army.Status, "holding", StringComparison.OrdinalIgnoreCase))
             {
                 var holdLine = string.IsNullOrWhiteSpace(army.HoldRegionId) ? "a regional line" : HumanizeRegionLabel(army.HoldRegionId);
-                return $"{PresentArmyName(army.Name)} is currently holding {holdLine} as {HumanizeKey(army.HoldPosture)} duty. Release the route before reassigning region/posture, renaming, splitting, merging, or retiring the cell.";
+                return string.Join(Environment.NewLine, new[]
+                {
+                    $"Current hold: {PresentArmyName(army.Name)} is holding {holdLine} as {HumanizeKey(army.HoldPosture)} duty.",
+                    "Next step: release the route hold before reassigning region/posture, renaming, splitting, merging, or retiring the cell."
+                });
             }
 
             if (!string.Equals(army.Status, "idle", StringComparison.OrdinalIgnoreCase))
             {
-                return $"{PresentArmyName(army.Name)} is {HumanizeStatus(army.Status)}. Rename, split, merge, retire, and route orders stay locked until the cell returns to idle posture.";
+                return string.Join(Environment.NewLine, new[]
+                {
+                    $"Current status: {PresentArmyName(army.Name)} is {HumanizeStatus(army.Status)}.",
+                    "Locked orders: rename, split, merge, retire, route, and dispatch stay parked until the cell returns idle."
+                });
             }
 
             var parts = new List<string>();
             if ((army.Size ?? 0) < 80)
             {
-                parts.Add($"{PresentArmyName(army.Name)} is too small to split safely. Keep at least 40 agents on each side of the split.");
+                parts.Add($"Split: {PresentArmyName(army.Name)} is too small to split safely. Keep at least 40 agents on each side.");
             }
             else
             {
-                var range = maxSplit >= 40 ? $"Valid split window: 40-{maxSplit} agents." : "Valid split window is currently unavailable.";
-                parts.Add($"{range} Current draft: {BuildSplitDraftSummary(splitSize, army)}.");
+                var range = maxSplit >= 40 ? $"40-{maxSplit} agents" : "currently unavailable";
+                parts.Add($"Split: valid window {range}. Draft order: {BuildSplitDraftSummary(splitSize, army)}.");
             }
 
-            if (mergeTarget != null)
-            {
-                parts.Add($"Merge target: {PresentArmyName(mergeTarget.Name)} • {BuildFormationLore(mergeTarget)}.");
-            }
-            else
-            {
-                parts.Add("No secondary cell is available to merge into yet.");
-            }
+            parts.Add(mergeTarget != null
+                ? $"Merge: target {PresentArmyName(mergeTarget.Name)} • {BuildFormationLore(mergeTarget)}."
+                : "Merge: no secondary cell is available yet.");
 
             parts.Add(string.IsNullOrWhiteSpace(holdRegionId)
-                ? "Choose a region and posture before assigning a hold or launching a warfront action."
-                : $"Region desk: {(string.IsNullOrWhiteSpace(holdRegionLabel) ? HumanizeRegionLabel(holdRegionId) : holdRegionLabel)} as {HumanizeKey(holdPosture)} duty. Hold posture is a standing assignment; warfront assault and quick strike are direct timed actions.");
+                ? "Hold: choose a region and posture before assigning a standing hold or launching direct action."
+                : $"Hold: {(string.IsNullOrWhiteSpace(holdRegionLabel) ? HumanizeRegionLabel(holdRegionId) : holdRegionLabel)} as {HumanizeKey(holdPosture)} duty. Standing holds persist; pressure/strike actions are direct timed orders.");
+
             if (dispatchHero != null)
             {
-                parts.Add($"Dispatch hero: {dispatchHero.Name} • {BuildHeroDispatchLore(dispatchHero)}.");
+                parts.Add($"Dispatch: {dispatchHero.Name} • {BuildHeroDispatchLore(dispatchHero)}.");
             }
             else if (idleHeroCount > 0)
             {
-                parts.Add($"Dispatch operative is unset. {idleHeroCount} idle hero{(idleHeroCount == 1 ? string.Empty : "es")} can be assigned explicitly before live pressure actions.");
+                parts.Add($"Dispatch: no explicit support lead selected; {idleHeroCount} idle hero{(idleHeroCount == 1 ? string.Empty : "es")} can be assigned before live pressure actions.");
             }
             else
             {
-                parts.Add("No idle hero is visible right now, so disruption action stays parked until one stands free.");
+                parts.Add("Dispatch: no idle support lead is visible, so disruption action stays parked until one stands free.");
             }
+
             parts.Add(formationCount > 1
-                ? "Retiring the selected idle cell trims upkeep without refunding committed field investment directly."
-                : "You must keep at least one cell on the roster, so retirement stays parked right now.");
-            return string.Join(" ", parts.Where(part => !string.IsNullOrWhiteSpace(part)));
+                ? "Roster: retiring the selected idle cell trims upkeep without refunding committed field investment directly."
+                : "Roster: at least one cell must stay on the roster, so retirement is parked right now.");
+            return string.Join(Environment.NewLine, parts.Where(part => !string.IsNullOrWhiteSpace(part)));
         }
 
         private static string BuildHeroDispatchLore(HeroSnapshot hero)
