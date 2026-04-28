@@ -357,7 +357,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
             if (missionBoardEffect != null)
             {
-                missionBoardEffect.text = Truncate(BuildRecentMissionReceiptDetail(), 260);
+                missionBoardEffect.text = BuildRecentMissionReceiptReportBody(summaryState?.RecentMissionReceipt);
             }
 
             if (missionBoardAssignment != null)
@@ -1435,13 +1435,60 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
         private string BuildRecentMissionReceiptDetail()
         {
-            var receipt = NormalizeEmbeddedDisplayKeys(summaryState?.RecentMissionReceipt ?? string.Empty);
+            return BuildRecentMissionReceiptReportBody(summaryState?.RecentMissionReceipt);
+        }
+
+        private static string BuildRecentMissionReceiptReportBody(string receiptText)
+        {
+            var receipt = NormalizeEmbeddedDisplayKeys(receiptText ?? string.Empty);
             if (string.IsNullOrWhiteSpace(receipt))
             {
                 return "Mission completed, but no readable backend receipt was returned.";
             }
 
-            return receipt;
+            receipt = receipt.Replace("\r\n", "\n", StringComparison.Ordinal)
+                .Replace("\r", "\n", StringComparison.Ordinal)
+                .Trim();
+
+            var lines = new List<string>();
+            const string completedPrefix = "Mission completed.";
+            if (receipt.StartsWith(completedPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                lines.Add(completedPrefix);
+                receipt = receipt.Substring(completedPrefix.Length).Trim();
+            }
+
+            foreach (var rawSegment in receipt.Split(new[] { " • ", "\n" }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                var segment = rawSegment.Trim();
+                if (string.IsNullOrWhiteSpace(segment))
+                {
+                    continue;
+                }
+
+                if (segment.StartsWith(completedPrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!lines.Any(line => string.Equals(line, completedPrefix, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        lines.Add(completedPrefix);
+                    }
+
+                    segment = segment.Substring(completedPrefix.Length).Trim();
+                    if (string.IsNullOrWhiteSpace(segment))
+                    {
+                        continue;
+                    }
+                }
+
+                if (!lines.Any(line => string.Equals(line, segment, StringComparison.OrdinalIgnoreCase)))
+                {
+                    lines.Add(segment);
+                }
+            }
+
+            return lines.Count == 0
+                ? "Mission completed, but no readable backend receipt was returned."
+                : string.Join("\n", lines);
         }
 
         private string BuildRecentMissionReceiptAnchor(DateTime nowUtc)

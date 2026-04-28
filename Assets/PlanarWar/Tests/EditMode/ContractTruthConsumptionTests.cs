@@ -1040,9 +1040,29 @@ namespace PlanarWar.Client.Tests.EditMode
             var screen = File.ReadAllText(screenPath);
             Assert.That(screen, Does.Contain("RenderRecentMissionReceiptBoard"));
             Assert.That(screen, Does.Contain("Latest completion report is shown before the next mission offer"));
-            Assert.That(screen, Does.Contain("BuildRecentMissionReceiptDetail()"));
+            Assert.That(screen, Does.Contain("BuildRecentMissionReceiptReportBody(summaryState?.RecentMissionReceipt)"));
             Assert.That(screen, Does.Contain("Report received"));
             Assert.That(screen, Does.Not.Contain("Receipt visible"));
+        }
+
+        [Test]
+        public void Operations_recent_mission_receipt_body_keeps_full_report_readable()
+        {
+            var method = typeof(PlanarWar.Client.UI.Screens.BlackMarket.BlackMarketScreenController)
+                .GetMethod("BuildRecentMissionReceiptReportBody", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(method, Is.Not.Null, "Completion reports should be formatted as a readable board body instead of a clipped one-line receipt.");
+
+            const string receipt = "Mission completed. Mission: Frontline Assault: Heartland Basin • Outcome: Success • Rewards: wealth +60, materials +80, influence +5 • Summary: Frontline Assault: Heartland Basin: SUCCESS with balanced posture. Field payoff: TestTest vanguard pressure was pushed back and the full completion report should remain readable.";
+
+            var body = (string)method.Invoke(null, new object[] { receipt });
+
+            Assert.That(body, Does.Contain("Mission completed."));
+            Assert.That(body, Does.Contain("Mission: Frontline Assault: Heartland Basin"));
+            Assert.That(body, Does.Contain("Outcome: Success"));
+            Assert.That(body, Does.Contain("Rewards: wealth +60, materials +80, influence +5"));
+            Assert.That(body, Does.Contain("the full completion report should remain readable"));
+            Assert.That(body, Does.Contain("\nOutcome: Success"));
+            Assert.That(body, Does.Not.Contain(" • "));
         }
 
         [Test]
