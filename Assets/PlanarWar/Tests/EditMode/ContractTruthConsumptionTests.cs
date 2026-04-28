@@ -2618,7 +2618,7 @@ namespace PlanarWar.Client.Tests.EditMode
             var note = (string)noteMethod.Invoke(null, new object[] { job, recipes });
 
             Assert.That(title, Is.EqualTo("Arcane Focus"));
-            Assert.That(note, Does.Contain("Ready pickup: Arcane Focus"));
+            Assert.That(note, Does.Contain("Ready to collect: Arcane Focus"));
             Assert.That(note, Does.Not.Contain("job_very_raw_123"));
             Assert.That(note, Does.Not.Contain("recipe_arcane_focus_1"));
         }
@@ -3257,6 +3257,27 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(effect, Does.Not.Contain("}"));
             Assert.That(effect, Does.Not.Contain("\"notes\""));
             Assert.That(effect, Does.Not.Contain("Nested notes should not leak."));
+        }
+
+        [Test]
+        public void Client_lifecycle_copy_uses_update_and_collect_language_instead_of_ready_finished_shorthand()
+        {
+            var citySource = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/City/CityScreenController.cs"));
+            var summarySource = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs"));
+            var blackMarketSource = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/BlackMarket/BlackMarketScreenController.cs"));
+            var shadowLaneSource = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Core/Presentation/ShadowLaneText.cs"));
+            var combined = string.Join("\n", citySource, summarySource, blackMarketSource, shadowLaneSource);
+
+            Assert.That(combined, Does.Contain("Ready to update"));
+            Assert.That(combined, Does.Contain("Ready to collect"));
+            Assert.That(combined, Does.Contain("ready to update for result"));
+            Assert.That(combined, Does.Contain("Drop ready"));
+            Assert.That(combined, Does.Contain("Timer ready"));
+            Assert.That(combined, Does.Not.Contain("ready/finished"));
+            Assert.That(combined, Does.Not.Contain("ready / refresh for result"));
+            Assert.That(combined, Does.Not.Contain("Ready pickup"));
+            Assert.That(combined, Does.Not.Contain("Ready drop"));
+            Assert.That(combined, Does.Not.Contain("Ready timer"));
         }
 
         private static VisualElement BuildMinimalHeroControllerRoot()

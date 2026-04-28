@@ -255,7 +255,7 @@ namespace PlanarWar.Client.UI.Screens.City
                     title: research.Name,
                     lore: BuildResearchLore(research, isBlackMarket, nowUtc),
                     note: BuildResearchNote(research, isBlackMarket, nowUtc),
-                    buttonText: IsResearchReady(research, nowUtc) ? "Ready" : "Live",
+                    buttonText: IsResearchReady(research, nowUtc) ? "Ready to update" : "Live",
                     buttonEnabled: false));
             }
 
@@ -334,7 +334,7 @@ namespace PlanarWar.Client.UI.Screens.City
                 buttonEnabled: false)));
 
             cards.AddRange(readyJobs.Take(2).Select(job => new CardView(
-                family: isBlackMarket ? ShadowLaneText.BuildWorkshopJobFamily(ready: true) : "Ready pickup",
+                family: isBlackMarket ? ShadowLaneText.BuildWorkshopJobFamily(ready: true) : "Ready to collect",
                 title: GetWorkshopJobTitle(job, summaryState.WorkshopRecipes),
                 lore: isBlackMarket ? ShadowLaneText.BuildWorkshopJobLore(job, ready: true, nowUtc) : "Crafting time elapsed. Collect to deliver the item into city armory storage.",
                 note: isBlackMarket
@@ -888,7 +888,7 @@ namespace PlanarWar.Client.UI.Screens.City
                 return "Ready workshop item surfaced without a stable job id.";
             }
 
-            return $"Ready pickup: {GetWorkshopJobTitle(job, recipes)} can now be collected into storage.";
+            return $"Ready to collect: {GetWorkshopJobTitle(job, recipes)} can now be collected into storage.";
         }
 
         private static string GetWorkshopTimerTitle(CityTimerEntrySnapshot timer, IReadOnlyList<WorkshopRecipeSnapshot> recipes)
@@ -1872,7 +1872,7 @@ namespace PlanarWar.Client.UI.Screens.City
             var noun = isBlackMarket ? "front" : "building";
             var manageable = SelectManageableBuildings(buildings, nowUtc).Count;
             var capacity = FormatBuildingCapacity(s, isBlackMarket, buildings?.Count ?? 0);
-            return $"{ready} ready/finished • {timed} timed • {manageable} manageable {noun}{(manageable == 1 ? string.Empty : "s")} • {capacity}. Only unlocked, affordable {noun} choices are shown below. Destroy/remodel/cancel use backend confirm-token contracts with no refunds in v1.";
+            return $"{ready} ready to update • {timed} timed • {manageable} manageable {noun}{(manageable == 1 ? string.Empty : "s")} • {capacity}. Only unlocked, affordable {noun} choices are shown below. Destroy/remodel/cancel use backend confirm-token contracts with no refunds in v1.";
         }
 
         private static string GetBuildingActionId(BuildingSnapshot building)
@@ -1956,7 +1956,7 @@ namespace PlanarWar.Client.UI.Screens.City
             }
 
             var standingLabel = isBlackMarket ? "front live" : "standing";
-            return $"Showing {buildings.Count} {label} card(s), {timers.Count} {timerLabel}(s), {standing} {standingLabel}, {timed} timed, and {ready} ready/finished state(s).";
+            return $"Showing {buildings.Count} {label} card(s), {timers.Count} {timerLabel}(s), {standing} {standingLabel}, {timed} timed, and {ready} ready to update state(s).";
         }
 
         private static List<BuildingSnapshot> SelectLaneBuildings(ShellSummarySnapshot s, bool isBlackMarket)
@@ -2149,7 +2149,7 @@ namespace PlanarWar.Client.UI.Screens.City
 
         private static string BuildBuildingStatusButtonText(BuildingSnapshot building, bool isBlackMarket, DateTime nowUtc)
         {
-            if (IsBuildingReady(building, nowUtc)) return "Ready";
+            if (IsBuildingReady(building, nowUtc)) return "Ready to update";
             if (IsRemodelingStatus(building?.Status)) return "Remodeling";
             if (IsUpgradingStatus(building?.Status)) return "Upgrading";
             if (IsConstructingStatus(building?.Status) && HasBuildingTimingAnchor(building)) return isBlackMarket ? "Opening" : "Building";
@@ -2197,7 +2197,7 @@ namespace PlanarWar.Client.UI.Screens.City
         private static string BuildBuildingLifecycleLabel(BuildingSnapshot building, DateTime nowUtc)
         {
             if (building == null) return string.Empty;
-            if (IsBuildingReady(building, nowUtc)) return "Ready";
+            if (IsBuildingReady(building, nowUtc)) return "Ready to update";
             if (IsRemodelingStatus(building.Status)) return "Remodeling";
             if (IsUpgradingStatus(building.Status)) return "Upgrading";
             if (IsConstructingStatus(building.Status) && HasBuildingTimingAnchor(building)) return "Building";

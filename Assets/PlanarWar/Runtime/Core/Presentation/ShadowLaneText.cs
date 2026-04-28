@@ -392,7 +392,7 @@ namespace PlanarWar.Client.Core.Presentation
 
         public static string BuildWorkshopJobFamily(bool ready)
         {
-            return ready ? "Ready drop" : "Live front";
+            return ready ? "Drop ready" : "Live front";
         }
 
         public static string BuildWorkshopJobLore(WorkshopJobSnapshot job, bool ready, DateTime nowUtc)
@@ -434,7 +434,7 @@ namespace PlanarWar.Client.Core.Presentation
 
             if (ContainsAny(text, "ready", "pickup", "collect"))
             {
-                return "Ready timer";
+                return "Timer ready";
             }
 
             return "Carry timer";

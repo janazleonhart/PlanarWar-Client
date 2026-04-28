@@ -1292,7 +1292,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var firstReady = fronts.FirstOrDefault(front => IsFrontReady(front, nowUtc));
             if (firstReady != null)
             {
-                return $"{FirstNonBlank(firstReady.Name, firstReady.BuildingId, "Front")} ready/finished";
+                return $"{FirstNonBlank(firstReady.Name, firstReady.BuildingId, "Front")} ready to update";
             }
 
             var firstTimed = fronts.FirstOrDefault(front => front?.FinishesAtUtc.HasValue == true)

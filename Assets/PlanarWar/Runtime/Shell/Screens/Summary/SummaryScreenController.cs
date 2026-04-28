@@ -1402,7 +1402,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             if (lead.FinishesAtUtc.HasValue)
             {
                 var leadTimer = lead.FinishesAtUtc.Value <= nowUtc
-                    ? "ready / refresh for result"
+                    ? "ready to update for result"
                     : $"completes in {FormatRemaining(lead.FinishesAtUtc.Value - nowUtc)}";
                 var readySuffix = ready > 0 ? $" • {ready} ready" : string.Empty;
                 return $"{prefix} • {leadTimer}{readySuffix}";
@@ -1430,7 +1430,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             var buildReady = (s.Buildings ?? new List<BuildingSnapshot>()).FirstOrDefault(b => b != null && (IsReadyStatus(b.Status) || (b.FinishesAtUtc.HasValue && b.FinishesAtUtc.Value <= nowUtc)));
             if (buildReady != null)
             {
-                return $"{FirstNonBlank(buildReady.Name, buildReady.BuildingId, "Building")} • ready/finished";
+                return $"{FirstNonBlank(buildReady.Name, buildReady.BuildingId, "Building")} • ready to update";
             }
 
             var buildActive = (s.Buildings ?? new List<BuildingSnapshot>()).FirstOrDefault(b => b != null && IsActiveStatus(b.Status) && b.FinishesAtUtc.HasValue);
