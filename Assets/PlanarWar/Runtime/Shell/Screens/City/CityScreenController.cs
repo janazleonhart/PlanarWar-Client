@@ -70,6 +70,8 @@ namespace PlanarWar.Client.UI.Screens.City
         private DevelopmentLane activeLane = DevelopmentLane.Research;
         private string selectedCityBuildingId = string.Empty;
         private string selectedBlackMarketBuildingId = string.Empty;
+        private string selectedCityBuildOptionKind = string.Empty;
+        private string selectedBlackMarketBuildOptionKind = string.Empty;
         private ShellSummarySnapshot lastRenderedSnapshot = ShellSummarySnapshot.Empty;
 
         public CityScreenController(VisualElement root, SummaryState summaryState, Func<string, Task> onStartResearchRequested, Func<string, Task> onStartWorkshopCraftRequested, Func<string, Task> onCollectWorkshopRequested, Func<string, Task> onRecruitHeroRequested, Func<string, Task> onAcceptHeroRecruitCandidateRequested, Func<Task> onDismissHeroRecruitCandidatesRequested, Func<string, Task> onConstructBuildingRequested, Func<string, Task> onUpgradeBuildingRequested, Func<string, string, Task> onSwitchBuildingRoutingRequested, Func<string, Task> onDestroyBuildingRequested, Func<string, string, Task> onRemodelBuildingRequested, Func<string, Task> onCancelActiveBuildRequested, Action onRefreshDeskRequested, Action onBackHomeRequested)
@@ -1341,12 +1343,12 @@ namespace PlanarWar.Client.UI.Screens.City
             var visibleBuildOptions = SelectCurrentlyBuildableOptions(s, isBlackMarket, buildings);
             if (!hasActiveBuildWork)
             {
-                foreach (var option in visibleBuildOptions.Take(Math.Max(0, budget - cards.Count)))
+                if (visibleBuildOptions.Count > 0 && cards.Count < budget)
                 {
-                    cards.Add(BuildConstructOptionCard(option, isBlackMarket, hasActiveBuildWork));
+                    var selectedBuildOption = ResolveSelectedBuildOption(visibleBuildOptions, isBlackMarket);
+                    cards.Add(BuildConstructOptionCard(selectedBuildOption, visibleBuildOptions, isBlackMarket, hasActiveBuildWork));
                 }
-
-                if (visibleBuildOptions.Count == 0 && cards.Count < budget)
+                else if (visibleBuildOptions.Count == 0 && cards.Count < budget)
                 {
                     cards.Add(BuildNoAvailableBuildOptionsCard(s, isBlackMarket, buildings));
                 }
@@ -1556,18 +1558,36 @@ namespace PlanarWar.Client.UI.Screens.City
                 secondaryOnClick: canCancel ? () => TriggerCancelActiveBuild(activeBuildId) : null);
         }
 
-        private CardView BuildConstructOptionCard(BuildingBuildOption option, bool isBlackMarket, bool hasActiveBuildWork)
+        private CardView BuildConstructOptionCard(BuildingBuildOption option, IReadOnlyList<BuildingBuildOption> availableOptions, bool isBlackMarket, bool hasActiveBuildWork)
         {
+            var safeOptions = (availableOptions ?? Array.Empty<BuildingBuildOption>())
+                .Where(candidate => !string.IsNullOrWhiteSpace(candidate.Kind))
+                .ToList();
+            var selectedIndex = Math.Max(0, safeOptions.FindIndex(candidate => string.Equals(candidate.Kind, option.Kind, StringComparison.OrdinalIgnoreCase)));
+            if (selectedIndex >= safeOptions.Count)
+            {
+                selectedIndex = 0;
+            }
+
             var pendingConstruct = summaryState.IsActionBusy && string.Equals(summaryState.PendingBuildingKind, option.Kind, StringComparison.OrdinalIgnoreCase);
             var canConstruct = !summaryState.IsActionBusy && !hasActiveBuildWork && onConstructBuildingRequested != null;
+            var noun = isBlackMarket ? "front" : "building";
+            var choices = safeOptions.Select(FormatBuildOptionChoiceLabel).ToList();
+            var choiceCopy = safeOptions.Count > 1
+                ? $"Choose from {safeOptions.Count} unlocked affordable {noun} choices before starting work."
+                : $"Only one unlocked affordable {noun} choice is available right now.";
             return new CardView(
-                family: isBlackMarket ? "Front build option" : "Build option",
+                family: isBlackMarket ? "Front build choice" : "Build choice",
                 title: option.Label,
                 lore: option.Summary,
-                note: $"Cost {FormatBuildOptionCost(option)}. {(isBlackMarket ? "Click this card or its button to open this front." : "Click this card or its button to build this type.")} Only unlocked and affordable options are shown here.",
+                note: $"Cost {FormatBuildOptionCost(option)}. {choiceCopy} Raw backend kind ids stay internal.",
                 buttonText: pendingConstruct ? "Starting..." : hasActiveBuildWork ? (isBlackMarket ? "Front active" : "Build active") : isBlackMarket ? $"Open {option.Label}" : $"Build {option.Label}",
                 buttonEnabled: canConstruct,
-                onClick: canConstruct ? () => TriggerConstructBuilding(option.Kind) : null);
+                onClick: canConstruct ? () => TriggerConstructBuilding(option.Kind) : null,
+                selectorLabel: isBlackMarket ? "Choose front to open" : "Choose building to build",
+                selectorOptions: choices,
+                selectorIndex: selectedIndex,
+                selectorOnChange: safeOptions.Count > 1 ? index => SelectBuildOption(safeOptions, isBlackMarket, index) : null);
         }
 
         private static CardView BuildNoAvailableBuildOptionsCard(ShellSummarySnapshot s, bool isBlackMarket, List<BuildingSnapshot> buildings)
@@ -1621,6 +1641,65 @@ namespace PlanarWar.Client.UI.Screens.City
                 .Where(option => IsBuildOptionUnlocked(s, option))
                 .Where(option => CanAffordBuildOption(s?.Resources, option))
                 .ToList();
+        }
+
+        private BuildingBuildOption ResolveSelectedBuildOption(List<BuildingBuildOption> availableOptions, bool isBlackMarket)
+        {
+            if (availableOptions == null || availableOptions.Count == 0)
+            {
+                SetSelectedBuildOptionKind(isBlackMarket, string.Empty);
+                return default;
+            }
+
+            var selectedKind = GetSelectedBuildOptionKind(isBlackMarket);
+            var selected = availableOptions.FirstOrDefault(option => string.Equals(option.Kind, selectedKind, StringComparison.OrdinalIgnoreCase));
+            if (string.IsNullOrWhiteSpace(selected.Kind))
+            {
+                selected = availableOptions[0];
+                SetSelectedBuildOptionKind(isBlackMarket, selected.Kind);
+            }
+
+            return selected;
+        }
+
+        private void SelectBuildOption(List<BuildingBuildOption> availableOptions, bool isBlackMarket, int index)
+        {
+            if (availableOptions == null || availableOptions.Count == 0)
+            {
+                SetSelectedBuildOptionKind(isBlackMarket, string.Empty);
+                return;
+            }
+
+            var safeIndex = Math.Max(0, Math.Min(index, availableOptions.Count - 1));
+            SetSelectedBuildOptionKind(isBlackMarket, availableOptions[safeIndex].Kind);
+            if (lastRenderedSnapshot != null)
+            {
+                Render(lastRenderedSnapshot, summaryState);
+            }
+        }
+
+        private string GetSelectedBuildOptionKind(bool isBlackMarket) => isBlackMarket ? selectedBlackMarketBuildOptionKind : selectedCityBuildOptionKind;
+
+        private void SetSelectedBuildOptionKind(bool isBlackMarket, string kind)
+        {
+            if (isBlackMarket)
+            {
+                selectedBlackMarketBuildOptionKind = kind ?? string.Empty;
+            }
+            else
+            {
+                selectedCityBuildOptionKind = kind ?? string.Empty;
+            }
+        }
+
+        private static string FormatBuildOptionChoiceLabel(BuildingBuildOption option)
+        {
+            if (string.IsNullOrWhiteSpace(option.Label))
+            {
+                return FormatBuildOptionCost(option);
+            }
+
+            return $"{option.Label} • {FormatBuildOptionCost(option)}";
         }
 
         private static bool IsBuildOptionUnlocked(ShellSummarySnapshot s, BuildingBuildOption option)

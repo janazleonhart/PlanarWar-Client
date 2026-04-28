@@ -2096,6 +2096,24 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(controller, Does.Not.Contain("/api/buildings/routing"), "Routing controls should use the existing callback seam rather than inventing route strings in the UI controller.");
         }
 
+        [Test]
+        public void Development_building_build_options_use_inline_choice_selector_for_all_affordable_choices()
+        {
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/City/CityScreenController.cs");
+            Assert.That(File.Exists(controllerPath), Is.True, "CityScreenController.cs should be available from the Unity project root.");
+
+            var controller = File.ReadAllText(controllerPath);
+            Assert.That(controller, Does.Contain("ResolveSelectedBuildOption(visibleBuildOptions, isBlackMarket)"));
+            Assert.That(controller, Does.Contain("BuildConstructOptionCard(selectedBuildOption, visibleBuildOptions, isBlackMarket, hasActiveBuildWork)"));
+            Assert.That(controller, Does.Contain("selectorLabel: isBlackMarket ? \"Choose front to open\" : \"Choose building to build\""));
+            Assert.That(controller, Does.Contain("selectorOptions: choices"));
+            Assert.That(controller, Does.Contain("SelectBuildOption(safeOptions, isBlackMarket, index)"));
+            Assert.That(controller, Does.Contain("Choose from {safeOptions.Count} unlocked affordable {noun} choices before starting work."));
+            Assert.That(controller, Does.Contain("CanAffordBuildOption(s?.Resources, option)"), "Build choices should stay gated by visible material/resource truth.");
+            Assert.That(controller, Does.Not.Contain("foreach (var option in visibleBuildOptions.Take"), "Growth build choices should not be constrained by leftover card-slot count when a selector can expose all affordable options.");
+            Assert.That(controller, Does.Not.Contain("new DropdownField()"), "Build choice selection should keep using inline shell-native buttons, not native dropdowns.");
+        }
+
 
         [Test]
         public void Development_building_routing_closeout_keeps_visible_copy_honest_without_future_protection_math()
