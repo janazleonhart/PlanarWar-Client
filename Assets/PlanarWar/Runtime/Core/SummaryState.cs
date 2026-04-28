@@ -453,6 +453,123 @@ namespace PlanarWar.Client.Core
             return BuildReceiptLabel(posture?.Trim() ?? string.Empty, string.Empty, "posture");
         }
 
+        public string ResolveWorkshopRecipeReceiptLabel(string recipeId)
+        {
+            var id = recipeId?.Trim() ?? string.Empty;
+            var recipe = WorkshopRecipes?.FirstOrDefault(candidate => SameId(candidate?.RecipeId, id) || SameId(candidate?.OutputItemId, id));
+            return BuildReceiptLabel(id, FirstUsableReceiptLabel(id, "workshop recipe", recipe?.Name, recipe?.OutputItemId), "workshop recipe");
+        }
+
+        public string ResolveWorkshopJobReceiptLabel(string jobId)
+        {
+            var id = jobId?.Trim() ?? string.Empty;
+            var job = Snapshot?.WorkshopJobs?.FirstOrDefault(candidate => SameId(candidate?.Id, id));
+            var recipe = WorkshopRecipes?.FirstOrDefault(candidate => candidate != null
+                    && !string.IsNullOrWhiteSpace(job?.RecipeId)
+                    && SameId(candidate.RecipeId, job.RecipeId))
+                ?? WorkshopRecipes?.FirstOrDefault(candidate => candidate != null
+                    && !string.IsNullOrWhiteSpace(job?.OutputItemId)
+                    && SameId(candidate.OutputItemId, job.OutputItemId));
+
+            return BuildReceiptLabel(id,
+                FirstUsableReceiptLabel(id, "workshop job", job?.OutputName, recipe?.Name, job?.RecipeId, job?.OutputItemId, job?.AttachmentKind),
+                "workshop job");
+        }
+
+        public string ResolveHeroRecruitRoleReceiptLabel(string role)
+        {
+            var id = role?.Trim() ?? string.Empty;
+            var recruitment = Snapshot?.HeroRecruitment;
+            var candidate = recruitment?.Candidates?.FirstOrDefault(item => SameId(item?.Role, id) || SameId(item?.ClassId, id) || SameId(item?.ClassName, id));
+            return BuildReceiptLabel(id, FirstUsableReceiptLabel(id, "role", candidate?.Role, candidate?.ClassName, recruitment?.Role, recruitment?.StartRole), "role");
+        }
+
+        public string ResolveHeroRecruitCandidateReceiptLabel(string candidateId)
+        {
+            var id = candidateId?.Trim() ?? string.Empty;
+            var candidate = Snapshot?.HeroRecruitment?.Candidates?.FirstOrDefault(item => SameId(item?.CandidateId, id));
+            return BuildReceiptLabel(id, FirstUsableReceiptLabel(id, "candidate", candidate?.DisplayName, candidate?.ClassName, candidate?.Role), "candidate");
+        }
+
+        public string ResolveHeroArmoryItemReceiptLabel(int armorySlotIndex)
+        {
+            var item = Snapshot?.HeroArmoryBridge?.ArmoryItems?.FirstOrDefault(candidate => candidate?.SlotIndex == armorySlotIndex);
+            if (item == null)
+            {
+                return string.Empty;
+            }
+
+            return BuildReceiptLabel($"armory_slot_{armorySlotIndex}",
+                FirstUsableReceiptLabel(item.ItemId, "gear", item.Template?.Name, item.Template?.Id, item.ItemId),
+                "gear");
+        }
+
+        public string ResolveHeroGearSlotReceiptLabel(string slot)
+        {
+            var id = slot?.Trim() ?? string.Empty;
+            var normalized = NormalizeReceiptIdentity(id);
+            var slotLabel = normalized switch
+            {
+                "mainhand" => "Main Hand",
+                "offhand" => "Off Hand",
+                "ring1" => "Ring 1",
+                "ring2" => "Ring 2",
+                "head" => "Head",
+                "chest" => "Chest",
+                "legs" => "Legs",
+                "feet" => "Feet",
+                "hands" => "Hands",
+                "neck" => "Neck",
+                _ => string.Empty,
+            };
+
+            return BuildReceiptLabel(id, slotLabel, "gear slot");
+        }
+
+        public string ResolveHeroEquipPendingActionLabel(string heroId, int armorySlotIndex)
+        {
+            var heroLabel = ResolveHeroReceiptLabel(heroId);
+            var itemLabel = ResolveHeroArmoryItemReceiptLabel(armorySlotIndex);
+            if (!string.IsNullOrWhiteSpace(itemLabel) && !string.IsNullOrWhiteSpace(heroLabel))
+            {
+                return $"Equipping {itemLabel} to {heroLabel}";
+            }
+
+            if (!string.IsNullOrWhiteSpace(itemLabel))
+            {
+                return $"Equipping {itemLabel}";
+            }
+
+            if (!string.IsNullOrWhiteSpace(heroLabel))
+            {
+                return $"Equipping shared gear to {heroLabel}";
+            }
+
+            return "Equipping shared gear";
+        }
+
+        public string ResolveHeroUnequipPendingActionLabel(string heroId, string slot)
+        {
+            var heroLabel = ResolveHeroReceiptLabel(heroId);
+            var slotLabel = ResolveHeroGearSlotReceiptLabel(slot);
+            if (!string.IsNullOrWhiteSpace(slotLabel) && !string.IsNullOrWhiteSpace(heroLabel))
+            {
+                return $"Returning {slotLabel} gear from {heroLabel} to armory";
+            }
+
+            if (!string.IsNullOrWhiteSpace(slotLabel))
+            {
+                return $"Returning {slotLabel} gear to armory";
+            }
+
+            if (!string.IsNullOrWhiteSpace(heroLabel))
+            {
+                return $"Returning shared gear from {heroLabel} to armory";
+            }
+
+            return "Returning shared gear to armory";
+        }
+
         public void BeginMissionStartAction(string missionId)
         {
             var label = ResolveMissionOfferReceiptLabel(missionId);
@@ -1501,59 +1618,61 @@ namespace PlanarWar.Client.Core
 
         public void BeginWorkshopCraft(string recipeId)
         {
-            BeginAction(string.IsNullOrWhiteSpace(recipeId) ? "Starting workshop craft..." : $"Starting workshop craft: {recipeId.Trim()}");
+            var label = ResolveWorkshopRecipeReceiptLabel(recipeId);
+            BeginAction(string.IsNullOrWhiteSpace(label) ? "Starting workshop craft..." : $"Starting workshop craft: {label}");
             PendingWorkshopRecipeId = recipeId?.Trim() ?? string.Empty;
         }
 
         public void BeginWorkshopCollect(string jobId)
         {
-            BeginAction(string.IsNullOrWhiteSpace(jobId) ? "Collecting workshop item..." : $"Collecting workshop job: {jobId.Trim()}");
+            var label = ResolveWorkshopJobReceiptLabel(jobId);
+            BeginAction(string.IsNullOrWhiteSpace(label) ? "Collecting workshop item..." : $"Collecting workshop item: {label}");
             PendingWorkshopJobId = jobId?.Trim() ?? string.Empty;
         }
 
         public void BeginMissionComplete(string instanceId)
         {
-            BeginAction(string.IsNullOrWhiteSpace(instanceId) ? "Completing mission..." : $"Completing mission: {instanceId.Trim()}");
+            var label = ResolveMissionInstanceReceiptLabel(instanceId);
+            BeginAction(string.IsNullOrWhiteSpace(label) ? "Completing mission..." : $"Completing mission: {label}");
             PendingMissionInstanceId = instanceId?.Trim() ?? string.Empty;
         }
 
         public void BeginHeroRecruit(string role)
         {
-            BeginAction(string.IsNullOrWhiteSpace(role) ? "Recruiting hero..." : $"Recruiting hero: {role.Trim()}");
+            var label = ResolveHeroRecruitRoleReceiptLabel(role);
+            BeginAction(string.IsNullOrWhiteSpace(label) ? "Starting hero recruitment..." : $"Starting hero recruitment: {label}");
             PendingHeroRecruitRole = role?.Trim() ?? string.Empty;
         }
 
         public void BeginHeroRecruitAccept(string candidateId)
         {
-            BeginAction(string.IsNullOrWhiteSpace(candidateId) ? "Accepting hero candidate..." : $"Accepting hero candidate: {candidateId.Trim()}");
+            var label = ResolveHeroRecruitCandidateReceiptLabel(candidateId);
+            BeginAction(string.IsNullOrWhiteSpace(label) ? "Accepting hero candidate..." : $"Accepting hero candidate: {label}");
             PendingHeroRecruitCandidateId = candidateId?.Trim() ?? string.Empty;
         }
 
         public void BeginHeroRecruitDismiss()
         {
-            BeginAction("Dismissing hero candidates...");
+            BeginAction("Dismissing hero candidate slate...");
             PendingHeroRecruitDismiss = true;
         }
 
         public void BeginHeroRelease(string heroId)
         {
-            BeginAction(string.IsNullOrWhiteSpace(heroId) ? "Releasing hero..." : $"Releasing hero: {heroId.Trim()}");
+            var label = ResolveHeroReceiptLabel(heroId);
+            BeginAction(string.IsNullOrWhiteSpace(label) ? "Releasing hero..." : $"Releasing hero: {label}");
             PendingHeroReleaseId = heroId?.Trim() ?? string.Empty;
         }
 
         public void BeginHeroEquipFromArmory(string heroId, int armorySlotIndex)
         {
-            BeginAction(string.IsNullOrWhiteSpace(heroId)
-                ? $"Equipping shared gear from armory slot {armorySlotIndex}..."
-                : $"Equipping shared gear: {heroId.Trim()} <- armory slot {armorySlotIndex}");
+            BeginAction(ResolveHeroEquipPendingActionLabel(heroId, armorySlotIndex));
             PendingHeroReleaseId = heroId?.Trim() ?? string.Empty;
         }
 
         public void BeginHeroUnequipToArmory(string heroId, string slot)
         {
-            BeginAction(string.IsNullOrWhiteSpace(heroId)
-                ? $"Returning shared gear from {slot}..."
-                : $"Returning shared gear: {heroId.Trim()} {slot}");
+            BeginAction(ResolveHeroUnequipPendingActionLabel(heroId, slot));
             PendingHeroReleaseId = heroId?.Trim() ?? string.Empty;
         }
 

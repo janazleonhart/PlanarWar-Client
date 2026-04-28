@@ -1056,6 +1056,129 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
         [Test]
+        public void Summary_state_resolves_pending_action_labels_for_workshop_and_hero_surfaces()
+        {
+            var state = new SummaryState();
+            state.ApplySnapshot(new ShellSummarySnapshot
+            {
+                WorkshopJobs = new List<WorkshopJobSnapshot>
+                {
+                    new WorkshopJobSnapshot
+                    {
+                        Id = "job_arcane_focus_1",
+                        RecipeId = "recipe_arcane_focus_1",
+                        OutputItemId = "workshop_arcane_focus_1",
+                        AttachmentKind = "workshop_job",
+                    }
+                },
+                Heroes = new List<HeroSnapshot>
+                {
+                    new HeroSnapshot { Id = "hero_1", Name = "Lyra of the Veiled Paths" }
+                },
+                HeroRecruitment = new HeroRecruitmentSnapshot
+                {
+                    Role = "provost",
+                    StartRole = "provost",
+                    Candidates = new List<HeroRecruitCandidateSnapshot>
+                    {
+                        new HeroRecruitCandidateSnapshot
+                        {
+                            CandidateId = "candidate_1",
+                            DisplayName = "Provost Sel Varo",
+                            ClassName = "Tactician",
+                            Role = "provost",
+                        }
+                    }
+                },
+                HeroArmoryBridge = new HeroArmoryBridgeSnapshot
+                {
+                    ArmoryItems = new List<HeroArmoryItemSnapshot>
+                    {
+                        new HeroArmoryItemSnapshot
+                        {
+                            SlotIndex = 0,
+                            ItemId = "arcane_focus",
+                            Template = new HeroEquipmentTemplateSnapshot
+                            {
+                                Name = "Arcane Focus",
+                                Slot = "offhand",
+                            }
+                        }
+                    }
+                }
+            },
+            workshopRecipes: new[]
+            {
+                new WorkshopRecipeSnapshot
+                {
+                    RecipeId = "recipe_arcane_focus_1",
+                    Name = "Arcane Focus",
+                    OutputItemId = "workshop_arcane_focus_1",
+                }
+            });
+
+            Assert.That(state.ResolveWorkshopRecipeReceiptLabel("recipe_arcane_focus_1"), Is.EqualTo("Arcane Focus"));
+            Assert.That(state.ResolveWorkshopJobReceiptLabel("job_arcane_focus_1"), Is.EqualTo("Arcane Focus"));
+            Assert.That(state.ResolveHeroRecruitCandidateReceiptLabel("candidate_1"), Is.EqualTo("Provost Sel Varo"));
+            Assert.That(state.ResolveHeroArmoryItemReceiptLabel(0), Is.EqualTo("Arcane Focus"));
+            Assert.That(state.ResolveHeroEquipPendingActionLabel("hero_1", 0), Is.EqualTo("Equipping Arcane Focus to Lyra of the Veiled Paths"));
+            Assert.That(state.ResolveHeroUnequipPendingActionLabel("hero_1", "offhand"), Is.EqualTo("Returning Off Hand gear from Lyra of the Veiled Paths to armory"));
+
+            state.BeginWorkshopCraft("recipe_arcane_focus_1");
+            Assert.That(state.ActionStatus, Is.EqualTo("Starting workshop craft: Arcane Focus"));
+            Assert.That(state.ActionStatus, Does.Not.Contain("recipe_arcane_focus_1"));
+            state.FinishAction("done");
+
+            state.BeginWorkshopCollect("job_arcane_focus_1");
+            Assert.That(state.ActionStatus, Is.EqualTo("Collecting workshop item: Arcane Focus"));
+            Assert.That(state.ActionStatus, Does.Not.Contain("job_arcane_focus_1"));
+            state.FinishAction("done");
+
+            state.BeginHeroRecruitAccept("candidate_1");
+            Assert.That(state.ActionStatus, Is.EqualTo("Accepting hero candidate: Provost Sel Varo"));
+            Assert.That(state.ActionStatus, Does.Not.Contain("candidate_1"));
+            state.FinishAction("done");
+
+            state.BeginHeroRelease("hero_1");
+            Assert.That(state.ActionStatus, Is.EqualTo("Releasing hero: Lyra of the Veiled Paths"));
+            Assert.That(state.ActionStatus, Does.Not.Contain("hero_1"));
+            state.FinishAction("done");
+
+            state.BeginHeroEquipFromArmory("hero_1", 0);
+            Assert.That(state.ActionStatus, Is.EqualTo("Equipping Arcane Focus to Lyra of the Veiled Paths"));
+            Assert.That(state.ActionStatus, Does.Not.Contain("hero_1"));
+            Assert.That(state.ActionStatus, Does.Not.Contain("armory slot"));
+        }
+
+        [Test]
+        public void Pending_action_status_cleanup_removes_raw_id_busy_text_from_runtime_state()
+        {
+            var summaryStatePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Core/SummaryState.cs");
+            Assert.That(File.Exists(summaryStatePath), Is.True, "SummaryState.cs should be available from the Unity project root.");
+
+            var stateSource = File.ReadAllText(summaryStatePath);
+            foreach (var marker in new[]
+            {
+                "ResolveWorkshopRecipeReceiptLabel",
+                "ResolveWorkshopJobReceiptLabel",
+                "ResolveHeroRecruitCandidateReceiptLabel",
+                "ResolveHeroEquipPendingActionLabel",
+                "ResolveHeroUnequipPendingActionLabel",
+            })
+            {
+                Assert.That(stateSource, Does.Contain(marker), $"Pending action status text should route through {marker}.");
+            }
+
+            Assert.That(stateSource, Does.Not.Contain("Starting workshop craft: {recipeId.Trim()}"));
+            Assert.That(stateSource, Does.Not.Contain("Collecting workshop job: {jobId.Trim()}"));
+            Assert.That(stateSource, Does.Not.Contain("Completing mission: {instanceId.Trim()}"));
+            Assert.That(stateSource, Does.Not.Contain("Accepting hero candidate: {candidateId.Trim()}"));
+            Assert.That(stateSource, Does.Not.Contain("Releasing hero: {heroId.Trim()}"));
+            Assert.That(stateSource, Does.Not.Contain("Equipping shared gear: {heroId.Trim()} <- armory slot {armorySlotIndex}"));
+            Assert.That(stateSource, Does.Not.Contain("Returning shared gear: {heroId.Trim()} {slot}"));
+        }
+
+        [Test]
         public void Summary_state_formats_mission_completion_receipt_from_reward_payload()
         {
             const string response = "{ \"summary\": \"Raid resolved cleanly.\", \"rewards\": { \"wealth\": 15, \"materials\": 4 }, \"effects\": { \"controlDelta\": 2, \"threatDelta\": -1 } }";
