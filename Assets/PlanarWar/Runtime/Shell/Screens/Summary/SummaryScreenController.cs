@@ -1,3 +1,4 @@
+using PlanarWar.Client.Core.Application;
 using PlanarWar.Client.Core.Contracts;
 using PlanarWar.Client.Core.Presentation;
 using System;
@@ -52,6 +53,13 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private readonly Label pressureOperationsCopy;
         private readonly Label pressureOperationsCountBadge;
         private readonly VisualElement pressureOperationsStrip;
+        private readonly VisualElement postFounderHandoffCard;
+        private readonly Label postFounderHandoffHeadline;
+        private readonly Label postFounderHandoffCopy;
+        private readonly Label postFounderHandoffDetail;
+        private readonly Button postFounderDevelopmentButton;
+        private readonly Button postFounderOperationsButton;
+        private readonly Button postFounderRosterButton;
         private readonly VisualElement founderSetupCard;
         private readonly TextField founderCityNameField;
         private readonly Label founderSetupHeadline;
@@ -69,7 +77,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private const bool TimerDiagnosticsDevFlagEnabled = false;
         private int heartbeat;
 
-        public SummaryScreenController(VisualElement root, Func<string, string, Task> onBootstrapCityRequested = null)
+        public SummaryScreenController(VisualElement root, Func<string, string, Task> onBootstrapCityRequested = null, Action<ShellScreen> onNavigateRequested = null)
         {
             statusHeadline = root.Q<Label>("status-headline-value");
             resources = root.Q<Label>("resources-value");
@@ -113,6 +121,13 @@ namespace PlanarWar.Client.UI.Screens.Summary
             pressureOperationsCopy = root.Q<Label>("pressure-operations-copy-value");
             pressureOperationsCountBadge = root.Q<Label>("pressure-operations-count-badge-value");
             pressureOperationsStrip = root.Q<VisualElement>("pressure-operations-strip");
+            postFounderHandoffCard = root.Q<VisualElement>("post-founder-handoff-card");
+            postFounderHandoffHeadline = root.Q<Label>("post-founder-handoff-headline-value");
+            postFounderHandoffCopy = root.Q<Label>("post-founder-handoff-copy-value");
+            postFounderHandoffDetail = root.Q<Label>("post-founder-handoff-detail-value");
+            postFounderDevelopmentButton = root.Q<Button>("post-founder-development-button");
+            postFounderOperationsButton = root.Q<Button>("post-founder-operations-button");
+            postFounderRosterButton = root.Q<Button>("post-founder-roster-button");
             founderSetupCard = root.Q<VisualElement>("founder-setup-card");
             founderCityNameField = root.Q<TextField>("founder-city-name-field");
             founderSetupHeadline = root.Q<Label>("founder-setup-headline-value");
@@ -131,6 +146,10 @@ namespace PlanarWar.Client.UI.Screens.Summary
             founderMarketPrimaryButton?.RegisterCallback<ClickEvent>(_ => RequestSettlementBootstrap("black_market", onBootstrapCityRequested));
             founderCityButton?.RegisterCallback<ClickEvent>(_ => RequestSettlementBootstrap("city", onBootstrapCityRequested));
             founderMarketButton?.RegisterCallback<ClickEvent>(_ => RequestSettlementBootstrap("black_market", onBootstrapCityRequested));
+
+            postFounderDevelopmentButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(ShellScreen.City, onNavigateRequested));
+            postFounderOperationsButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(ShellScreen.BlackMarket, onNavigateRequested));
+            postFounderRosterButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(ShellScreen.Heroes, onNavigateRequested));
         }
 
         public void Render(ShellSummarySnapshot s, bool isSummaryLoaded, bool isActionBusy = false, string actionStatus = null, bool actionFailed = false)
@@ -153,6 +172,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             resourceTick.text = FormatTick(s.ResourceTickTiming);
             RenderTimerDiagnostics(s, isSummaryLoaded, nowUtc);
             RenderFounderSetup(s, isSummaryLoaded, isActionBusy, actionStatus, actionFailed);
+            RenderPostFounderHandoff(s, isSummaryLoaded);
 
             RenderPressureDesk(s);
         }
@@ -166,6 +186,57 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             var cityName = founderCityNameField?.value?.Trim() ?? string.Empty;
             await onBootstrapCityRequested(cityName, lane);
+        }
+
+        private static void RequestPostFounderNavigation(ShellScreen screen, Action<ShellScreen> onNavigateRequested)
+        {
+            onNavigateRequested?.Invoke(screen);
+        }
+
+        private void RenderPostFounderHandoff(ShellSummarySnapshot summary, bool isSummaryLoaded)
+        {
+            var shouldShow = isSummaryLoaded && summary != null && summary.HasCity;
+            if (postFounderHandoffCard != null)
+            {
+                postFounderHandoffCard.style.display = shouldShow ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            if (!shouldShow)
+            {
+                return;
+            }
+
+            var lane = NormalizeLane(summary.City?.SettlementLane);
+            var isBlackMarket = string.Equals(lane, "black_market", StringComparison.OrdinalIgnoreCase);
+            var rosterLabel = isBlackMarket ? "Open Operatives" : "Open Heroes";
+
+            if (postFounderHandoffHeadline != null)
+            {
+                postFounderHandoffHeadline.text = isBlackMarket
+                    ? "Black Market is live. Pick the next desk."
+                    : "City is live. Pick the next desk.";
+            }
+
+            if (postFounderHandoffCopy != null)
+            {
+                postFounderHandoffCopy.text = isBlackMarket
+                    ? "Use Development for fronts, workshop, and shadow-book research. Use Operations for cells, routes, missions, and pressure. Use Operatives for contacts and gear."
+                    : "Use Development for buildings, workshop, and research. Use Operations for missions and formations. Use Heroes for recruitment and gear.";
+            }
+
+            if (postFounderHandoffDetail != null)
+            {
+                postFounderHandoffDetail.text = "These buttons only change the client desk; they do not invent setup progress, rewards, timers, inventory, or town layout state.";
+            }
+
+            if (postFounderRosterButton != null)
+            {
+                postFounderRosterButton.text = rosterLabel;
+            }
+
+            postFounderDevelopmentButton?.SetEnabled(true);
+            postFounderOperationsButton?.SetEnabled(true);
+            postFounderRosterButton?.SetEnabled(true);
         }
 
         private void RenderFounderSetup(ShellSummarySnapshot summary, bool isSummaryLoaded, bool isActionBusy, string actionStatus, bool actionFailed)

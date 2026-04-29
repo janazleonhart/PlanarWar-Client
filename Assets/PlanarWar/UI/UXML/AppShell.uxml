@@ -208,6 +208,21 @@
                     </ui:VisualElement>
                 </ui:VisualElement>
 
+                <ui:VisualElement name="post-founder-handoff-card" class="summary-card summary-card--full summary-card--action post-founder-handoff-card">
+                    <ui:VisualElement class="development-actions-head">
+                        <ui:Label text="Next desks" class="eyebrow" />
+                        <ui:Label text="Client route only" class="chapter-row__badge" />
+                    </ui:VisualElement>
+                    <ui:Label name="post-founder-handoff-headline-value" text="Settlement is live. Pick the next desk." class="rail-note-title" />
+                    <ui:Label name="post-founder-handoff-copy-value" text="Development, Operations, and Heroes / Operatives expose lane-specific actions from the live summary payload." class="summary-value summary-value--glance" />
+                    <ui:Label name="post-founder-handoff-detail-value" text="These buttons only change the client desk; they do not invent setup progress, rewards, timers, inventory, or town layout state." class="metric-subvalue metric-subvalue--wrap" />
+                    <ui:VisualElement class="button-row post-founder-handoff-actions">
+                        <ui:Button name="post-founder-development-button" text="Open Development" class="action-button action-button--primary" />
+                        <ui:Button name="post-founder-operations-button" text="Open Operations" class="action-button" />
+                        <ui:Button name="post-founder-roster-button" text="Open Heroes" class="action-button" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
                 <ui:VisualElement name="founder-setup-card" class="summary-card summary-card--full summary-card--action founder-setup-card">
                     <ui:VisualElement class="development-actions-head">
                         <ui:Label text="Settlement setup" class="eyebrow" />

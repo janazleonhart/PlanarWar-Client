@@ -3455,6 +3455,49 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(bootstrap, Does.Not.Contain("BootstrapCityAsync(email"));
         }
 
+        [Test]
+        public void Home_surface_exposes_post_founder_handoff_without_fake_progress_claims()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            Assert.That(uxml, Does.Contain("post-founder-handoff-card"));
+            Assert.That(uxml, Does.Contain("post-founder-development-button"));
+            Assert.That(uxml, Does.Contain("post-founder-operations-button"));
+            Assert.That(uxml, Does.Contain("post-founder-roster-button"));
+            Assert.That(uxml, Does.Contain("Client route only"));
+            Assert.That(uxml, Does.Contain("do not invent setup progress, rewards, timers, inventory, or town layout state"));
+            Assert.That(uxml, Does.Not.Contain("Use City / Black Market tabs"));
+            Assert.That(uxml, Does.Not.Contain("starter rewards"));
+            Assert.That(uxml, Does.Not.Contain("2D town layout"));
+        }
+
+        [Test]
+        public void Client_wires_post_founder_handoff_to_existing_desks_only()
+        {
+            var shellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/AppShellController.cs");
+            var summaryPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs");
+            Assert.That(File.Exists(shellPath), Is.True, "AppShellController.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(summaryPath), Is.True, "SummaryScreenController.cs should be available from the Unity project root.");
+
+            var shell = File.ReadAllText(shellPath);
+            var summary = File.ReadAllText(summaryPath);
+
+            Assert.That(shell, Does.Contain("BuildPostFounderActionHint"));
+            Assert.That(shell, Does.Contain("Development for buildings and research"));
+            Assert.That(shell, Does.Contain("Development for fronts and shadow-book research"));
+            Assert.That(shell, Does.Not.Contain("Use City / Black Market tabs"));
+            Assert.That(summary, Does.Contain("RenderPostFounderHandoff"));
+            Assert.That(summary, Does.Contain("postFounderDevelopmentButton"));
+            Assert.That(summary, Does.Contain("postFounderOperationsButton"));
+            Assert.That(summary, Does.Contain("postFounderRosterButton"));
+            Assert.That(summary, Does.Contain("ShellScreen.City"));
+            Assert.That(summary, Does.Contain("ShellScreen.BlackMarket"));
+            Assert.That(summary, Does.Contain("ShellScreen.Heroes"));
+            Assert.That(summary, Does.Not.Contain("BootstrapCityAsync"));
+        }
+
         private static VisualElement BuildMinimalHeroControllerRoot()
         {
             var root = new VisualElement();

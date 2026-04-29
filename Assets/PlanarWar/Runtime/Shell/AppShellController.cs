@@ -90,7 +90,7 @@ namespace PlanarWar.Client.UI
             socialRoot = root.Q<VisualElement>("social-screen");
             authRoot = root.Q<VisualElement>("auth-screen");
 
-            summaryScreen = new SummaryScreenController(root, onBootstrapCityRequested);
+            summaryScreen = new SummaryScreenController(root, onBootstrapCityRequested, screen => navigationState.SetActive(screen));
             cityScreen = new CityScreenController(root, summaryState, onStartResearchRequested, onStartWorkshopCraftRequested, onCollectWorkshopRequested, onRecruitHeroRequested, onAcceptHeroRecruitCandidateRequested, onDismissHeroRecruitCandidatesRequested, onConstructBuildingRequested, onUpgradeBuildingRequested, onSwitchBuildingRoutingRequested, onDestroyBuildingRequested, onRemodelBuildingRequested, onCancelActiveBuildRequested, onRefreshDeskRequested, onBackHomeRequested);
             blackMarketScreen = new BlackMarketScreenController(root, summaryState, onReinforceArmyRequested, onRenameArmyRequested, onSplitArmyRequested, onMergeArmyRequested, onDisbandArmyRequested, onAssignArmyHoldRequested, onReleaseArmyHoldRequested, onWarfrontAssaultRequested, onGarrisonStrikeRequested, onStartMissionRequested, onCompleteMissionRequested, onRefreshDeskRequested);
             heroScreen = new HeroScreenController(root, summaryState, onRecruitHeroRequested, onAcceptHeroRecruitCandidateRequested, onDismissHeroRecruitCandidatesRequested, onReleaseHeroRequested, onEquipHeroFromArmoryRequested, onUnequipHeroToArmoryRequested, onRefreshDeskRequested);
@@ -167,7 +167,7 @@ namespace PlanarWar.Client.UI
             actionHintValue.text = isAuthenticated
                 ? (!string.IsNullOrWhiteSpace(actionStatus)
                     ? actionStatus
-                    : (summaryState.Snapshot.HasCity ? "Use City / Black Market tabs for lane-specific read-only surfaces." : "Founder mode: no city snapshot yet."))
+                    : (summaryState.Snapshot.HasCity ? BuildPostFounderActionHint(summaryState.Snapshot) : "Founder mode: choose City or Black Market from live setup truth."))
                 : "Sign in or register first, then the setup screen opens here.";
             lastUpdatedValue.text = summaryState.IsLoaded ? $"Updated {summaryState.LastUpdatedUtc:HH:mm:ss} UTC" : "No summary fetch yet.";
             liveClockValue.text = $"Now {DateTime.UtcNow:HH:mm:ss} UTC";
@@ -205,6 +205,16 @@ namespace PlanarWar.Client.UI
 
             RenderChapterState();
             RenderCommsPanel();
+        }
+
+        private static string BuildPostFounderActionHint(PlanarWar.Client.Core.Contracts.ShellSummarySnapshot snapshot)
+        {
+            var isBlackMarket = string.Equals(snapshot?.City?.SettlementLane, "black_market", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(snapshot?.City?.SettlementLaneLabel, "Black Market", StringComparison.OrdinalIgnoreCase);
+
+            return isBlackMarket
+                ? "Use Development for fronts and shadow-book research, Operations for routes and missions, and Operatives for contacts and gear."
+                : "Use Development for buildings and research, Operations for missions and formations, and Heroes for recruitment and gear.";
         }
 
         private void RenderChapterState()
