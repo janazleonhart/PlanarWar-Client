@@ -20,7 +20,7 @@
 
             <ui:VisualElement class="rail-section-head">
                 <ui:Label text="Chapter menu" class="eyebrow" />
-                <ui:Label text="5 lanes" class="rail-section-head__meta" />
+                <ui:Label text="5 desks + guide" class="rail-section-head__meta" />
             </ui:VisualElement>
 
             <ui:VisualElement class="rail-active-card rail-version-card">
@@ -98,6 +98,19 @@
                         <ui:Label text="Bottom comms, room state, and filters anchor this lane." class="chapter-row__copy" />
                     </ui:VisualElement>
                     <ui:Label text="Route" class="chapter-row__action" />
+                </ui:Button>
+
+                <ui:Button name="nav-guide-button" class="chapter-row rail-button">
+                    <ui:Label text="06" class="chapter-row__index" />
+                    <ui:VisualElement class="chapter-row__body">
+                        <ui:VisualElement class="chapter-row__top">
+                            <ui:Label text="Support" class="chapter-row__kicker" />
+                            <ui:Label text="Guide" class="chapter-row__badge" />
+                        </ui:VisualElement>
+                        <ui:Label text="Tester Guide" class="chapter-row__title" />
+                        <ui:Label text="First-run flow, desk map, and reporting checklist for playtesting." class="chapter-row__copy" />
+                    </ui:VisualElement>
+                    <ui:Label text="Read" class="chapter-row__action" />
                 </ui:Button>
             </ui:VisualElement>
                 </ui:VisualElement>
@@ -181,6 +194,15 @@
                                 </ui:VisualElement>
                             </ui:VisualElement>
                         </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card summary-card--full tester-guide-entry-card">
+                            <ui:Label text="Need orientation?" class="eyebrow" />
+                            <ui:Label text="Tester Guide" class="rail-note-title" />
+                            <ui:Label text="Read the first-run flow, desk map, and reporting checklist before or after sign-in. The guide changes no live account, settlement, timer, reward, or inventory state." class="summary-value summary-value--glance" />
+                            <ui:VisualElement class="button-row button-row--tight guide-actions">
+                                <ui:Button name="auth-guide-button" text="Open Tester Guide" class="action-button action-button--primary" />
+                            </ui:VisualElement>
+                        </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:ScrollView>
 
@@ -202,6 +224,7 @@
                     <ui:VisualElement class="button-row">
                         <ui:Button name="refresh-button" text="Refresh summary" class="action-button action-button--primary" />
                         <ui:Button name="home-development-button" text="Open Development" class="action-button" />
+                        <ui:Button name="home-guide-button" text="Tester Guide" class="action-button" />
                         <ui:Button name="whereami-button" text="Where am I" class="action-button" />
                         <ui:Button name="ping-button" text="Ping" class="action-button" />
                         <ui:Button name="toggle-timer-diagnostics-button" text="Show timer debug" class="action-button home-dev-diagnostic-gated" />
@@ -1019,8 +1042,65 @@
                         </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:ScrollView>
-</ui:VisualElement>
 
+                <ui:ScrollView name="guide-screen" class="screen-panel screen-scroll guide-screen" mode="Vertical">
+                    <ui:VisualElement class="screen-scroll-content guide-screen-content">
+                        <ui:VisualElement class="summary-hero guide-command-hero">
+                            <ui:Label text="Tester guide" class="eyebrow" />
+                            <ui:Label text="How to test the current client" class="headline" />
+                            <ui:Label text="Use this guide to find the live gameplay desks and report real blockers. No fake tutorial progress, rewards, timers, inventory, or town layout state is recorded here." class="headline-subtext" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card summary-card--full summary-card--action guide-overview-card">
+                            <ui:Label text="First-run path" class="eyebrow" />
+                            <ui:Label text="Register or sign in, choose City or Black Market from the setup card, then use Home to jump into the active desks." class="summary-value summary-value--glance" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-grid guide-grid">
+                            <ui:VisualElement class="summary-card glance-card guide-card">
+                                <ui:Label text="Home" class="eyebrow" />
+                                <ui:Label text="Command floor" class="rail-note-title" />
+                                <ui:Label text="Scan resources, action receipts, timers, and the post-founder handoff. Home route buttons only move between client desks." class="summary-value summary-value--glance" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="summary-card glance-card guide-card">
+                                <ui:Label text="Development" class="eyebrow" />
+                                <ui:Label text="Growth desk" class="rail-note-title" />
+                                <ui:Label text="Use research, building or front controls, workshop crafting, and building routing. Routing labels are guidance only until deeper protection or exposure rules exist." class="summary-value summary-value--glance" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="summary-card glance-card guide-card">
+                                <ui:Label text="Workshop" class="eyebrow" />
+                                <ui:Label text="Crafting loop" class="rail-note-title" />
+                                <ui:Label text="Pick a gear slot, choose a makeable recipe, craft it, wait for the active job, collect it, then verify the item appears in shared armory truth." class="summary-value summary-value--glance" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="summary-card glance-card guide-card">
+                                <ui:Label text="Operations" class="eyebrow" />
+                                <ui:Label text="Missions and pressure" class="rail-note-title" />
+                                <ui:Label text="Review routes, cells or formations, mission offers, active mission timers, and completion reports. Report raw payload text or dead action buttons." class="summary-value summary-value--glance" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="summary-card glance-card guide-card">
+                                <ui:Label text="Heroes / Operatives" class="eyebrow" />
+                                <ui:Label text="Roster and gear" class="rail-note-title" />
+                                <ui:Label text="Recruit, review candidates, release unwanted roster members, equip compatible gear, and unequip items back into shared armory." class="summary-value summary-value--glance" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="summary-card glance-card guide-card">
+                                <ui:Label text="Social / Comms" class="eyebrow" />
+                                <ui:Label text="Chat posture" class="rail-note-title" />
+                                <ui:Label text="Use filters and room chat when connected. Disconnected comms do not necessarily mean gameplay HTTP actions are offline." class="summary-value summary-value--glance" />
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card summary-card--full guide-report-card">
+                            <ui:Label text="What to report" class="eyebrow" />
+                            <ui:Label text="Report blocked login, failed founding, invisible receipts, stale timers, raw JSON or object text, misleading buttons, missing collect results, incompatible gear shown as wearable, or navigation dead ends." class="summary-value summary-value--glance" />
+                            <ui:Label text="Useful screenshots include the full desk, the action receipt, the selected item or mission, and the connection and summary status strip." class="metric-subvalue metric-subvalue--wrap" />
+                            <ui:VisualElement class="button-row guide-actions">
+                                <ui:Button name="guide-back-home-button" text="Back to Home / Sign in" class="action-button action-button--primary" />
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:ScrollView>
+
+                </ui:VisualElement>
             <ui:VisualElement name="bottom-comms" class="panel comms-panel">
                 <ui:VisualElement class="comms-header-row">
                     <ui:VisualElement>

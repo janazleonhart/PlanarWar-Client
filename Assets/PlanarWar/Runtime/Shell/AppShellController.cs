@@ -28,6 +28,7 @@ namespace PlanarWar.Client.UI
         private readonly VisualElement blackMarketRoot;
         private readonly VisualElement heroesRoot;
         private readonly VisualElement socialRoot;
+        private readonly VisualElement guideRoot;
         private readonly VisualElement authRoot;
 
         private readonly Label connectionValue;
@@ -66,6 +67,7 @@ namespace PlanarWar.Client.UI
         private readonly Label navHeroesTitle;
         private readonly Label navHeroesCopy;
         private readonly Button navSocialButton;
+        private readonly Button navGuideButton;
 
         private readonly Label commsStatusValue;
         private readonly Label commsHintValue;
@@ -88,6 +90,7 @@ namespace PlanarWar.Client.UI
             blackMarketRoot = root.Q<VisualElement>("placeholder-screen");
             heroesRoot = root.Q<VisualElement>("heroes-screen");
             socialRoot = root.Q<VisualElement>("social-screen");
+            guideRoot = root.Q<VisualElement>("guide-screen");
             authRoot = root.Q<VisualElement>("auth-screen");
 
             summaryScreen = new SummaryScreenController(root, onBootstrapCityRequested, screen => navigationState.SetActive(screen));
@@ -132,6 +135,7 @@ namespace PlanarWar.Client.UI
             navHeroesTitle = root.Q<Label>("nav-heroes-title");
             navHeroesCopy = root.Q<Label>("nav-heroes-copy");
             navSocialButton = root.Q<Button>("nav-social-button");
+            navGuideButton = root.Q<Button>("nav-guide-button");
 
             commsStatusValue = root.Q<Label>("comms-status-value");
             commsHintValue = root.Q<Label>("comms-hint-value");
@@ -146,6 +150,7 @@ namespace PlanarWar.Client.UI
         public void Render()
         {
             var isAuthenticated = sessionState.IsAuthenticated;
+            var isGuideOpen = navigationState.ActiveScreen == ShellScreen.Guide;
             connectionValue.text = sessionState.IsConnected ? "Connected" : "Disconnected";
             shardValue.text = string.IsNullOrWhiteSpace(sessionState.ShardId) || sessionState.ShardId == "-" ? "—" : sessionState.ShardId;
             roomValue.text = string.IsNullOrWhiteSpace(sessionState.RoomId) || sessionState.RoomId == "-" ? "—" : sessionState.RoomId;
@@ -189,6 +194,7 @@ namespace PlanarWar.Client.UI
             navWarfrontButton?.SetEnabled(isAuthenticated);
             navHeroesButton?.SetEnabled(isAuthenticated);
             navSocialButton?.SetEnabled(isAuthenticated);
+            navGuideButton?.SetEnabled(true);
 
             summaryScreen.Render(summaryState.Snapshot, summaryState.IsLoaded, summaryState.IsActionBusy, summaryState.ActionStatus, summaryState.ActionFailed);
             cityScreen.Render(summaryState.Snapshot, summaryState);
@@ -196,12 +202,13 @@ namespace PlanarWar.Client.UI
             heroScreen.Render(summaryState.Snapshot);
             socialScreen.Render(sessionState);
 
-            if (authRoot != null) authRoot.style.display = isAuthenticated ? DisplayStyle.None : DisplayStyle.Flex;
+            if (authRoot != null) authRoot.style.display = !isAuthenticated && !isGuideOpen ? DisplayStyle.Flex : DisplayStyle.None;
             if (summaryRoot != null) summaryRoot.style.display = isAuthenticated && navigationState.ActiveScreen == ShellScreen.Summary ? DisplayStyle.Flex : DisplayStyle.None;
             if (cityRoot != null) cityRoot.style.display = isAuthenticated && navigationState.ActiveScreen == ShellScreen.City ? DisplayStyle.Flex : DisplayStyle.None;
             if (blackMarketRoot != null) blackMarketRoot.style.display = isAuthenticated && navigationState.ActiveScreen == ShellScreen.BlackMarket ? DisplayStyle.Flex : DisplayStyle.None;
             if (heroesRoot != null) heroesRoot.style.display = isAuthenticated && navigationState.ActiveScreen == ShellScreen.Heroes ? DisplayStyle.Flex : DisplayStyle.None;
             if (socialRoot != null) socialRoot.style.display = isAuthenticated && navigationState.ActiveScreen == ShellScreen.Social ? DisplayStyle.Flex : DisplayStyle.None;
+            if (guideRoot != null) guideRoot.style.display = isGuideOpen ? DisplayStyle.Flex : DisplayStyle.None;
 
             RenderChapterState();
             RenderCommsPanel();
@@ -227,6 +234,7 @@ namespace PlanarWar.Client.UI
                 ShellScreen.BlackMarket => ("Operations", "Operations doctrine", "Routes, readiness, holds, and covert deployment stay visible here before deeper operations wiring lands."),
                 ShellScreen.Heroes => (heroLane.Title, heroLane.Kicker, heroLane.ChapterCopy),
                 ShellScreen.Social => ("Social", "Shared comms", "Room state, recent lines, and channel posture stay honest here without inventing a full social stack."),
+                ShellScreen.Guide => ("Tester Guide", "Help desk", "Read the first-run guide, desk map, and report checklist without changing live gameplay state."),
                 _ => ("Summary", "Command floor", "This rail stays menu-owned.")
             };
 
@@ -238,13 +246,14 @@ namespace PlanarWar.Client.UI
             if (currentChapterTitle != null) currentChapterTitle.text = title;
             if (currentChapterKicker != null) currentChapterKicker.text = kicker;
             if (currentChapterCopy != null) currentChapterCopy.text = copy;
-            if (currentChapterMeta != null) currentChapterMeta.text = navigationState.ActiveScreen == ShellScreen.Summary ? "Live now" : "Desk open";
+            if (currentChapterMeta != null) currentChapterMeta.text = navigationState.ActiveScreen == ShellScreen.Summary ? "Live now" : navigationState.ActiveScreen == ShellScreen.Guide ? "Guide open" : "Desk open";
 
             SetNavActive(navHomeButton, navigationState.ActiveScreen == ShellScreen.Summary);
             SetNavActive(navDevelopmentButton, navigationState.ActiveScreen == ShellScreen.City);
             SetNavActive(navWarfrontButton, navigationState.ActiveScreen == ShellScreen.BlackMarket);
             SetNavActive(navHeroesButton, navigationState.ActiveScreen == ShellScreen.Heroes);
             SetNavActive(navSocialButton, navigationState.ActiveScreen == ShellScreen.Social);
+            SetNavActive(navGuideButton, navigationState.ActiveScreen == ShellScreen.Guide);
         }
 
         private void RenderCommsPanel()

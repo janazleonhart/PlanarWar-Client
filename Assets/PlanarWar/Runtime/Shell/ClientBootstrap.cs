@@ -1277,6 +1277,9 @@ namespace PlanarWar.Client.UI
             RegisterSubmitOnEnter(registerConfirmPasswordField, Register);
             root.Q<Button>("refresh-button")?.RegisterCallback<ClickEvent>(_ => RefreshSummary());
             root.Q<Button>("home-development-button")?.RegisterCallback<ClickEvent>(_ => navigationState.SetActive(ShellScreen.City));
+            root.Q<Button>("home-guide-button")?.RegisterCallback<ClickEvent>(_ => navigationState.SetActive(ShellScreen.Guide));
+            root.Q<Button>("auth-guide-button")?.RegisterCallback<ClickEvent>(_ => navigationState.SetActive(ShellScreen.Guide));
+            root.Q<Button>("guide-back-home-button")?.RegisterCallback<ClickEvent>(_ => navigationState.SetActive(ShellScreen.Summary));
             root.Q<Button>("whereami-button")?.RegisterCallback<ClickEvent>(_ => wsController?.RequestWhereAmI());
             root.Q<Button>("ping-button")?.RegisterCallback<ClickEvent>(_ => wsController?.SendPing());
 
@@ -1285,6 +1288,7 @@ namespace PlanarWar.Client.UI
             root.Q<Button>("nav-warfront-button")?.RegisterCallback<ClickEvent>(_ => navigationState.SetActive(ShellScreen.BlackMarket));
             root.Q<Button>("nav-heroes-button")?.RegisterCallback<ClickEvent>(_ => navigationState.SetActive(ShellScreen.Heroes));
             root.Q<Button>("nav-social-button")?.RegisterCallback<ClickEvent>(_ => navigationState.SetActive(ShellScreen.Social));
+            root.Q<Button>("nav-guide-button")?.RegisterCallback<ClickEvent>(_ => navigationState.SetActive(ShellScreen.Guide));
 
             root.Q<Button>("chat-all-button")?.RegisterCallback<ClickEvent>(_ => sessionState.SetActiveChatChannel("all"));
             root.Q<Button>("chat-room-button")?.RegisterCallback<ClickEvent>(_ => sessionState.SetActiveChatChannel("room"));

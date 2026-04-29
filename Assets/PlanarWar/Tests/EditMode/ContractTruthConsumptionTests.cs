@@ -3600,6 +3600,50 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(guide, Does.Contain("Good smoke-test route"));
         }
 
+        [Test]
+        public void Tester_guide_is_accessible_from_client_shell_without_backend_actions()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            Assert.That(uxml, Does.Contain("guide-screen"));
+            Assert.That(uxml, Does.Contain("nav-guide-button"));
+            Assert.That(uxml, Does.Contain("auth-guide-button"));
+            Assert.That(uxml, Does.Contain("home-guide-button"));
+            Assert.That(uxml, Does.Contain("guide-back-home-button"));
+            Assert.That(uxml, Does.Contain("No fake tutorial progress"));
+            Assert.That(uxml, Does.Contain("What to report"));
+            Assert.That(uxml, Does.Contain("City or Black Market"));
+            Assert.That(uxml, Does.Contain("Workshop"));
+            Assert.That(uxml, Does.Not.Contain("tutorial complete"));
+        }
+
+        [Test]
+        public void Shell_navigation_includes_tester_guide_as_static_help_surface()
+        {
+            var navigationPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Core/Application/ShellNavigationState.cs");
+            var bootstrapPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/ClientBootstrap.cs");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/AppShellController.cs");
+
+            Assert.That(File.Exists(navigationPath), Is.True);
+            Assert.That(File.Exists(bootstrapPath), Is.True);
+            Assert.That(File.Exists(controllerPath), Is.True);
+
+            var navigation = File.ReadAllText(navigationPath);
+            var bootstrap = File.ReadAllText(bootstrapPath);
+            var controller = File.ReadAllText(controllerPath);
+
+            Assert.That(navigation, Does.Contain("Guide"));
+            Assert.That(bootstrap, Does.Contain("nav-guide-button"));
+            Assert.That(bootstrap, Does.Contain("auth-guide-button"));
+            Assert.That(bootstrap, Does.Contain("home-guide-button"));
+            Assert.That(bootstrap, Does.Contain("guide-back-home-button"));
+            Assert.That(controller, Does.Contain("guideRoot"));
+            Assert.That(controller, Does.Contain("ShellScreen.Guide"));
+            Assert.That(controller, Does.Contain("navGuideButton?.SetEnabled(true)"));
+        }
+
         private static VisualElement BuildMinimalHeroControllerRoot()
         {
             var root = new VisualElement();

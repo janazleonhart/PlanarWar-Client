@@ -8,7 +8,8 @@ namespace PlanarWar.Client.Core.Application
         City,
         BlackMarket,
         Heroes,
-        Social
+        Social,
+        Guide
     }
 
     public sealed class ShellNavigationState
