@@ -28,6 +28,7 @@ namespace PlanarWar.Client.UI
         private readonly VisualElement blackMarketRoot;
         private readonly VisualElement heroesRoot;
         private readonly VisualElement socialRoot;
+        private readonly VisualElement authRoot;
 
         private readonly Label connectionValue;
         private readonly Label shardValue;
@@ -44,9 +45,12 @@ namespace PlanarWar.Client.UI
         private readonly Label clientAuthorityValue;
 
         private readonly VisualElement authLoginFields;
+        private readonly VisualElement authRegisterFields;
         private readonly VisualElement loginButtonRow;
+        private readonly VisualElement registerButtonRow;
         private readonly VisualElement authActionRow;
         private readonly Button loginButton;
+        private readonly Button registerButton;
         private readonly Button logoutButton;
 
         private readonly Label currentChapterTitle;
@@ -84,6 +88,7 @@ namespace PlanarWar.Client.UI
             blackMarketRoot = root.Q<VisualElement>("placeholder-screen");
             heroesRoot = root.Q<VisualElement>("heroes-screen");
             socialRoot = root.Q<VisualElement>("social-screen");
+            authRoot = root.Q<VisualElement>("auth-screen");
 
             summaryScreen = new SummaryScreenController(root, onBootstrapCityRequested);
             cityScreen = new CityScreenController(root, summaryState, onStartResearchRequested, onStartWorkshopCraftRequested, onCollectWorkshopRequested, onRecruitHeroRequested, onAcceptHeroRecruitCandidateRequested, onDismissHeroRecruitCandidatesRequested, onConstructBuildingRequested, onUpgradeBuildingRequested, onSwitchBuildingRoutingRequested, onDestroyBuildingRequested, onRemodelBuildingRequested, onCancelActiveBuildRequested, onRefreshDeskRequested, onBackHomeRequested);
@@ -106,9 +111,12 @@ namespace PlanarWar.Client.UI
             clientAuthorityValue = root.Q<Label>("client-authority-value");
 
             authLoginFields = root.Q<VisualElement>("auth-login-fields");
+            authRegisterFields = root.Q<VisualElement>("auth-register-fields");
             loginButtonRow = root.Q<VisualElement>("login-button-row");
+            registerButtonRow = root.Q<VisualElement>("register-button-row");
             authActionRow = root.Q<VisualElement>("auth-action-row");
             loginButton = root.Q<Button>("login-button");
+            registerButton = root.Q<Button>("register-button");
             logoutButton = root.Q<Button>("logout-button");
 
             currentChapterTitle = root.Q<Label>("current-chapter-title");
@@ -147,12 +155,20 @@ namespace PlanarWar.Client.UI
                     ? (string.IsNullOrWhiteSpace(summaryState.LastError) || summaryState.LastError == "-"
                         ? "Summary pending"
                         : summaryState.LastError)
-                    : "Sign in to load summary";
+                    : "Sign in or create an account";
+            var loginStatus = sessionState.LoginStatus;
             authStatusValue.text = isAuthenticated
-                ? sessionState.LoginStatus
-                : "Awaiting sign in.";
+                ? loginStatus
+                : string.Equals(loginStatus, "Demo mode active.", StringComparison.OrdinalIgnoreCase)
+                    ? "Sign in or create an account below."
+                    : loginStatus;
             accountValue.text = isAuthenticated ? sessionState.DisplayName : "Guest";
-            actionHintValue.text = summaryState.Snapshot.HasCity ? "Use City / Black Market tabs for lane-specific read-only surfaces." : "Founder mode: no city snapshot yet.";
+            var actionStatus = summaryState.ActionStatus;
+            actionHintValue.text = isAuthenticated
+                ? (!string.IsNullOrWhiteSpace(actionStatus)
+                    ? actionStatus
+                    : (summaryState.Snapshot.HasCity ? "Use City / Black Market tabs for lane-specific read-only surfaces." : "Founder mode: no city snapshot yet."))
+                : "Sign in or register first, then the setup screen opens here.";
             lastUpdatedValue.text = summaryState.IsLoaded ? $"Updated {summaryState.LastUpdatedUtc:HH:mm:ss} UTC" : "No summary fetch yet.";
             liveClockValue.text = $"Now {DateTime.UtcNow:HH:mm:ss} UTC";
             clientVersionValue.text = versionState?.BuildLabel ?? "v0.0.0-local";
@@ -161,22 +177,31 @@ namespace PlanarWar.Client.UI
             clientAuthorityValue.text = versionState?.AuthorityHint ?? "Patch authority unknown.";
 
             if (authLoginFields != null) authLoginFields.style.display = isAuthenticated ? DisplayStyle.None : DisplayStyle.Flex;
+            if (authRegisterFields != null) authRegisterFields.style.display = isAuthenticated ? DisplayStyle.None : DisplayStyle.Flex;
             if (loginButtonRow != null) loginButtonRow.style.display = isAuthenticated ? DisplayStyle.None : DisplayStyle.Flex;
+            if (registerButtonRow != null) registerButtonRow.style.display = isAuthenticated ? DisplayStyle.None : DisplayStyle.Flex;
             if (authActionRow != null) authActionRow.style.display = isAuthenticated ? DisplayStyle.Flex : DisplayStyle.None;
             loginButton?.SetEnabled(!isAuthenticated);
+            registerButton?.SetEnabled(!isAuthenticated);
             logoutButton?.SetEnabled(isAuthenticated);
+            navHomeButton?.SetEnabled(isAuthenticated);
+            navDevelopmentButton?.SetEnabled(isAuthenticated);
+            navWarfrontButton?.SetEnabled(isAuthenticated);
+            navHeroesButton?.SetEnabled(isAuthenticated);
+            navSocialButton?.SetEnabled(isAuthenticated);
 
-            summaryScreen.Render(summaryState.Snapshot, summaryState.IsLoaded, summaryState.IsActionBusy);
+            summaryScreen.Render(summaryState.Snapshot, summaryState.IsLoaded, summaryState.IsActionBusy, summaryState.ActionStatus, summaryState.ActionFailed);
             cityScreen.Render(summaryState.Snapshot, summaryState);
             blackMarketScreen.Render(summaryState.Snapshot);
             heroScreen.Render(summaryState.Snapshot);
             socialScreen.Render(sessionState);
 
-            summaryRoot.style.display = navigationState.ActiveScreen == ShellScreen.Summary ? DisplayStyle.Flex : DisplayStyle.None;
-            cityRoot.style.display = navigationState.ActiveScreen == ShellScreen.City ? DisplayStyle.Flex : DisplayStyle.None;
-            blackMarketRoot.style.display = navigationState.ActiveScreen == ShellScreen.BlackMarket ? DisplayStyle.Flex : DisplayStyle.None;
-            if (heroesRoot != null) heroesRoot.style.display = navigationState.ActiveScreen == ShellScreen.Heroes ? DisplayStyle.Flex : DisplayStyle.None;
-            if (socialRoot != null) socialRoot.style.display = navigationState.ActiveScreen == ShellScreen.Social ? DisplayStyle.Flex : DisplayStyle.None;
+            if (authRoot != null) authRoot.style.display = isAuthenticated ? DisplayStyle.None : DisplayStyle.Flex;
+            if (summaryRoot != null) summaryRoot.style.display = isAuthenticated && navigationState.ActiveScreen == ShellScreen.Summary ? DisplayStyle.Flex : DisplayStyle.None;
+            if (cityRoot != null) cityRoot.style.display = isAuthenticated && navigationState.ActiveScreen == ShellScreen.City ? DisplayStyle.Flex : DisplayStyle.None;
+            if (blackMarketRoot != null) blackMarketRoot.style.display = isAuthenticated && navigationState.ActiveScreen == ShellScreen.BlackMarket ? DisplayStyle.Flex : DisplayStyle.None;
+            if (heroesRoot != null) heroesRoot.style.display = isAuthenticated && navigationState.ActiveScreen == ShellScreen.Heroes ? DisplayStyle.Flex : DisplayStyle.None;
+            if (socialRoot != null) socialRoot.style.display = isAuthenticated && navigationState.ActiveScreen == ShellScreen.Social ? DisplayStyle.Flex : DisplayStyle.None;
 
             RenderChapterState();
             RenderCommsPanel();

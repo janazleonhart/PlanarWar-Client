@@ -3292,7 +3292,7 @@ namespace PlanarWar.Client.Tests.EditMode
                 "\"suggestedCityName\":\"Tempest\"," +
                 "\"citySetupChoices\":[" +
                 "{\"lane\":\"city\",\"label\":\"City\",\"summary\":\"Public growth lane\",\"strength\":\"Visible production\",\"liability\":\"Public pressure\",\"ctaLabel\":\"Found City\",\"checklist\":[\"Name settlement\",\"Choose civic lane\"]}," +
-                "{\"lane\":\"black_market\",\"label\":\"Black Market\",\"summary\":\"Shadow operation lane\",\"strength\":\"Covert contacts\",\"liability\":\"Deniable risk\",\"ctaLabel\":\"Found Black Market\"}" +
+                "{\"lane\":\"black_market\",\"label\":\"Black Market\",\"summary\":\"Shadow operation lane\",\"strength\":[\"Covert contacts\",\"Deniable leverage\"],\"liability\":[\"Deniable risk\",\"Hotter opening pressure\"],\"responseFocus\":{\"openingChecklist\":[\"Cool cartel heat\",\"Secure throughput\"]},\"ctaLabel\":\"Found Black Market\"}" +
                 "]" +
                 "}");
 
@@ -3304,7 +3304,9 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(snapshot.CitySetupChoices[0].Lane, Is.EqualTo("city"));
             Assert.That(snapshot.CitySetupChoices[0].Checklist, Does.Contain("Name settlement"));
             Assert.That(snapshot.CitySetupChoices[1].Lane, Is.EqualTo("black_market"));
-            Assert.That(snapshot.CitySetupChoices[1].Strength, Is.EqualTo("Covert contacts"));
+            Assert.That(snapshot.CitySetupChoices[1].Strength, Is.EqualTo("Covert contacts • Deniable leverage"));
+            Assert.That(snapshot.CitySetupChoices[1].Liability, Is.EqualTo("Deniable risk • Hotter opening pressure"));
+            Assert.That(snapshot.CitySetupChoices[1].Checklist, Does.Contain("Cool cartel heat"));
         }
 
         [Test]
@@ -3318,6 +3320,7 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(source, Does.Contain("/api/city/bootstrap"));
             Assert.That(source, Does.Contain("[\"name\"]"));
             Assert.That(source, Does.Contain("[\"settlementLane\"]"));
+            Assert.That(source, Does.Contain("[\"laneChoice\"]"));
             Assert.That(source, Does.Contain("includeBearerToken: true"));
         }
 
@@ -3330,6 +3333,9 @@ namespace PlanarWar.Client.Tests.EditMode
             var uxml = File.ReadAllText(appShellPath);
             Assert.That(uxml, Does.Contain("founder-setup-card"));
             Assert.That(uxml, Does.Contain("founder-city-name-field"));
+            Assert.That(uxml, Does.Contain("founder-action-status-value"));
+            Assert.That(uxml, Does.Contain("founder-city-primary-button"));
+            Assert.That(uxml, Does.Contain("founder-market-primary-button"));
             Assert.That(uxml, Does.Contain("founder-city-button"));
             Assert.That(uxml, Does.Contain("founder-market-button"));
             Assert.That(uxml, Does.Contain("Live bootstrap"));
@@ -3356,9 +3362,97 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(bootstrap, Does.Contain("BeginSettlementBootstrap"));
             Assert.That(bootstrap, Does.Contain("BootstrapCityAsync"));
             Assert.That(shell, Does.Contain("onBootstrapCityRequested"));
+            Assert.That(summary, Does.Contain("founderCityPrimaryButton"));
+            Assert.That(summary, Does.Contain("founderMarketPrimaryButton"));
             Assert.That(summary, Does.Contain("RequestSettlementBootstrap"));
             Assert.That(summary, Does.Contain("\"city\""));
             Assert.That(summary, Does.Contain("\"black_market\""));
+        }
+
+        [Test]
+        public void Founder_setup_surfaces_bootstrap_failures_instead_of_silent_duplicate_name_failures()
+        {
+            var bootstrapPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/ClientBootstrap.cs");
+            var shellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/AppShellController.cs");
+            var summaryPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs");
+            Assert.That(File.Exists(bootstrapPath), Is.True, "ClientBootstrap.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(shellPath), Is.True, "AppShellController.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(summaryPath), Is.True, "SummaryScreenController.cs should be available from the Unity project root.");
+
+            var bootstrap = File.ReadAllText(bootstrapPath);
+            var shell = File.ReadAllText(shellPath);
+            var summary = File.ReadAllText(summaryPath);
+
+            Assert.That(bootstrap, Does.Contain("PlanarWarApiException ex"));
+            Assert.That(bootstrap, Does.Contain("city_name_taken"));
+            Assert.That(bootstrap, Does.Contain("Choose another settlement name"));
+            Assert.That(shell, Does.Contain("summaryState.ActionStatus"));
+            Assert.That(summary, Does.Contain("founderActionStatus"));
+            Assert.That(summary, Does.Contain("founder-action-status--error"));
+        }
+
+
+        [Test]
+        public void Auth_gate_exposes_login_and_register_screen_before_gameplay_setup()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            Assert.That(uxml, Does.Contain("auth-screen"));
+            Assert.That(uxml, Does.Contain("login-name-field"));
+            Assert.That(uxml, Does.Contain("password-field"));
+            Assert.That(uxml, Does.Contain("register-handle-field"));
+            Assert.That(uxml, Does.Contain("Display name"));
+            Assert.That(uxml, Does.Contain("register-email-field"));
+            Assert.That(uxml, Does.Contain("register-password-field"));
+            Assert.That(uxml, Does.Contain("register-confirm-password-field"));
+            Assert.That(uxml, Does.Contain("login-button"));
+            Assert.That(uxml, Does.Contain("register-button"));
+            Assert.That(uxml, Does.Contain("After sign-in, Home opens the current settlement setup flow"));
+            Assert.That(uxml, Does.Not.Contain("starter city created"));
+            Assert.That(uxml, Does.Not.Contain("starter inventory granted"));
+        }
+
+        [Test]
+        public void Client_has_account_registration_http_contract()
+        {
+            var apiClientPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Network/Http/PlanarWarApiClient.cs");
+            Assert.That(File.Exists(apiClientPath), Is.True, "PlanarWarApiClient.cs should be available from the Unity project root.");
+
+            var source = File.ReadAllText(apiClientPath);
+            Assert.That(source, Does.Contain("RegisterAsync"));
+            Assert.That(source, Does.Contain("/api/auth/register"));
+            Assert.That(source, Does.Contain("[\"displayName\"]"));
+            Assert.That(source, Does.Contain("[\"email\"]"));
+            Assert.That(source, Does.Contain("[\"password\"]"));
+            Assert.That(source, Does.Contain("includeBearerToken: false"));
+        }
+
+        [Test]
+        public void Client_bootstrap_wires_registration_to_auth_gate_without_bypassing_summary_setup()
+        {
+            var bootstrapPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/ClientBootstrap.cs");
+            var authControllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Core/Application/AuthSessionController.cs");
+            var shellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/AppShellController.cs");
+            Assert.That(File.Exists(bootstrapPath), Is.True, "ClientBootstrap.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(authControllerPath), Is.True, "AuthSessionController.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(shellPath), Is.True, "AppShellController.cs should be available from the Unity project root.");
+
+            var bootstrap = File.ReadAllText(bootstrapPath);
+            var authController = File.ReadAllText(authControllerPath);
+            var shell = File.ReadAllText(shellPath);
+
+            Assert.That(bootstrap, Does.Contain("Register()"));
+            Assert.That(bootstrap, Does.Contain("authController.RegisterAsync"));
+            Assert.That(bootstrap, Does.Contain("navigationState.SetActive(ShellScreen.Summary)"));
+            Assert.That(authController, Does.Contain("apiClient.RegisterAsync"));
+            Assert.That(authController, Does.Contain("displayName"));
+            Assert.That(authController, Does.Contain("Account created. Signing in..."));
+            Assert.That(shell, Does.Contain("authRoot"));
+            Assert.That(shell, Does.Contain("isAuthenticated && navigationState.ActiveScreen"));
+            Assert.That(bootstrap, Does.Not.Contain("BootstrapCityAsync(handle"));
+            Assert.That(bootstrap, Does.Not.Contain("BootstrapCityAsync(email"));
         }
 
         private static VisualElement BuildMinimalHeroControllerRoot()

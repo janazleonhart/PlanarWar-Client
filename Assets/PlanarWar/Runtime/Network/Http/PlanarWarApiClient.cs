@@ -70,6 +70,34 @@ namespace PlanarWar.Client.Network
             return PostJsonAsync(BuildUrl("/api/auth/login"), body, includeBearerToken: false);
         }
 
+        public Task<JObject> RegisterAsync(string displayName, string email, string password)
+        {
+            if (string.IsNullOrWhiteSpace(displayName))
+            {
+                throw new ArgumentException("displayName is required", nameof(displayName));
+            }
+
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                throw new ArgumentException("email is required", nameof(email));
+            }
+
+            if (string.IsNullOrWhiteSpace(password))
+            {
+                throw new ArgumentException("password is required", nameof(password));
+            }
+
+            var body = new JObject
+            {
+                ["displayName"] = displayName.Trim(),
+                ["email"] = email.Trim(),
+                ["password"] = password
+            };
+
+            return PostJsonAsync(BuildUrl("/api/auth/register"), body, includeBearerToken: false);
+        }
+
+
         public Task<JObject> BootstrapCityAsync(string name, string settlementLane)
         {
             if (string.IsNullOrWhiteSpace(name))
@@ -82,10 +110,12 @@ namespace PlanarWar.Client.Network
                 throw new ArgumentException("settlementLane is required", nameof(settlementLane));
             }
 
+            var trimmedLane = settlementLane.Trim();
             var body = new JObject
             {
                 ["name"] = name.Trim(),
-                ["settlementLane"] = settlementLane.Trim()
+                ["settlementLane"] = trimmedLane,
+                ["laneChoice"] = trimmedLane
             };
 
             return PostJsonAsync(BuildUrl("/api/city/bootstrap"), body, includeBearerToken: true);

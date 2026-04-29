@@ -274,13 +274,13 @@ namespace PlanarWar.Client.Core.Mapping
             return new SettlementSetupChoiceSnapshot
             {
                 Lane = lane.Trim(),
-                Label = FirstNonBlank(obj["label"]?.Read<string>(), obj["title"]?.Read<string>(), obj["name"]?.Read<string>()),
-                Summary = FirstNonBlank(obj["summary"]?.Read<string>(), obj["description"]?.Read<string>(), obj["copy"]?.Read<string>()),
-                Detail = FirstNonBlank(obj["detail"]?.Read<string>(), obj["note"]?.Read<string>(), obj["operatorNote"]?.Read<string>(), obj["operator_note"]?.Read<string>()),
-                Strength = FirstNonBlank(obj["strength"]?.Read<string>(), obj["strengths"]?.Read<string>(), obj["advantage"]?.Read<string>(), obj["advantageSummary"]?.Read<string>(), obj["advantage_summary"]?.Read<string>()),
-                Liability = FirstNonBlank(obj["liability"]?.Read<string>(), obj["liabilities"]?.Read<string>(), obj["risk"]?.Read<string>(), obj["riskSummary"]?.Read<string>(), obj["risk_summary"]?.Read<string>()),
-                CtaLabel = FirstNonBlank(obj["ctaLabel"]?.Read<string>(), obj["cta_label"]?.Read<string>(), obj["actionLabel"]?.Read<string>(), obj["action_label"]?.Read<string>()),
-                Checklist = MapStringArray(FirstArray(obj["checklist"], obj["checks"], obj["requirements"], obj["setupChecklist"], obj["setup_checklist"])),
+                Label = FirstNonBlank(ReadText(obj["label"]), ReadText(obj["title"]), ReadText(obj["name"])),
+                Summary = FirstNonBlank(ReadText(obj["summary"]), ReadText(obj["description"]), ReadText(obj["copy"]), ReadText(obj["posture"])),
+                Detail = FirstNonBlank(ReadText(obj["detail"]), ReadText(obj["note"]), ReadText(obj["operatorNote"]), ReadText(obj["operator_note"]), ReadText(obj["responseFocus"]?["recommendedOpening"]), ReadText(obj["response_focus"]?["recommended_opening"])),
+                Strength = FirstNonBlank(ReadText(obj["strength"]), ReadText(obj["strengths"]), ReadText(obj["advantage"]), ReadText(obj["advantageSummary"]), ReadText(obj["advantage_summary"])),
+                Liability = FirstNonBlank(ReadText(obj["liability"]), ReadText(obj["liabilities"]), ReadText(obj["risk"]), ReadText(obj["riskSummary"]), ReadText(obj["risk_summary"])),
+                CtaLabel = FirstNonBlank(ReadText(obj["ctaLabel"]), ReadText(obj["cta_label"]), ReadText(obj["actionLabel"]), ReadText(obj["action_label"])),
+                Checklist = MapStringArray(FirstArray(obj["checklist"], obj["checks"], obj["requirements"], obj["setupChecklist"], obj["setup_checklist"], obj["responseFocus"]?["openingChecklist"], obj["response_focus"]?["opening_checklist"], obj["preview"]?["runtimeAccess"], obj["preview"]?["runtime_access"])),
             };
         }
 
@@ -1248,11 +1248,39 @@ namespace PlanarWar.Client.Core.Mapping
             {
                 if (!string.IsNullOrWhiteSpace(value))
                 {
-                    return value;
+                    return value.Trim();
                 }
             }
 
             return string.Empty;
+        }
+
+        private static string ReadText(JToken token)
+        {
+            if (token == null || token.Type == JTokenType.Null || token.Type == JTokenType.Undefined)
+            {
+                return string.Empty;
+            }
+
+            if (token is JArray array)
+            {
+                return string.Join(" • ", MapStringArray(array).Take(3));
+            }
+
+            if (token is JObject obj)
+            {
+                return FirstNonBlank(
+                    ReadText(obj["summary"]),
+                    ReadText(obj["detail"]),
+                    ReadText(obj["label"]),
+                    ReadText(obj["recommendedOpening"]),
+                    ReadText(obj["recommended_opening"]),
+                    ReadText(obj["openingChecklist"]),
+                    ReadText(obj["opening_checklist"]));
+            }
+
+            var value = token.Read<string>();
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
 
         private static JObject FirstObject(params JToken[] tokens) => tokens?.OfType<JObject>().FirstOrDefault();

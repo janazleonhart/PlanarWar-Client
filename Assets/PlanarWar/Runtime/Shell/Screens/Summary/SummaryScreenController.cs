@@ -56,10 +56,13 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private readonly TextField founderCityNameField;
         private readonly Label founderSetupHeadline;
         private readonly Label founderSetupCopy;
+        private readonly Label founderActionStatus;
         private readonly Label founderCityChoiceValue;
         private readonly Label founderCityChoiceNote;
         private readonly Label founderMarketChoiceValue;
         private readonly Label founderMarketChoiceNote;
+        private readonly Button founderCityPrimaryButton;
+        private readonly Button founderMarketPrimaryButton;
         private readonly Button founderCityButton;
         private readonly Button founderMarketButton;
         private bool founderNameSeeded;
@@ -114,18 +117,23 @@ namespace PlanarWar.Client.UI.Screens.Summary
             founderCityNameField = root.Q<TextField>("founder-city-name-field");
             founderSetupHeadline = root.Q<Label>("founder-setup-headline-value");
             founderSetupCopy = root.Q<Label>("founder-setup-copy-value");
+            founderActionStatus = root.Q<Label>("founder-action-status-value");
             founderCityChoiceValue = root.Q<Label>("founder-city-choice-value");
             founderCityChoiceNote = root.Q<Label>("founder-city-choice-note");
             founderMarketChoiceValue = root.Q<Label>("founder-market-choice-value");
             founderMarketChoiceNote = root.Q<Label>("founder-market-choice-note");
+            founderCityPrimaryButton = root.Q<Button>("founder-city-primary-button");
+            founderMarketPrimaryButton = root.Q<Button>("founder-market-primary-button");
             founderCityButton = root.Q<Button>("founder-city-button");
             founderMarketButton = root.Q<Button>("founder-market-button");
 
+            founderCityPrimaryButton?.RegisterCallback<ClickEvent>(_ => RequestSettlementBootstrap("city", onBootstrapCityRequested));
+            founderMarketPrimaryButton?.RegisterCallback<ClickEvent>(_ => RequestSettlementBootstrap("black_market", onBootstrapCityRequested));
             founderCityButton?.RegisterCallback<ClickEvent>(_ => RequestSettlementBootstrap("city", onBootstrapCityRequested));
             founderMarketButton?.RegisterCallback<ClickEvent>(_ => RequestSettlementBootstrap("black_market", onBootstrapCityRequested));
         }
 
-        public void Render(ShellSummarySnapshot s, bool isSummaryLoaded, bool isActionBusy = false)
+        public void Render(ShellSummarySnapshot s, bool isSummaryLoaded, bool isActionBusy = false, string actionStatus = null, bool actionFailed = false)
         {
             heartbeat++;
             var nowUtc = DateTime.UtcNow;
@@ -144,7 +152,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             missionTimer.text = FormatMission(s.ActiveMissions);
             resourceTick.text = FormatTick(s.ResourceTickTiming);
             RenderTimerDiagnostics(s, isSummaryLoaded, nowUtc);
-            RenderFounderSetup(s, isSummaryLoaded, isActionBusy);
+            RenderFounderSetup(s, isSummaryLoaded, isActionBusy, actionStatus, actionFailed);
 
             RenderPressureDesk(s);
         }
@@ -160,7 +168,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             await onBootstrapCityRequested(cityName, lane);
         }
 
-        private void RenderFounderSetup(ShellSummarySnapshot summary, bool isSummaryLoaded, bool isActionBusy)
+        private void RenderFounderSetup(ShellSummarySnapshot summary, bool isSummaryLoaded, bool isActionBusy, string actionStatus, bool actionFailed)
         {
             var shouldShow = summary != null
                 && !summary.HasCity
@@ -175,6 +183,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (!shouldShow)
             {
+                RenderFounderActionStatus(string.Empty, false);
                 return;
             }
 
@@ -198,6 +207,8 @@ namespace PlanarWar.Client.UI.Screens.Summary
                     : "The client can read setup choices, but the backend has not marked this account as eligible to found one yet.";
             }
 
+            RenderFounderActionStatus(actionStatus, actionFailed);
+
             var cityChoice = FindSetupChoice(summary, "city");
             var marketChoice = FindSetupChoice(summary, "black_market");
             if (founderCityChoiceValue != null) founderCityChoiceValue.text = FormatSetupChoiceValue(cityChoice, "City", "Public growth, buildings, production, and civic development.");
@@ -205,16 +216,43 @@ namespace PlanarWar.Client.UI.Screens.Summary
             if (founderMarketChoiceValue != null) founderMarketChoiceValue.text = FormatSetupChoiceValue(marketChoice, "Black Market", "Shadow operations, contacts, covert pressure, and deniable routing.");
             if (founderMarketChoiceNote != null) founderMarketChoiceNote.text = FormatSetupChoiceNote(marketChoice, "Uses the black-market settlement lane when the backend exposes setup truth.");
 
-            if (founderCityButton != null)
+            var canFound = isSummaryLoaded && summary.CanCreateCity && !isActionBusy;
+            SetFounderButton(founderCityPrimaryButton, FirstNonBlank(cityChoice?.CtaLabel, "Found City"), canFound);
+            SetFounderButton(founderMarketPrimaryButton, FirstNonBlank(marketChoice?.CtaLabel, "Found Black Market"), canFound);
+            SetFounderButton(founderCityButton, FirstNonBlank(cityChoice?.CtaLabel, "Found City"), canFound);
+            SetFounderButton(founderMarketButton, FirstNonBlank(marketChoice?.CtaLabel, "Found Black Market"), canFound);
+        }
+
+        private static void SetFounderButton(Button button, string label, bool enabled)
+        {
+            if (button == null)
             {
-                founderCityButton.text = FirstNonBlank(cityChoice?.CtaLabel, "Found City");
-                founderCityButton.SetEnabled(isSummaryLoaded && summary.CanCreateCity && !isActionBusy);
+                return;
             }
 
-            if (founderMarketButton != null)
+            button.text = string.IsNullOrWhiteSpace(label) ? "Found settlement" : label.Trim();
+            button.SetEnabled(enabled);
+        }
+
+        private void RenderFounderActionStatus(string actionStatus, bool actionFailed)
+        {
+            if (founderActionStatus == null)
             {
-                founderMarketButton.text = FirstNonBlank(marketChoice?.CtaLabel, "Found Black Market");
-                founderMarketButton.SetEnabled(isSummaryLoaded && summary.CanCreateCity && !isActionBusy);
+                return;
+            }
+
+            var trimmedStatus = actionStatus?.Trim() ?? string.Empty;
+            var shouldShow = !string.IsNullOrWhiteSpace(trimmedStatus);
+            founderActionStatus.style.display = shouldShow ? DisplayStyle.Flex : DisplayStyle.None;
+            founderActionStatus.text = shouldShow ? trimmedStatus : string.Empty;
+
+            if (actionFailed)
+            {
+                founderActionStatus.AddToClassList("founder-action-status--error");
+            }
+            else
+            {
+                founderActionStatus.RemoveFromClassList("founder-action-status--error");
             }
         }
 

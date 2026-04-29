@@ -131,16 +131,7 @@
                 <ui:VisualElement class="metric-card auth-card">
                     <ui:Label name="auth-card-title" text="Account" class="eyebrow" />
                     <ui:Label name="account-value" text="Guest" class="metric-value" />
-                    <ui:Label name="auth-status-value" text="Not signed in." class="metric-subvalue metric-subvalue--wrap" />
-
-                    <ui:VisualElement name="auth-login-fields" class="auth-inputs auth-login-stack">
-                        <ui:TextField name="login-name-field" label="Email or handle" class="auth-field" />
-                        <ui:TextField name="password-field" label="Password" is-password-field="true" class="auth-field auth-field--password" />
-                    </ui:VisualElement>
-
-                    <ui:VisualElement name="login-button-row" class="button-row button-row--tight auth-button-row">
-                        <ui:Button name="login-button" text="Sign in" class="action-button action-button--primary" />
-                    </ui:VisualElement>
+                    <ui:Label name="auth-status-value" text="Sign in or create an account below." class="metric-subvalue metric-subvalue--wrap" />
 
                     <ui:VisualElement name="auth-action-row" class="button-row button-row--tight auth-button-row">
                         <ui:Button name="logout-button" text="Sign out" class="action-button" />
@@ -149,6 +140,50 @@
             </ui:VisualElement>
 
             <ui:VisualElement name="center-pane" class="panel center-pane">
+                <ui:ScrollView name="auth-screen" class="screen-panel screen-scroll auth-screen" mode="Vertical">
+                    <ui:VisualElement class="screen-scroll-content auth-screen-content">
+                        <ui:VisualElement class="summary-hero auth-hero">
+                            <ui:Label text="Account gate" class="eyebrow" />
+                            <ui:Label text="Sign in or create an account" class="headline" />
+                            <ui:Label text="After sign-in, Home opens the current settlement setup flow. No city, market, or starter state is invented here." class="headline-subtext" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-grid auth-gate-grid">
+                            <ui:VisualElement class="summary-card auth-gate-card">
+                                <ui:Label text="Existing account" class="eyebrow" />
+                                <ui:Label text="Sign in" class="rail-note-title" />
+                                <ui:Label text="Use an existing account to load live /api/me truth, then continue to City or Black Market setup if this account has no settlement yet." class="summary-value summary-value--glance" />
+
+                                <ui:VisualElement name="auth-login-fields" class="auth-inputs auth-login-stack">
+                                    <ui:TextField name="login-name-field" label="Email or handle" class="auth-field" />
+                                    <ui:TextField name="password-field" label="Password" is-password-field="true" class="auth-field auth-field--password" />
+                                </ui:VisualElement>
+
+                                <ui:VisualElement name="login-button-row" class="button-row button-row--tight auth-button-row">
+                                    <ui:Button name="login-button" text="Sign in" class="action-button action-button--primary" />
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+
+                            <ui:VisualElement class="summary-card auth-gate-card">
+                                <ui:Label text="New account" class="eyebrow" />
+                                <ui:Label text="Register" class="rail-note-title" />
+                                <ui:Label text="Create an account, authenticate, then continue into the same Home setup flow. Settlement choice still comes from backend truth." class="summary-value summary-value--glance" />
+
+                                <ui:VisualElement name="auth-register-fields" class="auth-inputs auth-login-stack">
+                                    <ui:TextField name="register-handle-field" label="Display name" class="auth-field" />
+                                    <ui:TextField name="register-email-field" label="Email" class="auth-field" />
+                                    <ui:TextField name="register-password-field" label="Password" is-password-field="true" class="auth-field auth-field--password" />
+                                    <ui:TextField name="register-confirm-password-field" label="Confirm" is-password-field="true" class="auth-field auth-field--password" />
+                                </ui:VisualElement>
+
+                                <ui:VisualElement name="register-button-row" class="button-row button-row--tight auth-button-row">
+                                    <ui:Button name="register-button" text="Create account" class="action-button action-button--primary" />
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:ScrollView>
+
                 <ui:ScrollView name="summary-screen" class="screen-panel screen-scroll" mode="Vertical">
                     <ui:VisualElement class="screen-scroll-content summary-screen-content">
                 <ui:VisualElement class="summary-hero home-command-hero">
@@ -181,6 +216,11 @@
                     <ui:Label name="founder-setup-headline-value" text="Choose how this account enters the world." class="rail-note-title" />
                     <ui:Label name="founder-setup-copy-value" text="City and Black Market setup choices appear here only when /api/me exposes real founder truth." class="summary-value summary-value--glance" />
                     <ui:TextField name="founder-city-name-field" label="Settlement name" class="founder-name-field" />
+                    <ui:Label name="founder-action-status-value" text="" class="metric-subvalue metric-subvalue--wrap founder-action-status" />
+                    <ui:VisualElement class="button-row founder-primary-actions">
+                        <ui:Button name="founder-city-primary-button" text="Found City" class="action-button action-button--primary" />
+                        <ui:Button name="founder-market-primary-button" text="Found Black Market" class="action-button" />
+                    </ui:VisualElement>
 
                     <ui:VisualElement class="summary-grid founder-choice-grid">
                         <ui:VisualElement class="summary-card glance-card founder-choice-card">

@@ -924,6 +924,35 @@
 }
 
 
+
+/* Auth gate v1 */
+.auth-screen-content {
+    gap: 16px;
+    padding-right: 8px;
+    padding-bottom: 12px;
+}
+
+.auth-hero {
+    gap: 8px;
+    padding-bottom: 10px;
+}
+
+.auth-gate-grid {
+    align-items: stretch;
+}
+
+.auth-gate-card {
+    min-width: 320px;
+    gap: 10px;
+    justify-content: flex-start;
+}
+
+.auth-gate-card .action-button {
+    align-self: flex-end;
+    min-width: 132px;
+}
+
+
 .auth-login-stack {
     margin-top: 8px;
     gap: 10px;
@@ -2256,6 +2285,10 @@
     -unity-font-style: bold;
 }
 
+.founder-primary-actions {
+    margin-top: 4px;
+}
+
 .founder-choice-grid {
     margin-top: 6px;
     gap: 12px;
@@ -2271,3 +2304,17 @@
     margin-top: auto;
 }
 
+
+.founder-action-status {
+    margin-top: 4px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background-color: rgba(72, 101, 186, 0.18);
+    border-left-width: 3px;
+    border-left-color: rgba(124, 154, 255, 0.9);
+}
+
+.founder-action-status--error {
+    background-color: rgba(172, 67, 67, 0.18);
+    border-left-color: rgba(255, 128, 128, 0.95);
+}

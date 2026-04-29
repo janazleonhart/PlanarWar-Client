@@ -41,6 +41,10 @@ namespace PlanarWar.Client.UI
 
         private TextField loginNameField;
         private TextField passwordField;
+        private TextField registerDisplayNameField;
+        private TextField registerEmailField;
+        private TextField registerPasswordField;
+        private TextField registerConfirmPasswordField;
 
         private void Awake()
         {
@@ -1135,10 +1139,68 @@ namespace PlanarWar.Client.UI
                 await summaryController.RefreshAsync();
                 summaryState.FinishAction($"Founded {laneLabel}: {trimmedName}.");
             }
+            catch (PlanarWarApiException ex)
+            {
+                summaryState.FinishAction(BuildSettlementBootstrapFailureMessage(laneLabel, trimmedName, ex), failed: true);
+            }
             catch (Exception ex)
             {
                 summaryState.FinishAction($"{laneLabel} founding failed: {ex.Message}", failed: true);
             }
+        }
+
+        private static string BuildSettlementBootstrapFailureMessage(string laneLabel, string settlementName, PlanarWarApiException ex)
+        {
+            var label = string.IsNullOrWhiteSpace(laneLabel) ? "Settlement" : laneLabel.Trim();
+            var name = settlementName?.Trim() ?? string.Empty;
+            var subject = string.IsNullOrWhiteSpace(name) ? "That settlement name" : $"\"{name}\"";
+            var apiError = ex?.ApiError?.Trim() ?? string.Empty;
+
+            if (string.Equals(apiError, "city_name_taken", StringComparison.OrdinalIgnoreCase))
+            {
+                return $"{label} founding failed: {subject} is already taken. Choose another settlement name.";
+            }
+
+            if (string.Equals(apiError, "city_exists", StringComparison.OrdinalIgnoreCase))
+            {
+                return $"{label} founding failed: this account already has a settlement. Refresh summary to load it.";
+            }
+
+            if (string.Equals(apiError, "city_name_required", StringComparison.OrdinalIgnoreCase))
+            {
+                return $"{label} founding failed: choose a settlement name first.";
+            }
+
+            if (string.Equals(apiError, "city_name_too_short", StringComparison.OrdinalIgnoreCase))
+            {
+                return $"{label} founding failed: {subject} is too short. Use at least 3 characters.";
+            }
+
+            if (string.Equals(apiError, "city_name_too_long", StringComparison.OrdinalIgnoreCase))
+            {
+                return $"{label} founding failed: {subject} is too long. Use 24 characters or fewer.";
+            }
+
+            if (string.Equals(apiError, "city_name_invalid_chars", StringComparison.OrdinalIgnoreCase))
+            {
+                return $"{label} founding failed: {subject} has unsupported characters.";
+            }
+
+            if (string.Equals(apiError, "city_name_reserved", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(apiError, "city_name_blocked", StringComparison.OrdinalIgnoreCase))
+            {
+                return $"{label} founding failed: {subject} is reserved or blocked. Choose another settlement name.";
+            }
+
+            if (string.Equals(apiError, "auth_required", StringComparison.OrdinalIgnoreCase))
+            {
+                return $"{label} founding failed: sign in again before founding a settlement.";
+            }
+
+            var detail = CleanApiError(ex);
+            return string.IsNullOrWhiteSpace(detail)
+                ? $"{label} founding failed. Choose another settlement name or refresh summary."
+                : $"{label} founding failed: {detail}";
         }
 
         private static string ResolveSettlementLaneLabel(string settlementLane)
@@ -1194,14 +1256,25 @@ namespace PlanarWar.Client.UI
         {
             loginNameField = root.Q<TextField>("login-name-field");
             passwordField = root.Q<TextField>("password-field");
+            registerDisplayNameField = root.Q<TextField>("register-handle-field");
+            registerEmailField = root.Q<TextField>("register-email-field");
+            registerPasswordField = root.Q<TextField>("register-password-field");
+            registerConfirmPasswordField = root.Q<TextField>("register-confirm-password-field");
 
-            if (passwordField != null)
+            foreach (var secretField in new[] { passwordField, registerPasswordField, registerConfirmPasswordField })
             {
-                passwordField.isPasswordField = true;
+                if (secretField != null)
+                {
+                    secretField.isPasswordField = true;
+                }
             }
 
             root.Q<Button>("login-button")?.RegisterCallback<ClickEvent>(_ => Login());
+            root.Q<Button>("register-button")?.RegisterCallback<ClickEvent>(_ => Register());
             root.Q<Button>("logout-button")?.RegisterCallback<ClickEvent>(_ => Logout());
+
+            RegisterSubmitOnEnter(passwordField, Login);
+            RegisterSubmitOnEnter(registerConfirmPasswordField, Register);
             root.Q<Button>("refresh-button")?.RegisterCallback<ClickEvent>(_ => RefreshSummary());
             root.Q<Button>("whereami-button")?.RegisterCallback<ClickEvent>(_ => wsController?.RequestWhereAmI());
             root.Q<Button>("ping-button")?.RegisterCallback<ClickEvent>(_ => wsController?.SendPing());
@@ -1246,10 +1319,23 @@ namespace PlanarWar.Client.UI
             var user = loginNameField?.value?.Trim();
             var pass = passwordField?.value ?? string.Empty;
 
+            if (string.IsNullOrWhiteSpace(user))
+            {
+                sessionState.SetLoginStatus("Enter an email or handle to sign in.");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(pass))
+            {
+                sessionState.SetLoginStatus("Enter a password to sign in.");
+                return;
+            }
+
             try
             {
                 sessionState.SetLoginStatus("Signing in...");
                 await authController.LoginAsync(user, pass);
+                navigationState.SetActive(ShellScreen.Summary);
                 RefreshSummary();
             }
             catch (Exception ex)
@@ -1258,7 +1344,77 @@ namespace PlanarWar.Client.UI
             }
         }
 
-        private void Logout() => authController.Logout();
+        private async void Register()
+        {
+            var displayName = registerDisplayNameField?.value?.Trim();
+            var email = registerEmailField?.value?.Trim();
+            var pass = registerPasswordField?.value ?? string.Empty;
+            var confirm = registerConfirmPasswordField?.value ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(displayName))
+            {
+                sessionState.SetLoginStatus("Choose a display name before registering.");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                sessionState.SetLoginStatus("Enter an email before registering.");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(pass))
+            {
+                sessionState.SetLoginStatus("Choose a password before registering.");
+                return;
+            }
+
+            if (!string.Equals(pass, confirm, StringComparison.Ordinal))
+            {
+                sessionState.SetLoginStatus("Password confirmation does not match.");
+                return;
+            }
+
+            try
+            {
+                sessionState.SetLoginStatus("Creating account...");
+                await authController.RegisterAsync(displayName, email, pass);
+                if (sessionState.IsAuthenticated)
+                {
+                    navigationState.SetActive(ShellScreen.Summary);
+                    RefreshSummary();
+                }
+            }
+            catch (Exception ex)
+            {
+                sessionState.SetLoginStatus($"Registration failed: {ex.Message}");
+            }
+        }
+
+        private static void RegisterSubmitOnEnter(TextField field, Action action)
+        {
+            if (field == null || action == null)
+            {
+                return;
+            }
+
+            field.RegisterCallback<KeyDownEvent>(evt =>
+            {
+                if (evt.keyCode != KeyCode.Return && evt.keyCode != KeyCode.KeypadEnter)
+                {
+                    return;
+                }
+
+                evt.StopPropagation();
+                action();
+            });
+        }
+
+        private void Logout()
+        {
+            authController.Logout();
+            navigationState.SetActive(ShellScreen.Summary);
+        }
 
         private void Render() => appShellController?.Render();
 
