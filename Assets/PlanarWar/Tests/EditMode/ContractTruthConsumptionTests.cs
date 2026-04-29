@@ -3498,6 +3498,25 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(summary, Does.Not.Contain("BootstrapCityAsync"));
         }
 
+        [Test]
+        public void Home_quick_orders_open_development_instead_of_exposing_a_dead_research_button()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var bootstrapPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/ClientBootstrap.cs");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(bootstrapPath), Is.True, "ClientBootstrap.cs should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var bootstrap = File.ReadAllText(bootstrapPath);
+
+            Assert.That(uxml, Does.Contain("home-development-button"));
+            Assert.That(uxml, Does.Contain("Open Development"));
+            Assert.That(uxml, Does.Not.Contain("name=\"start-research-button\" text=\"Start suggested research\""));
+            Assert.That(bootstrap, Does.Contain("home-development-button"));
+            Assert.That(bootstrap, Does.Contain("navigationState.SetActive(ShellScreen.City)"));
+            Assert.That(bootstrap, Does.Not.Contain("root.Q<Button>(\"start-research-button\")"));
+        }
+
         private static VisualElement BuildMinimalHeroControllerRoot()
         {
             var root = new VisualElement();

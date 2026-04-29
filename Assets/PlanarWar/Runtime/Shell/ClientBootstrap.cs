@@ -1276,6 +1276,7 @@ namespace PlanarWar.Client.UI
             RegisterSubmitOnEnter(passwordField, Login);
             RegisterSubmitOnEnter(registerConfirmPasswordField, Register);
             root.Q<Button>("refresh-button")?.RegisterCallback<ClickEvent>(_ => RefreshSummary());
+            root.Q<Button>("home-development-button")?.RegisterCallback<ClickEvent>(_ => navigationState.SetActive(ShellScreen.City));
             root.Q<Button>("whereami-button")?.RegisterCallback<ClickEvent>(_ => wsController?.RequestWhereAmI());
             root.Q<Button>("ping-button")?.RegisterCallback<ClickEvent>(_ => wsController?.SendPing());
 
