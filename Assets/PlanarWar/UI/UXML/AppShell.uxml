@@ -460,6 +460,16 @@
                             <ui:Label text="Workshop action board" class="eyebrow" />
                             <ui:Label name="dev-workshop-cards-copy-value" text="Live jobs, ready pickups, recipes, and collect actions surface here." class="metric-subvalue metric-subvalue--wrap" />
                         </ui:VisualElement>
+                        <ui:VisualElement name="dev-workshop-recipe-picker" class="summary-card glance-card workshop-recipe-picker">
+                            <ui:Label text="Craft selector" class="eyebrow" />
+                            <ui:Label text="Pick a gear slot, choose a recipe from that slot, then craft from the live workshop catalog." class="metric-subvalue metric-subvalue--wrap" />
+                            <ui:VisualElement class="workshop-recipe-picker__fields">
+                                <ui:DropdownField name="dev-workshop-slot-field" label="Gear slot" class="workshop-recipe-picker__dropdown" />
+                                <ui:DropdownField name="dev-workshop-recipe-field" label="Recipe" class="workshop-recipe-picker__dropdown" />
+                            </ui:VisualElement>
+                            <ui:Label name="dev-workshop-selected-recipe-value" text="Select a slot and recipe to inspect craft cost." class="summary-value summary-value--glance" />
+                            <ui:Button name="dev-workshop-craft-selected-button" text="Craft selected recipe" class="action-button action-button--primary" />
+                        </ui:VisualElement>
                         <ui:VisualElement class="summary-grid development-info-cards-grid">
                             <ui:VisualElement name="dev-workshop-card-1" class="summary-card glance-card development-info-card">
                                 <ui:Label name="dev-workshop-card-1-family-value" text="Workshop Queue" class="eyebrow" />
@@ -491,6 +501,54 @@
                                 <ui:Label name="dev-workshop-card-4-lore-value" text="Lore line." class="summary-value summary-value--glance" />
                                 <ui:Label name="dev-workshop-card-4-note-value" text="Operator note." class="metric-subvalue metric-subvalue--wrap" />
                                 <ui:Button name="dev-workshop-card-4-button" text="Collect" class="action-button action-button--primary" />
+                            </ui:VisualElement>
+
+                            <ui:VisualElement name="dev-workshop-card-5" class="summary-card glance-card development-info-card">
+                                <ui:Label name="dev-workshop-card-5-family-value" text="Workshop Queue" class="eyebrow" />
+                                <ui:Label name="dev-workshop-card-5-title-value" text="Workshop card" class="rail-note-title" />
+                                <ui:Label name="dev-workshop-card-5-lore-value" text="Lore line." class="summary-value summary-value--glance" />
+                                <ui:Label name="dev-workshop-card-5-note-value" text="Operator note." class="metric-subvalue metric-subvalue--wrap" />
+                                <ui:Button name="dev-workshop-card-5-button" text="Craft" class="action-button action-button--primary" />
+                            </ui:VisualElement>
+
+                            <ui:VisualElement name="dev-workshop-card-6" class="summary-card glance-card development-info-card">
+                                <ui:Label name="dev-workshop-card-6-family-value" text="Workshop Queue" class="eyebrow" />
+                                <ui:Label name="dev-workshop-card-6-title-value" text="Workshop card" class="rail-note-title" />
+                                <ui:Label name="dev-workshop-card-6-lore-value" text="Lore line." class="summary-value summary-value--glance" />
+                                <ui:Label name="dev-workshop-card-6-note-value" text="Operator note." class="metric-subvalue metric-subvalue--wrap" />
+                                <ui:Button name="dev-workshop-card-6-button" text="Craft" class="action-button action-button--primary" />
+                            </ui:VisualElement>
+
+                            <ui:VisualElement name="dev-workshop-card-7" class="summary-card glance-card development-info-card">
+                                <ui:Label name="dev-workshop-card-7-family-value" text="Workshop Queue" class="eyebrow" />
+                                <ui:Label name="dev-workshop-card-7-title-value" text="Workshop card" class="rail-note-title" />
+                                <ui:Label name="dev-workshop-card-7-lore-value" text="Lore line." class="summary-value summary-value--glance" />
+                                <ui:Label name="dev-workshop-card-7-note-value" text="Operator note." class="metric-subvalue metric-subvalue--wrap" />
+                                <ui:Button name="dev-workshop-card-7-button" text="Craft" class="action-button action-button--primary" />
+                            </ui:VisualElement>
+
+                            <ui:VisualElement name="dev-workshop-card-8" class="summary-card glance-card development-info-card">
+                                <ui:Label name="dev-workshop-card-8-family-value" text="Workshop Queue" class="eyebrow" />
+                                <ui:Label name="dev-workshop-card-8-title-value" text="Workshop card" class="rail-note-title" />
+                                <ui:Label name="dev-workshop-card-8-lore-value" text="Lore line." class="summary-value summary-value--glance" />
+                                <ui:Label name="dev-workshop-card-8-note-value" text="Operator note." class="metric-subvalue metric-subvalue--wrap" />
+                                <ui:Button name="dev-workshop-card-8-button" text="Craft" class="action-button action-button--primary" />
+                            </ui:VisualElement>
+
+                            <ui:VisualElement name="dev-workshop-card-9" class="summary-card glance-card development-info-card">
+                                <ui:Label name="dev-workshop-card-9-family-value" text="Workshop Queue" class="eyebrow" />
+                                <ui:Label name="dev-workshop-card-9-title-value" text="Workshop card" class="rail-note-title" />
+                                <ui:Label name="dev-workshop-card-9-lore-value" text="Lore line." class="summary-value summary-value--glance" />
+                                <ui:Label name="dev-workshop-card-9-note-value" text="Operator note." class="metric-subvalue metric-subvalue--wrap" />
+                                <ui:Button name="dev-workshop-card-9-button" text="Craft" class="action-button action-button--primary" />
+                            </ui:VisualElement>
+
+                            <ui:VisualElement name="dev-workshop-card-10" class="summary-card glance-card development-info-card">
+                                <ui:Label name="dev-workshop-card-10-family-value" text="Workshop Queue" class="eyebrow" />
+                                <ui:Label name="dev-workshop-card-10-title-value" text="Workshop card" class="rail-note-title" />
+                                <ui:Label name="dev-workshop-card-10-lore-value" text="Lore line." class="summary-value summary-value--glance" />
+                                <ui:Label name="dev-workshop-card-10-note-value" text="Operator note." class="metric-subvalue metric-subvalue--wrap" />
+                                <ui:Button name="dev-workshop-card-10-button" text="Craft" class="action-button action-button--primary" />
                             </ui:VisualElement>
                         </ui:VisualElement>
                     </ui:VisualElement>

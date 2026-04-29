@@ -1,6 +1,7 @@
 using PlanarWar.Client.Core;
 using PlanarWar.Client.Core.Contracts;
 using PlanarWar.Client.Core.Presentation;
+using PlanarWar.Client.UI.Screens.Heroes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,6 +38,11 @@ namespace PlanarWar.Client.UI.Screens.City
         private readonly Label researchCardsCopyValue;
         private readonly Label workshopCardsCopyValue;
         private readonly Label growthCardsCopyValue;
+        private readonly DropdownField workshopSlotSelectField;
+        private readonly DropdownField workshopRecipeSelectField;
+        private readonly Label workshopSelectedRecipeValue;
+        private readonly Button workshopCraftSelectedButton;
+        private readonly VisualElement workshopRecipePicker;
 
         private readonly Button researchLaneButton;
         private readonly Button workshopLaneButton;
@@ -44,6 +50,9 @@ namespace PlanarWar.Client.UI.Screens.City
         private readonly VisualElement researchSection;
         private readonly VisualElement workshopSection;
         private readonly VisualElement growthSection;
+
+        private const int VisibleDevelopmentCardSlots = 4;
+        private const int VisibleWorkshopCardSlots = 10;
 
         private readonly InfoCard[] researchCards;
         private readonly InfoCard[] workshopCards;
@@ -72,6 +81,10 @@ namespace PlanarWar.Client.UI.Screens.City
         private string selectedBlackMarketBuildingId = string.Empty;
         private string selectedCityBuildOptionKind = string.Empty;
         private string selectedBlackMarketBuildOptionKind = string.Empty;
+        private readonly List<string> workshopSlotChoiceKeys = new();
+        private readonly List<WorkshopRecipeSnapshot> workshopRecipeChoiceSnapshots = new();
+        private string selectedWorkshopSlotKey = "all";
+        private string selectedWorkshopRecipeId = string.Empty;
         private ShellSummarySnapshot lastRenderedSnapshot = ShellSummarySnapshot.Empty;
 
         public CityScreenController(VisualElement root, SummaryState summaryState, Func<string, Task> onStartResearchRequested, Func<string, Task> onStartWorkshopCraftRequested, Func<string, Task> onCollectWorkshopRequested, Func<string, Task> onRecruitHeroRequested, Func<string, Task> onAcceptHeroRecruitCandidateRequested, Func<Task> onDismissHeroRecruitCandidatesRequested, Func<string, Task> onConstructBuildingRequested, Func<string, Task> onUpgradeBuildingRequested, Func<string, string, Task> onSwitchBuildingRoutingRequested, Func<string, Task> onDestroyBuildingRequested, Func<string, string, Task> onRemodelBuildingRequested, Func<string, Task> onCancelActiveBuildRequested, Action onRefreshDeskRequested, Action onBackHomeRequested)
@@ -95,6 +108,11 @@ namespace PlanarWar.Client.UI.Screens.City
             researchCardsCopyValue = root.Q<Label>("dev-research-cards-copy-value");
             workshopCardsCopyValue = root.Q<Label>("dev-workshop-cards-copy-value");
             growthCardsCopyValue = root.Q<Label>("dev-growth-cards-copy-value");
+            workshopSlotSelectField = root.Q<DropdownField>("dev-workshop-slot-field");
+            workshopRecipeSelectField = root.Q<DropdownField>("dev-workshop-recipe-field");
+            workshopSelectedRecipeValue = root.Q<Label>("dev-workshop-selected-recipe-value");
+            workshopCraftSelectedButton = root.Q<Button>("dev-workshop-craft-selected-button");
+            workshopRecipePicker = root.Q<VisualElement>("dev-workshop-recipe-picker");
 
             researchLaneButton = root.Q<Button>("dev-research-lane-button");
             workshopLaneButton = root.Q<Button>("dev-workshop-lane-button");
@@ -119,9 +137,9 @@ namespace PlanarWar.Client.UI.Screens.City
             this.onRefreshDeskRequested = onRefreshDeskRequested;
             this.onBackHomeRequested = onBackHomeRequested;
 
-            researchCards = Enumerable.Range(1, 4).Select(i => new InfoCard(root, $"dev-research-card-{i}", hasButton: true)).ToArray();
-            workshopCards = Enumerable.Range(1, 4).Select(i => new InfoCard(root, $"dev-workshop-card-{i}", hasButton: true)).ToArray();
-            growthCards = Enumerable.Range(1, 4).Select(i => new InfoCard(root, $"dev-growth-card-{i}", hasButton: true)).ToArray();
+            researchCards = Enumerable.Range(1, VisibleDevelopmentCardSlots).Select(i => new InfoCard(root, $"dev-research-card-{i}", hasButton: true)).ToArray();
+            workshopCards = Enumerable.Range(1, VisibleWorkshopCardSlots).Select(i => new InfoCard(root, $"dev-workshop-card-{i}", hasButton: true)).ToArray();
+            growthCards = Enumerable.Range(1, VisibleDevelopmentCardSlots).Select(i => new InfoCard(root, $"dev-growth-card-{i}", hasButton: true)).ToArray();
             refreshDeskButton = root.Q<Button>("dev-refresh-button");
             startSuggestedResearchButton = root.Q<Button>("dev-start-research-button");
             backHomeButton = root.Q<Button>("dev-back-home-button");
@@ -129,6 +147,9 @@ namespace PlanarWar.Client.UI.Screens.City
             researchLaneButton?.RegisterCallback<ClickEvent>(_ => SetLane(DevelopmentLane.Research));
             workshopLaneButton?.RegisterCallback<ClickEvent>(_ => SetLane(DevelopmentLane.Workshop));
             growthLaneButton?.RegisterCallback<ClickEvent>(_ => SetLane(DevelopmentLane.Growth));
+            workshopSlotSelectField?.RegisterValueChangedCallback(evt => SelectWorkshopSlot(evt.newValue));
+            workshopRecipeSelectField?.RegisterValueChangedCallback(evt => SelectWorkshopRecipe(evt.newValue));
+            workshopCraftSelectedButton?.RegisterCallback<ClickEvent>(_ => TriggerStartWorkshopCraft(selectedWorkshopRecipeId));
             refreshDeskButton?.RegisterCallback<ClickEvent>(_ => onRefreshDeskRequested?.Invoke());
             startSuggestedResearchButton?.RegisterCallback<ClickEvent>(_ => TriggerSuggestedResearch());
             backHomeButton?.RegisterCallback<ClickEvent>(_ => onBackHomeRequested?.Invoke());
@@ -226,6 +247,7 @@ namespace PlanarWar.Client.UI.Screens.City
             noteValue.text = "Development Desk v1 stays honest: no city snapshot means no desk truth.";
             researchCardsCopyValue.text = "No research cards without a city payload.";
             workshopCardsCopyValue.text = "No workshop cards without a city payload.";
+            RenderWorkshopRecipePicker(Array.Empty<WorkshopRecipeSnapshot>(), false, null);
             growthCardsCopyValue.text = "No building cards without a city payload.";
             foreach (var card in researchCards.Concat(workshopCards).Concat(growthCards))
             {
@@ -324,6 +346,11 @@ namespace PlanarWar.Client.UI.Screens.City
                 .Where(t => string.Equals(t.Category, "workshop_job", StringComparison.OrdinalIgnoreCase))
                 .Where(t => !readyJobIds.Contains(t.Id))
                 .ToList();
+            var recipeCatalog = (summaryState?.WorkshopRecipes ?? new List<WorkshopRecipeSnapshot>())
+                .Where(r => r != null && !string.IsNullOrWhiteSpace(r.RecipeId))
+                .ToList();
+            var visibleRecipeCatalog = FilterWorkshopRecipesBySelectedSlot(recipeCatalog);
+            RenderWorkshopRecipePicker(recipeCatalog, isBlackMarket, s.ResourceLabels);
 
             cards.AddRange(activeJobs.Take(2).Select(job => new CardView(
                 family: isBlackMarket ? ShadowLaneText.BuildWorkshopJobFamily(ready: false) : "Active job",
@@ -344,17 +371,16 @@ namespace PlanarWar.Client.UI.Screens.City
                 buttonEnabled: !summaryState.IsActionBusy && !string.IsNullOrWhiteSpace(job.Id) && job.Id != "job" && onCollectWorkshopRequested != null,
                 onClick: () => TriggerCollectWorkshop(job.Id))));
 
-            cards.AddRange(workshopTimers.Take(4 - cards.Count).Select(timer => new CardView(
+            cards.AddRange(workshopTimers.Take(Math.Max(0, VisibleWorkshopCardSlots - cards.Count)).Select(timer => new CardView(
                 family: isBlackMarket ? ShadowLaneText.BuildWorkshopTimerFamily(timer) : "Workshop timer",
                 title: GetWorkshopTimerTitle(timer, summaryState.WorkshopRecipes),
                 lore: isBlackMarket ? ShadowLaneText.BuildWorkshopTimerLore(timer, nowUtc) : timer.FinishesAtUtc.HasValue ? $"{timer.Status} • {FormatRemaining(timer.FinishesAtUtc.Value - DateTime.UtcNow)}" : timer.Status,
                 note: isBlackMarket ? ShadowLaneText.BuildWorkshopTimerNote(timer) : FirstNonBlank(timer.Detail, "Timer surfaced from cityTimers."))));
 
-            if (cards.Count < 4)
+            if (cards.Count < VisibleWorkshopCardSlots)
             {
-                var recipeCards = summaryState.WorkshopRecipes
-                    .Where(r => !string.IsNullOrWhiteSpace(r.RecipeId))
-                    .Take(4 - cards.Count)
+                var recipeCards = visibleRecipeCatalog
+                    .Take(Math.Max(0, VisibleWorkshopCardSlots - cards.Count))
                     .Select(recipe => new CardView(
                         family: isBlackMarket ? ShadowLaneText.BuildWorkshopRecipeFamily(recipe) : (string.IsNullOrWhiteSpace(recipe.GearFamily) ? "Workshop recipe" : HumanizeKey(recipe.GearFamily)),
                         title: recipe.Name,
@@ -377,21 +403,227 @@ namespace PlanarWar.Client.UI.Screens.City
                     false));
             }
 
-            workshopCardsCopyValue.text = isBlackMarket
-                ? ShadowLaneText.DescribeWorkshopCardsCopy(activeJobs.Count, readyJobs.Count, summaryState.WorkshopRecipes.Count, workshopTimers.Count, summaryState.WorkshopRecipes)
-                : activeJobs.Count > 0
-                    ? $"{activeJobs.Count} active workshop job(s) and {readyJobs.Count} ready pickup(s) are visible."
-                    : readyJobs.Count > 0
-                        ? $"{readyJobs.Count} ready pickup(s) visible; collect wiring is now live."
-                        : summaryState.WorkshopRecipes.Count > 0
-                            ? $"Showing {summaryState.WorkshopRecipes.Count} craft recipe(s) ready."
-                            : workshopTimers.Count > 0
-                                ? $"Workshop timing is coming through cityTimers even though no job body is active."
-                                : "No workshop queue, timer, or recipe catalog is visible right now.";
+            workshopCardsCopyValue.text = BuildWorkshopCatalogCopy(isBlackMarket, activeJobs.Count, readyJobs.Count, workshopTimers.Count, recipeCatalog.Count, visibleRecipeCatalog.Count);
 
             RenderCards(workshopCards, cards);
         }
 
+
+        private void SelectWorkshopSlot(string label)
+        {
+            var index = workshopSlotSelectField?.choices?.IndexOf(label) ?? -1;
+            if (index < 0 || index >= workshopSlotChoiceKeys.Count)
+            {
+                return;
+            }
+
+            var nextSlot = workshopSlotChoiceKeys[index];
+            if (string.Equals(selectedWorkshopSlotKey, nextSlot, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            selectedWorkshopSlotKey = nextSlot;
+            selectedWorkshopRecipeId = string.Empty;
+            if (lastRenderedSnapshot?.HasCity == true)
+            {
+                RenderWorkshopLane(lastRenderedSnapshot);
+            }
+        }
+
+        private void SelectWorkshopRecipe(string label)
+        {
+            var index = workshopRecipeSelectField?.choices?.IndexOf(label) ?? -1;
+            if (index < 0 || index >= workshopRecipeChoiceSnapshots.Count)
+            {
+                return;
+            }
+
+            var recipe = workshopRecipeChoiceSnapshots[index];
+            selectedWorkshopRecipeId = recipe?.RecipeId ?? string.Empty;
+            if (lastRenderedSnapshot?.HasCity == true)
+            {
+                RenderWorkshopLane(lastRenderedSnapshot);
+            }
+        }
+
+        private void RenderWorkshopRecipePicker(IReadOnlyList<WorkshopRecipeSnapshot> recipes, bool isBlackMarket, ResourcePresentationSnapshot labels)
+        {
+            var catalog = recipes?.Where(r => r != null && !string.IsNullOrWhiteSpace(r.RecipeId)).ToList() ?? new List<WorkshopRecipeSnapshot>();
+            if (workshopRecipePicker != null)
+            {
+                workshopRecipePicker.style.display = catalog.Count > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            workshopSlotChoiceKeys.Clear();
+            var slotLabels = new List<string>();
+            workshopSlotChoiceKeys.Add("all");
+            slotLabels.Add("All slots");
+
+            foreach (var slot in BuildWorkshopSlotChoices(catalog))
+            {
+                if (string.IsNullOrWhiteSpace(slot) || workshopSlotChoiceKeys.Any(key => string.Equals(key, slot, StringComparison.OrdinalIgnoreCase)))
+                {
+                    continue;
+                }
+
+                workshopSlotChoiceKeys.Add(slot);
+                slotLabels.Add(BuildWorkshopSlotLabel(slot));
+            }
+
+            if (!workshopSlotChoiceKeys.Any(key => string.Equals(key, selectedWorkshopSlotKey, StringComparison.OrdinalIgnoreCase)))
+            {
+                selectedWorkshopSlotKey = "all";
+                selectedWorkshopRecipeId = string.Empty;
+            }
+
+            var selectedSlotIndex = Math.Max(0, workshopSlotChoiceKeys.FindIndex(key => string.Equals(key, selectedWorkshopSlotKey, StringComparison.OrdinalIgnoreCase)));
+            if (workshopSlotSelectField != null)
+            {
+                workshopSlotSelectField.choices = slotLabels;
+                workshopSlotSelectField.SetValueWithoutNotify(slotLabels.Count > 0 && selectedSlotIndex < slotLabels.Count ? slotLabels[selectedSlotIndex] : string.Empty);
+                workshopSlotSelectField.SetEnabled(slotLabels.Count > 1);
+            }
+
+            var filtered = FilterWorkshopRecipesBySelectedSlot(catalog);
+            workshopRecipeChoiceSnapshots.Clear();
+            workshopRecipeChoiceSnapshots.AddRange(filtered);
+            var recipeLabels = filtered.Select(BuildWorkshopRecipeChoiceLabel).ToList();
+
+            if (filtered.Count == 0)
+            {
+                selectedWorkshopRecipeId = string.Empty;
+            }
+            else if (string.IsNullOrWhiteSpace(selectedWorkshopRecipeId) || !filtered.Any(r => string.Equals(r.RecipeId, selectedWorkshopRecipeId, StringComparison.OrdinalIgnoreCase)))
+            {
+                selectedWorkshopRecipeId = filtered[0].RecipeId;
+            }
+
+            var selectedRecipeIndex = filtered.FindIndex(r => string.Equals(r.RecipeId, selectedWorkshopRecipeId, StringComparison.OrdinalIgnoreCase));
+            var selectedRecipe = selectedRecipeIndex >= 0 ? filtered[selectedRecipeIndex] : null;
+            if (workshopRecipeSelectField != null)
+            {
+                workshopRecipeSelectField.choices = recipeLabels;
+                workshopRecipeSelectField.SetValueWithoutNotify(selectedRecipeIndex >= 0 && selectedRecipeIndex < recipeLabels.Count ? recipeLabels[selectedRecipeIndex] : string.Empty);
+                workshopRecipeSelectField.SetEnabled(recipeLabels.Count > 1);
+            }
+
+            if (workshopSelectedRecipeValue != null)
+            {
+                workshopSelectedRecipeValue.text = selectedRecipe == null
+                    ? "No craftable recipe is visible for the selected workshop slot."
+                    : $"{selectedRecipe.Name} • {BuildWorkshopSlotLabel(GetWorkshopRecipeSlotKey(selectedRecipe))} • {BuildWorkshopRecipeNote(selectedRecipe, isBlackMarket, labels)}";
+            }
+
+            if (workshopCraftSelectedButton != null)
+            {
+                var busy = summaryState?.IsActionBusy == true && selectedRecipe != null && string.Equals(summaryState.PendingWorkshopRecipeId, selectedRecipe.RecipeId, StringComparison.OrdinalIgnoreCase);
+                workshopCraftSelectedButton.text = busy ? "Crafting..." : selectedRecipe == null ? "No recipe selected" : $"Craft {selectedRecipe.Name}";
+                workshopCraftSelectedButton.SetEnabled(selectedRecipe != null && summaryState?.IsActionBusy != true && onStartWorkshopCraftRequested != null);
+            }
+        }
+
+        private List<WorkshopRecipeSnapshot> FilterWorkshopRecipesBySelectedSlot(IReadOnlyList<WorkshopRecipeSnapshot> recipes)
+        {
+            var catalog = recipes?.Where(r => r != null && !string.IsNullOrWhiteSpace(r.RecipeId)).ToList() ?? new List<WorkshopRecipeSnapshot>();
+            if (string.IsNullOrWhiteSpace(selectedWorkshopSlotKey) || string.Equals(selectedWorkshopSlotKey, "all", StringComparison.OrdinalIgnoreCase))
+            {
+                return catalog;
+            }
+
+            return catalog
+                .Where(recipe => string.Equals(GetWorkshopRecipeSlotKey(recipe), selectedWorkshopSlotKey, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        private string BuildWorkshopCatalogCopy(bool isBlackMarket, int activeJobs, int readyJobs, int workshopTimers, int totalRecipes, int visibleRecipes)
+        {
+            if (activeJobs > 0)
+            {
+                return $"{activeJobs} active workshop job(s) and {readyJobs} ready pickup(s) are visible.";
+            }
+
+            if (readyJobs > 0)
+            {
+                return $"{readyJobs} ready pickup(s) visible; collect wiring is now live.";
+            }
+
+            if (totalRecipes > 0)
+            {
+                var slotLabel = BuildWorkshopSlotLabel(selectedWorkshopSlotKey);
+                return string.Equals(selectedWorkshopSlotKey, "all", StringComparison.OrdinalIgnoreCase)
+                    ? $"Showing {totalRecipes} craft recipe(s). Pick a slot to narrow the catalog."
+                    : $"Showing {visibleRecipes}/{totalRecipes} craft recipe(s) for {slotLabel}.";
+            }
+
+            return workshopTimers > 0
+                ? "Workshop timing is coming through cityTimers even though no job body is active."
+                : isBlackMarket
+                    ? "No covert workshop queue, timer, or recipe catalog is visible right now."
+                    : "No workshop queue, timer, or recipe catalog is visible right now.";
+        }
+
+        private static List<string> BuildWorkshopSlotChoices(IReadOnlyList<WorkshopRecipeSnapshot> recipes)
+        {
+            var preferred = new[] { "head", "chest", "legs", "feet", "hands", "mainhand", "offhand", "ring", "neck", "other" };
+            var present = new HashSet<string>((recipes ?? Array.Empty<WorkshopRecipeSnapshot>()).Select(GetWorkshopRecipeSlotKey).Where(slot => !string.IsNullOrWhiteSpace(slot)), StringComparer.OrdinalIgnoreCase);
+            return preferred.Where(present.Contains).Concat(present.Where(slot => !preferred.Contains(slot, StringComparer.OrdinalIgnoreCase)).OrderBy(slot => slot, StringComparer.OrdinalIgnoreCase)).ToList();
+        }
+
+        private static string BuildWorkshopRecipeChoiceLabel(WorkshopRecipeSnapshot recipe)
+        {
+            if (recipe == null)
+            {
+                return "Recipe";
+            }
+
+            return $"{recipe.Name} • {BuildWorkshopSlotLabel(GetWorkshopRecipeSlotKey(recipe))}";
+        }
+
+        private static string BuildWorkshopSlotLabel(string slot)
+        {
+            if (string.IsNullOrWhiteSpace(slot) || string.Equals(slot, "all", StringComparison.OrdinalIgnoreCase)) return "All slots";
+            if (string.Equals(slot, "ring", StringComparison.OrdinalIgnoreCase)) return "Ring";
+            if (string.Equals(slot, "other", StringComparison.OrdinalIgnoreCase)) return "Other";
+            return HeroArmorySlotWorkflow.FormatSlotLabel(slot);
+        }
+
+        private static string GetWorkshopRecipeSlotKey(WorkshopRecipeSnapshot recipe)
+        {
+            if (recipe == null)
+            {
+                return "other";
+            }
+
+            var explicitSlot = NormalizeWorkshopSlotKey(recipe.GearSlot);
+            if (!string.IsNullOrWhiteSpace(explicitSlot))
+            {
+                return explicitSlot;
+            }
+
+            var text = $"{recipe.OutputItemId} {recipe.RecipeId} {recipe.Name} {recipe.Summary} {recipe.GearFamily} {string.Join(" ", recipe.ResponseTags ?? new List<string>())}".ToLowerInvariant();
+            if (text.Contains("mainhand") || text.Contains("main hand") || text.Contains("primary hand") || text.Contains("main-hand") || text.Contains("command standard") || text.Contains("banner")) return "mainhand";
+            if (text.Contains("offhand") || text.Contains("off hand") || text.Contains("off-hand") || text.Contains("focus")) return "offhand";
+            if (text.Contains("head") || text.Contains("helm") || text.Contains("helmet")) return "head";
+            if (text.Contains("chest") || text.Contains("cloak") || text.Contains("robe") || text.Contains("body")) return "chest";
+            if (text.Contains("legs") || text.Contains("leg ") || text.Contains("greave") || text.Contains("leggings")) return "legs";
+            if (text.Contains("feet") || text.Contains("foot") || text.Contains("boot")) return "feet";
+            if (text.Contains("hands") || text.Contains("hand slot") || text.Contains("glove") || text.Contains("satchel")) return "hands";
+            if (text.Contains("ring") || text.Contains("signet") || text.Contains("seal")) return "ring";
+            if (text.Contains("neck") || text.Contains("charm") || text.Contains("amulet")) return "neck";
+            return "other";
+        }
+
+        private static string NormalizeWorkshopSlotKey(string slot)
+        {
+            if (string.IsNullOrWhiteSpace(slot)) return string.Empty;
+            var normalized = HeroArmorySlotWorkflow.NormalizeSlot(slot);
+            if (string.Equals(normalized, "ring1", StringComparison.OrdinalIgnoreCase) || string.Equals(normalized, "ring2", StringComparison.OrdinalIgnoreCase) || string.Equals(normalized, "ring", StringComparison.OrdinalIgnoreCase)) return "ring";
+            if (HeroArmorySlotWorkflow.IsStandardSlot(normalized)) return normalized;
+            if (string.Equals(normalized, "main", StringComparison.OrdinalIgnoreCase) || string.Equals(normalized, "mainweapon", StringComparison.OrdinalIgnoreCase)) return "mainhand";
+            if (string.Equals(normalized, "off", StringComparison.OrdinalIgnoreCase) || string.Equals(normalized, "offweapon", StringComparison.OrdinalIgnoreCase)) return "offhand";
+            return string.Empty;
+        }
         private void RenderGrowthLane(ShellSummarySnapshot s)
         {
             var isBlackMarket = IsBlackMarketLane(s);

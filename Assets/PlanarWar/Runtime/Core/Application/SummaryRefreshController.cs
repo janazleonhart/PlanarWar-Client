@@ -62,6 +62,7 @@ namespace PlanarWar.Client.Core.Application
                     Name = r["name"]?.ToString()?.Trim() ?? r["recipeId"]?.ToString()?.Trim() ?? "Recipe",
                     Summary = r["summary"]?.ToString()?.Trim() ?? string.Empty,
                     GearFamily = r["gearFamily"]?.ToString()?.Trim() ?? string.Empty,
+                    GearSlot = r["gearSlot"]?.ToString()?.Trim() ?? r["gear_slot"]?.ToString()?.Trim() ?? r["slot"]?.ToString()?.Trim() ?? r["equipmentSlot"]?.ToString()?.Trim() ?? r["equipment_slot"]?.ToString()?.Trim() ?? r["targetSlot"]?.ToString()?.Trim() ?? r["target_slot"]?.ToString()?.Trim() ?? r["template"]?["slot"]?.ToString()?.Trim() ?? string.Empty,
                     OutputItemId = r["outputItemId"]?.ToString()?.Trim() ?? string.Empty,
                     WealthCost = ReadDouble(r["effectiveWealthCost"] ?? r["craftWealthCost"] ?? r["wealthCost"]),
                     ManaCost = ReadDouble(r["manaCost"]),

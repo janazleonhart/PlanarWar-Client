@@ -2586,6 +2586,28 @@ namespace PlanarWar.Client.Tests.EditMode
 
 
         [Test]
+        public void Development_workshop_recipe_board_has_slots_for_full_current_catalog()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/City/CityScreenController.cs");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(controllerPath), Is.True, "CityScreenController.cs should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var controller = File.ReadAllText(controllerPath);
+            for (var i = 1; i <= 10; i++)
+            {
+                Assert.That(uxml, Does.Contain($"dev-workshop-card-{i}"), $"Workshop recipe card slot {i} should exist so the current ten-recipe catalog is not collapsed to four visible cards.");
+                Assert.That(uxml, Does.Contain($"dev-workshop-card-{i}-button"), $"Workshop recipe card slot {i} needs a craft/collect action button.");
+            }
+
+            Assert.That(controller, Does.Contain("private const int VisibleWorkshopCardSlots = 10;"));
+            Assert.That(controller, Does.Contain("workshopCards = Enumerable.Range(1, VisibleWorkshopCardSlots)"));
+            Assert.That(controller, Does.Contain(".Take(Math.Max(0, VisibleWorkshopCardSlots - cards.Count))"));
+            Assert.That(controller, Does.Not.Contain("workshopCards = Enumerable.Range(1, 4)"));
+        }
+
+        [Test]
         public void Development_workshop_jobs_prefer_player_facing_recipe_labels_over_raw_ids()
         {
             var titleMethod = typeof(CityScreenController)
@@ -3515,6 +3537,45 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(bootstrap, Does.Contain("home-development-button"));
             Assert.That(bootstrap, Does.Contain("navigationState.SetActive(ShellScreen.City)"));
             Assert.That(bootstrap, Does.Not.Contain("root.Q<Button>(\"start-research-button\")"));
+        }
+
+        [Test]
+        public void Workshop_surface_exposes_slot_and_recipe_picker_for_catalog_navigation()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var cityControllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/City/CityScreenController.cs");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(cityControllerPath), Is.True, "CityScreenController.cs should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var city = File.ReadAllText(cityControllerPath);
+
+            Assert.That(uxml, Does.Contain("dev-workshop-recipe-picker"));
+            Assert.That(uxml, Does.Contain("dev-workshop-slot-field"));
+            Assert.That(uxml, Does.Contain("dev-workshop-recipe-field"));
+            Assert.That(uxml, Does.Contain("dev-workshop-craft-selected-button"));
+            Assert.That(city, Does.Contain("FilterWorkshopRecipesBySelectedSlot"));
+            Assert.That(city, Does.Contain("GetWorkshopRecipeSlotKey"));
+            Assert.That(city, Does.Contain("selectedWorkshopRecipeId"));
+            Assert.That(city, Does.Contain("TriggerStartWorkshopCraft(selectedWorkshopRecipeId)"));
+        }
+
+        [Test]
+        public void Workshop_recipe_contract_preserves_optional_gear_slot_truth()
+        {
+            var contractPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Core/Contracts/ShellSummarySnapshot.cs");
+            var refreshPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Core/Application/SummaryRefreshController.cs");
+            Assert.That(File.Exists(contractPath), Is.True, "ShellSummarySnapshot.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(refreshPath), Is.True, "SummaryRefreshController.cs should be available from the Unity project root.");
+
+            var contract = File.ReadAllText(contractPath);
+            var refresh = File.ReadAllText(refreshPath);
+
+            Assert.That(contract, Does.Contain("GearSlot"));
+            Assert.That(refresh, Does.Contain("gearSlot"));
+            Assert.That(refresh, Does.Contain("equipmentSlot"));
+            Assert.That(refresh, Does.Contain("targetSlot"));
+            Assert.That(refresh, Does.Contain("[\"template\"]?[\"slot\"]"));
         }
 
         private static VisualElement BuildMinimalHeroControllerRoot()
