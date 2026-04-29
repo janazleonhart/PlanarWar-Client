@@ -3578,6 +3578,36 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(refresh, Does.Contain("[\"template\"]?[\"slot\"]"));
         }
 
+
+        [Test]
+        public void Client_closeout_and_tester_guide_docs_are_checkpointed()
+        {
+            var closeoutPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Docs/CLIENT_GAMEPLAY_SURFACE_CLOSEOUT_V1.md");
+            var guidePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Docs/PLAYER_TESTER_GUIDE_V1.md");
+            Assert.That(File.Exists(closeoutPath), Is.True, "Client gameplay surface closeout doc should be present from the Unity project root.");
+            Assert.That(File.Exists(guidePath), Is.True, "Player tester guide should be present from the Unity project root.");
+
+            var closeout = File.ReadAllText(closeoutPath);
+            var guide = File.ReadAllText(guidePath);
+
+            Assert.That(closeout, Does.Contain("Client Gameplay Surface Closeout v1"));
+            Assert.That(closeout, Does.Contain("Register a new account"));
+            Assert.That(closeout, Does.Contain("Create a Black Market"));
+            Assert.That(closeout, Does.Contain("Workshop craft, active timer, ready pickup, collect, and armory-delivery loop"));
+            Assert.That(closeout, Does.Contain("does not claim"));
+            Assert.That(closeout, Does.Contain("fake routing protection percentages"));
+            Assert.That(closeout, Does.Contain("heavy admin UI"));
+
+            Assert.That(guide, Does.Contain("First run"));
+            Assert.That(guide, Does.Contain("Founder mode"));
+            Assert.That(guide, Does.Contain("Workshop crafting"));
+            Assert.That(guide, Does.Contain("Operations desk"));
+            Assert.That(guide, Does.Contain("Heroes / Operatives desk"));
+            Assert.That(guide, Does.Contain("What testers should report"));
+            Assert.That(guide, Does.Contain("generated 2D town layout images"));
+            Assert.That(guide, Does.Contain("Good smoke-test route"));
+        }
+
         private static VisualElement BuildMinimalHeroControllerRoot()
         {
             var root = new VisualElement();
