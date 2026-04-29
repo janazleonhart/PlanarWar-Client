@@ -3580,23 +3580,15 @@ namespace PlanarWar.Client.Tests.EditMode
 
 
         [Test]
-        public void Client_closeout_and_tester_guide_docs_are_checkpointed()
+        public void Player_tester_guide_doc_is_checkpointed_without_packaging_dev_closeout_notes()
         {
             var closeoutPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Docs/CLIENT_GAMEPLAY_SURFACE_CLOSEOUT_V1.md");
             var guidePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Docs/PLAYER_TESTER_GUIDE_V1.md");
-            Assert.That(File.Exists(closeoutPath), Is.True, "Client gameplay surface closeout doc should be present from the Unity project root.");
+
+            Assert.That(File.Exists(closeoutPath), Is.False, "Client gameplay surface closeout notes are dev-facing and should not be packaged into the Unity tester client.");
             Assert.That(File.Exists(guidePath), Is.True, "Player tester guide should be present from the Unity project root.");
 
-            var closeout = File.ReadAllText(closeoutPath);
             var guide = File.ReadAllText(guidePath);
-
-            Assert.That(closeout, Does.Contain("Client Gameplay Surface Closeout v1"));
-            Assert.That(closeout, Does.Contain("Register a new account"));
-            Assert.That(closeout, Does.Contain("Create a Black Market"));
-            Assert.That(closeout, Does.Contain("Workshop craft, active timer, ready pickup, collect, and armory-delivery loop"));
-            Assert.That(closeout, Does.Contain("does not claim"));
-            Assert.That(closeout, Does.Contain("fake routing protection percentages"));
-            Assert.That(closeout, Does.Contain("heavy admin UI"));
 
             Assert.That(guide, Does.Contain("First run"));
             Assert.That(guide, Does.Contain("Founder mode"));
