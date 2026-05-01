@@ -60,6 +60,17 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private readonly Button postFounderDevelopmentButton;
         private readonly Button postFounderOperationsButton;
         private readonly Button postFounderRosterButton;
+        private readonly VisualElement earlyLanePostureCard;
+        private readonly Label earlyLanePostureBadge;
+        private readonly Label earlyLanePostureHeadline;
+        private readonly Label earlyLanePostureSummary;
+        private readonly Label earlyLanePostureRecommended;
+        private readonly Label earlyLanePostureReason;
+        private readonly Label earlyLanePostureStrengths;
+        private readonly Label earlyLanePostureLiabilities;
+        private readonly Label earlyLanePostureProof;
+        private readonly Button earlyLanePostureActionButton;
+        private ShellScreen earlyLanePostureRecommendedScreen = ShellScreen.City;
         private readonly VisualElement founderSetupCard;
         private readonly TextField founderCityNameField;
         private readonly Label founderSetupHeadline;
@@ -128,6 +139,16 @@ namespace PlanarWar.Client.UI.Screens.Summary
             postFounderDevelopmentButton = root.Q<Button>("post-founder-development-button");
             postFounderOperationsButton = root.Q<Button>("post-founder-operations-button");
             postFounderRosterButton = root.Q<Button>("post-founder-roster-button");
+            earlyLanePostureCard = root.Q<VisualElement>("early-lane-posture-card");
+            earlyLanePostureBadge = root.Q<Label>("early-lane-posture-badge-value");
+            earlyLanePostureHeadline = root.Q<Label>("early-lane-posture-headline-value");
+            earlyLanePostureSummary = root.Q<Label>("early-lane-posture-summary-value");
+            earlyLanePostureRecommended = root.Q<Label>("early-lane-posture-recommended-value");
+            earlyLanePostureReason = root.Q<Label>("early-lane-posture-reason-value");
+            earlyLanePostureStrengths = root.Q<Label>("early-lane-posture-strengths-value");
+            earlyLanePostureLiabilities = root.Q<Label>("early-lane-posture-liabilities-value");
+            earlyLanePostureProof = root.Q<Label>("early-lane-posture-proof-value");
+            earlyLanePostureActionButton = root.Q<Button>("early-lane-posture-action-button");
             founderSetupCard = root.Q<VisualElement>("founder-setup-card");
             founderCityNameField = root.Q<TextField>("founder-city-name-field");
             founderSetupHeadline = root.Q<Label>("founder-setup-headline-value");
@@ -150,6 +171,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             postFounderDevelopmentButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(ShellScreen.City, onNavigateRequested));
             postFounderOperationsButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(ShellScreen.BlackMarket, onNavigateRequested));
             postFounderRosterButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(ShellScreen.Heroes, onNavigateRequested));
+            earlyLanePostureActionButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(earlyLanePostureRecommendedScreen, onNavigateRequested));
         }
 
         public void Render(ShellSummarySnapshot s, bool isSummaryLoaded, bool isActionBusy = false, string actionStatus = null, bool actionFailed = false)
@@ -173,6 +195,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             RenderTimerDiagnostics(s, isSummaryLoaded, nowUtc);
             RenderFounderSetup(s, isSummaryLoaded, isActionBusy, actionStatus, actionFailed);
             RenderPostFounderHandoff(s, isSummaryLoaded);
+            RenderEarlyLanePosture(s, isSummaryLoaded);
 
             RenderPressureDesk(s);
         }
@@ -237,6 +260,145 @@ namespace PlanarWar.Client.UI.Screens.Summary
             postFounderDevelopmentButton?.SetEnabled(true);
             postFounderOperationsButton?.SetEnabled(true);
             postFounderRosterButton?.SetEnabled(true);
+        }
+
+        private void RenderEarlyLanePosture(ShellSummarySnapshot summary, bool isSummaryLoaded)
+        {
+            var posture = summary?.EarlyLanePosture;
+            var shouldShow = isSummaryLoaded && summary != null && summary.HasCity && posture != null;
+            if (earlyLanePostureCard != null)
+            {
+                earlyLanePostureCard.style.display = shouldShow ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            if (!shouldShow)
+            {
+                return;
+            }
+
+            var label = FirstNonBlank(posture.Label, ResolveLaneLabel(posture.Lane, summary.City?.SettlementLaneLabel));
+            var headline = FirstNonBlank(posture.Headline, $"{label} lane posture");
+            var summaryText = FirstNonBlank(posture.Summary, "Backend lane posture is live, but no summary copy was provided.");
+            var recommendedAction = FirstNonBlank(posture.RecommendedActionLabel, BuildFallbackPostureAction(posture, summary));
+            var reason = FirstNonBlank(posture.NextStepReason, "Recommendation comes from live /api/me earlyLanePosture truth.");
+            var recommendedScreen = ResolvePostureScreen(posture.RecommendedDesk, summary);
+            earlyLanePostureRecommendedScreen = recommendedScreen;
+
+            if (earlyLanePostureBadge != null)
+            {
+                earlyLanePostureBadge.text = $"{label} • backend posture";
+            }
+
+            if (earlyLanePostureHeadline != null)
+            {
+                earlyLanePostureHeadline.text = headline;
+            }
+
+            if (earlyLanePostureSummary != null)
+            {
+                earlyLanePostureSummary.text = summaryText;
+            }
+
+            if (earlyLanePostureRecommended != null)
+            {
+                earlyLanePostureRecommended.text = recommendedAction;
+            }
+
+            if (earlyLanePostureReason != null)
+            {
+                earlyLanePostureReason.text = reason;
+            }
+
+            if (earlyLanePostureStrengths != null)
+            {
+                earlyLanePostureStrengths.text = FormatPostureList(posture.Strengths, "No live strength signals surfaced yet.");
+            }
+
+            if (earlyLanePostureLiabilities != null)
+            {
+                earlyLanePostureLiabilities.text = FormatPostureList(posture.Liabilities, "No live liability signals surfaced yet.");
+            }
+
+            if (earlyLanePostureProof != null)
+            {
+                earlyLanePostureProof.text = FormatPostureList(posture.ProofSignals, "No proof signals surfaced yet.");
+            }
+
+            if (earlyLanePostureActionButton != null)
+            {
+                earlyLanePostureActionButton.text = BuildPostureButtonLabel(recommendedScreen, summary);
+                earlyLanePostureActionButton.SetEnabled(true);
+            }
+        }
+
+        private static ShellScreen ResolvePostureScreen(string recommendedDesk, ShellSummarySnapshot summary)
+        {
+            var normalized = (recommendedDesk ?? string.Empty).Trim().Replace("-", "_").Replace(" ", "_").ToLowerInvariant();
+            if (normalized == "operations" || normalized == "operation")
+            {
+                return ShellScreen.BlackMarket;
+            }
+
+            if (normalized == "heroes" || normalized == "hero" || normalized == "operatives" || normalized == "operative" || normalized == "roster")
+            {
+                return ShellScreen.Heroes;
+            }
+
+            return ShellScreen.City;
+        }
+
+        private static string BuildPostureButtonLabel(ShellScreen screen, ShellSummarySnapshot summary)
+        {
+            if (screen == ShellScreen.BlackMarket)
+            {
+                return "Open Operations";
+            }
+
+            if (screen == ShellScreen.Heroes)
+            {
+                var lane = NormalizeLane(summary?.City?.SettlementLane);
+                return string.Equals(lane, "black_market", StringComparison.OrdinalIgnoreCase) ? "Open Operatives" : "Open Heroes";
+            }
+
+            return "Open Development";
+        }
+
+        private static string BuildFallbackPostureAction(EarlyLanePostureSnapshot posture, ShellSummarySnapshot summary)
+        {
+            var screen = ResolvePostureScreen(posture?.RecommendedDesk, summary);
+            return BuildPostureButtonLabel(screen, summary);
+        }
+
+        private static string ResolveLaneLabel(string postureLane, string fallbackLabel)
+        {
+            var lane = NormalizeLane(postureLane);
+            if (string.Equals(lane, "black_market", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Black Market";
+            }
+
+            if (!string.IsNullOrWhiteSpace(fallbackLabel) && fallbackLabel != "-")
+            {
+                return fallbackLabel.Trim();
+            }
+
+            return "City";
+        }
+
+        private static string FormatPostureList(IEnumerable<string> entries, string emptyText)
+        {
+            var clean = entries?
+                .Where(entry => !string.IsNullOrWhiteSpace(entry))
+                .Select(entry => entry.Trim())
+                .Take(3)
+                .ToList() ?? new List<string>();
+
+            if (clean.Count == 0)
+            {
+                return emptyText;
+            }
+
+            return string.Join("\n", clean.Select(entry => $"• {entry}"));
         }
 
         private void RenderFounderSetup(ShellSummarySnapshot summary, bool isSummaryLoaded, bool isActionBusy, string actionStatus, bool actionFailed)

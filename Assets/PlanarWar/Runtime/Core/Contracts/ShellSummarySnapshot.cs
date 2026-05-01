@@ -13,6 +13,7 @@ namespace PlanarWar.Client.Core.Contracts
         public bool CanCreateCity { get; set; }
         public string SuggestedCityName { get; set; } = string.Empty;
         public List<SettlementSetupChoiceSnapshot> CitySetupChoices { get; set; } = new();
+        public EarlyLanePostureSnapshot EarlyLanePosture { get; set; }
         public bool HasCity { get; set; }
         public CitySummarySnapshot City { get; set; } = new();
         public List<BuildingSnapshot> Buildings { get; set; } = new();
@@ -43,6 +44,23 @@ namespace PlanarWar.Client.Core.Contracts
         public BlackMarketActiveOperationSurfaceSnapshot BlackMarketActiveOperation { get; set; }
         public BlackMarketBackbonePressureSurfaceSnapshot BlackMarketBackbonePressure { get; set; }
         public BlackMarketPayoffRecoverySurfaceSnapshot BlackMarketPayoffRecovery { get; set; }
+    }
+
+
+
+    [Serializable]
+    public sealed class EarlyLanePostureSnapshot
+    {
+        public string Lane { get; set; } = string.Empty;
+        public string Label { get; set; } = string.Empty;
+        public string Headline { get; set; } = string.Empty;
+        public string Summary { get; set; } = string.Empty;
+        public List<string> Strengths { get; set; } = new();
+        public List<string> Liabilities { get; set; } = new();
+        public string RecommendedDesk { get; set; } = string.Empty;
+        public string RecommendedActionLabel { get; set; } = string.Empty;
+        public string NextStepReason { get; set; } = string.Empty;
+        public List<string> ProofSignals { get; set; } = new();
     }
 
     [Serializable]

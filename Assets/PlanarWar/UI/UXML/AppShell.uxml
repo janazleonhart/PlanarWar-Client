@@ -246,6 +246,39 @@
                     </ui:VisualElement>
                 </ui:VisualElement>
 
+                <ui:VisualElement name="early-lane-posture-card" class="summary-card summary-card--full summary-card--action early-lane-posture-card">
+                    <ui:VisualElement class="development-actions-head">
+                        <ui:Label text="Lane posture" class="eyebrow" />
+                        <ui:Label name="early-lane-posture-badge-value" text="Waiting on backend posture" class="chapter-row__badge" />
+                    </ui:VisualElement>
+                    <ui:Label name="early-lane-posture-headline-value" text="Lane posture waiting on live backend truth." class="rail-note-title" />
+                    <ui:Label name="early-lane-posture-summary-value" text="This card consumes /api/me earlyLanePosture when the backend provides it." class="summary-value summary-value--glance" />
+
+                    <ui:VisualElement class="summary-grid summary-grid--glance early-lane-posture-grid">
+                        <ui:VisualElement class="summary-card glance-card">
+                            <ui:Label text="Recommended desk" class="eyebrow" />
+                            <ui:Label name="early-lane-posture-recommended-value" text="No recommended desk surfaced." class="summary-value summary-value--glance" />
+                            <ui:Label name="early-lane-posture-reason-value" text="Reasoning will appear here when /api/me exposes early lane posture." class="metric-subvalue metric-subvalue--wrap" />
+                            <ui:Button name="early-lane-posture-action-button" text="Open Development" class="action-button action-button--primary" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card glance-card">
+                            <ui:Label text="Strengths" class="eyebrow" />
+                            <ui:Label name="early-lane-posture-strengths-value" text="No live strength signals surfaced yet." class="summary-value summary-value--glance" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card glance-card">
+                            <ui:Label text="Liabilities" class="eyebrow" />
+                            <ui:Label name="early-lane-posture-liabilities-value" text="No live liability signals surfaced yet." class="summary-value summary-value--glance" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card glance-card">
+                            <ui:Label text="Proof signals" class="eyebrow" />
+                            <ui:Label name="early-lane-posture-proof-value" text="No proof signals surfaced yet." class="summary-value summary-value--glance" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
                 <ui:VisualElement name="founder-setup-card" class="summary-card summary-card--full summary-card--action founder-setup-card">
                     <ui:VisualElement class="development-actions-head">
                         <ui:Label text="Settlement setup" class="eyebrow" />

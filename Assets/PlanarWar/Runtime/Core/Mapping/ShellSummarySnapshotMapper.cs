@@ -180,6 +180,7 @@ namespace PlanarWar.Client.Core.Mapping
                 CanCreateCity = summary["canCreateCity"]?.Read<bool>() ?? summary["can_create_city"]?.Read<bool>() ?? false,
                 SuggestedCityName = summary["suggestedCityName"]?.Read<string>() ?? summary["suggested_city_name"]?.Read<string>() ?? string.Empty,
                 CitySetupChoices = MapSettlementSetupChoices(summary["citySetupChoices"] ?? summary["city_setup_choices"] ?? summary["setupChoices"] ?? summary["setup_choices"]),
+                EarlyLanePosture = MapEarlyLanePosture(summary["earlyLanePosture"] as JObject ?? summary["early_lane_posture"] as JObject),
                 HasCity = summary["hasCity"]?.Read<bool>() ?? false,
                 City = new CitySummarySnapshot
                 {
@@ -224,6 +225,25 @@ namespace PlanarWar.Client.Core.Mapping
             return mapped;
         }
 
+
+        private static EarlyLanePostureSnapshot MapEarlyLanePosture(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new EarlyLanePostureSnapshot
+            {
+                Lane = FirstNonBlank(ReadText(obj["lane"]), ReadText(obj["settlementLane"]), ReadText(obj["settlement_lane"])),
+                Label = FirstNonBlank(ReadText(obj["label"]), ReadText(obj["name"])),
+                Headline = FirstNonBlank(ReadText(obj["headline"]), ReadText(obj["title"])),
+                Summary = FirstNonBlank(ReadText(obj["summary"]), ReadText(obj["description"]), ReadText(obj["detail"])),
+                Strengths = MapStringArray(FirstArray(obj["strengths"], obj["advantages"])),
+                Liabilities = MapStringArray(FirstArray(obj["liabilities"], obj["risks"])),
+                RecommendedDesk = FirstNonBlank(ReadText(obj["recommendedDesk"]), ReadText(obj["recommended_desk"])),
+                RecommendedActionLabel = FirstNonBlank(ReadText(obj["recommendedActionLabel"]), ReadText(obj["recommended_action_label"]), ReadText(obj["recommendedAction"]), ReadText(obj["recommended_action"])),
+                NextStepReason = FirstNonBlank(ReadText(obj["nextStepReason"]), ReadText(obj["next_step_reason"]), ReadText(obj["reason"])),
+                ProofSignals = MapStringArray(FirstArray(obj["proofSignals"], obj["proof_signals"])),
+            };
+        }
 
         private static List<SettlementSetupChoiceSnapshot> MapSettlementSetupChoices(JToken token)
         {

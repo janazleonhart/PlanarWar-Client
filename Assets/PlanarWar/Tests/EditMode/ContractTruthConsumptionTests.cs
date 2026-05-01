@@ -3709,6 +3709,60 @@ namespace PlanarWar.Client.Tests.EditMode
             return root;
         }
 
+        [Test]
+        public void Mapper_captures_early_lane_posture_truth()
+        {
+            const string payload = @"{
+                ""hasCity"": true,
+                ""city"": { ""name"": ""Quiet Ledger"", ""settlementLane"": ""black_market"", ""settlementLaneProfile"": { ""label"": ""Black Market"" } },
+                ""earlyLanePosture"": {
+                    ""lane"": ""black_market"",
+                    ""label"": ""Black Market"",
+                    ""headline"": ""Shadow settlement building deniable leverage."",
+                    ""summary"": ""The first honest decisions should protect route leverage."",
+                    ""strengths"": [""cashflow"", ""intel""],
+                    ""liabilities"": [""exposure risk""],
+                    ""recommendedDesk"": ""operations"",
+                    ""recommendedActionLabel"": ""Open Operations for a low-exposure route"",
+                    ""nextStepReason"": ""Offers are visible."",
+                    ""proofSignals"": [""Settlement lane: black_market.""]
+                }
+            }";
+
+            var summary = ShellSummarySnapshotMapper.Map(payload);
+
+            Assert.That(summary.EarlyLanePosture, Is.Not.Null);
+            Assert.That(summary.EarlyLanePosture.Lane, Is.EqualTo("black_market"));
+            Assert.That(summary.EarlyLanePosture.Label, Is.EqualTo("Black Market"));
+            Assert.That(summary.EarlyLanePosture.Headline, Does.Contain("Shadow settlement"));
+            Assert.That(summary.EarlyLanePosture.Strengths, Does.Contain("cashflow"));
+            Assert.That(summary.EarlyLanePosture.Liabilities, Does.Contain("exposure risk"));
+            Assert.That(summary.EarlyLanePosture.RecommendedDesk, Is.EqualTo("operations"));
+            Assert.That(summary.EarlyLanePosture.RecommendedActionLabel, Does.Contain("Open Operations"));
+            Assert.That(summary.EarlyLanePosture.NextStepReason, Does.Contain("Offers"));
+            Assert.That(summary.EarlyLanePosture.ProofSignals, Does.Contain("Settlement lane: black_market."));
+        }
+
+        [Test]
+        public void Home_surface_consumes_early_lane_posture_without_bootstrap_side_effects()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            Assert.That(uxml, Does.Contain("early-lane-posture-card"));
+            Assert.That(uxml, Does.Contain("early-lane-posture-headline-value"));
+            Assert.That(uxml, Does.Contain("early-lane-posture-recommended-value"));
+            Assert.That(uxml, Does.Contain("early-lane-posture-strengths-value"));
+            Assert.That(uxml, Does.Contain("early-lane-posture-liabilities-value"));
+            Assert.That(uxml, Does.Contain("early-lane-posture-proof-value"));
+            Assert.That(uxml, Does.Contain("early-lane-posture-action-button"));
+            Assert.That(uxml, Does.Contain("This card consumes /api/me earlyLanePosture"));
+            Assert.That(uxml, Does.Not.Contain("early-lane-posture-bootstrap"));
+        }
+
+
+
 
 
 
