@@ -76,6 +76,23 @@ The **First-hour action path** section is guidance from live `/api/me.earlyLaneP
 
 Important: the action path is not a tutorial tracker. It does not complete objectives, grant rewards, start timers, or fake progress. It only points testers toward the next live desk or receipt family that should already exist.
 
+### Mother Brain pressure path
+
+Home can also show a **Mother Brain pressure path** card when live `/api/me.motherBrainPressureStatus.actionPath` truth exists. This card translates the current pressure substrate into a suggested response lane.
+
+Use it to read:
+
+- the current Mother Brain pressure step
+- the recommended response desk
+- why the response matters
+- blockers that currently prevent clean follow-through
+- proof signals that explain which pressure seam produced the recommendation
+- the next receipt family testers should expect if the response is acted on
+
+The Mother Brain pressure path button is route-only. It opens the recommended desk and does not launch events, complete objectives, spawn rewards, bypass blockers, start timers, or make Mother Brain autonomous. Rogue Director, TOMS, Crucible, and full world-director behavior remain future work.
+
+Report the card if it is missing when backend pressure truth is visible elsewhere, recommends the wrong desk, hides blockers, displays raw object/JSON text, or implies fake Mother Brain event spawning.
+
 ## Development desk
 
 Development contains the growth lane:
@@ -184,6 +201,7 @@ Please report:
 - raw JSON or object text
 - invisible action results
 - stale timers
+- missing or wrong Mother Brain pressure path, blockers, proof signals, or receipt family
 - collect buttons that do not collect
 - gear that vanishes after craft/collect/equip/release
 - navigation dead ends
@@ -198,6 +216,12 @@ Do not report these as bugs unless a developer specifically asks you to test the
 - deep routing protection / exposure math
 - heavy admin tools inside the player client
 - full moderation / reporting policy UI
+- autonomous Mother Brain event spawning or fiat outcomes
+- Rogue Director implementation
+- TOMS / Crucible systems
+- autonomous Mother Brain event spawning or fiat outcomes
+- Rogue Director implementation
+- TOMS / Crucible systems
 - advanced Black Market endgame systems
 - City / Black Market endgame parity systems not yet surfaced
 
@@ -209,15 +233,16 @@ For a quick tester pass, run this loop:
 2. Create City or Black Market if needed.
 3. Open Home and refresh summary.
 4. Read the Lane posture and First-hour action path if they are present.
-5. Use the recommended route button only to move to the suggested live desk.
-6. Open Development.
-7. Start research if available.
-8. Craft one Workshop item.
-9. Wait for the timer or use a QA-shortened ready state if available.
-10. Collect the item.
-11. Open Heroes / Operatives.
-12. Equip and unequip the crafted item if compatible.
-13. Open Operations.
-14. Start or resolve one available operation.
-15. Open Social and send or filter chat if room state is attached.
-16. Report only concrete failures or unclear results.
+5. Read the Mother Brain pressure path if it is present; note blockers and proof signals before clicking its route-only button.
+6. Use recommended route buttons only to move to suggested live desks.
+7. Open Development.
+8. Start research if available.
+9. Craft one Workshop item.
+10. Wait for the timer or use a QA-shortened ready state if available.
+11. Collect the item.
+12. Open Heroes / Operatives.
+13. Equip and unequip the crafted item if compatible.
+14. Open Operations.
+15. Start or resolve one available operation.
+16. Open Social and send or filter chat if room state is attached.
+17. Report only concrete failures or unclear results.

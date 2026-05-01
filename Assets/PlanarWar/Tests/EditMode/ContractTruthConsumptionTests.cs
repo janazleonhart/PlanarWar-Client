@@ -3595,6 +3595,9 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(guide, Does.Contain("Workshop crafting"));
             Assert.That(guide, Does.Contain("Lane posture and first-hour action path"));
             Assert.That(guide, Does.Contain("/api/me.earlyLanePosture.actionPath"));
+            Assert.That(guide, Does.Contain("Mother Brain pressure path"));
+            Assert.That(guide, Does.Contain("/api/me.motherBrainPressureStatus.actionPath"));
+            Assert.That(guide, Does.Contain("The Mother Brain pressure path button is route-only"));
             Assert.That(guide, Does.Contain("It does not complete objectives, grant rewards, start timers, or fake progress"));
             Assert.That(guide, Does.Contain("Operations desk"));
             Assert.That(guide, Does.Contain("Heroes / Operatives desk"));
@@ -3621,7 +3624,11 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(uxml, Does.Contain("Workshop"));
             Assert.That(uxml, Does.Contain("Lane posture"));
             Assert.That(uxml, Does.Contain("First-hour action path"));
+            Assert.That(uxml, Does.Contain("Mother Brain pressure"));
+            Assert.That(uxml, Does.Contain("Pressure action path"));
+            Assert.That(uxml, Does.Contain("does not spawn events, rewards, timers, Rogue Director, TOMS, or Crucible behavior"));
             Assert.That(uxml, Does.Contain("wrong first-hour action path"));
+            Assert.That(uxml, Does.Contain("wrong Mother Brain pressure path"));
             Assert.That(uxml, Does.Not.Contain("tutorial complete"));
         }
 
@@ -3663,9 +3670,13 @@ namespace PlanarWar.Client.Tests.EditMode
 
             Assert.That(guide, Does.Contain("Lane posture and first-hour action path"));
             Assert.That(guide, Does.Contain("It does not complete objectives, grant rewards, start timers, or fake progress"));
-            Assert.That(guide, Does.Contain("Use the recommended route button only to move to the suggested live desk"));
+            Assert.That(guide, Does.Contain("Use recommended route buttons only to move to suggested live desks"));
+            Assert.That(guide, Does.Contain("Mother Brain pressure path"));
+            Assert.That(guide, Does.Contain("does not launch events, complete objectives, spawn rewards, bypass blockers, start timers, or make Mother Brain autonomous"));
+            Assert.That(guide, Does.Contain("Rogue Director, TOMS, Crucible, and full world-director behavior remain future work"));
             Assert.That(uxml, Does.Contain("This guide does not complete objectives, grant rewards, start timers, or fake tutorial progress"));
             Assert.That(uxml, Does.Contain("missing lane posture, wrong first-hour action path"));
+            Assert.That(uxml, Does.Contain("Mother Brain pressure path"));
         }
 
         private static VisualElement BuildMinimalHeroControllerRoot()
@@ -3807,6 +3818,33 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(uxml, Does.Not.Contain("early-lane-posture-bootstrap"));
         }
 
+
+
+        [Test]
+        public void Tester_guide_explains_mother_brain_pressure_path_without_fiat_claims()
+        {
+            var guidePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Docs/PLAYER_TESTER_GUIDE_V1.md");
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            Assert.That(File.Exists(guidePath), Is.True);
+            Assert.That(File.Exists(appShellPath), Is.True);
+
+            var guide = File.ReadAllText(guidePath);
+            var uxml = File.ReadAllText(appShellPath);
+
+            Assert.That(guide, Does.Contain("Mother Brain pressure path"));
+            Assert.That(guide, Does.Contain("/api/me.motherBrainPressureStatus.actionPath"));
+            Assert.That(guide, Does.Contain("blockers that currently prevent clean follow-through"));
+            Assert.That(guide, Does.Contain("proof signals that explain which pressure seam produced the recommendation"));
+            Assert.That(guide, Does.Contain("next receipt family testers should expect"));
+            Assert.That(guide, Does.Contain("does not launch events, complete objectives, spawn rewards, bypass blockers, start timers, or make Mother Brain autonomous"));
+            Assert.That(guide, Does.Contain("Rogue Director, TOMS, Crucible, and full world-director behavior remain future work"));
+            Assert.That(guide, Does.Contain("missing or wrong Mother Brain pressure path, blockers, proof signals, or receipt family"));
+            Assert.That(uxml, Does.Contain("Mother Brain pressure"));
+            Assert.That(uxml, Does.Contain("Pressure action path"));
+            Assert.That(uxml, Does.Contain("blockers, proof signals, and next receipt family"));
+            Assert.That(uxml, Does.Contain("does not spawn events, rewards, timers, Rogue Director, TOMS, or Crucible behavior"));
+            Assert.That(uxml, Does.Contain("missing or wrong Mother Brain pressure path"));
+        }
 
 
         [Test]
