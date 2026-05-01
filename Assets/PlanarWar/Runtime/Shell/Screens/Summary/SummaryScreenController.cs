@@ -504,6 +504,51 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 lines.Add($"Source region: {HumanizeToken(followThrough.SourceRegionId)}.");
             }
 
+            var recovery = followThrough?.BlockerRecovery;
+            if (recovery != null)
+            {
+                if (!string.IsNullOrWhiteSpace(recovery.State))
+                {
+                    lines.Add($"Blocker recovery: {HumanizeToken(recovery.State)}.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(recovery.Title))
+                {
+                    lines.Add(recovery.Title.Trim());
+                }
+
+                if (!string.IsNullOrWhiteSpace(recovery.Summary))
+                {
+                    lines.Add(recovery.Summary.Trim());
+                }
+
+                if (recovery.Blockers != null && recovery.Blockers.Count > 0)
+                {
+                    lines.Add($"Blockers: {string.Join(", ", recovery.Blockers.Where(blocker => !string.IsNullOrWhiteSpace(blocker)).Select(blocker => HumanizeToken(blocker)).Take(3))}.");
+                }
+
+                if (recovery.ClearWhen != null && recovery.ClearWhen.Count > 0)
+                {
+                    lines.AddRange(recovery.ClearWhen
+                        .Where(line => !string.IsNullOrWhiteSpace(line))
+                        .Select(line => $"Clear when: {line.Trim()}")
+                        .Take(2));
+                }
+
+                if (!string.IsNullOrWhiteSpace(recovery.RecommendedActionLabel))
+                {
+                    lines.Add($"Recovery action: {recovery.RecommendedActionLabel.Trim()}.");
+                }
+
+                if (recovery.Signals != null && recovery.Signals.Count > 0)
+                {
+                    lines.AddRange(recovery.Signals
+                        .Where(signal => !string.IsNullOrWhiteSpace(signal))
+                        .Select(signal => $"• {signal.Trim()}")
+                        .Take(2));
+                }
+            }
+
             if (followThrough?.Signals != null && followThrough.Signals.Count > 0)
             {
                 lines.AddRange(followThrough.Signals

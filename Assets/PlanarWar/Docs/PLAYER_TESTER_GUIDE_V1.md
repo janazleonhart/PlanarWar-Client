@@ -89,9 +89,9 @@ Use it to read:
 - proof signals that explain which pressure seam produced the recommendation
 - the next receipt family testers should expect if the response is acted on
 
-Receipt follow-through is receipt/ledger truth only: it explains whether a response is waiting, ready, blocked, engaged, answered, cooling, or backsliding without starting a new action. The Mother Brain pressure path button is route-only. It opens the recommended desk and does not launch events, complete objectives, spawn rewards, bypass blockers, start timers, or make Mother Brain autonomous. Rogue Director, TOMS, Crucible, and full world-director behavior remain future work.
+Receipt follow-through is receipt/ledger truth only: it explains whether a response is waiting, ready, blocked, engaged, answered, cooling, or backsliding without starting a new action. When a response is blocked, the **blocker recovery** lines explain what should clear the blocker, what desk to monitor, and which receipt/replay signals prove the lane is cooling or still waiting. The Mother Brain pressure path button is route-only. It opens the recommended desk and does not launch events, complete objectives, spawn rewards, bypass blockers, start timers, or make Mother Brain autonomous. Rogue Director, TOMS, Crucible, and full world-director behavior remain future work.
 
-Report the card if it is missing when backend pressure truth is visible elsewhere, recommends the wrong desk, hides blockers, displays raw object/JSON text, or implies fake Mother Brain event spawning.
+Report the card if it is missing when backend pressure truth is visible elsewhere, recommends the wrong desk, hides blockers or blocker recovery, displays raw object/JSON text, or implies fake Mother Brain event spawning.
 
 ## Development desk
 
@@ -201,7 +201,7 @@ Please report:
 - raw JSON or object text
 - invisible action results
 - stale timers
-- missing or wrong Mother Brain pressure path, blockers, proof signals, receipt follow-through, or receipt family
+- missing or wrong Mother Brain pressure path, blockers, blocker recovery, proof signals, receipt follow-through, or receipt family
 - collect buttons that do not collect
 - gear that vanishes after craft/collect/equip/release
 - navigation dead ends
@@ -233,7 +233,7 @@ For a quick tester pass, run this loop:
 2. Create City or Black Market if needed.
 3. Open Home and refresh summary.
 4. Read the Lane posture and First-hour action path if they are present.
-5. Read the Mother Brain pressure path if it is present; note blockers and proof signals before clicking its route-only button.
+5. Read the Mother Brain pressure path if it is present; note blockers, blocker recovery, and proof signals before clicking its route-only button.
 6. Use recommended route buttons only to move to suggested live desks.
 7. Open Development.
 8. Start research if available.

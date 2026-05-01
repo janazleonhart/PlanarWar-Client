@@ -467,6 +467,63 @@ namespace PlanarWar.Client.Core.Mapping
                     obj["proof_signals"],
                     obj["liveProofSignals"],
                     obj["live_proof_signals"])),
+
+                BlockerRecovery = MapMotherBrainPressureBlockerRecovery(FirstObject(
+                    obj["blockerRecovery"],
+                    obj["blocker_recovery"])),
+            };
+        }
+
+        private static MotherBrainPressureBlockerRecoverySnapshot MapMotherBrainPressureBlockerRecovery(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new MotherBrainPressureBlockerRecoverySnapshot
+            {
+                State = FirstNonBlank(
+                    ReadText(obj["state"]),
+                    ReadText(obj["status"])),
+
+                Title = FirstNonBlank(
+                    ReadText(obj["title"]),
+                    ReadText(obj["headline"]),
+                    ReadText(obj["name"])),
+
+                Summary = FirstNonBlank(
+                    ReadText(obj["summary"]),
+                    ReadText(obj["detail"]),
+                    ReadText(obj["note"])),
+
+                Blockers = MapStringArray(FirstArray(
+                    obj["blockers"],
+                    obj["blockedBy"],
+                    obj["blocked_by"],
+                    obj["incidentBlockedBy"],
+                    obj["incident_blocked_by"])),
+
+                ClearWhen = MapStringArray(FirstArray(
+                    obj["clearWhen"],
+                    obj["clear_when"],
+                    obj["clearance"],
+                    obj["clearanceLines"],
+                    obj["clearance_lines"])),
+
+                RecommendedDesk = FirstNonBlank(
+                    ReadText(obj["recommendedDesk"]),
+                    ReadText(obj["recommended_desk"])),
+
+                RecommendedActionLabel = FirstNonBlank(
+                    ReadText(obj["recommendedActionLabel"]),
+                    ReadText(obj["recommended_action_label"]),
+                    ReadText(obj["recommendedAction"]),
+                    ReadText(obj["recommended_action"])),
+
+                Signals = MapStringArray(FirstArray(
+                    obj["signals"],
+                    obj["proofSignals"],
+                    obj["proof_signals"],
+                    obj["liveProofSignals"],
+                    obj["live_proof_signals"])),
             };
         }
 

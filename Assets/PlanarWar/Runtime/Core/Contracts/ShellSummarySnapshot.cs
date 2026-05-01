@@ -123,6 +123,20 @@ namespace PlanarWar.Client.Core.Contracts
         public string LatestRuntimeActionId { get; set; } = string.Empty;
         public string SourceRegionId { get; set; } = string.Empty;
         public List<string> Signals { get; set; } = new();
+        public MotherBrainPressureBlockerRecoverySnapshot BlockerRecovery { get; set; }
+    }
+
+    [Serializable]
+    public sealed class MotherBrainPressureBlockerRecoverySnapshot
+    {
+        public string State { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Summary { get; set; } = string.Empty;
+        public List<string> Blockers { get; set; } = new();
+        public List<string> ClearWhen { get; set; } = new();
+        public string RecommendedDesk { get; set; } = string.Empty;
+        public string RecommendedActionLabel { get; set; } = string.Empty;
+        public List<string> Signals { get; set; } = new();
     }
 
     [Serializable]
