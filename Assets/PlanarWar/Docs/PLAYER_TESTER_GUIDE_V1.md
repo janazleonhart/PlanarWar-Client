@@ -68,6 +68,14 @@ Use it to:
 
 Home should not be treated as the place where every action happens. If a button opens a desk, that is intentional.
 
+### Lane posture and first-hour action path
+
+Home also shows a **Lane posture** card after the backend provides it. This card explains how the current City or Black Market opening is behaving right now.
+
+The **First-hour action path** section is guidance from live `/api/me.earlyLanePosture.actionPath` truth. Use it to decide which desk to test next, especially when a workshop pickup, active build, active research, or lane-specific route is already live.
+
+Important: the action path is not a tutorial tracker. It does not complete objectives, grant rewards, start timers, or fake progress. It only points testers toward the next live desk or receipt family that should already exist.
+
 ## Development desk
 
 Development contains the growth lane:
@@ -200,14 +208,16 @@ For a quick tester pass, run this loop:
 1. Register or sign in.
 2. Create City or Black Market if needed.
 3. Open Home and refresh summary.
-4. Open Development.
-5. Start research if available.
-6. Craft one Workshop item.
-7. Wait for the timer or use a QA-shortened ready state if available.
-8. Collect the item.
-9. Open Heroes / Operatives.
-10. Equip and unequip the crafted item if compatible.
-11. Open Operations.
-12. Start or resolve one available operation.
-13. Open Social and send or filter chat if room state is attached.
-14. Report only concrete failures or unclear results.
+4. Read the Lane posture and First-hour action path if they are present.
+5. Use the recommended route button only to move to the suggested live desk.
+6. Open Development.
+7. Start research if available.
+8. Craft one Workshop item.
+9. Wait for the timer or use a QA-shortened ready state if available.
+10. Collect the item.
+11. Open Heroes / Operatives.
+12. Equip and unequip the crafted item if compatible.
+13. Open Operations.
+14. Start or resolve one available operation.
+15. Open Social and send or filter chat if room state is attached.
+16. Report only concrete failures or unclear results.

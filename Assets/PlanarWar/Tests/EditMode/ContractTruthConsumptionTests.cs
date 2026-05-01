@@ -3593,6 +3593,9 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(guide, Does.Contain("First run"));
             Assert.That(guide, Does.Contain("Founder mode"));
             Assert.That(guide, Does.Contain("Workshop crafting"));
+            Assert.That(guide, Does.Contain("Lane posture and first-hour action path"));
+            Assert.That(guide, Does.Contain("/api/me.earlyLanePosture.actionPath"));
+            Assert.That(guide, Does.Contain("It does not complete objectives, grant rewards, start timers, or fake progress"));
             Assert.That(guide, Does.Contain("Operations desk"));
             Assert.That(guide, Does.Contain("Heroes / Operatives desk"));
             Assert.That(guide, Does.Contain("What testers should report"));
@@ -3616,6 +3619,9 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(uxml, Does.Contain("What to report"));
             Assert.That(uxml, Does.Contain("City or Black Market"));
             Assert.That(uxml, Does.Contain("Workshop"));
+            Assert.That(uxml, Does.Contain("Lane posture"));
+            Assert.That(uxml, Does.Contain("First-hour action path"));
+            Assert.That(uxml, Does.Contain("wrong first-hour action path"));
             Assert.That(uxml, Does.Not.Contain("tutorial complete"));
         }
 
@@ -3642,6 +3648,24 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(controller, Does.Contain("guideRoot"));
             Assert.That(controller, Does.Contain("ShellScreen.Guide"));
             Assert.That(controller, Does.Contain("navGuideButton?.SetEnabled(true)"));
+        }
+
+        [Test]
+        public void Tester_guide_mentions_lane_posture_action_path_without_progress_claims()
+        {
+            var guidePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Docs/PLAYER_TESTER_GUIDE_V1.md");
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            Assert.That(File.Exists(guidePath), Is.True);
+            Assert.That(File.Exists(appShellPath), Is.True);
+
+            var guide = File.ReadAllText(guidePath);
+            var uxml = File.ReadAllText(appShellPath);
+
+            Assert.That(guide, Does.Contain("Lane posture and first-hour action path"));
+            Assert.That(guide, Does.Contain("It does not complete objectives, grant rewards, start timers, or fake progress"));
+            Assert.That(guide, Does.Contain("Use the recommended route button only to move to the suggested live desk"));
+            Assert.That(uxml, Does.Contain("This guide does not complete objectives, grant rewards, start timers, or fake tutorial progress"));
+            Assert.That(uxml, Does.Contain("missing lane posture, wrong first-hour action path"));
         }
 
         private static VisualElement BuildMinimalHeroControllerRoot()
