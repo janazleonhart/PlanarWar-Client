@@ -450,9 +450,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (motherBrainActionPathReceipt != null)
             {
-                motherBrainActionPathReceipt.text = string.IsNullOrWhiteSpace(actionPath.NextReceiptFamily)
-                    ? "Next receipt family: not surfaced yet."
-                    : $"Next receipt family: {HumanizeToken(actionPath.NextReceiptFamily)}.";
+                motherBrainActionPathReceipt.text = FormatMotherBrainReceiptFollowThrough(actionPath);
             }
 
             if (motherBrainActionPathButton != null)
@@ -460,6 +458,68 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 motherBrainActionPathButton.text = BuildPostureButtonLabel(recommendedScreen, summary);
                 motherBrainActionPathButton.SetEnabled(true);
             }
+        }
+
+        private static string FormatMotherBrainReceiptFollowThrough(MotherBrainPressureActionPathSnapshot actionPath)
+        {
+            var followThrough = actionPath?.ReceiptFollowThrough;
+            var lines = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(followThrough?.State))
+            {
+                lines.Add($"Follow-through state: {HumanizeToken(followThrough.State)}.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(followThrough?.Title))
+            {
+                lines.Add(followThrough.Title.Trim());
+            }
+
+            if (!string.IsNullOrWhiteSpace(followThrough?.LatestReceiptTitle))
+            {
+                var receiptBits = new List<string> { followThrough.LatestReceiptTitle.Trim() };
+                if (!string.IsNullOrWhiteSpace(followThrough.LatestReceiptOutcome))
+                {
+                    receiptBits.Add(HumanizeToken(followThrough.LatestReceiptOutcome));
+                }
+                if (!string.IsNullOrWhiteSpace(followThrough.LatestReceiptState))
+                {
+                    receiptBits.Add(HumanizeToken(followThrough.LatestReceiptState));
+                }
+                lines.Add($"Latest receipt: {string.Join(" • ", receiptBits)}.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(followThrough?.Summary))
+            {
+                lines.Add(followThrough.Summary.Trim());
+            }
+
+            if (!string.IsNullOrWhiteSpace(followThrough?.LatestRuntimeActionId))
+            {
+                lines.Add($"Runtime action: {followThrough.LatestRuntimeActionId.Trim()}.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(followThrough?.SourceRegionId))
+            {
+                lines.Add($"Source region: {HumanizeToken(followThrough.SourceRegionId)}.");
+            }
+
+            if (followThrough?.Signals != null && followThrough.Signals.Count > 0)
+            {
+                lines.AddRange(followThrough.Signals
+                    .Where(signal => !string.IsNullOrWhiteSpace(signal))
+                    .Select(signal => $"• {signal.Trim()}")
+                    .Take(3));
+            }
+
+            if (lines.Count > 0)
+            {
+                return string.Join("\n", lines);
+            }
+
+            return string.IsNullOrWhiteSpace(actionPath?.NextReceiptFamily)
+                ? "Next receipt family: not surfaced yet."
+                : $"Next receipt family: {HumanizeToken(actionPath.NextReceiptFamily)}.";
         }
 
         private static string HumanizeToken(string value)

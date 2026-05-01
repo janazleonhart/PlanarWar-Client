@@ -264,7 +264,7 @@ namespace PlanarWar.Client.Core.Mapping
             };
         }
 
-                private static MotherBrainPressureStatusSnapshot MapMotherBrainPressureStatus(JObject obj)
+        private static MotherBrainPressureStatusSnapshot MapMotherBrainPressureStatus(JObject obj)
         {
             if (obj == null) return null;
 
@@ -399,6 +399,74 @@ namespace PlanarWar.Client.Core.Mapping
                     ReadText(obj["next_receipt_family"]),
                     ReadText(obj["receiptFamily"]),
                     ReadText(obj["receipt_family"])),
+
+                ReceiptFollowThrough = MapMotherBrainPressureReceiptFollowThrough(FirstObject(
+                    obj["receiptFollowThrough"],
+                    obj["receipt_follow_through"])),
+            };
+        }
+
+        private static MotherBrainPressureReceiptFollowThroughSnapshot MapMotherBrainPressureReceiptFollowThrough(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new MotherBrainPressureReceiptFollowThroughSnapshot
+            {
+                State = FirstNonBlank(
+                    ReadText(obj["state"]),
+                    ReadText(obj["status"])),
+
+                Title = FirstNonBlank(
+                    ReadText(obj["title"]),
+                    ReadText(obj["headline"]),
+                    ReadText(obj["name"])),
+
+                Summary = FirstNonBlank(
+                    ReadText(obj["summary"]),
+                    ReadText(obj["detail"]),
+                    ReadText(obj["note"])),
+
+                LatestReceiptTitle = FirstNonBlank(
+                    ReadText(obj["latestReceiptTitle"]),
+                    ReadText(obj["latest_receipt_title"]),
+                    ReadText(obj["receiptTitle"]),
+                    ReadText(obj["receipt_title"])),
+
+                LatestReceiptAt = FirstNonBlank(
+                    ReadText(obj["latestReceiptAt"]),
+                    ReadText(obj["latest_receipt_at"]),
+                    ReadText(obj["latestResponseAt"]),
+                    ReadText(obj["latest_response_at"])),
+
+                LatestReceiptOutcome = FirstNonBlank(
+                    ReadText(obj["latestReceiptOutcome"]),
+                    ReadText(obj["latest_receipt_outcome"]),
+                    ReadText(obj["outcome"])),
+
+                LatestReceiptState = FirstNonBlank(
+                    ReadText(obj["latestReceiptState"]),
+                    ReadText(obj["latest_receipt_state"]),
+                    ReadText(obj["receiptState"]),
+                    ReadText(obj["receipt_state"])),
+
+                LatestRuntimeActionId = FirstNonBlank(
+                    ReadText(obj["latestRuntimeActionId"]),
+                    ReadText(obj["latest_runtime_action_id"]),
+                    ReadText(obj["runtimeActionId"]),
+                    ReadText(obj["runtime_action_id"])),
+
+                SourceRegionId = FirstNonBlank(
+                    ReadText(obj["sourceRegionId"]),
+                    ReadText(obj["source_region_id"]),
+                    ReadText(obj["regionId"]),
+                    ReadText(obj["region_id"])),
+
+                Signals = MapStringArray(FirstArray(
+                    obj["signals"],
+                    obj["proofSignals"],
+                    obj["proof_signals"],
+                    obj["liveProofSignals"],
+                    obj["live_proof_signals"])),
             };
         }
 

@@ -89,7 +89,7 @@ Use it to read:
 - proof signals that explain which pressure seam produced the recommendation
 - the next receipt family testers should expect if the response is acted on
 
-The Mother Brain pressure path button is route-only. It opens the recommended desk and does not launch events, complete objectives, spawn rewards, bypass blockers, start timers, or make Mother Brain autonomous. Rogue Director, TOMS, Crucible, and full world-director behavior remain future work.
+Receipt follow-through is receipt/ledger truth only: it explains whether a response is waiting, ready, blocked, engaged, answered, cooling, or backsliding without starting a new action. The Mother Brain pressure path button is route-only. It opens the recommended desk and does not launch events, complete objectives, spawn rewards, bypass blockers, start timers, or make Mother Brain autonomous. Rogue Director, TOMS, Crucible, and full world-director behavior remain future work.
 
 Report the card if it is missing when backend pressure truth is visible elsewhere, recommends the wrong desk, hides blockers, displays raw object/JSON text, or implies fake Mother Brain event spawning.
 
@@ -201,7 +201,7 @@ Please report:
 - raw JSON or object text
 - invisible action results
 - stale timers
-- missing or wrong Mother Brain pressure path, blockers, proof signals, or receipt family
+- missing or wrong Mother Brain pressure path, blockers, proof signals, receipt follow-through, or receipt family
 - collect buttons that do not collect
 - gear that vanishes after craft/collect/equip/release
 - navigation dead ends

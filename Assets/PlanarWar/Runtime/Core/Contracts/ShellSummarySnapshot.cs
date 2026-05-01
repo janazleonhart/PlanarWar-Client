@@ -107,6 +107,22 @@ namespace PlanarWar.Client.Core.Contracts
         public List<string> Blockers { get; set; } = new();
         public List<string> LiveProofSignals { get; set; } = new();
         public string NextReceiptFamily { get; set; } = string.Empty;
+        public MotherBrainPressureReceiptFollowThroughSnapshot ReceiptFollowThrough { get; set; }
+    }
+
+    [Serializable]
+    public sealed class MotherBrainPressureReceiptFollowThroughSnapshot
+    {
+        public string State { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Summary { get; set; } = string.Empty;
+        public string LatestReceiptTitle { get; set; } = string.Empty;
+        public string LatestReceiptAt { get; set; } = string.Empty;
+        public string LatestReceiptOutcome { get; set; } = string.Empty;
+        public string LatestReceiptState { get; set; } = string.Empty;
+        public string LatestRuntimeActionId { get; set; } = string.Empty;
+        public string SourceRegionId { get; set; } = string.Empty;
+        public List<string> Signals { get; set; } = new();
     }
 
     [Serializable]
