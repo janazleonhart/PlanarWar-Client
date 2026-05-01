@@ -3809,6 +3809,80 @@ namespace PlanarWar.Client.Tests.EditMode
 
 
 
+        [Test]
+        public void Mapper_captures_mother_brain_pressure_action_path_truth()
+        {
+            const string payload = @"{
+                ""hasCity"": true,
+                ""city"": { ""name"": ""TesterCity"", ""settlementLane"": ""city"", ""settlementLaneProfile"": { ""label"": ""City"" } },
+                ""motherBrainPressureStatus"": {
+                    ""severity"": ""urgent"",
+                    ""headline"": ""Mother Brain says hostile-force pressure is opening a live civic seam."",
+                    ""detail"": ""The route will harden if the answer stalls."",
+                    ""recommendedAction"": ""Launch the hottest Mother Brain follow-through contract."",
+                    ""incidentReady"": false,
+                    ""incidentBlockedBy"": [""missing_response_lane""],
+                    ""topPressureId"": ""mb_pressure_demo"",
+                    ""topThreatFamily"": ""organized_hostile_forces"",
+                    ""topReplayStatus"": ""live"",
+                    ""topReplayQuality"": ""backsliding"",
+                    ""topBurdenReceipt"": { ""state"": ""answered"" },
+                    ""actionPath"": {
+                        ""title"": ""Prepare the blocked response lane"",
+                        ""currentStep"": ""Clear blockers before launching the follow-through contract."",
+                        ""recommendedDesk"": ""operations"",
+                        ""recommendedActionLabel"": ""Open Operations and prepare the response lane"",
+                        ""whyThisMatters"": ""Mother Brain has a live pressure seam, but blockers prevent clean follow-through."",
+                        ""blockers"": [""missing_response_lane""],
+                        ""liveProofSignals"": [""Pressure: urgent."", ""Replay: backsliding.""],
+                        ""nextReceiptFamily"": ""mother_brain_blocked_followthrough""
+                    }
+                }
+            }";
+
+            var summary = ShellSummarySnapshotMapper.Map(payload);
+
+            Assert.That(summary.MotherBrainPressureStatus, Is.Not.Null);
+            Assert.That(summary.MotherBrainPressureStatus.Severity, Is.EqualTo("urgent"));
+            Assert.That(summary.MotherBrainPressureStatus.Headline, Does.Contain("Mother Brain"));
+            Assert.That(summary.MotherBrainPressureStatus.IncidentReady, Is.False);
+            Assert.That(summary.MotherBrainPressureStatus.IncidentBlockedBy, Does.Contain("missing_response_lane"));
+            Assert.That(summary.MotherBrainPressureStatus.TopPressureId, Is.EqualTo("mb_pressure_demo"));
+            Assert.That(summary.MotherBrainPressureStatus.TopThreatFamily, Is.EqualTo("organized_hostile_forces"));
+            Assert.That(summary.MotherBrainPressureStatus.TopReplayStatus, Is.EqualTo("live"));
+            Assert.That(summary.MotherBrainPressureStatus.TopReplayQuality, Is.EqualTo("backsliding"));
+            Assert.That(summary.MotherBrainPressureStatus.TopBurdenReceiptState, Is.EqualTo("answered"));
+            Assert.That(summary.MotherBrainPressureStatus.ActionPath, Is.Not.Null);
+            Assert.That(summary.MotherBrainPressureStatus.ActionPath.Title, Is.EqualTo("Prepare the blocked response lane"));
+            Assert.That(summary.MotherBrainPressureStatus.ActionPath.CurrentStep, Does.Contain("Clear blockers"));
+            Assert.That(summary.MotherBrainPressureStatus.ActionPath.RecommendedDesk, Is.EqualTo("operations"));
+            Assert.That(summary.MotherBrainPressureStatus.ActionPath.RecommendedActionLabel, Does.Contain("Open Operations"));
+            Assert.That(summary.MotherBrainPressureStatus.ActionPath.WhyThisMatters, Does.Contain("live pressure seam"));
+            Assert.That(summary.MotherBrainPressureStatus.ActionPath.Blockers, Does.Contain("missing_response_lane"));
+            Assert.That(summary.MotherBrainPressureStatus.ActionPath.LiveProofSignals, Does.Contain("Pressure: urgent."));
+            Assert.That(summary.MotherBrainPressureStatus.ActionPath.NextReceiptFamily, Is.EqualTo("mother_brain_blocked_followthrough"));
+        }
+
+        [Test]
+        public void Home_surface_consumes_mother_brain_pressure_action_path_without_fake_event_claims()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            Assert.That(uxml, Does.Contain("mother-brain-action-path-card"));
+            Assert.That(uxml, Does.Contain("mother-brain-action-path-headline-value"));
+            Assert.That(uxml, Does.Contain("mother-brain-action-path-recommended-value"));
+            Assert.That(uxml, Does.Contain("mother-brain-action-path-blockers-value"));
+            Assert.That(uxml, Does.Contain("mother-brain-action-path-proof-value"));
+            Assert.That(uxml, Does.Contain("mother-brain-action-path-receipt-value"));
+            Assert.That(uxml, Does.Contain("This card consumes /api/me motherBrainPressureStatus.actionPath"));
+            Assert.That(uxml, Does.Not.Contain("Mother Brain starts events"));
+            Assert.That(uxml, Does.Not.Contain("Mother Brain completes objectives"));
+        }
+
+
+
 
 
 

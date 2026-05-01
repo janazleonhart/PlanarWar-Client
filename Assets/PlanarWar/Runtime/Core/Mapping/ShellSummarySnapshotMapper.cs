@@ -181,6 +181,7 @@ namespace PlanarWar.Client.Core.Mapping
                 SuggestedCityName = summary["suggestedCityName"]?.Read<string>() ?? summary["suggested_city_name"]?.Read<string>() ?? string.Empty,
                 CitySetupChoices = MapSettlementSetupChoices(summary["citySetupChoices"] ?? summary["city_setup_choices"] ?? summary["setupChoices"] ?? summary["setup_choices"]),
                 EarlyLanePosture = MapEarlyLanePosture(summary["earlyLanePosture"] as JObject ?? summary["early_lane_posture"] as JObject),
+                MotherBrainPressureStatus = MapMotherBrainPressureStatus(summary["motherBrainPressureStatus"] as JObject ?? summary["mother_brain_pressure_status"] as JObject),
                 HasCity = summary["hasCity"]?.Read<bool>() ?? false,
                 City = new CitySummarySnapshot
                 {
@@ -260,6 +261,144 @@ namespace PlanarWar.Client.Core.Mapping
                 WhyThisMatters = FirstNonBlank(ReadText(obj["whyThisMatters"]), ReadText(obj["why_this_matters"]), ReadText(obj["reason"]), ReadText(obj["detail"])),
                 LiveProofSignals = MapStringArray(FirstArray(obj["liveProofSignals"], obj["live_proof_signals"], obj["proofSignals"], obj["proof_signals"])),
                 NextReceiptFamily = FirstNonBlank(ReadText(obj["nextReceiptFamily"]), ReadText(obj["next_receipt_family"]), ReadText(obj["receiptFamily"]), ReadText(obj["receipt_family"])),
+            };
+        }
+
+                private static MotherBrainPressureStatusSnapshot MapMotherBrainPressureStatus(JObject obj)
+        {
+            if (obj == null) return null;
+
+            var topBurdenReceipt = FirstObject(
+                obj["topBurdenReceipt"],
+                obj["top_burden_receipt"],
+                obj["burdenReceipt"],
+                obj["burden_receipt"]);
+
+            return new MotherBrainPressureStatusSnapshot
+            {
+                Severity = FirstNonBlank(
+                    ReadText(obj["severity"]),
+                    ReadText(obj["pressureSeverity"]),
+                    ReadText(obj["pressure_severity"]),
+                    ReadText(obj["status"])),
+
+                Headline = FirstNonBlank(
+                    ReadText(obj["headline"]),
+                    ReadText(obj["title"]),
+                    ReadText(obj["summary"])),
+
+                Detail = FirstNonBlank(
+                    ReadText(obj["detail"]),
+                    ReadText(obj["description"]),
+                    ReadText(obj["summary"])),
+
+                RecommendedAction = FirstNonBlank(
+                    ReadText(obj["recommendedAction"]),
+                    ReadText(obj["recommended_action"]),
+                    ReadText(obj["recommendedActionLabel"]),
+                    ReadText(obj["recommended_action_label"])),
+
+                IncidentReady =
+                    obj["incidentReady"]?.Read<bool?>()
+                    ?? obj["incident_ready"]?.Read<bool?>()
+                    ?? obj["ready"]?.Read<bool?>()
+                    ?? false,
+
+                IncidentBlockedBy = MapStringArray(FirstArray(
+                    obj["incidentBlockedBy"],
+                    obj["incident_blocked_by"],
+                    obj["blockedBy"],
+                    obj["blocked_by"],
+                    obj["blockers"])),
+
+                TopPressureId = FirstNonBlank(
+                    ReadText(obj["topPressureId"]),
+                    ReadText(obj["top_pressure_id"]),
+                    ReadText(obj["pressureId"]),
+                    ReadText(obj["pressure_id"])),
+
+                TopThreatFamily = FirstNonBlank(
+                    ReadText(obj["topThreatFamily"]),
+                    ReadText(obj["top_threat_family"]),
+                    ReadText(obj["threatFamily"]),
+                    ReadText(obj["threat_family"])),
+
+                TopReplayStatus = FirstNonBlank(
+                    ReadText(obj["topReplayStatus"]),
+                    ReadText(obj["top_replay_status"]),
+                    ReadText(obj["replayStatus"]),
+                    ReadText(obj["replay_status"])),
+
+                TopReplayQuality = FirstNonBlank(
+                    ReadText(obj["topReplayQuality"]),
+                    ReadText(obj["top_replay_quality"]),
+                    ReadText(obj["replayQuality"]),
+                    ReadText(obj["replay_quality"])),
+
+                TopBurdenReceiptState = FirstNonBlank(
+                    ReadText(topBurdenReceipt?["state"]),
+                    ReadText(obj["topBurdenReceiptState"]),
+                    ReadText(obj["top_burden_receipt_state"]),
+                    ReadText(obj["burdenReceiptState"]),
+                    ReadText(obj["burden_receipt_state"])),
+
+                ActionPath = MapMotherBrainPressureActionPath(FirstObject(
+                    obj["actionPath"],
+                    obj["action_path"])),
+            };
+        }
+
+        private static MotherBrainPressureActionPathSnapshot MapMotherBrainPressureActionPath(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new MotherBrainPressureActionPathSnapshot
+            {
+                Title = FirstNonBlank(
+                    ReadText(obj["title"]),
+                    ReadText(obj["headline"]),
+                    ReadText(obj["name"])),
+
+                CurrentStep = FirstNonBlank(
+                    ReadText(obj["currentStep"]),
+                    ReadText(obj["current_step"]),
+                    ReadText(obj["step"]),
+                    ReadText(obj["summary"])),
+
+                RecommendedDesk = FirstNonBlank(
+                    ReadText(obj["recommendedDesk"]),
+                    ReadText(obj["recommended_desk"])),
+
+                RecommendedActionLabel = FirstNonBlank(
+                    ReadText(obj["recommendedActionLabel"]),
+                    ReadText(obj["recommended_action_label"]),
+                    ReadText(obj["recommendedAction"]),
+                    ReadText(obj["recommended_action"])),
+
+                WhyThisMatters = FirstNonBlank(
+                    ReadText(obj["whyThisMatters"]),
+                    ReadText(obj["why_this_matters"]),
+                    ReadText(obj["reason"]),
+                    ReadText(obj["detail"])),
+
+                Blockers = MapStringArray(FirstArray(
+                    obj["blockers"],
+                    obj["blockedBy"],
+                    obj["blocked_by"],
+                    obj["incidentBlockedBy"],
+                    obj["incident_blocked_by"])),
+
+                LiveProofSignals = MapStringArray(FirstArray(
+                    obj["liveProofSignals"],
+                    obj["live_proof_signals"],
+                    obj["proofSignals"],
+                    obj["proof_signals"])),
+
+                NextReceiptFamily = FirstNonBlank(
+                    ReadText(obj["nextReceiptFamily"]),
+                    ReadText(obj["next_receipt_family"]),
+                    ReadText(obj["receiptFamily"]),
+                    ReadText(obj["receipt_family"])),
             };
         }
 

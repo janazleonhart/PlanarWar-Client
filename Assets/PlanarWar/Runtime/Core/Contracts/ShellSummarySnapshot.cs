@@ -14,6 +14,7 @@ namespace PlanarWar.Client.Core.Contracts
         public string SuggestedCityName { get; set; } = string.Empty;
         public List<SettlementSetupChoiceSnapshot> CitySetupChoices { get; set; } = new();
         public EarlyLanePostureSnapshot EarlyLanePosture { get; set; }
+        public MotherBrainPressureStatusSnapshot MotherBrainPressureStatus { get; set; }
         public bool HasCity { get; set; }
         public CitySummarySnapshot City { get; set; } = new();
         public List<BuildingSnapshot> Buildings { get; set; } = new();
@@ -73,6 +74,37 @@ namespace PlanarWar.Client.Core.Contracts
         public string RecommendedDesk { get; set; } = string.Empty;
         public string RecommendedActionLabel { get; set; } = string.Empty;
         public string WhyThisMatters { get; set; } = string.Empty;
+        public List<string> LiveProofSignals { get; set; } = new();
+        public string NextReceiptFamily { get; set; } = string.Empty;
+    }
+
+
+    [Serializable]
+    public sealed class MotherBrainPressureStatusSnapshot
+    {
+        public string Severity { get; set; } = string.Empty;
+        public string Headline { get; set; } = string.Empty;
+        public string Detail { get; set; } = string.Empty;
+        public string RecommendedAction { get; set; } = string.Empty;
+        public bool IncidentReady { get; set; }
+        public List<string> IncidentBlockedBy { get; set; } = new();
+        public string TopPressureId { get; set; } = string.Empty;
+        public string TopThreatFamily { get; set; } = string.Empty;
+        public string TopReplayStatus { get; set; } = string.Empty;
+        public string TopReplayQuality { get; set; } = string.Empty;
+        public string TopBurdenReceiptState { get; set; } = string.Empty;
+        public MotherBrainPressureActionPathSnapshot ActionPath { get; set; }
+    }
+
+    [Serializable]
+    public sealed class MotherBrainPressureActionPathSnapshot
+    {
+        public string Title { get; set; } = string.Empty;
+        public string CurrentStep { get; set; } = string.Empty;
+        public string RecommendedDesk { get; set; } = string.Empty;
+        public string RecommendedActionLabel { get; set; } = string.Empty;
+        public string WhyThisMatters { get; set; } = string.Empty;
+        public List<string> Blockers { get; set; } = new();
         public List<string> LiveProofSignals { get; set; } = new();
         public string NextReceiptFamily { get; set; } = string.Empty;
     }

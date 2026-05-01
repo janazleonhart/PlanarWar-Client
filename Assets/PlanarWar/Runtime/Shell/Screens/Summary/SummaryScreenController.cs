@@ -75,6 +75,17 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private readonly Label earlyLanePostureProof;
         private readonly Button earlyLanePostureActionButton;
         private ShellScreen earlyLanePostureRecommendedScreen = ShellScreen.City;
+        private readonly VisualElement motherBrainActionPathCard;
+        private readonly Label motherBrainActionPathBadge;
+        private readonly Label motherBrainActionPathHeadline;
+        private readonly Label motherBrainActionPathDetail;
+        private readonly Label motherBrainActionPathRecommended;
+        private readonly Label motherBrainActionPathReason;
+        private readonly Label motherBrainActionPathBlockers;
+        private readonly Label motherBrainActionPathProof;
+        private readonly Label motherBrainActionPathReceipt;
+        private readonly Button motherBrainActionPathButton;
+        private ShellScreen motherBrainActionPathRecommendedScreen = ShellScreen.BlackMarket;
         private readonly VisualElement founderSetupCard;
         private readonly TextField founderCityNameField;
         private readonly Label founderSetupHeadline;
@@ -157,6 +168,16 @@ namespace PlanarWar.Client.UI.Screens.Summary
             earlyLanePostureLiabilities = root.Q<Label>("early-lane-posture-liabilities-value");
             earlyLanePostureProof = root.Q<Label>("early-lane-posture-proof-value");
             earlyLanePostureActionButton = root.Q<Button>("early-lane-posture-action-button");
+            motherBrainActionPathCard = root.Q<VisualElement>("mother-brain-action-path-card");
+            motherBrainActionPathBadge = root.Q<Label>("mother-brain-action-path-badge-value");
+            motherBrainActionPathHeadline = root.Q<Label>("mother-brain-action-path-headline-value");
+            motherBrainActionPathDetail = root.Q<Label>("mother-brain-action-path-detail-value");
+            motherBrainActionPathRecommended = root.Q<Label>("mother-brain-action-path-recommended-value");
+            motherBrainActionPathReason = root.Q<Label>("mother-brain-action-path-reason-value");
+            motherBrainActionPathBlockers = root.Q<Label>("mother-brain-action-path-blockers-value");
+            motherBrainActionPathProof = root.Q<Label>("mother-brain-action-path-proof-value");
+            motherBrainActionPathReceipt = root.Q<Label>("mother-brain-action-path-receipt-value");
+            motherBrainActionPathButton = root.Q<Button>("mother-brain-action-path-button");
             founderSetupCard = root.Q<VisualElement>("founder-setup-card");
             founderCityNameField = root.Q<TextField>("founder-city-name-field");
             founderSetupHeadline = root.Q<Label>("founder-setup-headline-value");
@@ -180,6 +201,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             postFounderOperationsButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(ShellScreen.BlackMarket, onNavigateRequested));
             postFounderRosterButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(ShellScreen.Heroes, onNavigateRequested));
             earlyLanePostureActionButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(earlyLanePostureRecommendedScreen, onNavigateRequested));
+            motherBrainActionPathButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(motherBrainActionPathRecommendedScreen, onNavigateRequested));
         }
 
         public void Render(ShellSummarySnapshot s, bool isSummaryLoaded, bool isActionBusy = false, string actionStatus = null, bool actionFailed = false)
@@ -204,6 +226,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             RenderFounderSetup(s, isSummaryLoaded, isActionBusy, actionStatus, actionFailed);
             RenderPostFounderHandoff(s, isSummaryLoaded);
             RenderEarlyLanePosture(s, isSummaryLoaded);
+            RenderMotherBrainActionPath(s, isSummaryLoaded);
 
             RenderPressureDesk(s);
         }
@@ -363,6 +386,79 @@ namespace PlanarWar.Client.UI.Screens.Summary
             {
                 earlyLanePostureActionButton.text = BuildPostureButtonLabel(recommendedScreen, summary);
                 earlyLanePostureActionButton.SetEnabled(true);
+            }
+        }
+
+
+        private void RenderMotherBrainActionPath(ShellSummarySnapshot summary, bool isSummaryLoaded)
+        {
+            var pressure = summary?.MotherBrainPressureStatus;
+            var actionPath = pressure?.ActionPath;
+            var shouldShow = isSummaryLoaded && summary != null && summary.HasCity && pressure != null && actionPath != null;
+            if (motherBrainActionPathCard != null)
+            {
+                motherBrainActionPathCard.style.display = shouldShow ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            if (!shouldShow)
+            {
+                return;
+            }
+
+            var recommendedDesk = FirstNonBlank(actionPath.RecommendedDesk, "operations");
+            var recommendedScreen = ResolvePostureScreen(recommendedDesk, summary);
+            motherBrainActionPathRecommendedScreen = recommendedScreen;
+
+            if (motherBrainActionPathBadge != null)
+            {
+                var severity = FirstNonBlank(pressure.Severity, "watch");
+                motherBrainActionPathBadge.text = $"Mother Brain • {HumanizeToken(severity)}";
+            }
+
+            if (motherBrainActionPathHeadline != null)
+            {
+                motherBrainActionPathHeadline.text = FirstNonBlank(actionPath.Title, pressure.Headline, "Mother Brain pressure action path");
+            }
+
+            if (motherBrainActionPathDetail != null)
+            {
+                motherBrainActionPathDetail.text = FirstNonBlank(actionPath.CurrentStep, pressure.Detail, "Mother Brain has not surfaced a current step yet.");
+            }
+
+            if (motherBrainActionPathRecommended != null)
+            {
+                motherBrainActionPathRecommended.text = FirstNonBlank(actionPath.RecommendedActionLabel, pressure.RecommendedAction, BuildPostureButtonLabel(recommendedScreen, summary));
+            }
+
+            if (motherBrainActionPathReason != null)
+            {
+                motherBrainActionPathReason.text = FirstNonBlank(actionPath.WhyThisMatters, pressure.RecommendedAction, "This path is derived from live Mother Brain pressure status; it does not spawn events or complete objectives.");
+            }
+
+            if (motherBrainActionPathBlockers != null)
+            {
+                var blockers = actionPath.Blockers != null && actionPath.Blockers.Count > 0
+                    ? actionPath.Blockers
+                    : pressure.IncidentBlockedBy;
+                motherBrainActionPathBlockers.text = FormatPostureList(blockers, pressure.IncidentReady ? "No follow-through blockers surfaced." : "No explicit blockers surfaced yet.");
+            }
+
+            if (motherBrainActionPathProof != null)
+            {
+                motherBrainActionPathProof.text = FormatPostureList(actionPath.LiveProofSignals, "No Mother Brain proof signals surfaced yet.");
+            }
+
+            if (motherBrainActionPathReceipt != null)
+            {
+                motherBrainActionPathReceipt.text = string.IsNullOrWhiteSpace(actionPath.NextReceiptFamily)
+                    ? "Next receipt family: not surfaced yet."
+                    : $"Next receipt family: {HumanizeToken(actionPath.NextReceiptFamily)}.";
+            }
+
+            if (motherBrainActionPathButton != null)
+            {
+                motherBrainActionPathButton.text = BuildPostureButtonLabel(recommendedScreen, summary);
+                motherBrainActionPathButton.SetEnabled(true);
             }
         }
 
