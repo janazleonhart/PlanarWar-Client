@@ -468,9 +468,97 @@ namespace PlanarWar.Client.Core.Mapping
                     obj["liveProofSignals"],
                     obj["live_proof_signals"])),
 
+                ResponseHistory = MapMotherBrainPressureResponseHistory(FirstArray(
+                    obj["responseHistory"],
+                    obj["response_history"],
+                    obj["recentResponses"],
+                    obj["recent_responses"],
+                    obj["history"])),
+
                 BlockerRecovery = MapMotherBrainPressureBlockerRecovery(FirstObject(
                     obj["blockerRecovery"],
                     obj["blocker_recovery"])),
+            };
+        }
+
+        private static List<MotherBrainPressureResponseHistoryEntrySnapshot> MapMotherBrainPressureResponseHistory(JArray array)
+        {
+            if (array == null) return new List<MotherBrainPressureResponseHistoryEntrySnapshot>();
+
+            return array
+                .OfType<JObject>()
+                .Select(MapMotherBrainPressureResponseHistoryEntry)
+                .Where(entry => entry != null)
+                .ToList();
+        }
+
+        private static MotherBrainPressureResponseHistoryEntrySnapshot MapMotherBrainPressureResponseHistoryEntry(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new MotherBrainPressureResponseHistoryEntrySnapshot
+            {
+                Id = FirstNonBlank(
+                    ReadText(obj["id"]),
+                    ReadText(obj["receiptId"]),
+                    ReadText(obj["receipt_id"])),
+
+                CreatedAt = FirstNonBlank(
+                    ReadText(obj["createdAt"]),
+                    ReadText(obj["created_at"]),
+                    ReadText(obj["timestamp"]),
+                    ReadText(obj["at"])),
+
+                Title = FirstNonBlank(
+                    ReadText(obj["title"]),
+                    ReadText(obj["headline"]),
+                    ReadText(obj["name"])),
+
+                Summary = FirstNonBlank(
+                    ReadText(obj["summary"]),
+                    ReadText(obj["detail"]),
+                    ReadText(obj["note"])),
+
+                Outcome = FirstNonBlank(
+                    ReadText(obj["outcome"]),
+                    ReadText(obj["result"])),
+
+                Severity = FirstNonBlank(
+                    ReadText(obj["severity"]),
+                    ReadText(obj["level"])),
+
+                ReceiptState = FirstNonBlank(
+                    ReadText(obj["receiptState"]),
+                    ReadText(obj["receipt_state"]),
+                    ReadText(obj["state"]),
+                    ReadText(obj["status"])),
+
+                RuntimeActionId = FirstNonBlank(
+                    ReadText(obj["runtimeActionId"]),
+                    ReadText(obj["runtime_action_id"]),
+                    ReadText(obj["actionId"]),
+                    ReadText(obj["action_id"])),
+
+                SourceRegionId = FirstNonBlank(
+                    ReadText(obj["sourceRegionId"]),
+                    ReadText(obj["source_region_id"]),
+                    ReadText(obj["regionId"]),
+                    ReadText(obj["region_id"])),
+
+                ThreatFamily = FirstNonBlank(
+                    ReadText(obj["threatFamily"]),
+                    ReadText(obj["threat_family"])),
+
+                ContractKind = FirstNonBlank(
+                    ReadText(obj["contractKind"]),
+                    ReadText(obj["contract_kind"])),
+
+                Signals = MapStringArray(FirstArray(
+                    obj["signals"],
+                    obj["proofSignals"],
+                    obj["proof_signals"],
+                    obj["liveProofSignals"],
+                    obj["live_proof_signals"])),
             };
         }
 

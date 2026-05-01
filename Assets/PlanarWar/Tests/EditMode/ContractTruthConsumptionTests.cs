@@ -3839,13 +3839,15 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(guide, Does.Contain("receipt follow-through state, latest receipt, outcome, runtime action, and source-region proof"));
             Assert.That(guide, Does.Contain("blocker recovery"));
             Assert.That(guide, Does.Contain("Receipt follow-through is receipt/ledger truth only"));
+            Assert.That(guide, Does.Contain("response history"));
             Assert.That(guide, Does.Contain("does not launch events, complete objectives, spawn rewards, bypass blockers, start timers, or make Mother Brain autonomous"));
             Assert.That(guide, Does.Contain("Rogue Director, TOMS, Crucible, and full world-director behavior remain future work"));
-            Assert.That(guide, Does.Contain("missing or wrong Mother Brain pressure path, blockers, blocker recovery, proof signals, receipt follow-through, or receipt family"));
+            Assert.That(guide, Does.Contain("missing or wrong Mother Brain pressure path, blockers, blocker recovery, response history, proof signals, receipt follow-through, or receipt family"));
             Assert.That(uxml, Does.Contain("Mother Brain pressure"));
             Assert.That(uxml, Does.Contain("Pressure action path"));
             Assert.That(uxml, Does.Contain("blockers, proof signals, receipt follow-through, and next receipt family"));
             Assert.That(uxml, Does.Contain("blocker recovery"));
+            Assert.That(uxml, Does.Contain("response history"));
             Assert.That(uxml, Does.Contain("does not spawn events, rewards, timers, Rogue Director, TOMS, or Crucible behavior"));
             Assert.That(uxml, Does.Contain("missing or wrong Mother Brain pressure path"));
         }
@@ -3889,6 +3891,22 @@ namespace PlanarWar.Client.Tests.EditMode
                             ""latestRuntimeActionId"": ""action_region_ancient_elwynn"",
                             ""sourceRegionId"": ""ancient_elwynn"",
                             ""signals"": [""Runtime responses: 1."", ""Burden receipt state: answered.""],
+                            ""responseHistory"": [
+                                {
+                                    ""id"": ""receipt_broken_salt_line"",
+                                    ""createdAt"": ""2026-05-01T10:00:00.000Z"",
+                                    ""title"": ""Broken salt line"",
+                                    ""summary"": ""The answer landed, but the corridor started slipping again."",
+                                    ""outcome"": ""failure"",
+                                    ""severity"": ""pressure"",
+                                    ""receiptState"": ""answered"",
+                                    ""runtimeActionId"": ""action_region_ancient_elwynn"",
+                                    ""sourceRegionId"": ""ancient_elwynn"",
+                                    ""threatFamily"": ""organized_hostile_forces"",
+                                    ""contractKind"": ""repair_works"",
+                                    ""signals"": [""Runtime action: action_region_ancient_elwynn.""]
+                                }
+                            ],
                             ""blockerRecovery"": {
                                 ""state"": ""blocked"",
                                 ""title"": ""Recent follow-through is still cooling"",
@@ -3933,6 +3951,16 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(summary.MotherBrainPressureStatus.ActionPath.ReceiptFollowThrough.LatestRuntimeActionId, Is.EqualTo("action_region_ancient_elwynn"));
             Assert.That(summary.MotherBrainPressureStatus.ActionPath.ReceiptFollowThrough.SourceRegionId, Is.EqualTo("ancient_elwynn"));
             Assert.That(summary.MotherBrainPressureStatus.ActionPath.ReceiptFollowThrough.Signals, Does.Contain("Runtime responses: 1."));
+            Assert.That(summary.MotherBrainPressureStatus.ActionPath.ReceiptFollowThrough.ResponseHistory, Has.Count.EqualTo(1));
+            Assert.That(summary.MotherBrainPressureStatus.ActionPath.ReceiptFollowThrough.ResponseHistory[0].Id, Is.EqualTo("receipt_broken_salt_line"));
+            Assert.That(summary.MotherBrainPressureStatus.ActionPath.ReceiptFollowThrough.ResponseHistory[0].Title, Is.EqualTo("Broken salt line"));
+            Assert.That(summary.MotherBrainPressureStatus.ActionPath.ReceiptFollowThrough.ResponseHistory[0].Outcome, Is.EqualTo("failure"));
+            Assert.That(summary.MotherBrainPressureStatus.ActionPath.ReceiptFollowThrough.ResponseHistory[0].ReceiptState, Is.EqualTo("answered"));
+            Assert.That(summary.MotherBrainPressureStatus.ActionPath.ReceiptFollowThrough.ResponseHistory[0].RuntimeActionId, Is.EqualTo("action_region_ancient_elwynn"));
+            Assert.That(summary.MotherBrainPressureStatus.ActionPath.ReceiptFollowThrough.ResponseHistory[0].SourceRegionId, Is.EqualTo("ancient_elwynn"));
+            Assert.That(summary.MotherBrainPressureStatus.ActionPath.ReceiptFollowThrough.ResponseHistory[0].ThreatFamily, Is.EqualTo("organized_hostile_forces"));
+            Assert.That(summary.MotherBrainPressureStatus.ActionPath.ReceiptFollowThrough.ResponseHistory[0].ContractKind, Is.EqualTo("repair_works"));
+            Assert.That(summary.MotherBrainPressureStatus.ActionPath.ReceiptFollowThrough.ResponseHistory[0].Signals, Does.Contain("Runtime action: action_region_ancient_elwynn."));
             Assert.That(summary.MotherBrainPressureStatus.ActionPath.ReceiptFollowThrough.BlockerRecovery, Is.Not.Null);
             Assert.That(summary.MotherBrainPressureStatus.ActionPath.ReceiptFollowThrough.BlockerRecovery.State, Is.EqualTo("blocked"));
             Assert.That(summary.MotherBrainPressureStatus.ActionPath.ReceiptFollowThrough.BlockerRecovery.Blockers, Does.Contain("recent_followthrough"));
@@ -3957,7 +3985,8 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(uxml, Does.Contain("mother-brain-action-path-receipt-value"));
             Assert.That(uxml, Does.Contain("Receipt follow-through"));
             Assert.That(uxml, Does.Contain("blocker recovery"));
-            Assert.That(uxml, Does.Contain("Receipt and blocker-recovery truth is waiting on backend state."));
+            Assert.That(uxml, Does.Contain("response history"));
+            Assert.That(uxml, Does.Contain("Receipt, blocker-recovery, and response history truth is waiting on backend state."));
             Assert.That(uxml, Does.Contain("This card consumes /api/me motherBrainPressureStatus.actionPath"));
             Assert.That(uxml, Does.Not.Contain("Mother Brain starts events"));
             Assert.That(uxml, Does.Not.Contain("Mother Brain completes objectives"));

@@ -504,6 +504,15 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 lines.Add($"Source region: {HumanizeToken(followThrough.SourceRegionId)}.");
             }
 
+            if (followThrough?.ResponseHistory != null && followThrough.ResponseHistory.Count > 0)
+            {
+                lines.Add("Recent response history:");
+                lines.AddRange(followThrough.ResponseHistory
+                    .Where(entry => entry != null && !string.IsNullOrWhiteSpace(entry.Title))
+                    .Take(3)
+                    .Select(FormatMotherBrainResponseHistoryEntry));
+            }
+
             var recovery = followThrough?.BlockerRecovery;
             if (recovery != null)
             {
@@ -565,6 +574,34 @@ namespace PlanarWar.Client.UI.Screens.Summary
             return string.IsNullOrWhiteSpace(actionPath?.NextReceiptFamily)
                 ? "Next receipt family: not surfaced yet."
                 : $"Next receipt family: {HumanizeToken(actionPath.NextReceiptFamily)}.";
+        }
+
+        private static string FormatMotherBrainResponseHistoryEntry(MotherBrainPressureResponseHistoryEntrySnapshot entry)
+        {
+            var bits = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(entry.Outcome))
+            {
+                bits.Add(HumanizeToken(entry.Outcome));
+            }
+
+            if (!string.IsNullOrWhiteSpace(entry.ReceiptState))
+            {
+                bits.Add(HumanizeToken(entry.ReceiptState));
+            }
+
+            if (!string.IsNullOrWhiteSpace(entry.SourceRegionId))
+            {
+                bits.Add(HumanizeToken(entry.SourceRegionId));
+            }
+
+            if (!string.IsNullOrWhiteSpace(entry.RuntimeActionId))
+            {
+                bits.Add(entry.RuntimeActionId.Trim());
+            }
+
+            var suffix = bits.Count > 0 ? $" ({string.Join(" • ", bits)})" : string.Empty;
+            return $"• {entry.Title.Trim()}{suffix}.";
         }
 
         private static string HumanizeToken(string value)
