@@ -252,7 +252,7 @@
                         <ui:Label name="early-lane-posture-badge-value" text="Waiting on backend posture" class="chapter-row__badge" />
                     </ui:VisualElement>
                     <ui:Label name="early-lane-posture-headline-value" text="Lane posture waiting on live backend truth." class="rail-note-title" />
-                    <ui:Label name="early-lane-posture-summary-value" text="This card consumes /api/me earlyLanePosture when the backend provides it." class="summary-value summary-value--glance" />
+                    <ui:Label name="early-lane-posture-summary-value" text="This card consumes /api/me earlyLanePosture and actionPath when the backend provides it." class="summary-value summary-value--glance" />
 
                     <ui:VisualElement class="summary-grid summary-grid--glance early-lane-posture-grid">
                         <ui:VisualElement class="summary-card glance-card">
@@ -260,6 +260,14 @@
                             <ui:Label name="early-lane-posture-recommended-value" text="No recommended desk surfaced." class="summary-value summary-value--glance" />
                             <ui:Label name="early-lane-posture-reason-value" text="Reasoning will appear here when /api/me exposes early lane posture." class="metric-subvalue metric-subvalue--wrap" />
                             <ui:Button name="early-lane-posture-action-button" text="Open Development" class="action-button action-button--primary" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card glance-card early-lane-action-path-card">
+                            <ui:Label text="First-hour action path" class="eyebrow" />
+                            <ui:Label name="early-lane-posture-action-path-title-value" text="No first-hour action path surfaced yet." class="summary-value summary-value--glance" />
+                            <ui:Label name="early-lane-posture-action-path-step-value" text="Current step will appear when /api/me.earlyLanePosture.actionPath is present." class="metric-subvalue metric-subvalue--wrap" />
+                            <ui:Label name="early-lane-posture-action-path-why-value" text="Why this matters will appear here from backend truth." class="metric-subvalue metric-subvalue--wrap" />
+                            <ui:Label name="early-lane-posture-action-path-receipt-value" text="Next receipt family: not surfaced yet." class="metric-subvalue metric-subvalue--wrap" />
                         </ui:VisualElement>
 
                         <ui:VisualElement class="summary-card glance-card">

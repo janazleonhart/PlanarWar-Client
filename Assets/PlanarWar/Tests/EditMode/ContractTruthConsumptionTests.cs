@@ -3725,7 +3725,17 @@ namespace PlanarWar.Client.Tests.EditMode
                     ""recommendedDesk"": ""operations"",
                     ""recommendedActionLabel"": ""Open Operations for a low-exposure route"",
                     ""nextStepReason"": ""Offers are visible."",
-                    ""proofSignals"": [""Settlement lane: black_market.""]
+                    ""proofSignals"": [""Settlement lane: black_market.""],
+                    ""actionPath"": {
+                        ""lane"": ""black_market"",
+                        ""title"": ""Build deniable leverage"",
+                        ""currentStep"": ""Choose a low-exposure route or cell action from Operations."",
+                        ""recommendedDesk"": ""operations"",
+                        ""recommendedActionLabel"": ""Open Operations for a low-exposure route"",
+                        ""whyThisMatters"": ""The Black Market first hour should begin converting cashflow and intel into controlled pressure."",
+                        ""liveProofSignals"": [""Shadow opening stock: wealth 18 / knowledge 4 / materials 6.""],
+                        ""nextReceiptFamily"": ""shadow_opening_operation""
+                    }
                 }
             }";
 
@@ -3741,6 +3751,14 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(summary.EarlyLanePosture.RecommendedActionLabel, Does.Contain("Open Operations"));
             Assert.That(summary.EarlyLanePosture.NextStepReason, Does.Contain("Offers"));
             Assert.That(summary.EarlyLanePosture.ProofSignals, Does.Contain("Settlement lane: black_market."));
+            Assert.That(summary.EarlyLanePosture.ActionPath, Is.Not.Null);
+            Assert.That(summary.EarlyLanePosture.ActionPath.Title, Is.EqualTo("Build deniable leverage"));
+            Assert.That(summary.EarlyLanePosture.ActionPath.CurrentStep, Does.Contain("low-exposure route"));
+            Assert.That(summary.EarlyLanePosture.ActionPath.RecommendedDesk, Is.EqualTo("operations"));
+            Assert.That(summary.EarlyLanePosture.ActionPath.RecommendedActionLabel, Does.Contain("Open Operations"));
+            Assert.That(summary.EarlyLanePosture.ActionPath.WhyThisMatters, Does.Contain("Black Market first hour"));
+            Assert.That(summary.EarlyLanePosture.ActionPath.LiveProofSignals, Does.Contain("Shadow opening stock: wealth 18 / knowledge 4 / materials 6."));
+            Assert.That(summary.EarlyLanePosture.ActionPath.NextReceiptFamily, Is.EqualTo("shadow_opening_operation"));
         }
 
         [Test]
@@ -3757,7 +3775,11 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(uxml, Does.Contain("early-lane-posture-liabilities-value"));
             Assert.That(uxml, Does.Contain("early-lane-posture-proof-value"));
             Assert.That(uxml, Does.Contain("early-lane-posture-action-button"));
-            Assert.That(uxml, Does.Contain("This card consumes /api/me earlyLanePosture"));
+            Assert.That(uxml, Does.Contain("early-lane-posture-action-path-title-value"));
+            Assert.That(uxml, Does.Contain("early-lane-posture-action-path-step-value"));
+            Assert.That(uxml, Does.Contain("early-lane-posture-action-path-why-value"));
+            Assert.That(uxml, Does.Contain("early-lane-posture-action-path-receipt-value"));
+            Assert.That(uxml, Does.Contain("This card consumes /api/me earlyLanePosture and actionPath"));
             Assert.That(uxml, Does.Not.Contain("early-lane-posture-bootstrap"));
         }
 

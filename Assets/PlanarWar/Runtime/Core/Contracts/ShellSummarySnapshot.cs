@@ -61,6 +61,20 @@ namespace PlanarWar.Client.Core.Contracts
         public string RecommendedActionLabel { get; set; } = string.Empty;
         public string NextStepReason { get; set; } = string.Empty;
         public List<string> ProofSignals { get; set; } = new();
+        public EarlyLaneActionPathSnapshot ActionPath { get; set; }
+    }
+
+    [Serializable]
+    public sealed class EarlyLaneActionPathSnapshot
+    {
+        public string Lane { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string CurrentStep { get; set; } = string.Empty;
+        public string RecommendedDesk { get; set; } = string.Empty;
+        public string RecommendedActionLabel { get; set; } = string.Empty;
+        public string WhyThisMatters { get; set; } = string.Empty;
+        public List<string> LiveProofSignals { get; set; } = new();
+        public string NextReceiptFamily { get; set; } = string.Empty;
     }
 
     [Serializable]

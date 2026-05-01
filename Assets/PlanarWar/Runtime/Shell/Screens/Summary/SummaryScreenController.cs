@@ -66,6 +66,10 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private readonly Label earlyLanePostureSummary;
         private readonly Label earlyLanePostureRecommended;
         private readonly Label earlyLanePostureReason;
+        private readonly Label earlyLanePostureActionPathTitle;
+        private readonly Label earlyLanePostureActionPathStep;
+        private readonly Label earlyLanePostureActionPathWhy;
+        private readonly Label earlyLanePostureActionPathReceipt;
         private readonly Label earlyLanePostureStrengths;
         private readonly Label earlyLanePostureLiabilities;
         private readonly Label earlyLanePostureProof;
@@ -145,6 +149,10 @@ namespace PlanarWar.Client.UI.Screens.Summary
             earlyLanePostureSummary = root.Q<Label>("early-lane-posture-summary-value");
             earlyLanePostureRecommended = root.Q<Label>("early-lane-posture-recommended-value");
             earlyLanePostureReason = root.Q<Label>("early-lane-posture-reason-value");
+            earlyLanePostureActionPathTitle = root.Q<Label>("early-lane-posture-action-path-title-value");
+            earlyLanePostureActionPathStep = root.Q<Label>("early-lane-posture-action-path-step-value");
+            earlyLanePostureActionPathWhy = root.Q<Label>("early-lane-posture-action-path-why-value");
+            earlyLanePostureActionPathReceipt = root.Q<Label>("early-lane-posture-action-path-receipt-value");
             earlyLanePostureStrengths = root.Q<Label>("early-lane-posture-strengths-value");
             earlyLanePostureLiabilities = root.Q<Label>("early-lane-posture-liabilities-value");
             earlyLanePostureProof = root.Q<Label>("early-lane-posture-proof-value");
@@ -279,9 +287,11 @@ namespace PlanarWar.Client.UI.Screens.Summary
             var label = FirstNonBlank(posture.Label, ResolveLaneLabel(posture.Lane, summary.City?.SettlementLaneLabel));
             var headline = FirstNonBlank(posture.Headline, $"{label} lane posture");
             var summaryText = FirstNonBlank(posture.Summary, "Backend lane posture is live, but no summary copy was provided.");
-            var recommendedAction = FirstNonBlank(posture.RecommendedActionLabel, BuildFallbackPostureAction(posture, summary));
-            var reason = FirstNonBlank(posture.NextStepReason, "Recommendation comes from live /api/me earlyLanePosture truth.");
-            var recommendedScreen = ResolvePostureScreen(posture.RecommendedDesk, summary);
+            var actionPath = posture.ActionPath;
+            var recommendedDesk = FirstNonBlank(actionPath?.RecommendedDesk, posture.RecommendedDesk);
+            var recommendedAction = FirstNonBlank(actionPath?.RecommendedActionLabel, posture.RecommendedActionLabel, BuildFallbackPostureAction(posture, summary));
+            var reason = FirstNonBlank(actionPath?.WhyThisMatters, posture.NextStepReason, "Recommendation comes from live /api/me earlyLanePosture truth.");
+            var recommendedScreen = ResolvePostureScreen(recommendedDesk, summary);
             earlyLanePostureRecommendedScreen = recommendedScreen;
 
             if (earlyLanePostureBadge != null)
@@ -309,6 +319,28 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 earlyLanePostureReason.text = reason;
             }
 
+            if (earlyLanePostureActionPathTitle != null)
+            {
+                earlyLanePostureActionPathTitle.text = FirstNonBlank(actionPath?.Title, "First-hour action path pending");
+            }
+
+            if (earlyLanePostureActionPathStep != null)
+            {
+                earlyLanePostureActionPathStep.text = FirstNonBlank(actionPath?.CurrentStep, posture.NextStepReason, "No first-hour action path step surfaced yet.");
+            }
+
+            if (earlyLanePostureActionPathWhy != null)
+            {
+                earlyLanePostureActionPathWhy.text = FirstNonBlank(actionPath?.WhyThisMatters, "This path will appear when the backend exposes live action-path truth.");
+            }
+
+            if (earlyLanePostureActionPathReceipt != null)
+            {
+                earlyLanePostureActionPathReceipt.text = string.IsNullOrWhiteSpace(actionPath?.NextReceiptFamily)
+                    ? "Next receipt family: not surfaced yet."
+                    : $"Next receipt family: {HumanizeToken(actionPath.NextReceiptFamily)}.";
+            }
+
             if (earlyLanePostureStrengths != null)
             {
                 earlyLanePostureStrengths.text = FormatPostureList(posture.Strengths, "No live strength signals surfaced yet.");
@@ -321,7 +353,10 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (earlyLanePostureProof != null)
             {
-                earlyLanePostureProof.text = FormatPostureList(posture.ProofSignals, "No proof signals surfaced yet.");
+                var proofSignals = actionPath?.LiveProofSignals != null && actionPath.LiveProofSignals.Count > 0
+                    ? actionPath.LiveProofSignals
+                    : posture.ProofSignals;
+                earlyLanePostureProof.text = FormatPostureList(proofSignals, "No proof signals surfaced yet.");
             }
 
             if (earlyLanePostureActionButton != null)
@@ -329,6 +364,16 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 earlyLanePostureActionButton.text = BuildPostureButtonLabel(recommendedScreen, summary);
                 earlyLanePostureActionButton.SetEnabled(true);
             }
+        }
+
+        private static string HumanizeToken(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            return value.Trim().Replace("_", " ").Replace("-", " ");
         }
 
         private static ShellScreen ResolvePostureScreen(string recommendedDesk, ShellSummarySnapshot summary)

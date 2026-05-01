@@ -242,6 +242,24 @@ namespace PlanarWar.Client.Core.Mapping
                 RecommendedActionLabel = FirstNonBlank(ReadText(obj["recommendedActionLabel"]), ReadText(obj["recommended_action_label"]), ReadText(obj["recommendedAction"]), ReadText(obj["recommended_action"])),
                 NextStepReason = FirstNonBlank(ReadText(obj["nextStepReason"]), ReadText(obj["next_step_reason"]), ReadText(obj["reason"])),
                 ProofSignals = MapStringArray(FirstArray(obj["proofSignals"], obj["proof_signals"])),
+                ActionPath = MapEarlyLaneActionPath(FirstObject(obj["actionPath"], obj["action_path"])),
+            };
+        }
+
+        private static EarlyLaneActionPathSnapshot MapEarlyLaneActionPath(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new EarlyLaneActionPathSnapshot
+            {
+                Lane = FirstNonBlank(ReadText(obj["lane"]), ReadText(obj["settlementLane"]), ReadText(obj["settlement_lane"])),
+                Title = FirstNonBlank(ReadText(obj["title"]), ReadText(obj["headline"]), ReadText(obj["name"])),
+                CurrentStep = FirstNonBlank(ReadText(obj["currentStep"]), ReadText(obj["current_step"]), ReadText(obj["step"]), ReadText(obj["summary"])),
+                RecommendedDesk = FirstNonBlank(ReadText(obj["recommendedDesk"]), ReadText(obj["recommended_desk"])),
+                RecommendedActionLabel = FirstNonBlank(ReadText(obj["recommendedActionLabel"]), ReadText(obj["recommended_action_label"]), ReadText(obj["recommendedAction"]), ReadText(obj["recommended_action"])),
+                WhyThisMatters = FirstNonBlank(ReadText(obj["whyThisMatters"]), ReadText(obj["why_this_matters"]), ReadText(obj["reason"]), ReadText(obj["detail"])),
+                LiveProofSignals = MapStringArray(FirstArray(obj["liveProofSignals"], obj["live_proof_signals"], obj["proofSignals"], obj["proof_signals"])),
+                NextReceiptFamily = FirstNonBlank(ReadText(obj["nextReceiptFamily"]), ReadText(obj["next_receipt_family"]), ReadText(obj["receiptFamily"]), ReadText(obj["receipt_family"])),
             };
         }
 
