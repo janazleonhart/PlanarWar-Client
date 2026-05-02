@@ -98,6 +98,19 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private readonly Label publicInfrastructureEconomySpineReceipt;
         private readonly Button publicInfrastructureEconomySpineButton;
         private ShellScreen publicInfrastructureEconomySpineRecommendedScreen = ShellScreen.City;
+        private readonly VisualElement cityMudConsequenceBridgeCard;
+        private readonly Label cityMudConsequenceBridgeBadge;
+        private readonly Label cityMudConsequenceBridgeHeadline;
+        private readonly Label cityMudConsequenceBridgeSummary;
+        private readonly Label cityMudConsequenceBridgeRecommended;
+        private readonly Label cityMudConsequenceBridgeReason;
+        private readonly Label cityMudConsequenceBridgeBridgeSignals;
+        private readonly Label cityMudConsequenceBridgeProgressionSignals;
+        private readonly Label cityMudConsequenceBridgeRegionalSignals;
+        private readonly Label cityMudConsequenceBridgeReceiptSignals;
+        private readonly Label cityMudConsequenceBridgeGuardrails;
+        private readonly Button cityMudConsequenceBridgeButton;
+        private ShellScreen cityMudConsequenceBridgeRecommendedScreen = ShellScreen.City;
         private readonly VisualElement founderSetupCard;
         private readonly TextField founderCityNameField;
         private readonly Label founderSetupHeadline;
@@ -201,6 +214,18 @@ namespace PlanarWar.Client.UI.Screens.Summary
             publicInfrastructureEconomySpineShadowSignals = root.Q<Label>("public-infrastructure-economy-spine-shadow-signals-value");
             publicInfrastructureEconomySpineReceipt = root.Q<Label>("public-infrastructure-economy-spine-receipt-value");
             publicInfrastructureEconomySpineButton = root.Q<Button>("public-infrastructure-economy-spine-button");
+            cityMudConsequenceBridgeCard = root.Q<VisualElement>("city-mud-consequence-bridge-card");
+            cityMudConsequenceBridgeBadge = root.Q<Label>("city-mud-consequence-bridge-badge-value");
+            cityMudConsequenceBridgeHeadline = root.Q<Label>("city-mud-consequence-bridge-headline-value");
+            cityMudConsequenceBridgeSummary = root.Q<Label>("city-mud-consequence-bridge-summary-value");
+            cityMudConsequenceBridgeRecommended = root.Q<Label>("city-mud-consequence-bridge-recommended-value");
+            cityMudConsequenceBridgeReason = root.Q<Label>("city-mud-consequence-bridge-reason-value");
+            cityMudConsequenceBridgeBridgeSignals = root.Q<Label>("city-mud-consequence-bridge-bridge-signals-value");
+            cityMudConsequenceBridgeProgressionSignals = root.Q<Label>("city-mud-consequence-bridge-progression-signals-value");
+            cityMudConsequenceBridgeRegionalSignals = root.Q<Label>("city-mud-consequence-bridge-regional-signals-value");
+            cityMudConsequenceBridgeReceiptSignals = root.Q<Label>("city-mud-consequence-bridge-receipt-signals-value");
+            cityMudConsequenceBridgeGuardrails = root.Q<Label>("city-mud-consequence-bridge-guardrails-value");
+            cityMudConsequenceBridgeButton = root.Q<Button>("city-mud-consequence-bridge-button");
             founderSetupCard = root.Q<VisualElement>("founder-setup-card");
             founderCityNameField = root.Q<TextField>("founder-city-name-field");
             founderSetupHeadline = root.Q<Label>("founder-setup-headline-value");
@@ -226,6 +251,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             earlyLanePostureActionButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(earlyLanePostureRecommendedScreen, onNavigateRequested));
             motherBrainActionPathButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(motherBrainActionPathRecommendedScreen, onNavigateRequested));
             publicInfrastructureEconomySpineButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(publicInfrastructureEconomySpineRecommendedScreen, onNavigateRequested));
+            cityMudConsequenceBridgeButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(cityMudConsequenceBridgeRecommendedScreen, onNavigateRequested));
         }
 
         public void Render(ShellSummarySnapshot s, bool isSummaryLoaded, bool isActionBusy = false, string actionStatus = null, bool actionFailed = false)
@@ -252,6 +278,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             RenderEarlyLanePosture(s, isSummaryLoaded);
             RenderMotherBrainActionPath(s, isSummaryLoaded);
             RenderPublicInfrastructureEconomySpine(s, isSummaryLoaded);
+            RenderCityMudConsequenceBridge(s, isSummaryLoaded);
 
             RenderPressureDesk(s);
         }
@@ -603,6 +630,186 @@ namespace PlanarWar.Client.UI.Screens.Summary
             }
 
             return "Public infrastructure receipt follow-through is waiting on backend state.";
+        }
+
+
+        private void RenderCityMudConsequenceBridge(ShellSummarySnapshot summary, bool isSummaryLoaded)
+        {
+            var bridge = summary?.CityMudWorldConsequenceBridge;
+            var shouldShow = isSummaryLoaded && summary != null && summary.HasCity && bridge != null;
+            if (cityMudConsequenceBridgeCard != null)
+            {
+                cityMudConsequenceBridgeCard.style.display = shouldShow ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            if (!shouldShow)
+            {
+                return;
+            }
+
+            var recommendedScreen = ResolveCityMudConsequenceBridgeScreen(bridge);
+            cityMudConsequenceBridgeRecommendedScreen = recommendedScreen;
+
+            if (cityMudConsequenceBridgeBadge != null)
+            {
+                cityMudConsequenceBridgeBadge.text = $"City ↔ MUD • {HumanizeToken(FirstNonBlank(bridge.State, bridge.RecommendedFocus, "watch"))}";
+            }
+
+            if (cityMudConsequenceBridgeHeadline != null)
+            {
+                cityMudConsequenceBridgeHeadline.text = FirstNonBlank(bridge.Title, "City-to-MUD consequence bridge");
+            }
+
+            if (cityMudConsequenceBridgeSummary != null)
+            {
+                cityMudConsequenceBridgeSummary.text = FirstNonBlank(bridge.Summary, "City support and world-consequence truth will appear here when /api/me exposes the bridge.");
+            }
+
+            if (cityMudConsequenceBridgeRecommended != null)
+            {
+                cityMudConsequenceBridgeRecommended.text = FirstNonBlank(bridge.RecommendedActionLabel, $"Open {BuildDeskNoun(recommendedScreen, summary)}");
+            }
+
+            if (cityMudConsequenceBridgeReason != null)
+            {
+                cityMudConsequenceBridgeReason.text = FirstNonBlank(bridge.WhyThisMatters, "This bridge reads city support, public backbone, regional consequence, and receipt truth only; it does not grant items, fake progression, taxes, queues, or mandatory city gates.");
+            }
+
+            if (cityMudConsequenceBridgeBridgeSignals != null)
+            {
+                cityMudConsequenceBridgeBridgeSignals.text = FormatCityMudBridgeSignals(bridge);
+            }
+
+            if (cityMudConsequenceBridgeProgressionSignals != null)
+            {
+                cityMudConsequenceBridgeProgressionSignals.text = FormatPostureList(bridge.MudProgressionSignals, "No MUD progression signals surfaced yet.");
+            }
+
+            if (cityMudConsequenceBridgeRegionalSignals != null)
+            {
+                cityMudConsequenceBridgeRegionalSignals.text = FormatRegionalLifeSignals(bridge);
+            }
+
+            if (cityMudConsequenceBridgeReceiptSignals != null)
+            {
+                cityMudConsequenceBridgeReceiptSignals.text = FormatCityMudBridgeReceiptSignals(bridge);
+            }
+
+            if (cityMudConsequenceBridgeGuardrails != null)
+            {
+                cityMudConsequenceBridgeGuardrails.text = FormatPostureList(bridge.Guardrails, "Guardrails: no fake MUD progression, rewards, taxes, queue timers, or mandatory player-city gates.");
+            }
+
+            if (cityMudConsequenceBridgeButton != null)
+            {
+                cityMudConsequenceBridgeButton.text = BuildPostureButtonLabel(recommendedScreen, summary);
+                cityMudConsequenceBridgeButton.SetEnabled(true);
+            }
+        }
+
+        private static ShellScreen ResolveCityMudConsequenceBridgeScreen(CityMudWorldConsequenceBridgeSnapshot bridge)
+        {
+            var focus = (bridge?.RecommendedFocus ?? string.Empty).Trim().Replace("-", "_").Replace(" ", "_").ToLowerInvariant();
+            if (focus == "regional_recovery")
+            {
+                return ShellScreen.BlackMarket;
+            }
+
+            if (focus == "city_support" || focus == "public_backbone")
+            {
+                return ShellScreen.City;
+            }
+
+            return ShellScreen.City;
+        }
+
+        private static string FormatCityMudBridgeSignals(CityMudWorldConsequenceBridgeSnapshot bridge)
+        {
+            var lines = new List<string>
+            {
+                $"Bridge band: {HumanizeToken(bridge?.BridgeBand)}.",
+                $"Recommended posture: {HumanizeToken(bridge?.RecommendedPosture)}.",
+                $"Support/logistics/frontier/stability: {bridge?.SupportCapacity ?? 0}/{bridge?.LogisticsPressure ?? 0}/{bridge?.FrontierPressure ?? 0}/{bridge?.StabilityPressure ?? 0}.",
+            };
+
+            var exportable = FormatResource(bridge?.ExportableResources ?? new ResourceSnapshot(), new ResourcePresentationSnapshot(), "No exportable city support surfaced.");
+            if (!string.IsNullOrWhiteSpace(exportable))
+            {
+                lines.Add($"Exportable support: {exportable}.");
+            }
+
+            if (bridge?.CityMudSignals != null && bridge.CityMudSignals.Count > 0)
+            {
+                lines.Add(FormatPostureList(bridge.CityMudSignals, string.Empty));
+            }
+
+            return string.Join("\n", lines.Where(line => !string.IsNullOrWhiteSpace(line)));
+        }
+
+        private static string FormatRegionalLifeSignals(CityMudWorldConsequenceBridgeSnapshot bridge)
+        {
+            var lines = new List<string>
+            {
+                $"Affected regions: {((bridge?.AffectedRegionIds != null && bridge.AffectedRegionIds.Count > 0) ? string.Join(", ", bridge.AffectedRegionIds) : "none")}.",
+                $"World consequences: {bridge?.WorldConsequenceTotal ?? 0}; severe {bridge?.SevereConsequenceCount ?? 0}; destabilization {bridge?.DestabilizationScore ?? 0}.",
+            };
+
+            if (bridge?.RegionalLifeSignals != null && bridge.RegionalLifeSignals.Count > 0)
+            {
+                lines.Add(FormatPostureList(bridge.RegionalLifeSignals, string.Empty));
+            }
+
+            return string.Join("\n", lines.Where(line => !string.IsNullOrWhiteSpace(line)));
+        }
+
+        private static string FormatCityMudBridgeReceiptSignals(CityMudWorldConsequenceBridgeSnapshot bridge)
+        {
+            var lines = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(bridge?.NextReceiptFamily))
+            {
+                lines.Add($"Next receipt family: {HumanizeToken(bridge.NextReceiptFamily)}.");
+            }
+
+            if (bridge?.LatestRuntimeResponse != null)
+            {
+                lines.Add($"Latest runtime response: {FormatCityMudBridgeReceipt(bridge.LatestRuntimeResponse)}");
+            }
+
+            if (bridge?.LatestWorldConsequence != null)
+            {
+                lines.Add($"Latest world consequence: {FormatCityMudBridgeReceipt(bridge.LatestWorldConsequence)}");
+            }
+
+            if (bridge?.ReceiptSignals != null && bridge.ReceiptSignals.Count > 0)
+            {
+                lines.Add(FormatPostureList(bridge.ReceiptSignals, string.Empty));
+            }
+
+            if (lines.Count == 0)
+            {
+                return "No City ↔ MUD receipt signals surfaced yet.";
+            }
+
+            return string.Join("\n", lines.Where(line => !string.IsNullOrWhiteSpace(line)));
+        }
+
+        private static string FormatCityMudBridgeReceipt(CityMudWorldConsequenceBridgeReceiptSnapshot receipt)
+        {
+            if (receipt == null)
+            {
+                return "none.";
+            }
+
+            var title = FirstNonBlank(receipt.Title, receipt.Id, "unknown receipt");
+            var stateParts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(receipt.Outcome)) stateParts.Add(HumanizeToken(receipt.Outcome));
+            if (!string.IsNullOrWhiteSpace(receipt.Severity)) stateParts.Add(HumanizeToken(receipt.Severity));
+            if (!string.IsNullOrWhiteSpace(receipt.RegionId)) stateParts.Add($"region {receipt.RegionId}");
+            if (!string.IsNullOrWhiteSpace(receipt.RuntimeActionId)) stateParts.Add($"action {receipt.RuntimeActionId}");
+
+            var suffix = stateParts.Count > 0 ? $" ({string.Join(", ", stateParts)})" : string.Empty;
+            return $"{title}{suffix}.";
         }
 
         private static string BuildDeskNoun(ShellScreen screen, ShellSummarySnapshot summary)

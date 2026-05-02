@@ -183,6 +183,7 @@ namespace PlanarWar.Client.Core.Mapping
                 EarlyLanePosture = MapEarlyLanePosture(summary["earlyLanePosture"] as JObject ?? summary["early_lane_posture"] as JObject),
                 MotherBrainPressureStatus = MapMotherBrainPressureStatus(summary["motherBrainPressureStatus"] as JObject ?? summary["mother_brain_pressure_status"] as JObject),
                 PublicInfrastructureSummary = MapPublicInfrastructureSummary(summary["publicInfrastructureSummary"] as JObject ?? summary["public_infrastructure_summary"] as JObject),
+                CityMudWorldConsequenceBridge = MapCityMudWorldConsequenceBridge(summary["cityMudWorldConsequenceBridge"] as JObject ?? summary["city_mud_world_consequence_bridge"] as JObject),
                 HasCity = summary["hasCity"]?.Read<bool>() ?? false,
                 City = new CitySummarySnapshot
                 {
@@ -679,6 +680,59 @@ namespace PlanarWar.Client.Core.Mapping
                 RecommendedService = FirstNonBlank(ReadText(obj["recommendedService"]), ReadText(obj["recommended_service"])),
                 NextReceiptFamily = FirstNonBlank(ReadText(obj["nextReceiptFamily"]), ReadText(obj["next_receipt_family"]), ReadText(obj["receiptFamily"]), ReadText(obj["receipt_family"])),
                 Signals = MapStringArray(FirstArray(obj["signals"], obj["proofSignals"], obj["proof_signals"])),
+            };
+        }
+
+
+        private static CityMudWorldConsequenceBridgeSnapshot MapCityMudWorldConsequenceBridge(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new CityMudWorldConsequenceBridgeSnapshot
+            {
+                State = FirstNonBlank(ReadText(obj["state"]), ReadText(obj["status"])),
+                Title = FirstNonBlank(ReadText(obj["title"]), ReadText(obj["headline"]), ReadText(obj["name"])),
+                Summary = FirstNonBlank(ReadText(obj["summary"]), ReadText(obj["description"]), ReadText(obj["detail"])),
+                RecommendedFocus = FirstNonBlank(ReadText(obj["recommendedFocus"]), ReadText(obj["recommended_focus"]), ReadText(obj["focus"])),
+                RecommendedActionLabel = FirstNonBlank(ReadText(obj["recommendedActionLabel"]), ReadText(obj["recommended_action_label"]), ReadText(obj["recommendedAction"]), ReadText(obj["recommended_action"])),
+                WhyThisMatters = FirstNonBlank(ReadText(obj["whyThisMatters"]), ReadText(obj["why_this_matters"]), ReadText(obj["reason"]), ReadText(obj["detail"])),
+                NextReceiptFamily = FirstNonBlank(ReadText(obj["nextReceiptFamily"]), ReadText(obj["next_receipt_family"]), ReadText(obj["receiptFamily"]), ReadText(obj["receipt_family"])),
+                BridgeBand = FirstNonBlank(ReadText(obj["bridgeBand"]), ReadText(obj["bridge_band"])),
+                RecommendedPosture = FirstNonBlank(ReadText(obj["recommendedPosture"]), ReadText(obj["recommended_posture"])),
+                SupportCapacity = FirstInt(obj["supportCapacity"], obj["support_capacity"]),
+                LogisticsPressure = FirstInt(obj["logisticsPressure"], obj["logistics_pressure"]),
+                FrontierPressure = FirstInt(obj["frontierPressure"], obj["frontier_pressure"]),
+                StabilityPressure = FirstInt(obj["stabilityPressure"], obj["stability_pressure"]),
+                ExportableResources = MapResource(FirstObject(obj["exportableResources"], obj["exportable_resources"]), true),
+                AffectedRegionIds = MapStringArray(FirstArray(obj["affectedRegionIds"], obj["affected_region_ids"], obj["regions"])),
+                WorldConsequenceTotal = FirstInt(obj["worldConsequenceTotal"], obj["world_consequence_total"]),
+                SevereConsequenceCount = FirstInt(obj["severeConsequenceCount"], obj["severe_consequence_count"]),
+                DestabilizationScore = FirstInt(obj["destabilizationScore"], obj["destabilization_score"]),
+                CityMudSignals = MapStringArray(FirstArray(obj["cityMudSignals"], obj["city_mud_signals"], obj["bridgeSignals"], obj["bridge_signals"])),
+                MudProgressionSignals = MapStringArray(FirstArray(obj["mudProgressionSignals"], obj["mud_progression_signals"], obj["progressionSignals"], obj["progression_signals"])),
+                RegionalLifeSignals = MapStringArray(FirstArray(obj["regionalLifeSignals"], obj["regional_life_signals"], obj["regionalSignals"], obj["regional_signals"])),
+                ReceiptSignals = MapStringArray(FirstArray(obj["receiptSignals"], obj["receipt_signals"])),
+                Guardrails = MapStringArray(FirstArray(obj["guardrails"], obj["guardrailSignals"], obj["guardrail_signals"])),
+                LatestWorldConsequence = MapCityMudWorldConsequenceBridgeReceipt(FirstObject(obj["latestWorldConsequence"], obj["latest_world_consequence"])),
+                LatestRuntimeResponse = MapCityMudWorldConsequenceBridgeReceipt(FirstObject(obj["latestRuntimeResponse"], obj["latest_runtime_response"])),
+            };
+        }
+
+        private static CityMudWorldConsequenceBridgeReceiptSnapshot MapCityMudWorldConsequenceBridgeReceipt(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new CityMudWorldConsequenceBridgeReceiptSnapshot
+            {
+                Id = FirstNonBlank(ReadText(obj["id"]), ReadText(obj["receiptId"]), ReadText(obj["receipt_id"])),
+                CreatedAt = FirstNonBlank(ReadText(obj["createdAt"]), ReadText(obj["created_at"])),
+                Title = FirstNonBlank(ReadText(obj["title"]), ReadText(obj["headline"]), ReadText(obj["name"])),
+                Summary = FirstNonBlank(ReadText(obj["summary"]), ReadText(obj["description"]), ReadText(obj["detail"])),
+                Severity = FirstNonBlank(ReadText(obj["severity"]), ReadText(obj["level"])),
+                Outcome = FirstNonBlank(ReadText(obj["outcome"]), ReadText(obj["result"])),
+                Source = FirstNonBlank(ReadText(obj["source"]), ReadText(obj["kind"])),
+                RegionId = FirstNonBlank(ReadText(obj["regionId"]), ReadText(obj["region_id"]), ReadText(obj["sourceRegionId"]), ReadText(obj["source_region_id"])),
+                RuntimeActionId = FirstNonBlank(ReadText(obj["runtimeActionId"]), ReadText(obj["runtime_action_id"])),
             };
         }
 

@@ -110,6 +110,25 @@ Important: this surface is guidance and receipt follow-through only. It reads ex
 
 Report the card if it is missing when backend public infrastructure truth is visible elsewhere, recommends the wrong desk, shows raw object/JSON text, or implies fake public-service mechanics.
 
+
+### City ↔ MUD world-consequence bridge
+
+Home can also show a **City ↔ MUD world-consequence bridge** card when live `/api/me.cityMudWorldConsequenceBridge` truth exists. This card explains how city support, public backbone posture, regional world consequences, and receipt truth are currently touching MUD-facing play.
+
+Use it to read:
+
+- whether the city-to-MUD bridge is quiet, supporting, pressured, or restricted
+- the recommended bridge focus and route-only action label
+- city support signals such as bridge band, recommended posture, support capacity, and exportable city resources
+- MUD progression signals for vendor supply, mission board posture, and civic services
+- regional life signals such as affected regions, severe consequence counts, and destabilization pressure
+- receipt and consequence signals, including latest runtime response and latest world-consequence receipts when present
+- guardrails that confirm player cities support/optimize public play without becoming mandatory
+
+Important: this surface is guidance and receipt truth only. It does not grant items, rewards, levels, fake MUD progression, taxes, queue timers, public-service protection, shadow exposure, Rogue Director, TOMS, Crucible, autonomous Mother Brain behavior, or fabricated player identity/action truth.
+
+Report the card if it is missing when backend city-to-MUD bridge truth is visible elsewhere, recommends the wrong desk, shows raw object/JSON text, hides guardrails, or implies player cities are mandatory for baseline MUD progression.
+
 ## Development desk
 
 Development contains the growth lane:
@@ -218,7 +237,7 @@ Please report:
 - raw JSON or object text
 - invisible action results
 - stale timers
-- missing or wrong Mother Brain pressure path, blockers, blocker recovery, response history, proof signals, receipt follow-through, or receipt family
+- missing or wrong Mother Brain pressure path, blockers, blocker recovery, response history, proof signals, receipt follow-through, receipt family, or City ↔ MUD bridge signals
 - collect buttons that do not collect
 - gear that vanishes after craft/collect/equip/release
 - navigation dead ends
@@ -251,15 +270,16 @@ For a quick tester pass, run this loop:
 3. Open Home and refresh summary.
 4. Read the Lane posture and First-hour action path if they are present.
 5. Read the Mother Brain pressure path if it is present; note blockers, blocker recovery, and proof signals before clicking its route-only button.
-6. Use recommended route buttons only to move to suggested live desks.
-7. Open Development.
-8. Start research if available.
-9. Craft one Workshop item.
-10. Wait for the timer or use a QA-shortened ready state if available.
-11. Collect the item.
-12. Open Heroes / Operatives.
-13. Equip and unequip the crafted item if compatible.
-14. Open Operations.
-15. Start or resolve one available operation.
-16. Open Social and send or filter chat if room state is attached.
-17. Report only concrete failures or unclear results.
+6. Read the City ↔ MUD bridge if it is present; note whether it frames city support as optimization rather than mandatory MUD progression.
+7. Use recommended route buttons only to move to suggested live desks.
+8. Open Development.
+9. Start research if available.
+10. Craft one Workshop item.
+11. Wait for the timer or use a QA-shortened ready state if available.
+12. Collect the item.
+13. Open Heroes / Operatives.
+14. Equip and unequip the crafted item if compatible.
+15. Open Operations.
+16. Start or resolve one available operation.
+17. Open Social and send or filter chat if room state is attached.
+18. Report only concrete failures or unclear results.

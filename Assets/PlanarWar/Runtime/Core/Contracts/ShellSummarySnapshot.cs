@@ -16,6 +16,7 @@ namespace PlanarWar.Client.Core.Contracts
         public EarlyLanePostureSnapshot EarlyLanePosture { get; set; }
         public MotherBrainPressureStatusSnapshot MotherBrainPressureStatus { get; set; }
         public PublicInfrastructureSummarySnapshot PublicInfrastructureSummary { get; set; }
+        public CityMudWorldConsequenceBridgeSnapshot CityMudWorldConsequenceBridge { get; set; }
         public bool HasCity { get; set; }
         public CitySummarySnapshot City { get; set; } = new();
         public List<BuildingSnapshot> Buildings { get; set; } = new();
@@ -210,6 +211,50 @@ namespace PlanarWar.Client.Core.Contracts
         public string RecommendedService { get; set; } = string.Empty;
         public string NextReceiptFamily { get; set; } = string.Empty;
         public List<string> Signals { get; set; } = new();
+    }
+
+    [Serializable]
+    public sealed class CityMudWorldConsequenceBridgeSnapshot
+    {
+        public string State { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Summary { get; set; } = string.Empty;
+        public string RecommendedFocus { get; set; } = string.Empty;
+        public string RecommendedActionLabel { get; set; } = string.Empty;
+        public string WhyThisMatters { get; set; } = string.Empty;
+        public string NextReceiptFamily { get; set; } = string.Empty;
+        public string BridgeBand { get; set; } = string.Empty;
+        public string RecommendedPosture { get; set; } = string.Empty;
+        public int? SupportCapacity { get; set; }
+        public int? LogisticsPressure { get; set; }
+        public int? FrontierPressure { get; set; }
+        public int? StabilityPressure { get; set; }
+        public ResourceSnapshot ExportableResources { get; set; } = new();
+        public List<string> AffectedRegionIds { get; set; } = new();
+        public int? WorldConsequenceTotal { get; set; }
+        public int? SevereConsequenceCount { get; set; }
+        public int? DestabilizationScore { get; set; }
+        public List<string> CityMudSignals { get; set; } = new();
+        public List<string> MudProgressionSignals { get; set; } = new();
+        public List<string> RegionalLifeSignals { get; set; } = new();
+        public List<string> ReceiptSignals { get; set; } = new();
+        public List<string> Guardrails { get; set; } = new();
+        public CityMudWorldConsequenceBridgeReceiptSnapshot LatestWorldConsequence { get; set; }
+        public CityMudWorldConsequenceBridgeReceiptSnapshot LatestRuntimeResponse { get; set; }
+    }
+
+    [Serializable]
+    public sealed class CityMudWorldConsequenceBridgeReceiptSnapshot
+    {
+        public string Id { get; set; } = string.Empty;
+        public string CreatedAt { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Summary { get; set; } = string.Empty;
+        public string Severity { get; set; } = string.Empty;
+        public string Outcome { get; set; } = string.Empty;
+        public string Source { get; set; } = string.Empty;
+        public string RegionId { get; set; } = string.Empty;
+        public string RuntimeActionId { get; set; } = string.Empty;
     }
 
     [Serializable]

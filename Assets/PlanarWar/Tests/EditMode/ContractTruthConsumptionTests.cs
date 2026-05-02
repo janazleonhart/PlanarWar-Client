@@ -4131,5 +4131,134 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
 
+        [Test]
+        public void Mapper_captures_city_mud_world_consequence_bridge_truth()
+        {
+            const string payload = @"{
+                ""hasCity"": true,
+                ""city"": { ""name"": ""TesterCity"", ""settlementLane"": ""city"", ""settlementLaneProfile"": { ""label"": ""City"" } },
+                ""cityMudWorldConsequenceBridge"": {
+                    ""state"": ""pressured"",
+                    ""title"": ""City-to-MUD consequence bridge is pressured"",
+                    ""summary"": ""City support lanes are still usable, but pressure is high enough that MUD-facing support should be selective and receipt-backed."",
+                    ""recommendedFocus"": ""city_support"",
+                    ""recommendedActionLabel"": ""Use city support without making it mandatory"",
+                    ""whyThisMatters"": ""This bridge reads existing city bridge, public infrastructure, world-consequence, and receipt truth only; it does not grant items or fake progression."",
+                    ""nextReceiptFamily"": ""city_mud_support_receipt"",
+                    ""bridgeBand"": ""strained"",
+                    ""recommendedPosture"": ""balanced"",
+                    ""supportCapacity"": 67,
+                    ""logisticsPressure"": 22,
+                    ""frontierPressure"": 19,
+                    ""stabilityPressure"": 31,
+                    ""exportableResources"": { ""food"": 44, ""materials"": 12, ""wealth"": 8 },
+                    ""affectedRegionIds"": [""ancient_elwynn""],
+                    ""worldConsequenceTotal"": 3,
+                    ""severeConsequenceCount"": 1,
+                    ""destabilizationScore"": 52,
+                    ""cityMudSignals"": [""Bridge band: strained.""],
+                    ""mudProgressionSignals"": [""Vendor supply: supported.""],
+                    ""regionalLifeSignals"": [""Affected regions: ancient_elwynn.""],
+                    ""receiptSignals"": [""Latest runtime response: Relief line.""],
+                    ""guardrails"": [""Does not make player cities mandatory for baseline MUD viability."", ""Does not grant items, rewards, levels, or fake MUD progression.""],
+                    ""latestWorldConsequence"": {
+                        ""id"": ""wce_001"",
+                        ""createdAt"": ""2026-05-02T09:00:00.000Z"",
+                        ""title"": ""Regional pressure exported"",
+                        ""summary"": ""A world consequence was logged."",
+                        ""severity"": ""severe"",
+                        ""source"": ""mission_setback"",
+                        ""regionId"": ""ancient_elwynn""
+                    },
+                    ""latestRuntimeResponse"": {
+                        ""id"": ""resp_001"",
+                        ""createdAt"": ""2026-05-02T09:05:00.000Z"",
+                        ""title"": ""Relief line"",
+                        ""summary"": ""A bounded response was logged."",
+                        ""severity"": ""pressure"",
+                        ""outcome"": ""partial"",
+                        ""source"": ""recovery_contract"",
+                        ""regionId"": ""ancient_elwynn"",
+                        ""runtimeActionId"": ""action_relief_line""
+                    }
+                }
+            }";
+
+            var summary = ShellSummarySnapshotMapper.Map(payload);
+            var bridge = summary.CityMudWorldConsequenceBridge;
+
+            Assert.That(bridge, Is.Not.Null);
+            Assert.That(bridge.State, Is.EqualTo("pressured"));
+            Assert.That(bridge.RecommendedFocus, Is.EqualTo("city_support"));
+            Assert.That(bridge.RecommendedActionLabel, Does.Contain("Use city support"));
+            Assert.That(bridge.NextReceiptFamily, Is.EqualTo("city_mud_support_receipt"));
+            Assert.That(bridge.BridgeBand, Is.EqualTo("strained"));
+            Assert.That(bridge.RecommendedPosture, Is.EqualTo("balanced"));
+            Assert.That(bridge.SupportCapacity, Is.EqualTo(67));
+            Assert.That(bridge.LogisticsPressure, Is.EqualTo(22));
+            Assert.That(bridge.FrontierPressure, Is.EqualTo(19));
+            Assert.That(bridge.StabilityPressure, Is.EqualTo(31));
+            Assert.That(bridge.ExportableResources.Food, Is.EqualTo(44));
+            Assert.That(bridge.ExportableResources.Materials, Is.EqualTo(12));
+            Assert.That(bridge.ExportableResources.Wealth, Is.EqualTo(8));
+            Assert.That(bridge.AffectedRegionIds, Does.Contain("ancient_elwynn"));
+            Assert.That(bridge.WorldConsequenceTotal, Is.EqualTo(3));
+            Assert.That(bridge.SevereConsequenceCount, Is.EqualTo(1));
+            Assert.That(bridge.DestabilizationScore, Is.EqualTo(52));
+            Assert.That(bridge.CityMudSignals, Does.Contain("Bridge band: strained."));
+            Assert.That(bridge.MudProgressionSignals, Does.Contain("Vendor supply: supported."));
+            Assert.That(bridge.RegionalLifeSignals, Does.Contain("Affected regions: ancient_elwynn."));
+            Assert.That(bridge.ReceiptSignals, Does.Contain("Latest runtime response: Relief line."));
+            Assert.That(bridge.Guardrails, Does.Contain("Does not make player cities mandatory for baseline MUD viability."));
+            Assert.That(bridge.LatestWorldConsequence, Is.Not.Null);
+            Assert.That(bridge.LatestWorldConsequence.Title, Is.EqualTo("Regional pressure exported"));
+            Assert.That(bridge.LatestRuntimeResponse, Is.Not.Null);
+            Assert.That(bridge.LatestRuntimeResponse.RuntimeActionId, Is.EqualTo("action_relief_line"));
+        }
+
+        [Test]
+        public void Home_surfaces_city_mud_world_consequence_bridge_without_fake_progression_claims()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            Assert.That(uxml, Does.Contain("city-mud-consequence-bridge-card"));
+            Assert.That(uxml, Does.Contain("city-mud-consequence-bridge-badge-value"));
+            Assert.That(uxml, Does.Contain("city-mud-consequence-bridge-recommended-value"));
+            Assert.That(uxml, Does.Contain("city-mud-consequence-bridge-bridge-signals-value"));
+            Assert.That(uxml, Does.Contain("city-mud-consequence-bridge-progression-signals-value"));
+            Assert.That(uxml, Does.Contain("city-mud-consequence-bridge-regional-signals-value"));
+            Assert.That(uxml, Does.Contain("city-mud-consequence-bridge-receipt-signals-value"));
+            Assert.That(uxml, Does.Contain("city-mud-consequence-bridge-guardrails-value"));
+            Assert.That(uxml, Does.Contain("City ↔ MUD world-consequence bridge"));
+            Assert.That(uxml, Does.Contain("cityMudWorldConsequenceBridge"));
+            Assert.That(uxml, Does.Not.Contain("cities grant item rewards"));
+            Assert.That(uxml, Does.Not.Contain("player cities are mandatory"));
+            Assert.That(uxml, Does.Not.Contain("fake MUD levels"));
+        }
+
+        [Test]
+        public void Tester_guide_explains_city_mud_world_consequence_bridge_guardrails()
+        {
+            var guidePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Docs/PLAYER_TESTER_GUIDE_V1.md");
+            Assert.That(File.Exists(guidePath), Is.True, "PLAYER_TESTER_GUIDE_V1.md should ship with the Unity client.");
+
+            var guide = File.ReadAllText(guidePath);
+            Assert.That(guide, Does.Contain("City ↔ MUD world-consequence bridge"));
+            Assert.That(guide, Does.Contain("/api/me.cityMudWorldConsequenceBridge"));
+            Assert.That(guide, Does.Contain("city support"));
+            Assert.That(guide, Does.Contain("MUD progression signals"));
+            Assert.That(guide, Does.Contain("regional life signals"));
+            Assert.That(guide, Does.Contain("receipt and consequence signals"));
+            Assert.That(guide, Does.Contain("player cities support/optimize public play without becoming mandatory"));
+            Assert.That(guide, Does.Contain("does not grant items"));
+            Assert.That(guide, Does.Contain("fake MUD progression"));
+            Assert.That(guide, Does.Contain("Rogue Director"));
+            Assert.That(guide, Does.Contain("TOMS"));
+            Assert.That(guide, Does.Contain("Crucible"));
+        }
+
+
     }
 }
