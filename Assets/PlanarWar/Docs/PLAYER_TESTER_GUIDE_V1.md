@@ -93,6 +93,22 @@ Receipt follow-through is receipt/ledger truth only: it explains whether a respo
 
 Report the card if it is missing when backend pressure truth is visible elsewhere, recommends the wrong desk, hides blockers, blocker recovery, or response history, displays raw object/JSON text, or implies fake Mother Brain event spawning.
 
+### Public infrastructure economy spine
+
+Home can also show a **Public infrastructure economy spine** card when live `/api/me.publicInfrastructureSummary.economySpine` truth exists. This card explains how NPC public services and player-city infrastructure are behaving as the public economic backbone.
+
+Use it to read:
+
+- whether the public spine is stable, strained, overloaded, or shadow-exposed
+- the recommended mode and service to test next
+- why NPC public services remain baseline infrastructure instead of being replaced by player cities
+- public-backbone, city-economy, and shadow-risk proof signals
+- the next receipt family testers should expect from public-service usage
+
+Important: this surface is guidance and receipt posture only. It does not apply fake taxes, queue timers, service outcomes, rewards, public-service protection, shadow exposure, Rogue Director, TOMS, Crucible, or autonomous Mother Brain behavior.
+
+Report the card if it is missing when backend public infrastructure truth is visible elsewhere, recommends the wrong desk, shows raw object/JSON text, or implies fake public-service mechanics.
+
 ## Development desk
 
 Development contains the growth lane:

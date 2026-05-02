@@ -3993,8 +3993,106 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
 
+        [Test]
+        public void Mapper_captures_public_infrastructure_economy_spine_truth()
+        {
+            const string payload = @"{
+                ""hasCity"": true,
+                ""city"": { ""name"": ""TesterCity"", ""settlementLane"": ""city"", ""settlementLaneProfile"": { ""label"": ""City"" } },
+                ""publicInfrastructureSummary"": {
+                    ""permitTier"": ""trusted"",
+                    ""serviceHeat"": 18,
+                    ""queuePressure"": 7,
+                    ""cityStressStage"": ""strained"",
+                    ""cityStressTotal"": 24,
+                    ""subsidyCreditsRemaining"": 3,
+                    ""strainBand"": ""elevated"",
+                    ""recommendedMode"": ""npc_public"",
+                    ""pressureScore"": 42,
+                    ""economySpine"": {
+                        ""state"": ""strained"",
+                        ""title"": ""Public economy spine is carrying visible strain"",
+                        ""summary"": ""NPC public services remain viable, but public pressure is now visible."",
+                        ""recommendedMode"": ""npc_public"",
+                        ""recommendedService"": ""workshop_craft"",
+                        ""recommendedActionLabel"": ""Open Development and compare public workshop service"",
+                        ""whyThisMatters"": ""NPC public services remain the baseline spine; player-city infrastructure is an optimization lane, not a replacement."",
+                        ""nextReceiptFamily"": ""public_infrastructure_service_receipt"",
+                        ""publicBackboneSignals"": [""Public services remain reachable.""],
+                        ""cityEconomySignals"": [""City infrastructure can reduce strain.""],
+                        ""shadowRiskSignals"": [""No shadow exposure detected.""]
+                    }
+                }
+            }";
 
+            var summary = ShellSummarySnapshotMapper.Map(payload);
 
+            Assert.That(summary.PublicInfrastructureSummary, Is.Not.Null);
+            Assert.That(summary.PublicInfrastructureSummary.PermitTier, Is.EqualTo("trusted"));
+            Assert.That(summary.PublicInfrastructureSummary.ServiceHeat, Is.EqualTo(18));
+            Assert.That(summary.PublicInfrastructureSummary.QueuePressure, Is.EqualTo(7));
+            Assert.That(summary.PublicInfrastructureSummary.CityStressStage, Is.EqualTo("strained"));
+            Assert.That(summary.PublicInfrastructureSummary.CityStressTotal, Is.EqualTo(24));
+            Assert.That(summary.PublicInfrastructureSummary.SubsidyCreditsRemaining, Is.EqualTo(3));
+            Assert.That(summary.PublicInfrastructureSummary.StrainBand, Is.EqualTo("elevated"));
+            Assert.That(summary.PublicInfrastructureSummary.RecommendedMode, Is.EqualTo("npc_public"));
+            Assert.That(summary.PublicInfrastructureSummary.PressureScore, Is.EqualTo(42));
+
+            var spine = summary.PublicInfrastructureSummary.EconomySpine;
+            Assert.That(spine, Is.Not.Null);
+            Assert.That(spine.State, Is.EqualTo("strained"));
+            Assert.That(spine.Title, Does.Contain("Public economy spine"));
+            Assert.That(spine.Summary, Does.Contain("NPC public services remain viable"));
+            Assert.That(spine.RecommendedMode, Is.EqualTo("npc_public"));
+            Assert.That(spine.RecommendedService, Is.EqualTo("workshop_craft"));
+            Assert.That(spine.RecommendedActionLabel, Does.Contain("Open Development"));
+            Assert.That(spine.WhyThisMatters, Does.Contain("baseline spine"));
+            Assert.That(spine.NextReceiptFamily, Is.EqualTo("public_infrastructure_service_receipt"));
+            Assert.That(spine.PublicBackboneSignals, Does.Contain("Public services remain reachable."));
+            Assert.That(spine.CityEconomySignals, Does.Contain("City infrastructure can reduce strain."));
+            Assert.That(spine.ShadowRiskSignals, Does.Contain("No shadow exposure detected."));
+        }
+
+        [Test]
+        public void Home_surfaces_public_infrastructure_economy_spine_without_fake_service_claims()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            Assert.That(uxml, Does.Contain("public-infrastructure-economy-spine-card"));
+            Assert.That(uxml, Does.Contain("public-infrastructure-economy-spine-badge-value"));
+            Assert.That(uxml, Does.Contain("public-infrastructure-economy-spine-recommended-value"));
+            Assert.That(uxml, Does.Contain("public-infrastructure-economy-spine-public-signals-value"));
+            Assert.That(uxml, Does.Contain("public-infrastructure-economy-spine-city-signals-value"));
+            Assert.That(uxml, Does.Contain("public-infrastructure-economy-spine-shadow-signals-value"));
+            Assert.That(uxml, Does.Contain("public-infrastructure-economy-spine-receipt-value"));
+            Assert.That(uxml, Does.Contain("publicInfrastructureSummary.economySpine"));
+            Assert.That(uxml, Does.Not.Contain("public service taxes are live"));
+            Assert.That(uxml, Does.Not.Contain("public queue timers are live"));
+            Assert.That(uxml, Does.Not.Contain("public services grant rewards"));
+            Assert.That(uxml, Does.Not.Contain("public services protect stock"));
+        }
+
+        [Test]
+        public void Tester_guide_explains_public_infrastructure_economy_spine_guardrails()
+        {
+            var guidePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Docs/PLAYER_TESTER_GUIDE_V1.md");
+            Assert.That(File.Exists(guidePath), Is.True, "PLAYER_TESTER_GUIDE_V1.md should ship with the Unity client.");
+
+            var guide = File.ReadAllText(guidePath);
+            Assert.That(guide, Does.Contain("Public infrastructure economy spine"));
+            Assert.That(guide, Does.Contain("/api/me.publicInfrastructureSummary.economySpine"));
+            Assert.That(guide, Does.Contain("NPC public services"));
+            Assert.That(guide, Does.Contain("player-city infrastructure"));
+            Assert.That(guide, Does.Contain("does not apply fake taxes"));
+            Assert.That(guide, Does.Contain("queue timers"));
+            Assert.That(guide, Does.Contain("service outcomes"));
+            Assert.That(guide, Does.Contain("rewards"));
+            Assert.That(guide, Does.Contain("Rogue Director"));
+            Assert.That(guide, Does.Contain("TOMS"));
+            Assert.That(guide, Does.Contain("Crucible"));
+        }
 
 
     }

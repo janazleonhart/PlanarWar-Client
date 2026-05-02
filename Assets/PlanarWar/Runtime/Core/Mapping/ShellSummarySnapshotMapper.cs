@@ -182,6 +182,7 @@ namespace PlanarWar.Client.Core.Mapping
                 CitySetupChoices = MapSettlementSetupChoices(summary["citySetupChoices"] ?? summary["city_setup_choices"] ?? summary["setupChoices"] ?? summary["setup_choices"]),
                 EarlyLanePosture = MapEarlyLanePosture(summary["earlyLanePosture"] as JObject ?? summary["early_lane_posture"] as JObject),
                 MotherBrainPressureStatus = MapMotherBrainPressureStatus(summary["motherBrainPressureStatus"] as JObject ?? summary["mother_brain_pressure_status"] as JObject),
+                PublicInfrastructureSummary = MapPublicInfrastructureSummary(summary["publicInfrastructureSummary"] as JObject ?? summary["public_infrastructure_summary"] as JObject),
                 HasCity = summary["hasCity"]?.Read<bool>() ?? false,
                 City = new CitySummarySnapshot
                 {
@@ -612,6 +613,45 @@ namespace PlanarWar.Client.Core.Mapping
                     obj["proof_signals"],
                     obj["liveProofSignals"],
                     obj["live_proof_signals"])),
+            };
+        }
+
+        private static PublicInfrastructureSummarySnapshot MapPublicInfrastructureSummary(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new PublicInfrastructureSummarySnapshot
+            {
+                PermitTier = FirstNonBlank(ReadText(obj["permitTier"]), ReadText(obj["permit_tier"])),
+                ServiceHeat = FirstInt(obj["serviceHeat"], obj["service_heat"]),
+                QueuePressure = FirstInt(obj["queuePressure"], obj["queue_pressure"]),
+                CityStressStage = FirstNonBlank(ReadText(obj["cityStressStage"]), ReadText(obj["city_stress_stage"])),
+                CityStressTotal = FirstInt(obj["cityStressTotal"], obj["city_stress_total"]),
+                SubsidyCreditsRemaining = FirstInt(obj["subsidyCreditsRemaining"], obj["subsidy_credits_remaining"]),
+                StrainBand = FirstNonBlank(ReadText(obj["strainBand"]), ReadText(obj["strain_band"])),
+                RecommendedMode = FirstNonBlank(ReadText(obj["recommendedMode"]), ReadText(obj["recommended_mode"])),
+                PressureScore = FirstInt(obj["pressureScore"], obj["pressure_score"]),
+                EconomySpine = MapPublicInfrastructureEconomySpine(FirstObject(obj["economySpine"], obj["economy_spine"])),
+            };
+        }
+
+        private static PublicInfrastructureEconomySpineSnapshot MapPublicInfrastructureEconomySpine(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new PublicInfrastructureEconomySpineSnapshot
+            {
+                State = FirstNonBlank(ReadText(obj["state"]), ReadText(obj["status"])),
+                Title = FirstNonBlank(ReadText(obj["title"]), ReadText(obj["headline"]), ReadText(obj["name"])),
+                Summary = FirstNonBlank(ReadText(obj["summary"]), ReadText(obj["description"]), ReadText(obj["detail"])),
+                RecommendedMode = FirstNonBlank(ReadText(obj["recommendedMode"]), ReadText(obj["recommended_mode"])),
+                RecommendedService = FirstNonBlank(ReadText(obj["recommendedService"]), ReadText(obj["recommended_service"])),
+                RecommendedActionLabel = FirstNonBlank(ReadText(obj["recommendedActionLabel"]), ReadText(obj["recommended_action_label"]), ReadText(obj["recommendedAction"]), ReadText(obj["recommended_action"])),
+                WhyThisMatters = FirstNonBlank(ReadText(obj["whyThisMatters"]), ReadText(obj["why_this_matters"]), ReadText(obj["reason"]), ReadText(obj["detail"])),
+                NextReceiptFamily = FirstNonBlank(ReadText(obj["nextReceiptFamily"]), ReadText(obj["next_receipt_family"]), ReadText(obj["receiptFamily"]), ReadText(obj["receipt_family"])),
+                PublicBackboneSignals = MapStringArray(FirstArray(obj["publicBackboneSignals"], obj["public_backbone_signals"], obj["backboneSignals"], obj["backbone_signals"])),
+                CityEconomySignals = MapStringArray(FirstArray(obj["cityEconomySignals"], obj["city_economy_signals"], obj["economySignals"], obj["economy_signals"])),
+                ShadowRiskSignals = MapStringArray(FirstArray(obj["shadowRiskSignals"], obj["shadow_risk_signals"], obj["riskSignals"], obj["risk_signals"])),
             };
         }
 

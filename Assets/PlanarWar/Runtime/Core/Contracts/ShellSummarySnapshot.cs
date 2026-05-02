@@ -15,6 +15,7 @@ namespace PlanarWar.Client.Core.Contracts
         public List<SettlementSetupChoiceSnapshot> CitySetupChoices { get; set; } = new();
         public EarlyLanePostureSnapshot EarlyLanePosture { get; set; }
         public MotherBrainPressureStatusSnapshot MotherBrainPressureStatus { get; set; }
+        public PublicInfrastructureSummarySnapshot PublicInfrastructureSummary { get; set; }
         public bool HasCity { get; set; }
         public CitySummarySnapshot City { get; set; } = new();
         public List<BuildingSnapshot> Buildings { get; set; } = new();
@@ -155,6 +156,37 @@ namespace PlanarWar.Client.Core.Contracts
         public string RecommendedDesk { get; set; } = string.Empty;
         public string RecommendedActionLabel { get; set; } = string.Empty;
         public List<string> Signals { get; set; } = new();
+    }
+
+    [Serializable]
+    public sealed class PublicInfrastructureSummarySnapshot
+    {
+        public string PermitTier { get; set; } = string.Empty;
+        public int? ServiceHeat { get; set; }
+        public int? QueuePressure { get; set; }
+        public string CityStressStage { get; set; } = string.Empty;
+        public int? CityStressTotal { get; set; }
+        public int? SubsidyCreditsRemaining { get; set; }
+        public string StrainBand { get; set; } = string.Empty;
+        public string RecommendedMode { get; set; } = string.Empty;
+        public int? PressureScore { get; set; }
+        public PublicInfrastructureEconomySpineSnapshot EconomySpine { get; set; }
+    }
+
+    [Serializable]
+    public sealed class PublicInfrastructureEconomySpineSnapshot
+    {
+        public string State { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Summary { get; set; } = string.Empty;
+        public string RecommendedMode { get; set; } = string.Empty;
+        public string RecommendedService { get; set; } = string.Empty;
+        public string RecommendedActionLabel { get; set; } = string.Empty;
+        public string WhyThisMatters { get; set; } = string.Empty;
+        public string NextReceiptFamily { get; set; } = string.Empty;
+        public List<string> PublicBackboneSignals { get; set; } = new();
+        public List<string> CityEconomySignals { get; set; } = new();
+        public List<string> ShadowRiskSignals { get; set; } = new();
     }
 
     [Serializable]

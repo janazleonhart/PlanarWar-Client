@@ -86,6 +86,18 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private readonly Label motherBrainActionPathReceipt;
         private readonly Button motherBrainActionPathButton;
         private ShellScreen motherBrainActionPathRecommendedScreen = ShellScreen.BlackMarket;
+        private readonly VisualElement publicInfrastructureEconomySpineCard;
+        private readonly Label publicInfrastructureEconomySpineBadge;
+        private readonly Label publicInfrastructureEconomySpineHeadline;
+        private readonly Label publicInfrastructureEconomySpineSummary;
+        private readonly Label publicInfrastructureEconomySpineRecommended;
+        private readonly Label publicInfrastructureEconomySpineReason;
+        private readonly Label publicInfrastructureEconomySpinePublicSignals;
+        private readonly Label publicInfrastructureEconomySpineCitySignals;
+        private readonly Label publicInfrastructureEconomySpineShadowSignals;
+        private readonly Label publicInfrastructureEconomySpineReceipt;
+        private readonly Button publicInfrastructureEconomySpineButton;
+        private ShellScreen publicInfrastructureEconomySpineRecommendedScreen = ShellScreen.City;
         private readonly VisualElement founderSetupCard;
         private readonly TextField founderCityNameField;
         private readonly Label founderSetupHeadline;
@@ -178,6 +190,17 @@ namespace PlanarWar.Client.UI.Screens.Summary
             motherBrainActionPathProof = root.Q<Label>("mother-brain-action-path-proof-value");
             motherBrainActionPathReceipt = root.Q<Label>("mother-brain-action-path-receipt-value");
             motherBrainActionPathButton = root.Q<Button>("mother-brain-action-path-button");
+            publicInfrastructureEconomySpineCard = root.Q<VisualElement>("public-infrastructure-economy-spine-card");
+            publicInfrastructureEconomySpineBadge = root.Q<Label>("public-infrastructure-economy-spine-badge-value");
+            publicInfrastructureEconomySpineHeadline = root.Q<Label>("public-infrastructure-economy-spine-headline-value");
+            publicInfrastructureEconomySpineSummary = root.Q<Label>("public-infrastructure-economy-spine-summary-value");
+            publicInfrastructureEconomySpineRecommended = root.Q<Label>("public-infrastructure-economy-spine-recommended-value");
+            publicInfrastructureEconomySpineReason = root.Q<Label>("public-infrastructure-economy-spine-reason-value");
+            publicInfrastructureEconomySpinePublicSignals = root.Q<Label>("public-infrastructure-economy-spine-public-signals-value");
+            publicInfrastructureEconomySpineCitySignals = root.Q<Label>("public-infrastructure-economy-spine-city-signals-value");
+            publicInfrastructureEconomySpineShadowSignals = root.Q<Label>("public-infrastructure-economy-spine-shadow-signals-value");
+            publicInfrastructureEconomySpineReceipt = root.Q<Label>("public-infrastructure-economy-spine-receipt-value");
+            publicInfrastructureEconomySpineButton = root.Q<Button>("public-infrastructure-economy-spine-button");
             founderSetupCard = root.Q<VisualElement>("founder-setup-card");
             founderCityNameField = root.Q<TextField>("founder-city-name-field");
             founderSetupHeadline = root.Q<Label>("founder-setup-headline-value");
@@ -202,6 +225,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             postFounderRosterButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(ShellScreen.Heroes, onNavigateRequested));
             earlyLanePostureActionButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(earlyLanePostureRecommendedScreen, onNavigateRequested));
             motherBrainActionPathButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(motherBrainActionPathRecommendedScreen, onNavigateRequested));
+            publicInfrastructureEconomySpineButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(publicInfrastructureEconomySpineRecommendedScreen, onNavigateRequested));
         }
 
         public void Render(ShellSummarySnapshot s, bool isSummaryLoaded, bool isActionBusy = false, string actionStatus = null, bool actionFailed = false)
@@ -227,6 +251,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             RenderPostFounderHandoff(s, isSummaryLoaded);
             RenderEarlyLanePosture(s, isSummaryLoaded);
             RenderMotherBrainActionPath(s, isSummaryLoaded);
+            RenderPublicInfrastructureEconomySpine(s, isSummaryLoaded);
 
             RenderPressureDesk(s);
         }
@@ -389,6 +414,146 @@ namespace PlanarWar.Client.UI.Screens.Summary
             }
         }
 
+
+        private void RenderPublicInfrastructureEconomySpine(ShellSummarySnapshot summary, bool isSummaryLoaded)
+        {
+            var infrastructure = summary?.PublicInfrastructureSummary;
+            var spine = infrastructure?.EconomySpine;
+            var shouldShow = isSummaryLoaded && summary != null && summary.HasCity && spine != null;
+            if (publicInfrastructureEconomySpineCard != null)
+            {
+                publicInfrastructureEconomySpineCard.style.display = shouldShow ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            if (!shouldShow)
+            {
+                return;
+            }
+
+            var recommendedScreen = ResolvePublicInfrastructureScreen(spine);
+            publicInfrastructureEconomySpineRecommendedScreen = recommendedScreen;
+
+            if (publicInfrastructureEconomySpineBadge != null)
+            {
+                var state = FirstNonBlank(spine.State, infrastructure.StrainBand, "watch");
+                publicInfrastructureEconomySpineBadge.text = $"Public spine • {HumanizeToken(state)}";
+            }
+
+            if (publicInfrastructureEconomySpineHeadline != null)
+            {
+                publicInfrastructureEconomySpineHeadline.text = FirstNonBlank(spine.Title, "Public infrastructure economy spine");
+            }
+
+            if (publicInfrastructureEconomySpineSummary != null)
+            {
+                publicInfrastructureEconomySpineSummary.text = FirstNonBlank(spine.Summary, "NPC public services remain the baseline economy spine while player-city infrastructure optimizes the lane.");
+            }
+
+            if (publicInfrastructureEconomySpineRecommended != null)
+            {
+                publicInfrastructureEconomySpineRecommended.text = FirstNonBlank(spine.RecommendedActionLabel, $"Open {BuildDeskNoun(recommendedScreen, summary)}");
+            }
+
+            if (publicInfrastructureEconomySpineReason != null)
+            {
+                publicInfrastructureEconomySpineReason.text = FirstNonBlank(spine.WhyThisMatters, "This surface reads public-backbone and city-economy pressure only; it does not apply fake taxes, queues, protection, rewards, or service outcomes.");
+            }
+
+            if (publicInfrastructureEconomySpinePublicSignals != null)
+            {
+                publicInfrastructureEconomySpinePublicSignals.text = FormatPostureList(spine.PublicBackboneSignals, "No public-backbone signals surfaced yet.");
+            }
+
+            if (publicInfrastructureEconomySpineCitySignals != null)
+            {
+                publicInfrastructureEconomySpineCitySignals.text = FormatPostureList(spine.CityEconomySignals, "No city-economy signals surfaced yet.");
+            }
+
+            if (publicInfrastructureEconomySpineShadowSignals != null)
+            {
+                publicInfrastructureEconomySpineShadowSignals.text = FormatPostureList(spine.ShadowRiskSignals, "No shadow-risk signals surfaced yet.");
+            }
+
+            if (publicInfrastructureEconomySpineReceipt != null)
+            {
+                publicInfrastructureEconomySpineReceipt.text = FormatPublicInfrastructureReceipt(spine, infrastructure);
+            }
+
+            if (publicInfrastructureEconomySpineButton != null)
+            {
+                publicInfrastructureEconomySpineButton.text = BuildPostureButtonLabel(recommendedScreen, summary);
+                publicInfrastructureEconomySpineButton.SetEnabled(true);
+            }
+        }
+
+        private static ShellScreen ResolvePublicInfrastructureScreen(PublicInfrastructureEconomySpineSnapshot spine)
+        {
+            var service = (spine?.RecommendedService ?? string.Empty).Trim().Replace("-", "_").Replace(" ", "_").ToLowerInvariant();
+            if (service == "hero_recruit")
+            {
+                return ShellScreen.Heroes;
+            }
+
+            return ShellScreen.City;
+        }
+
+        private static string FormatPublicInfrastructureReceipt(PublicInfrastructureEconomySpineSnapshot spine, PublicInfrastructureSummarySnapshot infrastructure)
+        {
+            var lines = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(infrastructure?.PermitTier))
+            {
+                lines.Add($"Permit tier: {HumanizeToken(infrastructure.PermitTier)}.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(infrastructure?.RecommendedMode))
+            {
+                lines.Add($"Recommended mode: {HumanizeToken(infrastructure.RecommendedMode)}.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(spine?.RecommendedService))
+            {
+                lines.Add($"Recommended service: {HumanizeToken(spine.RecommendedService)}.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(spine?.NextReceiptFamily))
+            {
+                lines.Add($"Next receipt family: {HumanizeToken(spine.NextReceiptFamily)}.");
+            }
+
+            if (infrastructure?.ServiceHeat.HasValue == true || infrastructure?.QueuePressure.HasValue == true || infrastructure?.PressureScore.HasValue == true)
+            {
+                lines.Add($"Heat/queue/pressure: {infrastructure.ServiceHeat ?? 0}/{infrastructure.QueuePressure ?? 0}/{infrastructure.PressureScore ?? 0}.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(infrastructure?.CityStressStage) || infrastructure?.CityStressTotal.HasValue == true)
+            {
+                lines.Add($"City stress: {HumanizeToken(infrastructure.CityStressStage)} {infrastructure.CityStressTotal ?? 0}.");
+            }
+
+            if (lines.Count > 0)
+            {
+                return string.Join("\n", lines);
+            }
+
+            return "Public infrastructure receipt family is waiting on backend state.";
+        }
+
+        private static string BuildDeskNoun(ShellScreen screen, ShellSummarySnapshot summary)
+        {
+            if (screen == ShellScreen.Heroes)
+            {
+                var lane = NormalizeLane(summary?.City?.SettlementLane);
+                return string.Equals(lane, "black_market", StringComparison.OrdinalIgnoreCase) ? "Operatives" : "Heroes";
+            }
+
+            if (screen == ShellScreen.BlackMarket)
+            {
+                return "Operations";
+            }
+
+            return "Development";
+        }
 
         private void RenderMotherBrainActionPath(ShellSummarySnapshot summary, bool isSummaryLoaded)
         {
