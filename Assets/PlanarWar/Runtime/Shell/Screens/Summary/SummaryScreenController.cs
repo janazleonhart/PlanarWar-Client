@@ -500,43 +500,109 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private static string FormatPublicInfrastructureReceipt(PublicInfrastructureEconomySpineSnapshot spine, PublicInfrastructureSummarySnapshot infrastructure)
         {
             var lines = new List<string>();
+            var followThrough = spine?.ReceiptFollowThrough;
 
-            if (!string.IsNullOrWhiteSpace(infrastructure?.PermitTier))
+            if (followThrough != null)
             {
-                lines.Add($"Permit tier: {HumanizeToken(infrastructure.PermitTier)}.");
+                if (!string.IsNullOrWhiteSpace(followThrough.State))
+                {
+                    lines.Add($"Follow-through state: {HumanizeToken(followThrough.State)}.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(followThrough.Title))
+                {
+                    lines.Add(followThrough.Title);
+                }
+
+                if (!string.IsNullOrWhiteSpace(followThrough.Summary))
+                {
+                    lines.Add(followThrough.Summary);
+                }
+
+                if (!string.IsNullOrWhiteSpace(followThrough.LatestReceiptId) || !string.IsNullOrWhiteSpace(followThrough.LatestReceiptAt))
+                {
+                    lines.Add($"Latest receipt: {FirstNonBlank(followThrough.LatestReceiptId, "unknown")} at {FirstNonBlank(followThrough.LatestReceiptAt, "unknown time")}.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(followThrough.LatestService) || !string.IsNullOrWhiteSpace(followThrough.LatestMode))
+                {
+                    lines.Add($"Latest service/mode: {HumanizeToken(followThrough.LatestService)} / {HumanizeToken(followThrough.LatestMode)}.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(followThrough.LatestPermitTier))
+                {
+                    lines.Add($"Latest permit tier: {HumanizeToken(followThrough.LatestPermitTier)}.");
+                }
+
+                if (followThrough.LatestQueueMinutes.HasValue || followThrough.LatestStrainScore.HasValue)
+                {
+                    lines.Add($"Latest queue/strain: {followThrough.LatestQueueMinutes ?? 0}m / {followThrough.LatestStrainScore ?? 0}/100.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(followThrough.LatestRunwayDoctrine) || !string.IsNullOrWhiteSpace(followThrough.LatestRunwayStatus))
+                {
+                    lines.Add($"Runway context: {HumanizeToken(followThrough.LatestRunwayDoctrine)} / {HumanizeToken(followThrough.LatestRunwayStatus)}.");
+                }
+
+                if (followThrough.ReceiptCount.HasValue)
+                {
+                    lines.Add($"Receipt count: {followThrough.ReceiptCount.Value}.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(followThrough.RecommendedMode) || !string.IsNullOrWhiteSpace(followThrough.RecommendedService))
+                {
+                    lines.Add($"Recommended receipt path: {HumanizeToken(followThrough.RecommendedMode)} / {HumanizeToken(followThrough.RecommendedService)}.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(followThrough.NextReceiptFamily))
+                {
+                    lines.Add($"Next receipt family: {HumanizeToken(followThrough.NextReceiptFamily)}.");
+                }
+
+                if (followThrough.Signals != null && followThrough.Signals.Count > 0)
+                {
+                    lines.Add(FormatPostureList(followThrough.Signals, string.Empty));
+                }
             }
-
-            if (!string.IsNullOrWhiteSpace(infrastructure?.RecommendedMode))
+            else
             {
-                lines.Add($"Recommended mode: {HumanizeToken(infrastructure.RecommendedMode)}.");
-            }
+                if (!string.IsNullOrWhiteSpace(infrastructure?.PermitTier))
+                {
+                    lines.Add($"Permit tier: {HumanizeToken(infrastructure.PermitTier)}.");
+                }
 
-            if (!string.IsNullOrWhiteSpace(spine?.RecommendedService))
-            {
-                lines.Add($"Recommended service: {HumanizeToken(spine.RecommendedService)}.");
-            }
+                if (!string.IsNullOrWhiteSpace(infrastructure?.RecommendedMode))
+                {
+                    lines.Add($"Recommended mode: {HumanizeToken(infrastructure.RecommendedMode)}.");
+                }
 
-            if (!string.IsNullOrWhiteSpace(spine?.NextReceiptFamily))
-            {
-                lines.Add($"Next receipt family: {HumanizeToken(spine.NextReceiptFamily)}.");
-            }
+                if (!string.IsNullOrWhiteSpace(spine?.RecommendedService))
+                {
+                    lines.Add($"Recommended service: {HumanizeToken(spine.RecommendedService)}.");
+                }
 
-            if (infrastructure?.ServiceHeat.HasValue == true || infrastructure?.QueuePressure.HasValue == true || infrastructure?.PressureScore.HasValue == true)
-            {
-                lines.Add($"Heat/queue/pressure: {infrastructure.ServiceHeat ?? 0}/{infrastructure.QueuePressure ?? 0}/{infrastructure.PressureScore ?? 0}.");
-            }
+                if (!string.IsNullOrWhiteSpace(spine?.NextReceiptFamily))
+                {
+                    lines.Add($"Next receipt family: {HumanizeToken(spine.NextReceiptFamily)}.");
+                }
 
-            if (!string.IsNullOrWhiteSpace(infrastructure?.CityStressStage) || infrastructure?.CityStressTotal.HasValue == true)
-            {
-                lines.Add($"City stress: {HumanizeToken(infrastructure.CityStressStage)} {infrastructure.CityStressTotal ?? 0}.");
+                if (infrastructure?.ServiceHeat.HasValue == true || infrastructure?.QueuePressure.HasValue == true || infrastructure?.PressureScore.HasValue == true)
+                {
+                    lines.Add($"Heat/queue/pressure: {infrastructure.ServiceHeat ?? 0}/{infrastructure.QueuePressure ?? 0}/{infrastructure.PressureScore ?? 0}.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(infrastructure?.CityStressStage) || infrastructure?.CityStressTotal.HasValue == true)
+                {
+                    lines.Add($"City stress: {HumanizeToken(infrastructure.CityStressStage)} {infrastructure.CityStressTotal ?? 0}.");
+                }
             }
 
             if (lines.Count > 0)
             {
-                return string.Join("\n", lines);
+                return string.Join("\n", lines.Where(line => !string.IsNullOrWhiteSpace(line)));
             }
 
-            return "Public infrastructure receipt family is waiting on backend state.";
+            return "Public infrastructure receipt follow-through is waiting on backend state.";
         }
 
         private static string BuildDeskNoun(ShellScreen screen, ShellSummarySnapshot summary)

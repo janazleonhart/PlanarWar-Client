@@ -652,6 +652,33 @@ namespace PlanarWar.Client.Core.Mapping
                 PublicBackboneSignals = MapStringArray(FirstArray(obj["publicBackboneSignals"], obj["public_backbone_signals"], obj["backboneSignals"], obj["backbone_signals"])),
                 CityEconomySignals = MapStringArray(FirstArray(obj["cityEconomySignals"], obj["city_economy_signals"], obj["economySignals"], obj["economy_signals"])),
                 ShadowRiskSignals = MapStringArray(FirstArray(obj["shadowRiskSignals"], obj["shadow_risk_signals"], obj["riskSignals"], obj["risk_signals"])),
+                ReceiptFollowThrough = MapPublicInfrastructureReceiptFollowThrough(FirstObject(obj["receiptFollowThrough"], obj["receipt_follow_through"])),
+            };
+        }
+
+        private static PublicInfrastructureReceiptFollowThroughSnapshot MapPublicInfrastructureReceiptFollowThrough(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new PublicInfrastructureReceiptFollowThroughSnapshot
+            {
+                State = FirstNonBlank(ReadText(obj["state"]), ReadText(obj["status"])),
+                Title = FirstNonBlank(ReadText(obj["title"]), ReadText(obj["headline"]), ReadText(obj["name"])),
+                Summary = FirstNonBlank(ReadText(obj["summary"]), ReadText(obj["description"]), ReadText(obj["detail"])),
+                LatestReceiptId = FirstNonBlank(ReadText(obj["latestReceiptId"]), ReadText(obj["latest_receipt_id"]), ReadText(obj["receiptId"]), ReadText(obj["receipt_id"])),
+                LatestReceiptAt = FirstNonBlank(ReadText(obj["latestReceiptAt"]), ReadText(obj["latest_receipt_at"]), ReadText(obj["createdAt"]), ReadText(obj["created_at"])),
+                LatestService = FirstNonBlank(ReadText(obj["latestService"]), ReadText(obj["latest_service"]), ReadText(obj["service"])),
+                LatestMode = FirstNonBlank(ReadText(obj["latestMode"]), ReadText(obj["latest_mode"]), ReadText(obj["mode"])),
+                LatestPermitTier = FirstNonBlank(ReadText(obj["latestPermitTier"]), ReadText(obj["latest_permit_tier"]), ReadText(obj["permitTier"]), ReadText(obj["permit_tier"])),
+                LatestQueueMinutes = FirstInt(obj["latestQueueMinutes"], obj["latest_queue_minutes"], obj["queueMinutes"], obj["queue_minutes"]),
+                LatestStrainScore = FirstInt(obj["latestStrainScore"], obj["latest_strain_score"], obj["strainScore"], obj["strain_score"]),
+                LatestRunwayDoctrine = FirstNonBlank(ReadText(obj["latestRunwayDoctrine"]), ReadText(obj["latest_runway_doctrine"]), ReadText(obj["runwayDoctrine"]), ReadText(obj["runway_doctrine"])),
+                LatestRunwayStatus = FirstNonBlank(ReadText(obj["latestRunwayStatus"]), ReadText(obj["latest_runway_status"]), ReadText(obj["runwayStatus"]), ReadText(obj["runway_status"])),
+                ReceiptCount = FirstInt(obj["receiptCount"], obj["receipt_count"], obj["totalReceipts"], obj["total_receipts"]),
+                RecommendedMode = FirstNonBlank(ReadText(obj["recommendedMode"]), ReadText(obj["recommended_mode"])),
+                RecommendedService = FirstNonBlank(ReadText(obj["recommendedService"]), ReadText(obj["recommended_service"])),
+                NextReceiptFamily = FirstNonBlank(ReadText(obj["nextReceiptFamily"]), ReadText(obj["next_receipt_family"]), ReadText(obj["receiptFamily"]), ReadText(obj["receipt_family"])),
+                Signals = MapStringArray(FirstArray(obj["signals"], obj["proofSignals"], obj["proof_signals"])),
             };
         }
 

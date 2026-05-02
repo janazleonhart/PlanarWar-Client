@@ -4020,7 +4020,26 @@ namespace PlanarWar.Client.Tests.EditMode
                         ""nextReceiptFamily"": ""public_infrastructure_service_receipt"",
                         ""publicBackboneSignals"": [""Public services remain reachable.""],
                         ""cityEconomySignals"": [""City infrastructure can reduce strain.""],
-                        ""shadowRiskSignals"": [""No shadow exposure detected.""]
+                        ""shadowRiskSignals"": [""No shadow exposure detected.""],
+                        ""receiptFollowThrough"": {
+                            ""state"": ""public_receipt_logged"",
+                            ""title"": ""Public service receipt is logged"",
+                            ""summary"": ""Latest receipt: workshop craft through npc public at 2026-05-02T04:44:00.000Z; queue 12m, strain 38/100. This surface reads existing public-service receipts only."",
+                            ""latestReceiptId"": ""public_receipt_workshop_01"",
+                            ""latestReceiptAt"": ""2026-05-02T04:44:00.000Z"",
+                            ""latestService"": ""workshop_craft"",
+                            ""latestMode"": ""npc_public"",
+                            ""latestPermitTier"": ""trusted"",
+                            ""latestQueueMinutes"": 12,
+                            ""latestStrainScore"": 38,
+                            ""latestRunwayDoctrine"": ""convoy_wardens"",
+                            ""latestRunwayStatus"": ""cooling"",
+                            ""receiptCount"": 2,
+                            ""recommendedMode"": ""npc_public"",
+                            ""recommendedService"": ""workshop_craft"",
+                            ""nextReceiptFamily"": ""public_infrastructure_service_receipt"",
+                            ""signals"": [""Receipt count: 2."", ""Runway context: convoy_wardens / cooling.""]
+                        }
                     }
                 }
             }";
@@ -4051,6 +4070,18 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(spine.PublicBackboneSignals, Does.Contain("Public services remain reachable."));
             Assert.That(spine.CityEconomySignals, Does.Contain("City infrastructure can reduce strain."));
             Assert.That(spine.ShadowRiskSignals, Does.Contain("No shadow exposure detected."));
+            Assert.That(spine.ReceiptFollowThrough, Is.Not.Null);
+            Assert.That(spine.ReceiptFollowThrough.State, Is.EqualTo("public_receipt_logged"));
+            Assert.That(spine.ReceiptFollowThrough.LatestReceiptId, Is.EqualTo("public_receipt_workshop_01"));
+            Assert.That(spine.ReceiptFollowThrough.LatestService, Is.EqualTo("workshop_craft"));
+            Assert.That(spine.ReceiptFollowThrough.LatestMode, Is.EqualTo("npc_public"));
+            Assert.That(spine.ReceiptFollowThrough.LatestPermitTier, Is.EqualTo("trusted"));
+            Assert.That(spine.ReceiptFollowThrough.LatestQueueMinutes, Is.EqualTo(12));
+            Assert.That(spine.ReceiptFollowThrough.LatestStrainScore, Is.EqualTo(38));
+            Assert.That(spine.ReceiptFollowThrough.LatestRunwayDoctrine, Is.EqualTo("convoy_wardens"));
+            Assert.That(spine.ReceiptFollowThrough.LatestRunwayStatus, Is.EqualTo("cooling"));
+            Assert.That(spine.ReceiptFollowThrough.ReceiptCount, Is.EqualTo(2));
+            Assert.That(spine.ReceiptFollowThrough.Signals, Does.Contain("Receipt count: 2."));
         }
 
         [Test]
@@ -4067,6 +4098,8 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(uxml, Does.Contain("public-infrastructure-economy-spine-city-signals-value"));
             Assert.That(uxml, Does.Contain("public-infrastructure-economy-spine-shadow-signals-value"));
             Assert.That(uxml, Does.Contain("public-infrastructure-economy-spine-receipt-value"));
+            Assert.That(uxml, Does.Contain("Public service receipt follow-through"));
+            Assert.That(uxml, Does.Contain("Public infrastructure receipt follow-through is waiting on backend state."));
             Assert.That(uxml, Does.Contain("publicInfrastructureSummary.economySpine"));
             Assert.That(uxml, Does.Not.Contain("public service taxes are live"));
             Assert.That(uxml, Does.Not.Contain("public queue timers are live"));
@@ -4085,6 +4118,9 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(guide, Does.Contain("/api/me.publicInfrastructureSummary.economySpine"));
             Assert.That(guide, Does.Contain("NPC public services"));
             Assert.That(guide, Does.Contain("player-city infrastructure"));
+            Assert.That(guide, Does.Contain("public infrastructure receipt follow-through"));
+            Assert.That(guide, Does.Contain("latest receipt"));
+            Assert.That(guide, Does.Contain("runway context"));
             Assert.That(guide, Does.Contain("does not apply fake taxes"));
             Assert.That(guide, Does.Contain("queue timers"));
             Assert.That(guide, Does.Contain("service outcomes"));

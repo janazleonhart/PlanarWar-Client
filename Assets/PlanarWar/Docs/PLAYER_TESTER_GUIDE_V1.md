@@ -104,8 +104,9 @@ Use it to read:
 - why NPC public services remain baseline infrastructure instead of being replaced by player cities
 - public-backbone, city-economy, and shadow-risk proof signals
 - the next receipt family testers should expect from public-service usage
+- public infrastructure receipt follow-through, including latest receipt, service mode, queue/strain values, runway context, receipt count, and proof signals when the backend provides them
 
-Important: this surface is guidance and receipt posture only. It does not apply fake taxes, queue timers, service outcomes, rewards, public-service protection, shadow exposure, Rogue Director, TOMS, Crucible, or autonomous Mother Brain behavior.
+Important: this surface is guidance and receipt follow-through only. It reads existing public-infrastructure receipts; it does not apply fake taxes, queue timers, service outcomes, rewards, public-service protection, shadow exposure, Rogue Director, TOMS, Crucible, or autonomous Mother Brain behavior.
 
 Report the card if it is missing when backend public infrastructure truth is visible elsewhere, recommends the wrong desk, shows raw object/JSON text, or implies fake public-service mechanics.
 

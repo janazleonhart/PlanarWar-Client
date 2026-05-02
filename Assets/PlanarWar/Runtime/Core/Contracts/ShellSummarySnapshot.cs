@@ -187,6 +187,29 @@ namespace PlanarWar.Client.Core.Contracts
         public List<string> PublicBackboneSignals { get; set; } = new();
         public List<string> CityEconomySignals { get; set; } = new();
         public List<string> ShadowRiskSignals { get; set; } = new();
+        public PublicInfrastructureReceiptFollowThroughSnapshot ReceiptFollowThrough { get; set; }
+    }
+
+    [Serializable]
+    public sealed class PublicInfrastructureReceiptFollowThroughSnapshot
+    {
+        public string State { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Summary { get; set; } = string.Empty;
+        public string LatestReceiptId { get; set; } = string.Empty;
+        public string LatestReceiptAt { get; set; } = string.Empty;
+        public string LatestService { get; set; } = string.Empty;
+        public string LatestMode { get; set; } = string.Empty;
+        public string LatestPermitTier { get; set; } = string.Empty;
+        public int? LatestQueueMinutes { get; set; }
+        public int? LatestStrainScore { get; set; }
+        public string LatestRunwayDoctrine { get; set; } = string.Empty;
+        public string LatestRunwayStatus { get; set; } = string.Empty;
+        public int? ReceiptCount { get; set; }
+        public string RecommendedMode { get; set; } = string.Empty;
+        public string RecommendedService { get; set; } = string.Empty;
+        public string NextReceiptFamily { get; set; } = string.Empty;
+        public List<string> Signals { get; set; } = new();
     }
 
     [Serializable]
