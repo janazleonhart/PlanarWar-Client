@@ -214,6 +214,28 @@ namespace PlanarWar.Client.Core.Contracts
     }
 
     [Serializable]
+    public sealed class CityMudWorldConsequenceBridgeFollowThroughSnapshot
+    {
+        public string State { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Summary { get; set; } = string.Empty;
+        public string RecommendedFocus { get; set; } = string.Empty;
+        public string RecommendedActionLabel { get; set; } = string.Empty;
+        public List<string> ClearWhen { get; set; } = new();
+        public List<string> WatchNext { get; set; } = new();
+        public string LatestRuntimeResponseTitle { get; set; } = string.Empty;
+        public string LatestRuntimeResponseAt { get; set; } = string.Empty;
+        public string LatestRuntimeResponseOutcome { get; set; } = string.Empty;
+        public string LatestRuntimeActionId { get; set; } = string.Empty;
+        public string LatestWorldConsequenceTitle { get; set; } = string.Empty;
+        public string LatestWorldConsequenceAt { get; set; } = string.Empty;
+        public string LatestBridgeReceiptTitle { get; set; } = string.Empty;
+        public string LatestBridgeReceiptAt { get; set; } = string.Empty;
+        public string NextReceiptFamily { get; set; } = string.Empty;
+        public List<string> Signals { get; set; } = new();
+    }
+
+    [Serializable]
     public sealed class CityMudWorldConsequenceBridgeSnapshot
     {
         public string State { get; set; } = string.Empty;
@@ -223,6 +245,7 @@ namespace PlanarWar.Client.Core.Contracts
         public string RecommendedActionLabel { get; set; } = string.Empty;
         public string WhyThisMatters { get; set; } = string.Empty;
         public string NextReceiptFamily { get; set; } = string.Empty;
+        public CityMudWorldConsequenceBridgeFollowThroughSnapshot FollowThrough { get; set; }
         public string BridgeBand { get; set; } = string.Empty;
         public string RecommendedPosture { get; set; } = string.Empty;
         public int? SupportCapacity { get; set; }

@@ -108,6 +108,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private readonly Label cityMudConsequenceBridgeProgressionSignals;
         private readonly Label cityMudConsequenceBridgeRegionalSignals;
         private readonly Label cityMudConsequenceBridgeReceiptSignals;
+        private readonly Label cityMudConsequenceBridgeFollowThrough;
         private readonly Label cityMudConsequenceBridgeGuardrails;
         private readonly Button cityMudConsequenceBridgeButton;
         private ShellScreen cityMudConsequenceBridgeRecommendedScreen = ShellScreen.City;
@@ -224,6 +225,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             cityMudConsequenceBridgeProgressionSignals = root.Q<Label>("city-mud-consequence-bridge-progression-signals-value");
             cityMudConsequenceBridgeRegionalSignals = root.Q<Label>("city-mud-consequence-bridge-regional-signals-value");
             cityMudConsequenceBridgeReceiptSignals = root.Q<Label>("city-mud-consequence-bridge-receipt-signals-value");
+            cityMudConsequenceBridgeFollowThrough = root.Q<Label>("city-mud-consequence-bridge-follow-through-value");
             cityMudConsequenceBridgeGuardrails = root.Q<Label>("city-mud-consequence-bridge-guardrails-value");
             cityMudConsequenceBridgeButton = root.Q<Button>("city-mud-consequence-bridge-button");
             founderSetupCard = root.Q<VisualElement>("founder-setup-card");
@@ -695,6 +697,11 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 cityMudConsequenceBridgeReceiptSignals.text = FormatCityMudBridgeReceiptSignals(bridge);
             }
 
+            if (cityMudConsequenceBridgeFollowThrough != null)
+            {
+                cityMudConsequenceBridgeFollowThrough.text = FormatCityMudBridgeFollowThrough(bridge);
+            }
+
             if (cityMudConsequenceBridgeGuardrails != null)
             {
                 cityMudConsequenceBridgeGuardrails.text = FormatPostureList(bridge.Guardrails, "Guardrails: no fake MUD progression, rewards, taxes, queue timers, or mandatory player-city gates.");
@@ -792,6 +799,77 @@ namespace PlanarWar.Client.UI.Screens.Summary
             }
 
             return string.Join("\n", lines.Where(line => !string.IsNullOrWhiteSpace(line)));
+        }
+
+        private static string FormatCityMudBridgeFollowThrough(CityMudWorldConsequenceBridgeSnapshot bridge)
+        {
+            var followThrough = bridge?.FollowThrough;
+            if (followThrough == null)
+            {
+                return "City ↔ MUD bridge follow-through is waiting on backend state.";
+            }
+
+            var lines = new List<string>
+            {
+                $"Follow-through state: {HumanizeToken(followThrough.State)}.",
+                FirstNonBlank(followThrough.Title, "City ↔ MUD bridge follow-through"),
+                FirstNonBlank(followThrough.Summary, string.Empty),
+            };
+
+            if (!string.IsNullOrWhiteSpace(followThrough.RecommendedActionLabel))
+            {
+                lines.Add($"Recommended follow-through: {followThrough.RecommendedActionLabel}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(followThrough.RecommendedFocus))
+            {
+                lines.Add($"Recommended focus: {HumanizeToken(followThrough.RecommendedFocus)}.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(followThrough.NextReceiptFamily))
+            {
+                lines.Add($"Next receipt family: {HumanizeToken(followThrough.NextReceiptFamily)}.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(followThrough.LatestRuntimeResponseTitle))
+            {
+                lines.Add($"Latest runtime response: {followThrough.LatestRuntimeResponseTitle}{FormatOptionalTokenSuffix(followThrough.LatestRuntimeResponseOutcome, followThrough.LatestRuntimeActionId)}.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(followThrough.LatestWorldConsequenceTitle))
+            {
+                lines.Add($"Latest world consequence: {followThrough.LatestWorldConsequenceTitle}{FormatOptionalTokenSuffix(string.Empty, followThrough.LatestWorldConsequenceAt)}.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(followThrough.LatestBridgeReceiptTitle))
+            {
+                lines.Add($"Latest bridge receipt: {followThrough.LatestBridgeReceiptTitle}{FormatOptionalTokenSuffix(string.Empty, followThrough.LatestBridgeReceiptAt)}.");
+            }
+
+            if (followThrough.ClearWhen != null && followThrough.ClearWhen.Count > 0)
+            {
+                lines.Add("Clear when: " + string.Join(" ", followThrough.ClearWhen));
+            }
+
+            if (followThrough.WatchNext != null && followThrough.WatchNext.Count > 0)
+            {
+                lines.Add("Watch next: " + string.Join(" ", followThrough.WatchNext));
+            }
+
+            if (followThrough.Signals != null && followThrough.Signals.Count > 0)
+            {
+                lines.Add(FormatPostureList(followThrough.Signals, string.Empty));
+            }
+
+            return string.Join("", lines.Where(line => !string.IsNullOrWhiteSpace(line)));
+        }
+
+        private static string FormatOptionalTokenSuffix(string first, string second)
+        {
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(first)) parts.Add(HumanizeToken(first));
+            if (!string.IsNullOrWhiteSpace(second)) parts.Add(second);
+            return parts.Count > 0 ? $" ({string.Join(", ", parts)})" : string.Empty;
         }
 
         private static string FormatCityMudBridgeReceipt(CityMudWorldConsequenceBridgeReceiptSnapshot receipt)

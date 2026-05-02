@@ -697,6 +697,7 @@ namespace PlanarWar.Client.Core.Mapping
                 RecommendedActionLabel = FirstNonBlank(ReadText(obj["recommendedActionLabel"]), ReadText(obj["recommended_action_label"]), ReadText(obj["recommendedAction"]), ReadText(obj["recommended_action"])),
                 WhyThisMatters = FirstNonBlank(ReadText(obj["whyThisMatters"]), ReadText(obj["why_this_matters"]), ReadText(obj["reason"]), ReadText(obj["detail"])),
                 NextReceiptFamily = FirstNonBlank(ReadText(obj["nextReceiptFamily"]), ReadText(obj["next_receipt_family"]), ReadText(obj["receiptFamily"]), ReadText(obj["receipt_family"])),
+                FollowThrough = MapCityMudWorldConsequenceBridgeFollowThrough(FirstObject(obj["followThrough"], obj["follow_through"])),
                 BridgeBand = FirstNonBlank(ReadText(obj["bridgeBand"]), ReadText(obj["bridge_band"])),
                 RecommendedPosture = FirstNonBlank(ReadText(obj["recommendedPosture"]), ReadText(obj["recommended_posture"])),
                 SupportCapacity = FirstInt(obj["supportCapacity"], obj["support_capacity"]),
@@ -715,6 +716,32 @@ namespace PlanarWar.Client.Core.Mapping
                 Guardrails = MapStringArray(FirstArray(obj["guardrails"], obj["guardrailSignals"], obj["guardrail_signals"])),
                 LatestWorldConsequence = MapCityMudWorldConsequenceBridgeReceipt(FirstObject(obj["latestWorldConsequence"], obj["latest_world_consequence"])),
                 LatestRuntimeResponse = MapCityMudWorldConsequenceBridgeReceipt(FirstObject(obj["latestRuntimeResponse"], obj["latest_runtime_response"])),
+            };
+        }
+
+        private static CityMudWorldConsequenceBridgeFollowThroughSnapshot MapCityMudWorldConsequenceBridgeFollowThrough(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new CityMudWorldConsequenceBridgeFollowThroughSnapshot
+            {
+                State = FirstNonBlank(ReadText(obj["state"]), ReadText(obj["status"])),
+                Title = FirstNonBlank(ReadText(obj["title"]), ReadText(obj["headline"]), ReadText(obj["name"])),
+                Summary = FirstNonBlank(ReadText(obj["summary"]), ReadText(obj["description"]), ReadText(obj["detail"])),
+                RecommendedFocus = FirstNonBlank(ReadText(obj["recommendedFocus"]), ReadText(obj["recommended_focus"]), ReadText(obj["focus"])),
+                RecommendedActionLabel = FirstNonBlank(ReadText(obj["recommendedActionLabel"]), ReadText(obj["recommended_action_label"]), ReadText(obj["recommendedAction"]), ReadText(obj["recommended_action"])),
+                ClearWhen = MapStringArray(FirstArray(obj["clearWhen"], obj["clear_when"])),
+                WatchNext = MapStringArray(FirstArray(obj["watchNext"], obj["watch_next"])),
+                LatestRuntimeResponseTitle = FirstNonBlank(ReadText(obj["latestRuntimeResponseTitle"]), ReadText(obj["latest_runtime_response_title"])),
+                LatestRuntimeResponseAt = FirstNonBlank(ReadText(obj["latestRuntimeResponseAt"]), ReadText(obj["latest_runtime_response_at"])),
+                LatestRuntimeResponseOutcome = FirstNonBlank(ReadText(obj["latestRuntimeResponseOutcome"]), ReadText(obj["latest_runtime_response_outcome"])),
+                LatestRuntimeActionId = FirstNonBlank(ReadText(obj["latestRuntimeActionId"]), ReadText(obj["latest_runtime_action_id"])),
+                LatestWorldConsequenceTitle = FirstNonBlank(ReadText(obj["latestWorldConsequenceTitle"]), ReadText(obj["latest_world_consequence_title"])),
+                LatestWorldConsequenceAt = FirstNonBlank(ReadText(obj["latestWorldConsequenceAt"]), ReadText(obj["latest_world_consequence_at"])),
+                LatestBridgeReceiptTitle = FirstNonBlank(ReadText(obj["latestBridgeReceiptTitle"]), ReadText(obj["latest_bridge_receipt_title"])),
+                LatestBridgeReceiptAt = FirstNonBlank(ReadText(obj["latestBridgeReceiptAt"]), ReadText(obj["latest_bridge_receipt_at"])),
+                NextReceiptFamily = FirstNonBlank(ReadText(obj["nextReceiptFamily"]), ReadText(obj["next_receipt_family"]), ReadText(obj["receiptFamily"]), ReadText(obj["receipt_family"])),
+                Signals = MapStringArray(FirstArray(obj["signals"], obj["proofSignals"], obj["proof_signals"])),
             };
         }
 

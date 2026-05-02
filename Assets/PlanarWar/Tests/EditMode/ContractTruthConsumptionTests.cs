@@ -4145,6 +4145,25 @@ namespace PlanarWar.Client.Tests.EditMode
                     ""recommendedActionLabel"": ""Use city support without making it mandatory"",
                     ""whyThisMatters"": ""This bridge reads existing city bridge, public infrastructure, world-consequence, and receipt truth only; it does not grant items or fake progression."",
                     ""nextReceiptFamily"": ""city_mud_support_receipt"",
+                    ""followThrough"": {
+                        ""state"": ""represented"",
+                        ""title"": ""Bridge support is represented by receipts"",
+                        ""summary"": ""Latest bridge/runtime receipt already represents this city-to-MUD support lane."",
+                        ""recommendedFocus"": ""city_support"",
+                        ""recommendedActionLabel"": ""Monitor the represented bridge lane"",
+                        ""clearWhen"": [""Latest bridge/runtime receipt remains relevant.""],
+                        ""watchNext"": [""Regional pressure and bridge band stay stable.""],
+                        ""latestRuntimeResponseTitle"": ""Relief line"",
+                        ""latestRuntimeResponseAt"": ""2026-05-02T09:05:00.000Z"",
+                        ""latestRuntimeResponseOutcome"": ""partial"",
+                        ""latestRuntimeActionId"": ""action_relief_line"",
+                        ""latestWorldConsequenceTitle"": ""Regional pressure exported"",
+                        ""latestWorldConsequenceAt"": ""2026-05-02T09:00:00.000Z"",
+                        ""latestBridgeReceiptTitle"": ""City support receipt"",
+                        ""latestBridgeReceiptAt"": ""2026-05-02T09:06:00.000Z"",
+                        ""nextReceiptFamily"": ""city_mud_bridge_followthrough_receipt"",
+                        ""signals"": [""Bridge follow-through state: represented.""]
+                    },
                     ""bridgeBand"": ""strained"",
                     ""recommendedPosture"": ""balanced"",
                     ""supportCapacity"": 67,
@@ -4192,6 +4211,18 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(bridge.RecommendedFocus, Is.EqualTo("city_support"));
             Assert.That(bridge.RecommendedActionLabel, Does.Contain("Use city support"));
             Assert.That(bridge.NextReceiptFamily, Is.EqualTo("city_mud_support_receipt"));
+            Assert.That(bridge.FollowThrough, Is.Not.Null);
+            Assert.That(bridge.FollowThrough.State, Is.EqualTo("represented"));
+            Assert.That(bridge.FollowThrough.RecommendedActionLabel, Does.Contain("Monitor"));
+            Assert.That(bridge.FollowThrough.ClearWhen, Does.Contain("Latest bridge/runtime receipt remains relevant."));
+            Assert.That(bridge.FollowThrough.WatchNext, Does.Contain("Regional pressure and bridge band stay stable."));
+            Assert.That(bridge.FollowThrough.LatestRuntimeResponseTitle, Is.EqualTo("Relief line"));
+            Assert.That(bridge.FollowThrough.LatestRuntimeResponseOutcome, Is.EqualTo("partial"));
+            Assert.That(bridge.FollowThrough.LatestRuntimeActionId, Is.EqualTo("action_relief_line"));
+            Assert.That(bridge.FollowThrough.LatestWorldConsequenceTitle, Is.EqualTo("Regional pressure exported"));
+            Assert.That(bridge.FollowThrough.LatestBridgeReceiptTitle, Is.EqualTo("City support receipt"));
+            Assert.That(bridge.FollowThrough.NextReceiptFamily, Is.EqualTo("city_mud_bridge_followthrough_receipt"));
+            Assert.That(bridge.FollowThrough.Signals, Does.Contain("Bridge follow-through state: represented."));
             Assert.That(bridge.BridgeBand, Is.EqualTo("strained"));
             Assert.That(bridge.RecommendedPosture, Is.EqualTo("balanced"));
             Assert.That(bridge.SupportCapacity, Is.EqualTo(67));
@@ -4230,6 +4261,8 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(uxml, Does.Contain("city-mud-consequence-bridge-progression-signals-value"));
             Assert.That(uxml, Does.Contain("city-mud-consequence-bridge-regional-signals-value"));
             Assert.That(uxml, Does.Contain("city-mud-consequence-bridge-receipt-signals-value"));
+            Assert.That(uxml, Does.Contain("city-mud-consequence-bridge-follow-through-value"));
+            Assert.That(uxml, Does.Contain("Bridge follow-through"));
             Assert.That(uxml, Does.Contain("city-mud-consequence-bridge-guardrails-value"));
             Assert.That(uxml, Does.Contain("City ↔ MUD world-consequence bridge"));
             Assert.That(uxml, Does.Contain("cityMudWorldConsequenceBridge"));
@@ -4251,6 +4284,10 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(guide, Does.Contain("MUD progression signals"));
             Assert.That(guide, Does.Contain("regional life signals"));
             Assert.That(guide, Does.Contain("receipt and consequence signals"));
+            Assert.That(guide, Does.Contain("bridge follow-through"));
+            Assert.That(guide, Does.Contain("clear-when guidance"));
+            Assert.That(guide, Does.Contain("watch-next signals"));
+            Assert.That(guide, Does.Contain("waiting, ready, restricted, strained, or represented"));
             Assert.That(guide, Does.Contain("player cities support/optimize public play without becoming mandatory"));
             Assert.That(guide, Does.Contain("does not grant items"));
             Assert.That(guide, Does.Contain("fake MUD progression"));

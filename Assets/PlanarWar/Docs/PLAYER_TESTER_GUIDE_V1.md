@@ -123,11 +123,12 @@ Use it to read:
 - MUD progression signals for vendor supply, mission board posture, and civic services
 - regional life signals such as affected regions, severe consequence counts, and destabilization pressure
 - receipt and consequence signals, including latest runtime response and latest world-consequence receipts when present
+- bridge follow-through, including state, clear-when guidance, watch-next signals, latest bridge/runtime/world receipt titles, and next receipt family
 - guardrails that confirm player cities support/optimize public play without becoming mandatory
 
-Important: this surface is guidance and receipt truth only. It does not grant items, rewards, levels, fake MUD progression, taxes, queue timers, public-service protection, shadow exposure, Rogue Director, TOMS, Crucible, autonomous Mother Brain behavior, or fabricated player identity/action truth.
+Important: this surface is guidance, receipt truth, and follow-through explanation only. Follow-through can say whether the bridge is waiting, ready, restricted, strained, or represented by receipts, but it does not grant items, rewards, levels, fake MUD progression, taxes, queue timers, public-service protection, shadow exposure, Rogue Director, TOMS, Crucible, autonomous Mother Brain behavior, or fabricated player identity/action truth.
 
-Report the card if it is missing when backend city-to-MUD bridge truth is visible elsewhere, recommends the wrong desk, shows raw object/JSON text, hides guardrails, or implies player cities are mandatory for baseline MUD progression.
+Report the card if it is missing when backend city-to-MUD bridge truth is visible elsewhere, recommends the wrong desk, shows raw object/JSON text, hides follow-through guidance or guardrails, or implies player cities are mandatory for baseline MUD progression.
 
 ## Development desk
 
@@ -237,7 +238,7 @@ Please report:
 - raw JSON or object text
 - invisible action results
 - stale timers
-- missing or wrong Mother Brain pressure path, blockers, blocker recovery, response history, proof signals, receipt follow-through, receipt family, or City ↔ MUD bridge signals
+- missing or wrong Mother Brain pressure path, blockers, blocker recovery, response history, proof signals, receipt follow-through, receipt family, or City ↔ MUD bridge signals or follow-through
 - collect buttons that do not collect
 - gear that vanishes after craft/collect/equip/release
 - navigation dead ends
