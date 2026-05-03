@@ -2819,3 +2819,31 @@
     min-height: 10px;
 }
 
+
+/* Left rail scrollbar width cleanup v1 */
+.rail-scroll {
+    padding-right: 1px;
+}
+
+.rail-scroll .unity-scroll-view__vertical-scroller {
+    width: 9px;
+    min-width: 9px;
+}
+
+.rail-scroll .unity-scroller--vertical {
+    width: 9px;
+    min-width: 9px;
+}
+
+.rail-scroll .unity-scroller__slider {
+    width: 7px;
+    min-width: 7px;
+    margin-left: 1px;
+    margin-right: 1px;
+}
+
+.rail-scroll .unity-scroller__low-button,
+.rail-scroll .unity-scroller__high-button {
+    height: 10px;
+    min-height: 10px;
+}

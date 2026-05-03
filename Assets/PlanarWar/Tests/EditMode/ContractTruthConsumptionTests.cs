@@ -4888,5 +4888,32 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
 
+        [Test]
+        public void Left_rail_scrollbar_width_cleanup_keeps_rail_scroll_slim_without_touching_main_or_chat_scrolls()
+        {
+            var uxmlPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var ussPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+
+            Assert.That(File.Exists(uxmlPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(ussPath), Is.True, "AppShell.uss should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(uxmlPath);
+            var uss = File.ReadAllText(ussPath);
+
+            Assert.That(uxml, Does.Contain("name=\"left-rail-scroll\" class=\"rail-scroll\""), "Left rail scrolling should stay on its dedicated rail scrollview.");
+            Assert.That(uxml, Does.Contain("name=\"chat-log-scroll\" class=\"chat-log-scroll\""), "Chat log scrolling should remain independent from rail scrollbar styling.");
+            Assert.That(uxml, Does.Contain("main-content-scroll"), "Main workspace scrolling should remain independently styled from the left rail.");
+            Assert.That(uss, Does.Contain("Left rail scrollbar width cleanup v1"));
+            Assert.That(uss, Does.Contain(".rail-scroll .unity-scroll-view__vertical-scroller"));
+            Assert.That(uss, Does.Contain("width: 9px"), "Left rail scrollbar track should be slimmer without disabling rail scrolling.");
+            Assert.That(uss, Does.Contain(".rail-scroll .unity-scroller__slider"));
+            Assert.That(uss, Does.Contain("width: 7px"), "Left rail scrollbar thumb should stay visible but less chunky.");
+            Assert.That(uss, Does.Contain(".main-content-scroll .unity-scroll-view__vertical-scroller"), "Main content scrollbar styling should remain scoped to main workspace screens.");
+            Assert.That(uss, Does.Contain(".chat-log-scroll"), "Chat log scroll styling should remain separately scoped.");
+            Assert.That(uss, Does.Not.Contain("disable rail scrolling"));
+            Assert.That(uss, Does.Not.Contain("fake scroll state"));
+        }
+
+
     }
 }
