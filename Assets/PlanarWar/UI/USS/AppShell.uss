@@ -2881,3 +2881,44 @@
     min-height: 30px;
     margin-left: 0;
 }
+
+/* Bottom chat filter button width cleanup v1 */
+.chat-chip-row--aligned {
+    align-items: center;
+    gap: 7px;
+}
+
+.chat-chip-row--aligned .chat-chip {
+    height: 30px;
+    min-height: 30px;
+    max-height: 30px;
+    padding-left: 10px;
+    padding-right: 10px;
+    unity-text-align: middle-center;
+}
+
+.chat-chip--toggle,
+.chat-chip--wide {
+    width: 92px;
+    min-width: 92px;
+    max-width: 92px;
+}
+
+.chat-chip--short {
+    width: 76px;
+    min-width: 76px;
+    max-width: 76px;
+}
+
+.comms-panel--minimized .chat-chip-row--aligned {
+    gap: 0;
+}
+
+.comms-panel--minimized .chat-chip-row--aligned .chat-chip {
+    display: none;
+}
+
+.comms-panel--minimized .chat-chip-row--aligned .chat-toggle-button {
+    display: flex;
+}
+

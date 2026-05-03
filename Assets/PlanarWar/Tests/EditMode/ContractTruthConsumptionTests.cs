@@ -4950,6 +4950,41 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(controller, Does.Not.Contain("guild relay"));
         }
 
+        [Test]
+        public void Bottom_chat_filter_button_width_cleanup_aligns_header_chips_without_changing_filter_truth()
+        {
+            var uxmlPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var ussPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/AppShellController.cs");
+
+            Assert.That(File.Exists(uxmlPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(ussPath), Is.True, "AppShell.uss should be available from the Unity project root.");
+            Assert.That(File.Exists(controllerPath), Is.True, "AppShellController.cs should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(uxmlPath);
+            var uss = File.ReadAllText(ussPath);
+            var controller = File.ReadAllText(controllerPath);
+
+            Assert.That(uxml, Does.Contain("name=\"chat-filter-row\" class=\"button-row button-row--tight chat-chip-row chat-chip-row--aligned\""), "The bottom chat filter row should have a scoped alignment class instead of changing chat state.");
+            Assert.That(uxml, Does.Contain("chat-chip--toggle chat-toggle-button"), "The Minimize/Expand control should keep its existing toggle identity while gaining a bounded width class.");
+            Assert.That(uxml, Does.Contain("chat-chip--short action-button--primary"), "The All filter should stay primary while using the short chip width.");
+            Assert.That(uxml, Does.Contain("chat-chip--wide"), "The wider Chat room filter should use a scoped width class.");
+            Assert.That(uss, Does.Contain("Bottom chat filter button width cleanup v1"));
+            Assert.That(uss, Does.Contain(".chat-chip-row--aligned"));
+            Assert.That(uss, Does.Contain(".chat-chip--toggle,"));
+            Assert.That(uss, Does.Contain("width: 92px"), "Minimize and Chat room chips should share a predictable wider width.");
+            Assert.That(uss, Does.Contain(".chat-chip--short"));
+            Assert.That(uss, Does.Contain("width: 76px"), "All and System chips should share a predictable short width.");
+            Assert.That(uss, Does.Contain(".comms-panel--minimized .chat-chip-row--aligned .chat-toggle-button"), "Collapsed chat should still reveal only the Expand toggle instead of exposing hidden filters.");
+            Assert.That(controller, Does.Contain("SetFilterActive(chatAllButton"), "All filter behavior should stay wired to existing live chat state.");
+            Assert.That(controller, Does.Contain("SetFilterActive(chatRoomButton"), "Chat room filter behavior should stay wired to existing live chat state.");
+            Assert.That(controller, Does.Contain("SetFilterActive(chatSystemButton"), "System filter behavior should stay wired to existing live chat state.");
+            Assert.That(controller, Does.Not.Contain("fake private message"));
+            Assert.That(controller, Does.Not.Contain("city chat channel"));
+            Assert.That(controller, Does.Not.Contain("guild relay"));
+        }
+
+
 
     }
 }

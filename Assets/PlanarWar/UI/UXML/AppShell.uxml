@@ -1327,11 +1327,11 @@
                         <ui:Label text="Comms" class="eyebrow comms-panel__eyebrow" />
                         <ui:Label name="comms-status-value" text="No chat yet." class="comms-value comms-status-line" />
                     </ui:VisualElement>
-                    <ui:VisualElement name="chat-filter-row" class="button-row button-row--tight chat-chip-row">
-                        <ui:Button name="comms-toggle-button" text="Minimize" class="action-button chat-chip chat-toggle-button" />
-                        <ui:Button name="chat-all-button" text="All" class="action-button chat-chip action-button--primary" />
-                        <ui:Button name="chat-room-button" text="Chat room" class="action-button chat-chip" />
-                        <ui:Button name="chat-system-button" text="System" class="action-button chat-chip" />
+                    <ui:VisualElement name="chat-filter-row" class="button-row button-row--tight chat-chip-row chat-chip-row--aligned">
+                        <ui:Button name="comms-toggle-button" text="Minimize" class="action-button chat-chip chat-chip--toggle chat-toggle-button" />
+                        <ui:Button name="chat-all-button" text="All" class="action-button chat-chip chat-chip--short action-button--primary" />
+                        <ui:Button name="chat-room-button" text="Chat room" class="action-button chat-chip chat-chip--wide" />
+                        <ui:Button name="chat-system-button" text="System" class="action-button chat-chip chat-chip--short" />
                     </ui:VisualElement>
                 </ui:VisualElement>
 
