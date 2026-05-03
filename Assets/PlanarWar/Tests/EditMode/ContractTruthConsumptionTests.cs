@@ -4832,5 +4832,33 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
 
+        [Test]
+        public void Home_lane_posture_spacing_cleanup_tightens_card_without_changing_backend_truth()
+        {
+            var uxmlPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var ussPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+
+            Assert.That(File.Exists(uxmlPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(ussPath), Is.True, "AppShell.uss should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(uxmlPath);
+            var uss = File.ReadAllText(ussPath);
+
+            Assert.That(uxml, Does.Contain("home-lane-posture-card"), "The Home lane posture card should have a scoped class for spacing-only layout cleanup.");
+            Assert.That(uxml, Does.Contain("home-lane-posture__headline"));
+            Assert.That(uxml, Does.Contain("home-lane-posture__summary"));
+            Assert.That(uxml, Does.Contain("home-lane-posture__grid"));
+            Assert.That(uxml, Does.Contain("This card consumes /api/me earlyLanePosture and actionPath"), "Backend posture truth should remain the source instead of introducing client-side fake state.");
+            Assert.That(uxml, Does.Contain("early-lane-posture-action-button"), "Existing client navigation affordance should remain wired.");
+            Assert.That(uss, Does.Contain("Home lane posture spacing cleanup v1"));
+            Assert.That(uss, Does.Contain(".home-lane-posture-card"));
+            Assert.That(uss, Does.Contain("gap: 7px"));
+            Assert.That(uss, Does.Contain("padding-top: 12px"));
+            Assert.That(uss, Does.Contain(".home-lane-posture__grid .glance-card"));
+            Assert.That(uxml, Does.Not.Contain("early-lane-posture-bootstrap"));
+            Assert.That(uxml, Does.Not.Contain("fake tutorial progress"));
+        }
+
+
     }
 }

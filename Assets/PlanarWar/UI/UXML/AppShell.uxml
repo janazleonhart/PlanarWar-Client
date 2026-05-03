@@ -246,15 +246,15 @@
                     </ui:VisualElement>
                 </ui:VisualElement>
 
-                <ui:VisualElement name="early-lane-posture-card" class="summary-card summary-card--full summary-card--action early-lane-posture-card">
+                <ui:VisualElement name="early-lane-posture-card" class="summary-card summary-card--full summary-card--action early-lane-posture-card home-lane-posture-card">
                     <ui:VisualElement class="development-actions-head">
                         <ui:Label text="Lane posture" class="eyebrow" />
                         <ui:Label name="early-lane-posture-badge-value" text="Waiting on backend posture" class="chapter-row__badge" />
                     </ui:VisualElement>
-                    <ui:Label name="early-lane-posture-headline-value" text="Lane posture waiting on live backend truth." class="rail-note-title" />
-                    <ui:Label name="early-lane-posture-summary-value" text="This card consumes /api/me earlyLanePosture and actionPath when the backend provides it." class="summary-value summary-value--glance" />
+                    <ui:Label name="early-lane-posture-headline-value" text="Lane posture waiting on live backend truth." class="rail-note-title home-lane-posture__headline" />
+                    <ui:Label name="early-lane-posture-summary-value" text="This card consumes /api/me earlyLanePosture and actionPath when the backend provides it." class="summary-value summary-value--glance home-lane-posture__summary" />
 
-                    <ui:VisualElement class="summary-grid summary-grid--glance early-lane-posture-grid">
+                    <ui:VisualElement class="summary-grid summary-grid--glance early-lane-posture-grid home-lane-posture__grid">
                         <ui:VisualElement class="summary-card glance-card">
                             <ui:Label text="Recommended desk" class="eyebrow" />
                             <ui:Label name="early-lane-posture-recommended-value" text="No recommended desk surfaced." class="summary-value summary-value--glance" />
