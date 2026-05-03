@@ -1292,7 +1292,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 family: BuildBlackMarketActiveOperationFamily(card),
                 title: FirstNonBlank(card.Headline, HumanizeKey(card.Id), "Shadow operation"),
                 lore: BuildBlackMarketActiveOperationLore(card, actionIds.Count, missionIds.Count),
-                note: Truncate(FirstNonBlank(card.OperatorNote, card.Summary, card.SourceSurface, "Active-operation truth is visible from the backend surface."), 128),
+                note: BuildBlackMarketActiveOperationReceiptDetail(card, actionIds.Count, missionIds.Count),
                 buttonText: hasMissionOffer ? "Select mission" : actionIds.Count > 0 ? "World action visible" : "Read-only",
                 buttonEnabled: hasMissionOffer && !summaryState.IsActionBusy,
                 onClick: hasMissionOffer ? () => SelectMissionOfferFromActiveOperation(missionOfferId) : null);
@@ -1319,13 +1319,50 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
         private static string BuildBlackMarketActiveOperationLore(BlackMarketActiveOperationCardSnapshot card, int actionCount, int missionCount)
         {
-            var refs = new List<string>();
-            if (actionCount > 0) refs.Add($"{actionCount} action ref{(actionCount == 1 ? string.Empty : "s")}");
-            if (missionCount > 0) refs.Add($"{missionCount} mission ref{(missionCount == 1 ? string.Empty : "s")}");
-            if (!string.IsNullOrWhiteSpace(card?.SourceSurface)) refs.Add(card.SourceSurface);
+            var parts = new List<string>();
+            parts.Add(FirstNonBlank(card?.Summary, "Black-market operation card surfaced from live payload truth."));
+            if (!string.IsNullOrWhiteSpace(card?.State)) parts.Add($"State {HumanizeStatus(card.State)}");
+            if (!string.IsNullOrWhiteSpace(card?.Risk)) parts.Add($"Risk {HumanizeStatus(card.Risk)}");
+            var refs = BuildBlackMarketActiveOperationReferenceSummary(card, actionCount, missionCount);
+            if (!string.IsNullOrWhiteSpace(refs)) parts.Add(refs);
+            return Truncate(string.Join(" • ", parts.Where(part => !string.IsNullOrWhiteSpace(part))), 168);
+        }
 
-            var prefix = FirstNonBlank(card?.Summary, "Black-market operation card surfaced from live payload truth.");
-            return Truncate(refs.Count > 0 ? $"{prefix} • {string.Join(" • ", refs)}" : prefix, 148);
+        private static string BuildBlackMarketActiveOperationReceiptDetail(BlackMarketActiveOperationCardSnapshot card, int actionCount, int missionCount)
+        {
+            var lines = new List<string>();
+            var operatorNote = FirstNonBlank(card?.OperatorNote, card?.Summary);
+            if (!string.IsNullOrWhiteSpace(operatorNote))
+            {
+                lines.Add($"Receipt: {Truncate(operatorNote, 74)}");
+            }
+
+            var proof = BuildBlackMarketActiveOperationReferenceSummary(card, actionCount, missionCount);
+            if (!string.IsNullOrWhiteSpace(proof))
+            {
+                lines.Add($"Proof: {proof}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(card?.Kind) || !string.IsNullOrWhiteSpace(card?.State) || !string.IsNullOrWhiteSpace(card?.Risk))
+            {
+                lines.Add($"State: {HumanizeStatus(card?.State)} • Kind: {HumanizeKey(card?.Kind)} • Risk: {HumanizeStatus(card?.Risk)}");
+            }
+
+            if (lines.Count == 0)
+            {
+                lines.Add("Receipt: active-operation payload is visible, but no extra detail was supplied.");
+            }
+
+            return string.Join(Environment.NewLine, lines.Take(3));
+        }
+
+        private static string BuildBlackMarketActiveOperationReferenceSummary(BlackMarketActiveOperationCardSnapshot card, int actionCount, int missionCount)
+        {
+            var refs = new List<string>();
+            if (!string.IsNullOrWhiteSpace(card?.SourceSurface)) refs.Add(card.SourceSurface);
+            if (actionCount > 0) refs.Add($"{actionCount} world-action ref{(actionCount == 1 ? string.Empty : "s")}");
+            if (missionCount > 0) refs.Add($"{missionCount} mission ref{(missionCount == 1 ? string.Empty : "s")}");
+            return refs.Count == 0 ? string.Empty : string.Join(" • ", refs);
         }
 
         private static string BuildBlackMarketActiveOperationOverview(BlackMarketActiveOperationSurfaceSnapshot surface, ShellSummarySnapshot summary, int windowCount, int timerCount, int frontCount)

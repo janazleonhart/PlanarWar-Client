@@ -5056,5 +5056,33 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(controller, Does.Not.Contain("Execute shadow operation"), "This slice must not fake first-class operation execution.");
         }
 
+        [Test]
+        public void Black_market_operations_cards_show_receipt_detail_without_fake_execution()
+        {
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/BlackMarket/BlackMarketScreenController.cs");
+            var uxmlPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var ussPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+
+            Assert.That(File.Exists(controllerPath), Is.True, "BlackMarketScreenController.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(uxmlPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(ussPath), Is.True, "AppShell.uss should be available from the Unity project root.");
+
+            var controller = File.ReadAllText(controllerPath);
+            var uxml = File.ReadAllText(uxmlPath);
+            var uss = File.ReadAllText(ussPath);
+
+            Assert.That(controller, Does.Contain("BuildBlackMarketActiveOperationReceiptDetail"), "Active operation cards should expose receipt/proof/detail text from existing payload fields.");
+            Assert.That(controller, Does.Contain("BuildBlackMarketActiveOperationReferenceSummary"), "Receipt detail should summarize source surface and backend references instead of inventing execution." );
+            Assert.That(controller, Does.Contain("Receipt:"), "Visible operation cards should label the existing operator note/summary as receipt detail." );
+            Assert.That(controller, Does.Contain("Proof:"), "Visible operation cards should label source/action/mission refs as proof detail." );
+            Assert.That(controller, Does.Contain("World action visible"), "World-action-backed cards remain honest/read-only until Unity has a real handler." );
+            Assert.That(uxml, Does.Contain("operations-receipt-detail-surface-v1"), "The operations action board should carry a scoped receipt-detail styling hook." );
+            Assert.That(uss, Does.Contain("Black Market operations receipt detail surface v1"));
+            Assert.That(uss, Does.Contain(".operations-receipt-detail-surface-v1 .warfront-desk-card .metric-subvalue"));
+            Assert.That(controller, Does.Not.Contain("Execute shadow operation"), "This slice must not fake shadow-operation execution." );
+            Assert.That(controller, Does.Not.Contain("Grant shadow reward"), "This slice must not fake rewards for operation cards." );
+        }
+
+
     }
 }
