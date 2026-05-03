@@ -3182,6 +3182,37 @@ namespace PlanarWar.Client.Tests.EditMode
 
 
         [Test]
+        public void Home_next_desk_button_width_cleanup_keeps_aligned_button_contract()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var appStylePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(appStylePath), Is.True, "AppShell.uss should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(appStylePath);
+
+            Assert.That(uxml, Does.Contain("post-founder-handoff-actions__row"));
+            Assert.That(uxml, Does.Contain("post-founder-handoff-actions__button"));
+
+            foreach (var buttonName in new[]
+            {
+                "post-founder-development-button",
+                "post-founder-operations-button",
+                "post-founder-roster-button",
+            })
+            {
+                Assert.That(uxml, Does.Contain($"name=\"{buttonName}\""), $"Next-desk button should remain wired: {buttonName}");
+            }
+
+            Assert.That(uss, Does.Contain("Home next-desk button width cleanup v1"));
+            Assert.That(uss, Does.Contain(".post-founder-handoff-actions__button"));
+            Assert.That(uss, Does.Contain("width: 142px"));
+            Assert.That(uss, Does.Contain("-unity-text-align: middle-center"));
+        }
+
+
+        [Test]
         public void Gameplay_shell_closeout_locks_cleaned_surface_markers()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
