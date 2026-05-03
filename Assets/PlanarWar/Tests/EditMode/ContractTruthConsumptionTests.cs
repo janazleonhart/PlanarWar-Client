@@ -4727,5 +4727,35 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
 
+        [Test]
+        public void Bottom_chat_minimized_height_cleanup_keeps_future_attention_hooks_honest()
+        {
+            var uxmlPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var ussPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/AppShellController.cs");
+
+            Assert.That(File.Exists(uxmlPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(ussPath), Is.True, "AppShell.uss should be available from the Unity project root.");
+            Assert.That(File.Exists(controllerPath), Is.True, "AppShellController.cs should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(uxmlPath);
+            var uss = File.ReadAllText(ussPath);
+            var controller = File.ReadAllText(controllerPath);
+
+            Assert.That(uxml, Does.Contain("name=\"comms-status-stack\""), "The minimized header should have a compact status stack instead of relying on loose anonymous layout.");
+            Assert.That(uxml, Does.Contain("comms-hint-line"), "The minimized hint should be addressable for single-line compact styling.");
+            Assert.That(uss, Does.Contain("Bottom chat minimized height cleanup v1"));
+            Assert.That(uss, Does.Contain("min-height: 56px"), "Minimized chat should behave like a slim status bar, not a half-open chat log.");
+            Assert.That(uss, Does.Contain(".comms-panel--attention"), "Future unread/priority comms can visually call attention without adding chat architecture in this slice.");
+            Assert.That(uss, Does.Contain(".comms-panel--private-message"), "Future private-message styling hook should be present without faking private-message delivery.");
+            Assert.That(uss, Does.Contain(".chat-toggle-button--private-message"), "The expand button can be highlighted later when private-message state exists.");
+            Assert.That(controller, Does.Contain("RenderCommsAttentionState"));
+            Assert.That(controller, Does.Contain("hasPrivateMessage"));
+            Assert.That(controller, Does.Contain("hasUnreadPriorityComms: false, hasPrivateMessage: false"), "Current slice must not invent unread/private-message state before the chat system supplies it.");
+            Assert.That(controller, Does.Not.Contain("city chat channel"));
+            Assert.That(controller, Does.Not.Contain("guild relay"));
+        }
+
+
     }
 }

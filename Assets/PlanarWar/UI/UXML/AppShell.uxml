@@ -1323,9 +1323,9 @@
                 </ui:VisualElement>
             <ui:VisualElement name="bottom-comms" class="panel comms-panel">
                 <ui:VisualElement class="comms-header-row">
-                    <ui:VisualElement>
-                        <ui:Label text="Comms" class="eyebrow" />
-                        <ui:Label name="comms-status-value" text="No chat yet." class="comms-value" />
+                    <ui:VisualElement name="comms-status-stack" class="comms-status-stack">
+                        <ui:Label text="Comms" class="eyebrow comms-panel__eyebrow" />
+                        <ui:Label name="comms-status-value" text="No chat yet." class="comms-value comms-status-line" />
                     </ui:VisualElement>
                     <ui:VisualElement name="chat-filter-row" class="button-row button-row--tight chat-chip-row">
                         <ui:Button name="comms-toggle-button" text="Minimize" class="action-button chat-chip chat-toggle-button" />
@@ -1342,7 +1342,7 @@
                     <ui:Button name="send-chat-button" text="Send" class="action-button action-button--primary chat-send-button" />
                 </ui:VisualElement>
 
-                <ui:Label name="comms-hint-value" text="This band now shows recent lines, simple filters, WS chat-room send state, and physical/pocket context." class="comms-copy" />
+                <ui:Label name="comms-hint-value" text="This band now shows recent lines, simple filters, WS chat-room send state, and physical/pocket context." class="comms-copy comms-hint-line" />
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>

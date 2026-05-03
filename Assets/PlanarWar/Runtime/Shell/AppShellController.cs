@@ -311,6 +311,7 @@ namespace PlanarWar.Client.UI
             var inPocketContext = IsPocketManagementContext();
 
             if (bottomComms != null) bottomComms.EnableInClassList("comms-panel--minimized", isCommsMinimized);
+            RenderCommsAttentionState(hasUnreadPriorityComms: false, hasPrivateMessage: false);
             if (commsToggleButton != null) commsToggleButton.text = isCommsMinimized ? "Expand" : "Minimize";
             if (chatLogScroll != null) chatLogScroll.style.display = isCommsMinimized ? DisplayStyle.None : DisplayStyle.Flex;
             if (chatComposeRow != null) chatComposeRow.style.display = isCommsMinimized ? DisplayStyle.None : DisplayStyle.Flex;
@@ -367,6 +368,22 @@ namespace PlanarWar.Client.UI
                 row.Add(channel);
                 row.Add(text);
                 chatLogScroll.contentContainer.Add(row);
+            }
+        }
+
+
+        private void RenderCommsAttentionState(bool hasUnreadPriorityComms, bool hasPrivateMessage)
+        {
+            if (bottomComms != null)
+            {
+                bottomComms.EnableInClassList("comms-panel--attention", hasUnreadPriorityComms);
+                bottomComms.EnableInClassList("comms-panel--private-message", hasPrivateMessage);
+            }
+
+            if (commsToggleButton != null)
+            {
+                commsToggleButton.EnableInClassList("chat-toggle-button--attention", hasUnreadPriorityComms);
+                commsToggleButton.EnableInClassList("chat-toggle-button--private-message", hasPrivateMessage);
             }
         }
 

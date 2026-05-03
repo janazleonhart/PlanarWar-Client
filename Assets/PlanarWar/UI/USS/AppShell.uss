@@ -2600,3 +2600,77 @@
 .chat-chip-row--minimized {
     justify-content: flex-end;
 }
+
+
+/* Bottom chat minimized height cleanup v1 */
+.comms-status-stack {
+    flex-grow: 1;
+    min-width: 260px;
+    gap: 2px;
+}
+
+.comms-status-line {
+    white-space: normal;
+    overflow: hidden;
+}
+
+.comms-hint-line {
+    white-space: normal;
+    overflow: hidden;
+}
+
+.comms-panel--minimized {
+    min-height: 56px;
+    gap: 3px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+}
+
+.comms-panel--minimized .comms-panel__eyebrow {
+    font-size: 10px;
+}
+
+.comms-panel--minimized .comms-value,
+.comms-panel--minimized .comms-status-line {
+    font-size: 15px;
+    line-height: 1.15;
+    max-height: 20px;
+}
+
+.comms-panel--minimized .comms-copy,
+.comms-panel--minimized .comms-hint-line {
+    font-size: 10px;
+    line-height: 1.1;
+    max-height: 14px;
+}
+
+.comms-panel--minimized .chat-toggle-button {
+    min-height: 28px;
+    min-width: 76px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.comms-panel--attention {
+    border-left-color: rgb(116, 151, 255);
+    border-right-color: rgb(116, 151, 255);
+    border-top-color: rgb(116, 151, 255);
+    border-bottom-color: rgb(116, 151, 255);
+    background-color: rgba(18, 32, 70, 0.98);
+}
+
+.comms-panel--private-message {
+    border-left-color: rgb(194, 150, 255);
+    border-right-color: rgb(194, 150, 255);
+    border-top-color: rgb(194, 150, 255);
+    border-bottom-color: rgb(194, 150, 255);
+    background-color: rgba(35, 26, 76, 0.98);
+}
+
+.chat-toggle-button--attention {
+    background-color: rgba(54, 88, 176, 0.98);
+}
+
+.chat-toggle-button--private-message {
+    background-color: rgba(92, 59, 155, 0.98);
+}
