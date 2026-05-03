@@ -3236,6 +3236,54 @@ namespace PlanarWar.Client.Tests.EditMode
 
 
         [Test]
+        public void Home_snapshot_card_grid_cleanup_keeps_live_snapshot_cards_readable()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var appStylePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(appStylePath), Is.True, "AppShell.uss should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(appStylePath);
+
+            foreach (var marker in new[]
+            {
+                "home-snapshot-grid",
+                "home-snapshot-grid--timers",
+                "home-snapshot-grid--status",
+                "home-snapshot-card",
+                "home-snapshot-card__value",
+            })
+            {
+                Assert.That(uxml, Does.Contain(marker), $"Home snapshot marker should stay present: {marker}");
+            }
+
+            foreach (var valueName in new[]
+            {
+                "research-timer-value",
+                "workshop-timer-value",
+                "mission-timer-value",
+                "resource-tick-value",
+                "production-value",
+                "research-value",
+                "warnings-value",
+                "ready-ops-value",
+                "hero-status-value",
+                "army-status-value",
+            })
+            {
+                Assert.That(uxml, Does.Contain($"name=\"{valueName}\""), $"Home snapshot value should remain wired: {valueName}");
+            }
+
+            Assert.That(uss, Does.Contain("Home snapshot card grid cleanup v1"));
+            Assert.That(uss, Does.Contain(".home-snapshot-grid .home-snapshot-card"));
+            Assert.That(uss, Does.Contain("width: 260px"));
+            Assert.That(uss, Does.Contain("min-width: 240px"));
+            Assert.That(uss, Does.Contain("white-space: normal"));
+        }
+
+
+        [Test]
         public void Gameplay_shell_closeout_locks_cleaned_surface_markers()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
@@ -4642,6 +4690,40 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(guide, Does.Contain("Rogue Director"));
             Assert.That(guide, Does.Contain("TOMS"));
             Assert.That(guide, Does.Contain("Crucible"));
+        }
+
+
+        [Test]
+        public void Bottom_chat_minimize_toggle_keeps_latest_line_visible_without_chat_architecture_changes()
+        {
+            var uxmlPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var ussPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/AppShellController.cs");
+
+            Assert.That(File.Exists(uxmlPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(ussPath), Is.True, "AppShell.uss should be available from the Unity project root.");
+            Assert.That(File.Exists(controllerPath), Is.True, "AppShellController.cs should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(uxmlPath);
+            var uss = File.ReadAllText(ussPath);
+            var controller = File.ReadAllText(controllerPath);
+
+            Assert.That(uxml, Does.Contain("name=\"comms-toggle-button\""), "Bottom comms should expose a tester-facing minimize/expand toggle.");
+            Assert.That(uxml, Does.Contain("text=\"Minimize\""), "Expanded chat starts with a Minimize action.");
+            Assert.That(uxml, Does.Contain("name=\"chat-compose-row\""), "Compose row should be addressable so minimize can hide it without removing chat wiring.");
+            Assert.That(uxml, Does.Contain("name=\"chat-filter-row\""), "Filter row should stay addressable when the compact state hides filter chips.");
+            Assert.That(uss, Does.Contain("Bottom chat minimize toggle v1"));
+            Assert.That(uss, Does.Contain(".comms-panel--minimized"));
+            Assert.That(uss, Does.Contain(".chat-toggle-button"));
+            Assert.That(controller, Does.Contain("private bool isCommsMinimized"));
+            Assert.That(controller, Does.Contain("ToggleCommsMinimized"));
+            Assert.That(controller, Does.Contain("commsToggleButton.clicked += ToggleCommsMinimized"));
+            Assert.That(controller, Does.Contain("commsToggleButton.text = isCommsMinimized ? \"Expand\" : \"Minimize\""));
+            Assert.That(controller, Does.Contain("chatLogScroll.style.display = isCommsMinimized ? DisplayStyle.None : DisplayStyle.Flex"));
+            Assert.That(controller, Does.Contain("chatComposeRow.style.display = isCommsMinimized ? DisplayStyle.None : DisplayStyle.Flex"));
+            Assert.That(controller, Does.Contain("Chat minimized • latest line stays visible"));
+            Assert.That(controller, Does.Not.Contain("city chat channel"));
+            Assert.That(controller, Does.Not.Contain("guild relay"));
         }
 
 

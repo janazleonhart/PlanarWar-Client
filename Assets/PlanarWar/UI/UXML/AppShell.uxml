@@ -536,25 +536,25 @@
                     <ui:VisualElement name="pressure-operations-strip" class="summary-grid pressure-operations-strip home-fast-option-strip" />
                 </ui:VisualElement>
 
-                <ui:VisualElement class="summary-grid summary-grid--timers home-timer-strip">
-                    <ui:VisualElement class="summary-card timer-card">
+                <ui:VisualElement class="summary-grid summary-grid--timers home-timer-strip home-snapshot-grid home-snapshot-grid--timers">
+                    <ui:VisualElement class="summary-card timer-card home-snapshot-card">
                         <ui:Label text="Research timer" class="eyebrow" />
-                        <ui:Label name="research-timer-value" text="No active research timer." class="summary-value summary-value--glance" />
+                        <ui:Label name="research-timer-value" text="No active research timer." class="summary-value summary-value--glance home-snapshot-card__value" />
                     </ui:VisualElement>
 
-                    <ui:VisualElement class="summary-card timer-card">
+                    <ui:VisualElement class="summary-card timer-card home-snapshot-card">
                         <ui:Label text="Build / Workshop" class="eyebrow" />
-                        <ui:Label name="workshop-timer-value" text="No active workshop queue." class="summary-value summary-value--glance" />
+                        <ui:Label name="workshop-timer-value" text="No active workshop queue." class="summary-value summary-value--glance home-snapshot-card__value" />
                     </ui:VisualElement>
 
-                    <ui:VisualElement class="summary-card timer-card">
+                    <ui:VisualElement class="summary-card timer-card home-snapshot-card">
                         <ui:Label text="Active mission" class="eyebrow" />
-                        <ui:Label name="mission-timer-value" text="No active mission clock." class="summary-value summary-value--glance" />
+                        <ui:Label name="mission-timer-value" text="No active mission clock." class="summary-value summary-value--glance home-snapshot-card__value" />
                     </ui:VisualElement>
 
-                    <ui:VisualElement class="summary-card timer-card">
+                    <ui:VisualElement class="summary-card timer-card home-snapshot-card">
                         <ui:Label text="Next resource tick" class="eyebrow" />
-                        <ui:Label name="resource-tick-value" text="Tick timing unavailable." class="summary-value summary-value--glance" />
+                        <ui:Label name="resource-tick-value" text="Tick timing unavailable." class="summary-value summary-value--glance home-snapshot-card__value" />
                     </ui:VisualElement>
 
                     <ui:VisualElement name="timer-diagnostic-card" class="summary-card timer-card home-dev-diagnostic-gated">
@@ -566,35 +566,35 @@
                     </ui:VisualElement>
                 </ui:VisualElement>
 
-                <ui:VisualElement class="summary-grid summary-grid--glance home-status-grid">
-                    <ui:VisualElement class="summary-card glance-card">
+                <ui:VisualElement class="summary-grid summary-grid--glance home-status-grid home-snapshot-grid home-snapshot-grid--status">
+                    <ui:VisualElement class="summary-card glance-card home-snapshot-card">
                         <ui:Label text="Production snapshot" class="eyebrow" />
-                        <ui:Label name="production-value" text="No production snapshot." class="summary-value summary-value--glance" />
+                        <ui:Label name="production-value" text="No production snapshot." class="summary-value summary-value--glance home-snapshot-card__value" />
                     </ui:VisualElement>
 
-                    <ui:VisualElement class="summary-card glance-card">
+                    <ui:VisualElement class="summary-card glance-card home-snapshot-card">
                         <ui:Label text="Active research" class="eyebrow" />
-                        <ui:Label name="research-value" text="No active research." class="summary-value summary-value--glance" />
+                        <ui:Label name="research-value" text="No active research." class="summary-value summary-value--glance home-snapshot-card__value" />
                     </ui:VisualElement>
 
-                    <ui:VisualElement class="summary-card glance-card">
+                    <ui:VisualElement class="summary-card glance-card home-snapshot-card">
                         <ui:Label text="Warning pressure" class="eyebrow" />
-                        <ui:Label name="warnings-value" text="No active threat warnings." class="summary-value summary-value--glance" />
+                        <ui:Label name="warnings-value" text="No active threat warnings." class="summary-value summary-value--glance home-snapshot-card__value" />
                     </ui:VisualElement>
 
-                    <ui:VisualElement class="summary-card glance-card">
+                    <ui:VisualElement class="summary-card glance-card home-snapshot-card">
                         <ui:Label text="Ready now" class="eyebrow" />
-                        <ui:Label name="ready-ops-value" text="No opening operations surfaced." class="summary-value summary-value--glance" />
+                        <ui:Label name="ready-ops-value" text="No opening operations surfaced." class="summary-value summary-value--glance home-snapshot-card__value" />
                     </ui:VisualElement>
 
-                    <ui:VisualElement class="summary-card glance-card">
+                    <ui:VisualElement class="summary-card glance-card home-snapshot-card">
                         <ui:Label text="Hero corps" class="eyebrow" />
-                        <ui:Label name="hero-status-value" text="No officer corps visible." class="summary-value summary-value--glance" />
+                        <ui:Label name="hero-status-value" text="No officer corps visible." class="summary-value summary-value--glance home-snapshot-card__value" />
                     </ui:VisualElement>
 
-                    <ui:VisualElement class="summary-card glance-card">
+                    <ui:VisualElement class="summary-card glance-card home-snapshot-card">
                         <ui:Label text="Forces readiness" class="eyebrow" />
-                        <ui:Label name="army-status-value" text="No formations visible." class="summary-value summary-value--glance" />
+                        <ui:Label name="army-status-value" text="No formations visible." class="summary-value summary-value--glance home-snapshot-card__value" />
                     </ui:VisualElement>
                 </ui:VisualElement>
             
@@ -1327,7 +1327,8 @@
                         <ui:Label text="Comms" class="eyebrow" />
                         <ui:Label name="comms-status-value" text="No chat yet." class="comms-value" />
                     </ui:VisualElement>
-                    <ui:VisualElement class="button-row button-row--tight chat-chip-row">
+                    <ui:VisualElement name="chat-filter-row" class="button-row button-row--tight chat-chip-row">
+                        <ui:Button name="comms-toggle-button" text="Minimize" class="action-button chat-chip chat-toggle-button" />
                         <ui:Button name="chat-all-button" text="All" class="action-button chat-chip action-button--primary" />
                         <ui:Button name="chat-room-button" text="Chat room" class="action-button chat-chip" />
                         <ui:Button name="chat-system-button" text="System" class="action-button chat-chip" />
@@ -1336,7 +1337,7 @@
 
                 <ui:ScrollView name="chat-log-scroll" class="chat-log-scroll" mode="Vertical" />
 
-                <ui:VisualElement class="chat-compose-row">
+                <ui:VisualElement name="chat-compose-row" class="chat-compose-row">
                     <ui:TextField name="chat-input-field" class="chat-input-field" label="Chat message" />
                     <ui:Button name="send-chat-button" text="Send" class="action-button action-button--primary chat-send-button" />
                 </ui:VisualElement>

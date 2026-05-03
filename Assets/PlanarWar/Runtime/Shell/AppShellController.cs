@@ -69,14 +69,20 @@ namespace PlanarWar.Client.UI
         private readonly Button navSocialButton;
         private readonly Button navGuideButton;
 
+        private readonly VisualElement bottomComms;
         private readonly Label commsStatusValue;
         private readonly Label commsHintValue;
         private readonly ScrollView chatLogScroll;
+        private readonly VisualElement chatComposeRow;
+        private readonly VisualElement chatFilterRow;
+        private readonly Button commsToggleButton;
         private readonly Button chatAllButton;
         private readonly Button chatRoomButton;
         private readonly Button chatSystemButton;
         private readonly Button sendChatButton;
         private readonly TextField chatInputField;
+
+        private bool isCommsMinimized;
 
         public AppShellController(VisualElement root, SessionState sessionState, SummaryState summaryState, ShellNavigationState navigationState, ClientVersionState versionState, Func<string, System.Threading.Tasks.Task> onStartResearchRequested, Func<string, System.Threading.Tasks.Task> onStartWorkshopCraftRequested, Func<string, System.Threading.Tasks.Task> onCollectWorkshopRequested, Func<string, System.Threading.Tasks.Task> onRecruitHeroRequested, Func<string, System.Threading.Tasks.Task> onAcceptHeroRecruitCandidateRequested, Func<System.Threading.Tasks.Task> onDismissHeroRecruitCandidatesRequested, Func<string, System.Threading.Tasks.Task> onConstructBuildingRequested, Func<string, System.Threading.Tasks.Task> onUpgradeBuildingRequested, Func<string, string, System.Threading.Tasks.Task> onSwitchBuildingRoutingRequested, Func<string, System.Threading.Tasks.Task> onDestroyBuildingRequested, Func<string, string, System.Threading.Tasks.Task> onRemodelBuildingRequested, Func<string, System.Threading.Tasks.Task> onCancelActiveBuildRequested, Func<string, System.Threading.Tasks.Task> onReinforceArmyRequested, Func<string, string, System.Threading.Tasks.Task> onRenameArmyRequested, Func<string, int, string, System.Threading.Tasks.Task> onSplitArmyRequested, Func<string, string, System.Threading.Tasks.Task> onMergeArmyRequested, Func<string, System.Threading.Tasks.Task> onDisbandArmyRequested, Func<string, string, string, System.Threading.Tasks.Task> onAssignArmyHoldRequested, Func<string, System.Threading.Tasks.Task> onReleaseArmyHoldRequested, Func<string, string, string, System.Threading.Tasks.Task> onWarfrontAssaultRequested, Func<string, string, string, System.Threading.Tasks.Task> onGarrisonStrikeRequested, Func<string, string, string, string, System.Threading.Tasks.Task> onStartMissionRequested, Func<string, System.Threading.Tasks.Task> onCompleteMissionRequested, Func<string, System.Threading.Tasks.Task> onReleaseHeroRequested, Func<string, int, System.Threading.Tasks.Task> onEquipHeroFromArmoryRequested, Func<string, string, System.Threading.Tasks.Task> onUnequipHeroToArmoryRequested, Func<string, string, System.Threading.Tasks.Task> onBootstrapCityRequested, Action onRefreshDeskRequested, Action onBackHomeRequested)
         {
@@ -137,14 +143,23 @@ namespace PlanarWar.Client.UI
             navSocialButton = root.Q<Button>("nav-social-button");
             navGuideButton = root.Q<Button>("nav-guide-button");
 
+            bottomComms = root.Q<VisualElement>("bottom-comms");
             commsStatusValue = root.Q<Label>("comms-status-value");
             commsHintValue = root.Q<Label>("comms-hint-value");
             chatLogScroll = root.Q<ScrollView>("chat-log-scroll");
+            chatComposeRow = root.Q<VisualElement>("chat-compose-row");
+            chatFilterRow = root.Q<VisualElement>("chat-filter-row");
+            commsToggleButton = root.Q<Button>("comms-toggle-button");
             chatAllButton = root.Q<Button>("chat-all-button");
             chatRoomButton = root.Q<Button>("chat-room-button");
             chatSystemButton = root.Q<Button>("chat-system-button");
             sendChatButton = root.Q<Button>("send-chat-button");
             chatInputField = root.Q<TextField>("chat-input-field");
+
+            if (commsToggleButton != null)
+            {
+                commsToggleButton.clicked += ToggleCommsMinimized;
+            }
         }
 
         public void Render()
@@ -279,6 +294,12 @@ namespace PlanarWar.Client.UI
             SetNavActive(navGuideButton, navigationState.ActiveScreen == ShellScreen.Guide);
         }
 
+        private void ToggleCommsMinimized()
+        {
+            isCommsMinimized = !isCommsMinimized;
+            RenderCommsPanel();
+        }
+
         private void RenderCommsPanel()
         {
             if (commsStatusValue != null)
@@ -288,6 +309,16 @@ namespace PlanarWar.Client.UI
 
             var canSendRoomChat = sessionState.IsConnected && sessionState.HasJoinedChatRoom;
             var inPocketContext = IsPocketManagementContext();
+
+            if (bottomComms != null) bottomComms.EnableInClassList("comms-panel--minimized", isCommsMinimized);
+            if (commsToggleButton != null) commsToggleButton.text = isCommsMinimized ? "Expand" : "Minimize";
+            if (chatLogScroll != null) chatLogScroll.style.display = isCommsMinimized ? DisplayStyle.None : DisplayStyle.Flex;
+            if (chatComposeRow != null) chatComposeRow.style.display = isCommsMinimized ? DisplayStyle.None : DisplayStyle.Flex;
+            if (chatFilterRow != null) chatFilterRow.EnableInClassList("chat-chip-row--minimized", isCommsMinimized);
+            if (chatAllButton != null) chatAllButton.style.display = isCommsMinimized ? DisplayStyle.None : DisplayStyle.Flex;
+            if (chatRoomButton != null) chatRoomButton.style.display = isCommsMinimized ? DisplayStyle.None : DisplayStyle.Flex;
+            if (chatSystemButton != null) chatSystemButton.style.display = isCommsMinimized ? DisplayStyle.None : DisplayStyle.Flex;
+
             if (commsHintValue != null)
             {
                 var roomText = sessionState.HasJoinedChatRoom
@@ -295,11 +326,14 @@ namespace PlanarWar.Client.UI
                     : inPocketContext
                         ? "physical/pocket context: no WS chat room attached"
                         : "no WS chat room attached";
-                commsHintValue.text = canSendRoomChat
+                var baseHint = canSendRoomChat
                     ? $"Chat room comms are live. Filter {sessionState.ActiveChatChannel.ToUpperInvariant()} • {roomText} • send box routes through websocket chat-room state."
                     : inPocketContext
                         ? $"Pocket context is expected for City/Black Market command shells. Filter {sessionState.ActiveChatChannel.ToUpperInvariant()} • {roomText} • outbound chat-room send still waits for a real WS chat room."
                         : $"Comms band is connected to live traffic, but outbound chat-room send waits for a WS chat-room attachment. Filter {sessionState.ActiveChatChannel.ToUpperInvariant()} • {roomText}.";
+                commsHintValue.text = isCommsMinimized
+                    ? $"Chat minimized • latest line stays visible • {baseHint}"
+                    : baseHint;
             }
 
             sendChatButton?.SetEnabled(canSendRoomChat);
