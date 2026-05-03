@@ -3149,6 +3149,39 @@ namespace PlanarWar.Client.Tests.EditMode
 
 
         [Test]
+        public void Home_quick_orders_button_width_cleanup_keeps_aligned_button_contract()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var appStylePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(appStylePath), Is.True, "AppShell.uss should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(appStylePath);
+
+            Assert.That(uxml, Does.Contain("home-quick-orders__row"));
+            Assert.That(uxml, Does.Contain("home-quick-orders__button"));
+
+            foreach (var buttonName in new[]
+            {
+                "refresh-button",
+                "home-development-button",
+                "home-guide-button",
+                "whereami-button",
+                "ping-button",
+            })
+            {
+                Assert.That(uxml, Does.Contain($"name=\"{buttonName}\""), $"Quick order button should remain wired: {buttonName}");
+            }
+
+            Assert.That(uss, Does.Contain("Home quick orders button width cleanup v1"));
+            Assert.That(uss, Does.Contain(".home-quick-orders__button"));
+            Assert.That(uss, Does.Contain("width: 142px"));
+            Assert.That(uss, Does.Contain("-unity-text-align: middle-center"));
+        }
+
+
+        [Test]
         public void Gameplay_shell_closeout_locks_cleaned_surface_markers()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
