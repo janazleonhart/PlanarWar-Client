@@ -291,15 +291,15 @@ namespace PlanarWar.Client.UI
             if (commsHintValue != null)
             {
                 var roomText = sessionState.HasJoinedChatRoom
-                    ? $"room {sessionState.ChatRoomId}"
+                    ? $"WS chat room {sessionState.ChatRoomId}"
                     : inPocketContext
-                        ? "pocket context: no physical room attached"
-                        : "no room attached";
+                        ? "physical/pocket context: no WS chat room attached"
+                        : "no WS chat room attached";
                 commsHintValue.text = canSendRoomChat
-                    ? $"Room comms are live. Filter {sessionState.ActiveChatChannel.ToUpperInvariant()} • {roomText} • send box routes through websocket room chat."
+                    ? $"Chat room comms are live. Filter {sessionState.ActiveChatChannel.ToUpperInvariant()} • {roomText} • send box routes through websocket chat-room state."
                     : inPocketContext
-                        ? $"Pocket context is expected for City/Black Market command shells. Filter {sessionState.ActiveChatChannel.ToUpperInvariant()} • {roomText} • outbound room chat still waits for a real WS room."
-                        : $"Comms band is connected to live traffic, but outbound room chat waits for a room attachment. Filter {sessionState.ActiveChatChannel.ToUpperInvariant()} • {roomText}.";
+                        ? $"Pocket context is expected for City/Black Market command shells. Filter {sessionState.ActiveChatChannel.ToUpperInvariant()} • {roomText} • outbound chat-room send still waits for a real WS chat room."
+                        : $"Comms band is connected to live traffic, but outbound chat-room send waits for a WS chat-room attachment. Filter {sessionState.ActiveChatChannel.ToUpperInvariant()} • {roomText}.";
             }
 
             sendChatButton?.SetEnabled(canSendRoomChat);
@@ -426,41 +426,52 @@ namespace PlanarWar.Client.UI
                 var systemLine = allLines.LastOrDefault(l => string.Equals(l.ChannelId, "system", StringComparison.OrdinalIgnoreCase));
                 var roomJoined = sessionState.HasJoinedChatRoom;
                 var inPocketContext = snapshot?.HasCity == true && IsUnattachedPhysicalRoom(sessionState.RoomId);
-                var roomText = roomJoined
-                    ? sessionState.ChatRoomId
-                    : inPocketContext
-                        ? BuildPocketContextLabel(snapshot)
-                        : "(unattached)";
+                var physicalContextText = inPocketContext
+                    ? BuildPocketContextLabel(snapshot)
+                    : IsUnattachedPhysicalRoom(sessionState.RoomId)
+                        ? "no physical room attached"
+                        : sessionState.RoomId;
+                var chatRoomText = roomJoined ? sessionState.ChatRoomId : "no WS chat room";
                 var roomHeadline = roomJoined
-                    ? $"Room {roomText} is live. Review filter, traffic, and recent lines here."
+                    ? inPocketContext
+                        ? $"WS chat room {chatRoomText} is live while {physicalContextText} remains the physical/pocket context."
+                        : $"WS chat room {chatRoomText} is live. Review filter, traffic, and recent lines here."
                     : inPocketContext
-                        ? "Pocket context is expected for City/Black Market command shells. No fake physical room is attached."
-                        : "No room is attached yet. System chatter and filter posture stay visible.";
-                var roomCardTitle = roomJoined ? roomText : inPocketContext ? "Pocket context" : "Unattached";
+                        ? "Pocket context is expected for City/Black Market command shells. No fake physical room is attached, and outbound chat still waits for WS chat-room attachment."
+                        : "No physical room or WS chat room is attached yet. System chatter and filter posture stay visible.";
+                var roomCardTitle = roomJoined ? $"Chat room {chatRoomText}" : inPocketContext ? "Pocket context" : "Unattached";
                 var roomCardLore = roomJoined
-                    ? "Room chat is attached through WS session state."
+                    ? inPocketContext
+                        ? $"WS chat room is attached; {physicalContextText} remains separate physical/pocket context."
+                        : "WS chat room is attached through live session state."
                     : inPocketContext
                         ? "City/Black Market command shells are pocket-management contexts; room-unattached can be correct."
                         : "Use Home / where-am-I to attach when available.";
 
                 headline.text = roomJoined || visibleLines.Count > 0 || inPocketContext ? "Comms desk" : "Comms review";
                 copy.text = roomHeadline;
-                overview.text = $"Shard {sessionState.ShardId} • room {roomText} • filter {sessionState.ActiveChatChannel.ToUpperInvariant()} • {visibleLines.Count}/{allLines.Count} visible";
+                overview.text = $"Shard {sessionState.ShardId} • chat room {chatRoomText} • context {physicalContextText} • filter {sessionState.ActiveChatChannel.ToUpperInvariant()} • {visibleLines.Count}/{allLines.Count} visible";
 
-                roomValue.text = roomJoined ? $"Room {roomText} • attached" : inPocketContext ? $"{roomText} • no physical MUD room" : "No room attached yet.";
+                roomValue.text = roomJoined
+                    ? inPocketContext
+                        ? $"Chat room {chatRoomText} • attached; {physicalContextText} • no physical MUD room"
+                        : $"Chat room {chatRoomText} • attached; physical room {physicalContextText}"
+                    : inPocketContext
+                        ? $"{physicalContextText} • no physical MUD room • no WS chat room"
+                        : "No physical room or WS chat room attached yet.";
                 channelValue.text = $"{sessionState.ActiveChatChannel.ToUpperInvariant()} filter";
                 trafficValue.text = visibleLines.Count > 0 ? $"{visibleLines.Count}/{allLines.Count} visible line(s)" : "No visible lines for this filter.";
                 connectionValue.text = sessionState.IsConnected ? $"Connected • {sessionState.LastInboundOp}" : "Disconnected";
                 systemValue.text = systemLine != null ? systemLine.ToDisplayText() : "No system notice yet.";
                 noteValue.text = roomJoined
-                    ? "Room chat is live; friend roster, DMs, and moderation surfaces remain deferred."
+                    ? "WS chat room is live; friend roster, DMs, and moderation surfaces remain deferred."
                     : inPocketContext
-                        ? "Pocket context only clarifies room posture; dedicated City/Market channels and relays remain deferred."
+                        ? "Pocket context only clarifies physical room posture; dedicated City/Market channels and relays remain deferred."
                         : "Live comms posture stays honest while broader social systems remain deferred.";
 
                 var cardViews = new[]
                 {
-                    new CardView("Room", roomCardTitle, roomCardLore, $"Shard {sessionState.ShardId} • {sessionState.DisplayName}"),
+                    new CardView("Chat room / pocket", roomCardTitle, roomCardLore, $"Shard {sessionState.ShardId} • {sessionState.DisplayName}"),
                     new CardView("Filter", sessionState.ActiveChatChannel.ToUpperInvariant(), visibleLines.Count > 0 ? $"Showing {visibleLines.Count} of {allLines.Count} stored line(s)." : "No visible lines for this filter yet.", "Filters: all, room, system"),
                     BuildLineCard(visibleLines.ElementAtOrDefault(0), "Recent", "No recent chat line is visible yet."),
                     BuildLineCard(visibleLines.ElementAtOrDefault(1) ?? systemLine, "Secondary", "No secondary line is visible yet.")

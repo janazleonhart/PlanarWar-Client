@@ -8,7 +8,7 @@ This guide is for early testers using the Unity client after the client gameplay
 
 ### 1. Connect
 
-Start the client and confirm the top bar shows a connected state. If chat room state is detached but HTTP summary refresh still works, gameplay actions may still function; report the room state separately instead of treating every disconnected room label as a gameplay failure. City and Black Market command shells are pocket-management contexts, so a room-unattached label can be expected when the player is managing a settlement instead of standing in a physical MUD room.
+Start the client and confirm the top bar shows a connected state. The top **Room / Pocket** strip is physical-context truth: it may show a physical MUD room or a City/Black Market pocket. The Social desk and bottom tray use **chat room** for websocket chat-room truth. If chat-room state is detached but HTTP summary refresh still works, gameplay actions may still function; report chat-room state separately instead of treating every disconnected chat label as a gameplay failure. City and Black Market command shells are pocket-management contexts, so a physical-room-unattached label can be expected when the player is managing a settlement instead of standing in a physical MUD room.
 
 ### 2. Register or sign in
 
@@ -235,14 +235,14 @@ Gear compatibility should follow backend slot truth. Do not report “my favorit
 
 ## Social / Comms desk
 
-Social shows pocket/room state, recent comms, and filters. The bottom chat tray is the live chat surface.
+Social shows chat-room state, physical/pocket context, recent comms, and filters. The bottom chat tray is the live chat surface.
 
-City and Black Market shells may show a pocket context instead of a physical room. That is not automatically a failure: settlements are management contexts and should not fake regional room membership. Room chat still needs a real WebSocket room attachment.
+City and Black Market shells may show a pocket context instead of a physical room. That is not automatically a failure: settlements are management contexts and should not fake regional room membership. Chat-room send still needs a real WebSocket chat-room attachment. A visible **Chat room lobby** and visible **City pocket** are two different truths, not a contradiction.
 
 Use filters to view:
 
 - All
-- Room
+- Chat room
 - System
 
 If chat disconnects but gameplay actions still work, report it as a comms/session issue rather than a full gameplay outage.
@@ -303,5 +303,5 @@ For a quick tester pass, run this loop:
 14. Equip and unequip the crafted item if compatible.
 15. Open Operations.
 16. Start or resolve one available operation.
-17. Open Social and send or filter chat if room state is attached; if it shows a City/Market pocket context, confirm the copy explains that no physical room is attached.
+17. Open Social and send or filter chat if chat-room state is attached; if it shows both a Chat room and a City/Market pocket context, confirm the copy explains that websocket chat-room truth and physical/pocket context are separate.
 18. Report only concrete failures or unclear results.

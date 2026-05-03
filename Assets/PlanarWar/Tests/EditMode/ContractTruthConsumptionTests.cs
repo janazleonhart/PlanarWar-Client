@@ -3006,17 +3006,44 @@ namespace PlanarWar.Client.Tests.EditMode
             }
 
             Assert.That(controller, Does.Contain("SetFilterActive(chatAllButton"), "All filter should still be wired through SetFilterActive.");
-            Assert.That(controller, Does.Contain("SetFilterActive(chatRoomButton"), "Room filter should still be wired through SetFilterActive.");
+            Assert.That(controller, Does.Contain("SetFilterActive(chatRoomButton"), "Chat room filter should still be wired through SetFilterActive.");
             Assert.That(controller, Does.Contain("SetFilterActive(chatSystemButton"), "System filter should still be wired through SetFilterActive.");
             Assert.That(controller, Does.Contain("ActiveChatChannel, \"all\""), "All filter should still be driven by live SessionState channel truth.");
-            Assert.That(controller, Does.Contain("ActiveChatChannel, \"room\""), "Room filter should still be driven by live SessionState channel truth.");
+            Assert.That(controller, Does.Contain("ActiveChatChannel, \"room\""), "Chat room filter should still be driven by live SessionState channel truth.");
             Assert.That(controller, Does.Contain("ActiveChatChannel, \"system\""), "System filter should still be driven by live SessionState channel truth.");
             Assert.That(controller, Does.Contain("sessionState.GetVisibleChatLines()"), "Comms board and bottom log should keep consuming filtered live chat lines instead of fake channel rows.");
             Assert.That(controller, Does.Contain("No chat lines visible for this filter yet."), "Room/System empty states should stay readable when a filter has no visible lines.");
-            Assert.That(controller, Does.Contain("Room comms are live"), "Outbound room chat hint should stay tied to real room attachment state.");
+            Assert.That(controller, Does.Contain("Chat room comms are live"), "Outbound chat-room hint should stay tied to real websocket chat-room attachment state.");
             Assert.That(controller, Does.Contain("friend roster, DMs, and moderation surfaces remain deferred"), "Social closeout should keep deferred social-system scope explicit.");
         }
 
+
+
+        [Test]
+        public void Unity_chat_room_pocket_terminology_distinction_locks_separate_truth()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/AppShellController.cs");
+            var guidePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Docs/PLAYER_TESTER_GUIDE_V1.md");
+
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(controllerPath), Is.True, "AppShellController.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(guidePath), Is.True, "PLAYER_TESTER_GUIDE_V1.md should ship with the Unity client.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var controller = File.ReadAllText(controllerPath);
+            var guide = File.ReadAllText(guidePath);
+
+            Assert.That(uxml, Does.Contain("Chat room / pocket context"), "Social cards should label the two state families without collapsing them into one room concept.");
+            Assert.That(uxml, Does.Contain("text=\"Chat room\""), "The room filter should read as chat-room filtering, not physical room attachment.");
+            Assert.That(uxml, Does.Contain("label=\"Chat message\""), "The send box should not imply local physical-room Say semantics yet.");
+            Assert.That(controller, Does.Contain("chat room {chatRoomText} • context {physicalContextText}"), "Social overview should show websocket chat-room truth and physical/pocket context side by side.");
+            Assert.That(controller, Does.Contain("WS chat room {chatRoomText} is live while"), "Joined websocket room copy should not hide that City/Market pocket context remains separate.");
+            Assert.That(controller, Does.Contain("no physical MUD room • no WS chat room"), "Pocket-only copy should avoid implying either fake physical room attachment or fake chat-room send access.");
+            Assert.That(guide, Does.Contain("Chat room lobby"), "Tester guide should explain that chat room lobby and City pocket can both be true.");
+            Assert.That(guide, Does.Contain("websocket chat-room truth and physical/pocket context are separate"), "Tester guide checklist should preserve the distinction for screenshots and reports.");
+            Assert.That(controller, Does.Contain("dedicated City/Market channels and relays remain deferred"), "This slice should keep City/Market channels and relays explicitly deferred.");
+        }
 
         [Test]
         public void Unity_pocket_context_room_label_clarification_locks_no_fake_room_truth()
@@ -3036,9 +3063,10 @@ namespace PlanarWar.Client.Tests.EditMode
             var hud = File.ReadAllText(hudPath);
 
             Assert.That(uxml, Does.Contain("Room / Pocket"), "Top status strip should label the value as room/pocket truth instead of implying only physical rooms.");
-            Assert.That(uxml, Does.Contain("pocket/room state"), "Social navigation copy should acknowledge pocket context room truth.");
+            Assert.That(uxml, Does.Contain("chat-room state, physical/pocket context"), "Social navigation copy should distinguish websocket chat-room truth from physical/pocket context.");
             Assert.That(controller, Does.Contain("IsPocketManagementContext"), "Shell controller should derive pocket context from live summary + session room truth.");
             Assert.That(controller, Does.Contain("Pocket context is expected for City/Black Market command shells"), "Comms copy should explain expected City/Black Market pocket contexts.");
+            Assert.That(controller, Does.Contain("WS chat room"), "Comms copy should label websocket chat-room attachment distinctly from physical room/pocket state.");
             Assert.That(controller, Does.Contain("No fake physical room is attached"), "Social copy must not pretend a settlement shell has physical MUD room membership.");
             Assert.That(controller, Does.Contain("dedicated City/Market channels and relays remain deferred"), "The slice must not smuggle in dedicated channels or relay implementation.");
             Assert.That(hud, Does.Contain("Pocket shells may be unattached."), "Debug HUD should not make expected pocket detachment look like a generic broken room state.");
