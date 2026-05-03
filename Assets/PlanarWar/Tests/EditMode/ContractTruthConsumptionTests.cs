@@ -5014,6 +5014,33 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
 
+        [Test]
+        public void Client_shell_style_contract_consolidates_recent_layout_surfaces_without_adding_fake_pending_actions()
+        {
+            var uxmlPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var ussPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+
+            Assert.That(File.Exists(uxmlPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(ussPath), Is.True, "AppShell.uss should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(uxmlPath);
+            var uss = File.ReadAllText(ussPath);
+
+            Assert.That(uxml, Does.Contain("shell-root client-shell-style-contract-v1"), "The shell root should carry a marker class for future layout work to preserve the current scoped contracts.");
+            Assert.That(uss, Does.Contain("Client shell style contract consolidation v1"));
+            Assert.That(uss, Does.Contain("navigation rail: rail-panel--compact, rail-scroll, chapter-row__badge"));
+            Assert.That(uss, Does.Contain("Home workspace: home-main-panel, home-resource-strip, home-snapshot-grid, home-lane-posture-card"));
+            Assert.That(uss, Does.Contain("chat tray: comms-panel--minimized, comms-status-stack, chat-chip-row--aligned, chat-compose-row--aligned"));
+            Assert.That(uss, Does.Contain("independent scroll lanes: main-content-scroll, rail-scroll, chat-log-scroll"));
+            Assert.That(uss, Does.Contain(".shell-pending-control"), "Future pending placeholders should have an explicit disabled/pending style hook instead of being active-looking fake actions.");
+            Assert.That(uss, Does.Contain(".action-button--pending"), "Future pending buttons should use a muted style contract when a surface is intentionally unwired.");
+            Assert.That(uss, Does.Contain("Pending future UI may use shell-pending-control or action-button--pending only when visibly disabled/action-free."));
+            Assert.That(uss, Does.Contain("Do not add fake rewards, fake timers, fake private messages, fake room attachment, or fake pending gameplay actions here."));
+            Assert.That(uxml, Does.Not.Contain("action-button--pending"), "This consolidation slice should not add visible pending gameplay buttons by itself.");
+            Assert.That(uxml, Does.Not.Contain("shell-pending-control"), "This consolidation slice should add style hooks only, not placeholder UI inventory.");
+        }
+
+
 
     }
 }

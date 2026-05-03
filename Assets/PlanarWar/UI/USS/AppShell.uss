@@ -2952,3 +2952,34 @@
     margin-bottom: 4px;
 }
 
+/* Client shell style contract consolidation v1
+   Keep these layout groups scoped when future gameplay systems are surfaced:
+   - shell frame: client-shell-style-contract-v1, top-strip, center-pane, comms-panel
+   - navigation rail: rail-panel--compact, rail-scroll, chapter-row__badge
+   - Home workspace: home-main-panel, home-resource-strip, home-snapshot-grid, home-lane-posture-card
+   - chat tray: comms-panel--minimized, comms-status-stack, chat-chip-row--aligned, chat-compose-row--aligned
+   - independent scroll lanes: main-content-scroll, rail-scroll, chat-log-scroll
+   Pending future UI may use shell-pending-control or action-button--pending only when visibly disabled/action-free.
+   Do not add fake rewards, fake timers, fake private messages, fake room attachment, or fake pending gameplay actions here.
+*/
+.client-shell-style-contract-v1 {
+    flex-grow: 1;
+}
+
+.shell-pending-control,
+.action-button--pending {
+    opacity: 0.58;
+    background-color: rgba(31, 49, 93, 0.55);
+    color: rgb(174, 188, 225);
+    border-left-color: rgba(95, 126, 210, 0.28);
+    border-right-color: rgba(95, 126, 210, 0.28);
+    border-top-color: rgba(95, 126, 210, 0.28);
+    border-bottom-color: rgba(95, 126, 210, 0.28);
+}
+
+.shell-style-contract-note {
+    white-space: normal;
+    color: rgb(174, 188, 225);
+    font-size: 11px;
+}
+
