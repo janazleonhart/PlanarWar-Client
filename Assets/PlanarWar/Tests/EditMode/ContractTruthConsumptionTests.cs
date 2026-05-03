@@ -18,6 +18,24 @@ namespace PlanarWar.Client.Tests.EditMode
     public class ContractTruthConsumptionTests
     {
         [Test]
+        public void Left_rail_compact_badges_stay_readable_without_right_action_chips()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var stylePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(stylePath), Is.True, "AppShell.uss should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(stylePath);
+
+            Assert.That(uxml, Does.Contain("text=\"Chat\" class=\"chapter-row__badge\""), "Social rail badge should use a short readable label instead of cramped comms copy.");
+            Assert.That(uxml, Does.Contain("text=\"Help\" class=\"chapter-row__badge\""), "Tester Guide rail badge should stay short enough for the compact rail.");
+            Assert.That(uss, Does.Contain("Left rail readability / badge cleanup v1"));
+            Assert.That(uss, Does.Contain(".rail-panel--compact .chapter-row__action"));
+            Assert.That(uss, Does.Contain("display: none"), "Compact rail hides redundant right-side action chips so badges do not collide or truncate.");
+        }
+
+        [Test]
         public void Operations_visible_card_slots_all_have_action_buttons()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");

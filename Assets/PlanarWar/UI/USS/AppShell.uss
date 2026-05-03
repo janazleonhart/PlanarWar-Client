@@ -2173,6 +2173,28 @@
 }
 
 
+/* Left rail readability / badge cleanup v1 */
+.rail-panel--compact .chapter-row__top {
+    justify-content: flex-start;
+    gap: 4px;
+}
+
+.rail-panel--compact .chapter-row__kicker,
+.rail-panel--compact .chapter-row__badge {
+    flex-shrink: 0;
+}
+
+.rail-panel--compact .chapter-row__badge {
+    margin-left: 2px;
+    padding-left: 4px;
+    padding-right: 4px;
+}
+
+.rail-panel--compact .chapter-row__action {
+    display: none;
+}
+
+
 /* Social / Comms surface cleanup v1 */
 .social-surface-content {
     gap: 12px;
