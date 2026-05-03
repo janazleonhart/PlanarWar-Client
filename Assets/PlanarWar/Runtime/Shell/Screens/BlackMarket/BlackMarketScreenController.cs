@@ -37,6 +37,13 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private readonly Label missionBoardStatus;
         private readonly Label missionBoardEffect;
         private readonly Label missionBoardAssignment;
+        private readonly VisualElement operationDetailRoot;
+        private readonly Label operationDetailTitle;
+        private readonly Label operationDetailStatus;
+        private readonly Label operationDetailReceipt;
+        private readonly Label operationDetailProof;
+        private readonly Label operationDetailBlockers;
+        private readonly Label operationDetailRefs;
         private readonly VisualElement missionOfferPicker;
         private readonly Button missionPrimaryButton;
         private readonly DropdownField managementArmyField;
@@ -89,6 +96,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private string selectedHoldPosture = "frontier_hold";
         private string selectedDispatchHeroId = string.Empty;
         private string selectedMissionOfferId = string.Empty;
+        private string selectedBlackMarketOperationCardId = string.Empty;
         private Action missionPrimaryAction;
         private bool missionPrimaryActionEnabled;
         private bool suppressManagementEvents;
@@ -128,6 +136,13 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             missionBoardStatus = root.Q<Label>("warfront-mission-board-status-value");
             missionBoardEffect = root.Q<Label>("warfront-mission-board-effect-value");
             missionBoardAssignment = root.Q<Label>("warfront-mission-board-assignment-value");
+            operationDetailRoot = root.Q<VisualElement>("warfront-operation-detail-root");
+            operationDetailTitle = root.Q<Label>("warfront-operation-detail-title-value");
+            operationDetailStatus = root.Q<Label>("warfront-operation-detail-status-value");
+            operationDetailReceipt = root.Q<Label>("warfront-operation-detail-receipt-value");
+            operationDetailProof = root.Q<Label>("warfront-operation-detail-proof-value");
+            operationDetailBlockers = root.Q<Label>("warfront-operation-detail-blockers-value");
+            operationDetailRefs = root.Q<Label>("warfront-operation-detail-refs-value");
             missionOfferPicker = root.Q<VisualElement>("warfront-mission-offer-picker");
             missionPrimaryButton = root.Q<Button>("warfront-mission-primary-button");
             managementArmyField = root.Q<DropdownField>("warfront-manage-army-field");
@@ -332,6 +347,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                     : BuildReinforcementDeskNote(summary.Armies, reinforceState, reinforceTimer, reinforceOp, warfrontWindows.Count > 0));
             var baseOperationCards = BuildCards(summary, rankedArmies, warfrontWindows, activeMission, primaryWarning, signalPairs, reinforceState, reinforceTimer, reinforceOp);
             RenderCards(cards, LaneCards(activeOperationCards.Concat(baseOperationCards).Take(4).ToList()));
+            RenderBlackMarketOperationDetail(activeOperationSurface, activeMission);
             RenderFormationManagement(summary, rankedArmies, targetArmyId);
             RenderMissionBoard(summary, rankedArmies, activeMission, primaryWarning, nowUtc);
         }
@@ -1272,14 +1288,16 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 return new List<CardView>();
             }
 
+            EnsureSelectedBlackMarketOperationCard(surface);
+
             return surface.Cards
                 .Where(card => card != null)
                 .Take(4)
-                .Select(card => BuildBlackMarketActiveOperationCard(card, activeMission))
+                .Select((card, index) => BuildBlackMarketActiveOperationCard(card, activeMission, ResolveBlackMarketOperationSelectionKey(card, index)))
                 .ToList();
         }
 
-        private CardView BuildBlackMarketActiveOperationCard(BlackMarketActiveOperationCardSnapshot card, MissionSnapshot activeMission)
+        private CardView BuildBlackMarketActiveOperationCard(BlackMarketActiveOperationCardSnapshot card, MissionSnapshot activeMission, string selectionKey)
         {
             var missionOfferId = (card.MissionOfferIds ?? new List<string>())
                 .FirstOrDefault(id => !string.IsNullOrWhiteSpace(id) && (summaryState.MissionOffers ?? new List<MissionOfferSnapshot>()).Any(offer => string.Equals(offer.Id, id, StringComparison.OrdinalIgnoreCase)))
@@ -1295,7 +1313,117 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 note: BuildBlackMarketActiveOperationReceiptDetail(card, actionIds.Count, missionIds.Count),
                 buttonText: hasMissionOffer ? "Select mission" : actionIds.Count > 0 ? "World action visible" : "Read-only",
                 buttonEnabled: hasMissionOffer && !summaryState.IsActionBusy,
-                onClick: hasMissionOffer ? () => SelectMissionOfferFromActiveOperation(missionOfferId) : null);
+                onClick: hasMissionOffer ? () => SelectMissionOfferFromActiveOperation(missionOfferId) : null,
+                isSelected: string.Equals(selectedBlackMarketOperationCardId, selectionKey, StringComparison.OrdinalIgnoreCase),
+                onSelect: () => SelectBlackMarketOperationCard(selectionKey));
+        }
+
+        private void SelectBlackMarketOperationCard(string selectionKey)
+        {
+            if (string.IsNullOrWhiteSpace(selectionKey))
+            {
+                return;
+            }
+
+            selectedBlackMarketOperationCardId = selectionKey.Trim();
+            Render(summaryState.Snapshot);
+        }
+
+        private void EnsureSelectedBlackMarketOperationCard(BlackMarketActiveOperationSurfaceSnapshot surface)
+        {
+            var cards = surface?.Cards?.Where(card => card != null).Take(4).ToList() ?? new List<BlackMarketActiveOperationCardSnapshot>();
+            if (cards.Count == 0)
+            {
+                selectedBlackMarketOperationCardId = string.Empty;
+                return;
+            }
+
+            var keys = cards.Select(ResolveBlackMarketOperationSelectionKey).ToList();
+            if (string.IsNullOrWhiteSpace(selectedBlackMarketOperationCardId) || !keys.Any(key => string.Equals(key, selectedBlackMarketOperationCardId, StringComparison.OrdinalIgnoreCase)))
+            {
+                selectedBlackMarketOperationCardId = keys[0];
+            }
+        }
+
+        private void RenderBlackMarketOperationDetail(BlackMarketActiveOperationSurfaceSnapshot surface, MissionSnapshot activeMission)
+        {
+            if (operationDetailRoot == null)
+            {
+                return;
+            }
+
+            var cards = surface?.Cards?.Where(card => card != null).Take(4).ToList() ?? new List<BlackMarketActiveOperationCardSnapshot>();
+            if (surface == null || cards.Count == 0)
+            {
+                operationDetailRoot.style.display = DisplayStyle.None;
+                return;
+            }
+
+            EnsureSelectedBlackMarketOperationCard(surface);
+            var selected = cards
+                .Select((card, index) => new { Card = card, Key = ResolveBlackMarketOperationSelectionKey(card, index) })
+                .FirstOrDefault(entry => string.Equals(entry.Key, selectedBlackMarketOperationCardId, StringComparison.OrdinalIgnoreCase))
+                ?.Card ?? cards[0];
+
+            operationDetailRoot.style.display = DisplayStyle.Flex;
+            if (operationDetailTitle != null) operationDetailTitle.text = FirstNonBlank(selected.Headline, HumanizeKey(selected.Id), "Shadow operation detail");
+            if (operationDetailStatus != null) operationDetailStatus.text = BuildBlackMarketOperationDetailStatus(selected);
+            if (operationDetailReceipt != null) operationDetailReceipt.text = BuildBlackMarketOperationDetailReceipt(selected, surface);
+            if (operationDetailProof != null) operationDetailProof.text = BuildBlackMarketOperationDetailProof(selected);
+            if (operationDetailBlockers != null) operationDetailBlockers.text = BuildBlackMarketOperationDetailBlockers(selected, activeMission);
+            if (operationDetailRefs != null) operationDetailRefs.text = BuildBlackMarketOperationDetailRefs(selected);
+        }
+
+        private static string ResolveBlackMarketOperationSelectionKey(BlackMarketActiveOperationCardSnapshot card, int index)
+        {
+            return FirstNonBlank(card?.Id, card?.Headline, card?.Kind, $"operation-{index + 1}").Trim();
+        }
+
+        private static string BuildBlackMarketOperationDetailStatus(BlackMarketActiveOperationCardSnapshot card)
+        {
+            return $"Selected operation • {BuildBlackMarketActiveOperationFamily(card)}";
+        }
+
+        private static string BuildBlackMarketOperationDetailReceipt(BlackMarketActiveOperationCardSnapshot card, BlackMarketActiveOperationSurfaceSnapshot surface)
+        {
+            var receipt = FirstNonBlank(card?.OperatorNote, card?.Summary, surface?.Detail, surface?.Headline);
+            return $"Receipt: {Truncate(FirstNonBlank(receipt, "No receipt text was supplied by this active-operation card."), 220)}";
+        }
+
+        private static string BuildBlackMarketOperationDetailProof(BlackMarketActiveOperationCardSnapshot card)
+        {
+            var proof = BuildBlackMarketActiveOperationReferenceSummary(card, card?.ActionIds?.Count ?? 0, card?.MissionOfferIds?.Count ?? 0);
+            return $"Proof: {FirstNonBlank(proof, "No source/action/mission refs supplied on this active-operation card.")}";
+        }
+
+        private static string BuildBlackMarketOperationDetailBlockers(BlackMarketActiveOperationCardSnapshot card, MissionSnapshot activeMission)
+        {
+            var blockers = new List<string>();
+            if (activeMission != null && (card?.MissionOfferIds?.Count ?? 0) > 0)
+            {
+                blockers.Add("active mission already running");
+            }
+
+            if ((card?.ActionIds?.Count ?? 0) > 0)
+            {
+                blockers.Add("world-action execution handler not wired in Unity");
+            }
+
+            if (blockers.Count == 0)
+            {
+                blockers.Add("no blocker field supplied by active-operation payload");
+            }
+
+            return $"Blockers: {string.Join(" • ", blockers)}";
+        }
+
+        private static string BuildBlackMarketOperationDetailRefs(BlackMarketActiveOperationCardSnapshot card)
+        {
+            var refs = new List<string>();
+            if (!string.IsNullOrWhiteSpace(card?.SourceSurface)) refs.Add($"source {card.SourceSurface}");
+            if ((card?.ActionIds?.Count ?? 0) > 0) refs.Add($"world actions {Truncate(string.Join(", ", card.ActionIds), 96)}");
+            if ((card?.MissionOfferIds?.Count ?? 0) > 0) refs.Add($"mission refs {Truncate(string.Join(", ", card.MissionOfferIds), 96)}");
+            return refs.Count == 0 ? "Refs: none supplied." : $"Refs: {string.Join(" • ", refs)}";
         }
 
         private void SelectMissionOfferFromActiveOperation(string missionOfferId)
@@ -2938,6 +3066,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             private readonly Label note;
             private readonly Button button;
             private Action clickAction;
+            private Action selectAction;
 
             public InfoCard(VisualElement root, string prefix, bool hasButton)
             {
@@ -2947,12 +3076,19 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 lore = root.Q<Label>($"{prefix}-lore-value");
                 note = root.Q<Label>($"{prefix}-note-value");
                 button = hasButton ? root.Q<Button>($"{prefix}-button") : null;
+                this.root?.RegisterCallback<ClickEvent>(_ => selectAction?.Invoke());
                 if (button != null) button.clicked += () => clickAction?.Invoke();
             }
 
             public void Show(CardView card)
             {
-                if (root != null) root.style.display = DisplayStyle.Flex;
+                if (root != null)
+                {
+                    root.style.display = DisplayStyle.Flex;
+                    root.EnableInClassList("warfront-desk-card--selected", card.IsSelected);
+                }
+
+                selectAction = card.OnSelect;
                 if (family != null) family.text = card.Family;
                 if (title != null) title.text = card.Title;
                 if (lore != null) lore.text = card.Lore;
@@ -2969,7 +3105,12 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             public void Hide()
             {
                 clickAction = null;
-                if (root != null) root.style.display = DisplayStyle.None;
+                selectAction = null;
+                if (root != null)
+                {
+                    root.EnableInClassList("warfront-desk-card--selected", false);
+                    root.style.display = DisplayStyle.None;
+                }
             }
         }
 
@@ -2982,8 +3123,10 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             public string ButtonText { get; }
             public bool ButtonEnabled { get; }
             public Action OnClick { get; }
+            public bool IsSelected { get; }
+            public Action OnSelect { get; }
 
-            public CardView(string family, string title, string lore, string note, string buttonText = null, bool buttonEnabled = false, Action onClick = null)
+            public CardView(string family, string title, string lore, string note, string buttonText = null, bool buttonEnabled = false, Action onClick = null, bool isSelected = false, Action onSelect = null)
             {
                 Family = family;
                 Title = title;
@@ -2992,6 +3135,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 ButtonText = buttonText;
                 ButtonEnabled = buttonEnabled;
                 OnClick = onClick;
+                IsSelected = isSelected;
+                OnSelect = onSelect;
             }
         }
     }

@@ -5084,5 +5084,35 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
 
+        [Test]
+        public void Black_market_operations_cards_select_detail_panel_without_fake_execution()
+        {
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/BlackMarket/BlackMarketScreenController.cs");
+            var uxmlPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var ussPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+
+            Assert.That(File.Exists(controllerPath), Is.True, "BlackMarketScreenController.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(uxmlPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(ussPath), Is.True, "AppShell.uss should be available from the Unity project root.");
+
+            var controller = File.ReadAllText(controllerPath);
+            var uxml = File.ReadAllText(uxmlPath);
+            var uss = File.ReadAllText(ussPath);
+
+            Assert.That(controller, Does.Contain("selectedBlackMarketOperationCardId"), "Operation cards should maintain local selected-card state for the focused detail panel.");
+            Assert.That(controller, Does.Contain("RenderBlackMarketOperationDetail"), "The Operations desk should render a focused selected-operation detail panel from existing payload truth.");
+            Assert.That(controller, Does.Contain("SelectBlackMarketOperationCard"), "Selecting a visible operation card should update detail focus without inventing execution.");
+            Assert.That(controller, Does.Contain("BuildBlackMarketOperationDetailBlockers"), "Focused details should call out blockers/read-only execution gaps from current truth.");
+            Assert.That(controller, Does.Contain("world-action execution handler not wired in Unity"), "World-action refs must stay honest/read-only until a real handler exists.");
+            Assert.That(uxml, Does.Contain("warfront-operation-detail-root"), "Operations should include a selected-operation detail panel in the existing action board.");
+            Assert.That(uxml, Does.Contain("warfront-operation-detail-blockers-value"), "Focused detail should have a blockers line, even when it only says no blocker field was supplied.");
+            Assert.That(uxml, Does.Contain("operations-operation-detail-selection-v1"), "The detail panel should use a scoped styling hook.");
+            Assert.That(uss, Does.Contain("Black Market operation detail selection v1"));
+            Assert.That(uss, Does.Contain(".warfront-desk-card--selected"), "Selected operation cards should get a visual focus state.");
+            Assert.That(controller, Does.Not.Contain("Execute shadow operation"), "This slice must not fake shadow-operation execution." );
+            Assert.That(controller, Does.Not.Contain("Grant shadow reward"), "This slice must not fake rewards for operation cards." );
+        }
+
+
     }
 }

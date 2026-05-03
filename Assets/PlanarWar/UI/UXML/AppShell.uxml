@@ -909,6 +909,17 @@
                                     <ui:Button name="warfront-card-4-button" text="Operation action" class="action-button action-button--primary warfront-desk-card__button" />
                                 </ui:VisualElement>
                             </ui:VisualElement>
+                            <ui:VisualElement name="warfront-operation-detail-root" class="summary-card operations-operation-detail operations-operation-detail-selection-v1">
+                                <ui:Label text="Selected operation detail" class="eyebrow" />
+                                <ui:Label name="warfront-operation-detail-title-value" text="No operation selected" class="rail-note-title" />
+                                <ui:Label name="warfront-operation-detail-status-value" text="Select an operation card to review state, blockers, proof, and receipt detail." class="summary-value summary-value--glance" />
+                                <ui:VisualElement class="operations-operation-detail__grid">
+                                    <ui:Label name="warfront-operation-detail-receipt-value" text="Receipt: no selected operation." class="metric-subvalue metric-subvalue--wrap operations-operation-detail__line" />
+                                    <ui:Label name="warfront-operation-detail-proof-value" text="Proof: no selected operation." class="metric-subvalue metric-subvalue--wrap operations-operation-detail__line" />
+                                    <ui:Label name="warfront-operation-detail-blockers-value" text="Blockers: no selected operation." class="metric-subvalue metric-subvalue--wrap operations-operation-detail__line" />
+                                    <ui:Label name="warfront-operation-detail-refs-value" text="Refs: no selected operation." class="metric-subvalue metric-subvalue--wrap operations-operation-detail__line" />
+                                </ui:VisualElement>
+                            </ui:VisualElement>
                         </ui:VisualElement>
 
 
