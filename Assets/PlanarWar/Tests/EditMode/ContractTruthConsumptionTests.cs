@@ -4860,5 +4860,33 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
 
+        [Test]
+        public void Home_content_scrollbar_width_cleanup_keeps_main_scrollbars_slim_without_touching_chat_or_rail_behavior()
+        {
+            var uxmlPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var ussPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+
+            Assert.That(File.Exists(uxmlPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(ussPath), Is.True, "AppShell.uss should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(uxmlPath);
+            var uss = File.ReadAllText(ussPath);
+
+            Assert.That(uxml, Does.Contain("main-content-scroll"), "Main workspace screens should get the slim scrollbar class without changing screen identity or behavior.");
+            Assert.That(uxml, Does.Contain("name=\"summary-screen\" class=\"screen-panel screen-scroll main-content-scroll\""));
+            Assert.That(uxml, Does.Contain("name=\"development-screen\" class=\"screen-panel screen-scroll main-content-scroll\""));
+            Assert.That(uxml, Does.Contain("name=\"heroes-screen\" class=\"screen-panel screen-scroll main-content-scroll\""));
+            Assert.That(uxml, Does.Contain("name=\"social-screen\" class=\"screen-panel screen-scroll main-content-scroll\""));
+            Assert.That(uxml, Does.Contain("name=\"chat-log-scroll\" class=\"chat-log-scroll\""), "Chat log scroll behavior should stay on its existing class instead of inheriting the main content scrollbar pass.");
+            Assert.That(uxml, Does.Contain("name=\"left-rail-scroll\" class=\"rail-scroll\""), "Left rail scrolling should stay separate from main content scrollbar styling.");
+            Assert.That(uss, Does.Contain("Home/content scrollbar width cleanup v1"));
+            Assert.That(uss, Does.Contain(".main-content-scroll .unity-scroll-view__vertical-scroller"));
+            Assert.That(uss, Does.Contain("width: 10px"), "Main workspace scrollbar track should be less visually chunky while keeping normal scroll behavior.");
+            Assert.That(uss, Does.Contain(".main-content-scroll .unity-scroller__slider"));
+            Assert.That(uss, Does.Not.Contain("fake scroll state"));
+            Assert.That(uss, Does.Not.Contain("disable scrolling"));
+        }
+
+
     }
 }

@@ -2789,3 +2789,33 @@
     min-height: 28px;
 }
 
+/* Home/content scrollbar width cleanup v1 */
+.main-content-scroll {
+    padding-right: 2px;
+}
+
+.main-content-scroll .unity-scroll-view__vertical-scroller {
+    width: 10px;
+    min-width: 10px;
+}
+
+.main-content-scroll .unity-scroller--vertical {
+    width: 10px;
+    min-width: 10px;
+}
+
+.main-content-scroll .unity-scroller__slider {
+    width: 8px;
+    min-width: 8px;
+    margin-left: 1px;
+    margin-right: 1px;
+}
+
+.main-content-scroll .unity-scroller__low-button,
+.main-content-scroll .unity-scroller__high-button {
+    width: 10px;
+    min-width: 10px;
+    height: 10px;
+    min-height: 10px;
+}
+
