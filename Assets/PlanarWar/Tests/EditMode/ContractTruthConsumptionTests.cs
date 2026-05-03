@@ -4915,5 +4915,41 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
 
+        [Test]
+        public void Bottom_chat_input_width_cleanup_aligns_compose_row_without_changing_send_truth()
+        {
+            var uxmlPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var ussPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/AppShellController.cs");
+            var bootstrapPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/ClientBootstrap.cs");
+
+            Assert.That(File.Exists(uxmlPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(ussPath), Is.True, "AppShell.uss should be available from the Unity project root.");
+            Assert.That(File.Exists(controllerPath), Is.True, "AppShellController.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(bootstrapPath), Is.True, "ClientBootstrap.cs should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(uxmlPath);
+            var uss = File.ReadAllText(ussPath);
+            var controller = File.ReadAllText(controllerPath);
+            var bootstrap = File.ReadAllText(bootstrapPath);
+
+            Assert.That(uxml, Does.Contain("name=\"chat-compose-row\" class=\"chat-compose-row chat-compose-row--aligned\""), "The bottom chat compose row should have a scoped alignment class instead of changing send behavior.");
+            Assert.That(uxml, Does.Contain("chat-input-field--bottom-comms"), "The bottom chat input should have scoped width cleanup styling.");
+            Assert.That(uxml, Does.Contain("chat-send-button--aligned"), "The Send button should be aligned through scoped styling, not rebuilt.");
+            Assert.That(uss, Does.Contain("Bottom chat input width cleanup v1"));
+            Assert.That(uss, Does.Contain(".chat-compose-row--aligned"));
+            Assert.That(uss, Does.Contain(".chat-input-field--bottom-comms .unity-base-field__label"));
+            Assert.That(uss, Does.Contain("min-width: 76px"), "The Chat message label and Send button should use a tighter, predictable width rhythm.");
+            Assert.That(uss, Does.Contain(".chat-send-button--aligned"));
+            Assert.That(controller, Does.Contain("sendChatButton?.SetEnabled(canSendRoomChat)"), "Existing send-button availability should remain driven by honest chat-room state.");
+            Assert.That(bootstrap, Does.Contain("SendRoomChatFromInput"), "Existing websocket send path should remain the bootstrap truth.");
+            Assert.That(bootstrap, Does.Contain("chatInputField.value"), "Existing input value handling should remain wired.");
+            Assert.That(bootstrap, Does.Contain("wsController?.SendRoomChat(text)"), "Send should still route through the websocket room-chat controller.");
+            Assert.That(controller, Does.Not.Contain("fake private message"));
+            Assert.That(controller, Does.Not.Contain("city chat channel"));
+            Assert.That(controller, Does.Not.Contain("guild relay"));
+        }
+
+
     }
 }

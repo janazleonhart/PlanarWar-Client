@@ -1337,9 +1337,9 @@
 
                 <ui:ScrollView name="chat-log-scroll" class="chat-log-scroll" mode="Vertical" />
 
-                <ui:VisualElement name="chat-compose-row" class="chat-compose-row">
-                    <ui:TextField name="chat-input-field" class="chat-input-field" label="Chat message" />
-                    <ui:Button name="send-chat-button" text="Send" class="action-button action-button--primary chat-send-button" />
+                <ui:VisualElement name="chat-compose-row" class="chat-compose-row chat-compose-row--aligned">
+                    <ui:TextField name="chat-input-field" class="chat-input-field chat-input-field--bottom-comms" label="Chat message" />
+                    <ui:Button name="send-chat-button" text="Send" class="action-button action-button--primary chat-send-button chat-send-button--aligned" />
                 </ui:VisualElement>
 
                 <ui:Label name="comms-hint-value" text="This band now shows recent lines, simple filters, WS chat-room send state, and physical/pocket context." class="comms-copy comms-hint-line" />
