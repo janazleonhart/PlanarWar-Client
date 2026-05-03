@@ -83,6 +83,7 @@ namespace PlanarWar.Client.UI
         private readonly TextField chatInputField;
 
         private bool isCommsMinimized;
+        private const int MinimizedCommsLatestMaxLength = 96;
 
         public AppShellController(VisualElement root, SessionState sessionState, SummaryState summaryState, ShellNavigationState navigationState, ClientVersionState versionState, Func<string, System.Threading.Tasks.Task> onStartResearchRequested, Func<string, System.Threading.Tasks.Task> onStartWorkshopCraftRequested, Func<string, System.Threading.Tasks.Task> onCollectWorkshopRequested, Func<string, System.Threading.Tasks.Task> onRecruitHeroRequested, Func<string, System.Threading.Tasks.Task> onAcceptHeroRecruitCandidateRequested, Func<System.Threading.Tasks.Task> onDismissHeroRecruitCandidatesRequested, Func<string, System.Threading.Tasks.Task> onConstructBuildingRequested, Func<string, System.Threading.Tasks.Task> onUpgradeBuildingRequested, Func<string, string, System.Threading.Tasks.Task> onSwitchBuildingRoutingRequested, Func<string, System.Threading.Tasks.Task> onDestroyBuildingRequested, Func<string, string, System.Threading.Tasks.Task> onRemodelBuildingRequested, Func<string, System.Threading.Tasks.Task> onCancelActiveBuildRequested, Func<string, System.Threading.Tasks.Task> onReinforceArmyRequested, Func<string, string, System.Threading.Tasks.Task> onRenameArmyRequested, Func<string, int, string, System.Threading.Tasks.Task> onSplitArmyRequested, Func<string, string, System.Threading.Tasks.Task> onMergeArmyRequested, Func<string, System.Threading.Tasks.Task> onDisbandArmyRequested, Func<string, string, string, System.Threading.Tasks.Task> onAssignArmyHoldRequested, Func<string, System.Threading.Tasks.Task> onReleaseArmyHoldRequested, Func<string, string, string, System.Threading.Tasks.Task> onWarfrontAssaultRequested, Func<string, string, string, System.Threading.Tasks.Task> onGarrisonStrikeRequested, Func<string, string, string, string, System.Threading.Tasks.Task> onStartMissionRequested, Func<string, System.Threading.Tasks.Task> onCompleteMissionRequested, Func<string, System.Threading.Tasks.Task> onReleaseHeroRequested, Func<string, int, System.Threading.Tasks.Task> onEquipHeroFromArmoryRequested, Func<string, string, System.Threading.Tasks.Task> onUnequipHeroToArmoryRequested, Func<string, string, System.Threading.Tasks.Task> onBootstrapCityRequested, Action onRefreshDeskRequested, Action onBackHomeRequested)
         {
@@ -304,7 +305,7 @@ namespace PlanarWar.Client.UI
         {
             if (commsStatusValue != null)
             {
-                commsStatusValue.text = sessionState.ChatLines.Count > 0 ? sessionState.LastChatLine : "No chat yet.";
+                commsStatusValue.text = BuildCommsLatestLine();
             }
 
             var canSendRoomChat = sessionState.IsConnected && sessionState.HasJoinedChatRoom;
@@ -333,7 +334,7 @@ namespace PlanarWar.Client.UI
                         ? $"Pocket context is expected for City/Black Market command shells. Filter {sessionState.ActiveChatChannel.ToUpperInvariant()} • {roomText} • outbound chat-room send still waits for a real WS chat room."
                         : $"Comms band is connected to live traffic, but outbound chat-room send waits for a WS chat-room attachment. Filter {sessionState.ActiveChatChannel.ToUpperInvariant()} • {roomText}.";
                 commsHintValue.text = isCommsMinimized
-                    ? $"Chat minimized • latest line stays visible • {baseHint}"
+                    ? BuildMinimizedCommsHint(canSendRoomChat, inPocketContext, roomText)
                     : baseHint;
             }
 
@@ -369,6 +370,52 @@ namespace PlanarWar.Client.UI
                 row.Add(text);
                 chatLogScroll.contentContainer.Add(row);
             }
+        }
+
+        private string BuildCommsLatestLine()
+        {
+            var latest = sessionState.ChatLines.Count > 0 ? sessionState.LastChatLine : "No chat yet.";
+            if (!isCommsMinimized)
+            {
+                return latest;
+            }
+
+            return sessionState.ChatLines.Count > 0
+                ? $"Latest: {CompactCommsText(latest, MinimizedCommsLatestMaxLength)}"
+                : "Latest: no chat yet.";
+        }
+
+        private string BuildMinimizedCommsHint(bool canSendRoomChat, bool inPocketContext, string roomText)
+        {
+            var filterText = sessionState.ActiveChatChannel.ToUpperInvariant();
+            var attachText = canSendRoomChat
+                ? $"{roomText} live"
+                : inPocketContext
+                    ? "pocket context; chat-room send waiting"
+                    : "chat-room send waiting";
+
+            return $"Minimized • {attachText} • filter {filterText} • Expand for log/send.";
+        }
+
+        private static string CompactCommsText(string value, int maxLength)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return "No chat yet.";
+            }
+
+            var compact = value.Trim().Replace("\r", " ").Replace("\n", " ");
+            while (compact.Contains("  "))
+            {
+                compact = compact.Replace("  ", " ");
+            }
+
+            if (maxLength <= 1 || compact.Length <= maxLength)
+            {
+                return compact;
+            }
+
+            return $"{compact[..(maxLength - 1)].TrimEnd()}…";
         }
 
 

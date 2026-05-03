@@ -4721,7 +4721,7 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(controller, Does.Contain("commsToggleButton.text = isCommsMinimized ? \"Expand\" : \"Minimize\""));
             Assert.That(controller, Does.Contain("chatLogScroll.style.display = isCommsMinimized ? DisplayStyle.None : DisplayStyle.Flex"));
             Assert.That(controller, Does.Contain("chatComposeRow.style.display = isCommsMinimized ? DisplayStyle.None : DisplayStyle.Flex"));
-            Assert.That(controller, Does.Contain("Chat minimized • latest line stays visible"));
+            Assert.That(controller, Does.Contain("BuildMinimizedCommsHint"));
             Assert.That(controller, Does.Not.Contain("city chat channel"));
             Assert.That(controller, Does.Not.Contain("guild relay"));
         }
@@ -4752,6 +4752,32 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(controller, Does.Contain("RenderCommsAttentionState"));
             Assert.That(controller, Does.Contain("hasPrivateMessage"));
             Assert.That(controller, Does.Contain("hasUnreadPriorityComms: false, hasPrivateMessage: false"), "Current slice must not invent unread/private-message state before the chat system supplies it.");
+            Assert.That(controller, Does.Not.Contain("city chat channel"));
+            Assert.That(controller, Does.Not.Contain("guild relay"));
+        }
+
+
+        [Test]
+        public void Bottom_chat_minimized_latest_line_cleanup_keeps_collapsed_copy_useful_without_fake_pm_state()
+        {
+            var ussPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/AppShellController.cs");
+
+            Assert.That(File.Exists(ussPath), Is.True, "AppShell.uss should be available from the Unity project root.");
+            Assert.That(File.Exists(controllerPath), Is.True, "AppShellController.cs should be available from the Unity project root.");
+
+            var uss = File.ReadAllText(ussPath);
+            var controller = File.ReadAllText(controllerPath);
+
+            Assert.That(uss, Does.Contain("Bottom chat minimized latest-line cleanup v1"));
+            Assert.That(uss, Does.Contain(".comms-panel--minimized .comms-status-line"));
+            Assert.That(controller, Does.Contain("BuildCommsLatestLine"));
+            Assert.That(controller, Does.Contain("BuildMinimizedCommsHint"));
+            Assert.That(controller, Does.Contain("CompactCommsText"));
+            Assert.That(controller, Does.Contain("Latest: "), "Minimized chat should label the visible latest line instead of showing a generic tray headline.");
+            Assert.That(controller, Does.Contain("Expand for log/send"), "Minimized hint should explain the collapse state without repeating the full expanded hint.");
+            Assert.That(controller, Does.Contain("MinimizedCommsLatestMaxLength = 96"), "Collapsed latest text should be bounded so long messages do not eat the tray.");
+            Assert.That(controller, Does.Contain("hasUnreadPriorityComms: false, hasPrivateMessage: false"), "This cleanup must not fake private-message or unread-priority state before chat truth exposes it.");
             Assert.That(controller, Does.Not.Contain("city chat channel"));
             Assert.That(controller, Does.Not.Contain("guild relay"));
         }
