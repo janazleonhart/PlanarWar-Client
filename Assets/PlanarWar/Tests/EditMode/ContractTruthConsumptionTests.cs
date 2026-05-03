@@ -3114,6 +3114,40 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
 
+
+
+        [Test]
+        public void Left_rail_vertical_density_cleanup_keeps_compact_navigation_copy()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var appStylePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(appStylePath), Is.True, "AppShell.uss should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(appStylePath);
+
+            foreach (var marker in new[]
+            {
+                "Client-first shell. Scan the empire, choose a desk, then act.",
+                "Home scans the empire. Desks handle focused actions.",
+                "Manifest pending.",
+                "Patch source: box manifest.",
+                "Empire, timers, quick orders.",
+                "Comms, chat room, pocket context.",
+                "Flow, desks, reporting checklist.",
+            })
+            {
+                Assert.That(uxml, Does.Contain(marker), $"Compact left-rail marker should stay present: {marker}");
+            }
+
+            Assert.That(uss, Does.Contain("Left rail vertical density cleanup v1"));
+            Assert.That(uss, Does.Contain(".rail-panel--compact .chapter-row"));
+            Assert.That(uss, Does.Contain("min-height: 74px"));
+            Assert.That(uss, Does.Contain(".rail-panel--compact .rail-version-card .rail-copy"));
+        }
+
+
         [Test]
         public void Gameplay_shell_closeout_locks_cleaned_surface_markers()
         {

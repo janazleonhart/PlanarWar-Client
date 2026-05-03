@@ -6,7 +6,7 @@
                 <ui:VisualElement class="rail-scroll__content">
                     <ui:Label text="PLANAR WAR" class="eyebrow" />
                     <ui:Label text="Command shell" class="rail-title" />
-                    <ui:Label text="Client-first play shell. Pick a chapter, glance the empire, then act." class="rail-copy" />
+                    <ui:Label text="Client-first shell. Scan the empire, choose a desk, then act." class="rail-copy" />
 
                     <ui:VisualElement class="rail-active-card">
                 <ui:VisualElement class="rail-active-card__head">
@@ -15,23 +15,23 @@
                 </ui:VisualElement>
                 <ui:Label name="current-chapter-title" text="Summary" class="rail-note-title" />
                 <ui:Label name="current-chapter-kicker" text="Command floor" class="rail-active-card__kicker" />
-                <ui:Label name="current-chapter-copy" text="This rail stays menu-owned. Use Home to scan the empire, then jump into a desk when something needs action." class="rail-copy" />
+                <ui:Label name="current-chapter-copy" text="Home scans the empire. Desks handle focused actions." class="rail-copy" />
             </ui:VisualElement>
 
             <ui:VisualElement class="rail-section-head">
                 <ui:Label text="Chapter menu" class="eyebrow" />
-                <ui:Label text="5 desks + guide" class="rail-section-head__meta" />
+                <ui:Label text="6 entries" class="rail-section-head__meta" />
             </ui:VisualElement>
 
             <ui:VisualElement class="rail-active-card rail-version-card">
                 <ui:VisualElement class="rail-section-head">
                     <ui:Label text="Client version" class="eyebrow" />
-                    <ui:Label text="Updater foundation" class="rail-section-head__meta" />
+                    <ui:Label text="Updater" class="rail-section-head__meta" />
                 </ui:VisualElement>
                 <ui:Label name="client-version-value" text="v0.0.0-local" class="rail-note-title" />
                 <ui:Label name="client-channel-value" text="editor-local" class="rail-active-card__kicker" />
-                <ui:Label name="client-update-value" text="Update manifest not wired yet." class="rail-copy" />
-                <ui:Label name="client-authority-value" text="Patch authority will come from the box manifest." class="rail-copy" />
+                <ui:Label name="client-update-value" text="Manifest pending." class="rail-copy" />
+                <ui:Label name="client-authority-value" text="Patch source: box manifest." class="rail-copy" />
             </ui:VisualElement>
 
             <ui:VisualElement class="rail-menu rail-menu--cards">
@@ -43,7 +43,7 @@
                             <ui:Label text="Live now" name="nav-home-badge" class="chapter-row__badge" />
                         </ui:VisualElement>
                         <ui:Label text="Home" class="chapter-row__title" />
-                        <ui:Label text="Empire summary, timers, and quick orders start here." class="chapter-row__copy" />
+                        <ui:Label text="Empire, timers, quick orders." class="chapter-row__copy" />
                     </ui:VisualElement>
                     <ui:Label text="Open" class="chapter-row__action" />
                 </ui:Button>
@@ -56,7 +56,7 @@
                             <ui:Label text="Desk" class="chapter-row__badge" />
                         </ui:VisualElement>
                         <ui:Label text="Development" class="chapter-row__title" />
-                        <ui:Label text="Research, workshop, and growth cadence live here." class="chapter-row__copy" />
+                        <ui:Label text="Research, workshop, growth." class="chapter-row__copy" />
                     </ui:VisualElement>
                     <ui:Label text="Open" class="chapter-row__action" />
                 </ui:Button>
@@ -69,7 +69,7 @@
                             <ui:Label text="Ops" class="chapter-row__badge" />
                         </ui:VisualElement>
                         <ui:Label text="Operations" class="chapter-row__title" />
-                        <ui:Label text="Routes, cells, pressure, and covert support live here." class="chapter-row__copy" />
+                        <ui:Label text="Routes, cells, pressure." class="chapter-row__copy" />
                     </ui:VisualElement>
                     <ui:Label text="Route" class="chapter-row__action" />
                 </ui:Button>
@@ -82,7 +82,7 @@
                             <ui:Label name="nav-heroes-badge" text="Heroes" class="chapter-row__badge" />
                         </ui:VisualElement>
                         <ui:Label name="nav-heroes-title" text="Heroes" class="chapter-row__title" />
-                        <ui:Label name="nav-heroes-copy" text="Recruit, review, and dismiss heroes here." class="chapter-row__copy" />
+                        <ui:Label name="nav-heroes-copy" text="Recruit, review, dismiss." class="chapter-row__copy" />
                     </ui:VisualElement>
                     <ui:Label text="Open" class="chapter-row__action" />
                 </ui:Button>
@@ -95,7 +95,7 @@
                             <ui:Label text="Chat" class="chapter-row__badge" />
                         </ui:VisualElement>
                         <ui:Label text="Social" class="chapter-row__title" />
-                        <ui:Label text="Bottom comms, chat-room state, physical/pocket context, and filters anchor this lane." class="chapter-row__copy" />
+                        <ui:Label text="Comms, chat room, pocket context." class="chapter-row__copy" />
                     </ui:VisualElement>
                     <ui:Label text="Route" class="chapter-row__action" />
                 </ui:Button>
@@ -108,7 +108,7 @@
                             <ui:Label text="Help" class="chapter-row__badge" />
                         </ui:VisualElement>
                         <ui:Label text="Tester Guide" class="chapter-row__title" />
-                        <ui:Label text="First-run flow, desk map, and reporting checklist for playtesting." class="chapter-row__copy" />
+                        <ui:Label text="Flow, desks, reporting checklist." class="chapter-row__copy" />
                     </ui:VisualElement>
                     <ui:Label text="Read" class="chapter-row__action" />
                 </ui:Button>
