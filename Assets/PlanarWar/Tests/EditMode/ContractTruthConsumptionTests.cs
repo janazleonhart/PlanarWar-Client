@@ -5042,5 +5042,19 @@ namespace PlanarWar.Client.Tests.EditMode
 
 
 
+        [Test]
+        public void Black_market_operations_desk_consumes_active_operation_surface_without_fake_execution()
+        {
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/BlackMarket/BlackMarketScreenController.cs");
+            Assert.That(File.Exists(controllerPath), Is.True, "BlackMarketScreenController.cs should be available from the Unity project root.");
+
+            var controller = File.ReadAllText(controllerPath);
+            Assert.That(controller, Does.Contain("summary.BlackMarketActiveOperation"), "Operations desk should consume /api/me.blackMarketActiveOperationSurface from mapped summary truth.");
+            Assert.That(controller, Does.Contain("BuildBlackMarketActiveOperationCards"), "Operations desk should promote active-operation cards into the visible action board.");
+            Assert.That(controller, Does.Contain("World action visible"), "World-action cards stay honest/read-only until a real execution handler is wired.");
+            Assert.That(controller, Does.Contain("Select mission"), "Mission-backed operation cards may select the existing mission board instead of inventing a new action path.");
+            Assert.That(controller, Does.Not.Contain("Execute shadow operation"), "This slice must not fake first-class operation execution.");
+        }
+
     }
 }

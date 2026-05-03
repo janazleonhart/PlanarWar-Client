@@ -291,17 +291,28 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var rankedArmies = RankArmies(summary.Armies, targetArmyId);
             var frontBuildings = SelectFrontBuildings(summary);
             var frontTimers = SelectFrontTimers(summary);
+            var activeOperationSurface = useBlackMarketForceTerms ? summary.BlackMarketActiveOperation : null;
+            var activeOperationCards = BuildBlackMarketActiveOperationCards(activeOperationSurface, activeMission);
+            var hasActiveOperationSurface = activeOperationSurface != null && (activeOperationSurface.Cards.Count > 0 || activeOperationSurface.ActiveCount > 0 || activeOperationSurface.FormingCount > 0 || activeOperationSurface.CoolingCount > 0);
 
-            headline.text = warfrontWindows.Count > 0 ? "Operations desk" : summary.WarfrontSignals.Count > 0 ? "Operations snapshot" : "Operations review";
-            copy.text = LaneText(warfrontWindows.Count > 0
-                ? $"{warfrontWindows.Count} live operation window(s) open. Review routes, readiness, and direct actions."
-                : summary.WarfrontSignals.Count > 0
-                    ? "Route posture and direct actions are visible from the current payload."
-                    : "No active operations snapshot is visible in the current payload.");
-            note.text = LaneText($"Lane {summary.City.SettlementLaneLabel} • windows {warfrontWindows.Count} • timers {warfrontTimers.Count} • fronts {frontBuildings.Count} • cells {summary.Armies.Count}");
-            cardsCopy.text = LaneText(Truncate(BuildCardsCopy(summary.Armies, reinforceState, reinforceTimer, reinforceOp, warfrontWindows.Count, otherWarfrontTimers.Count) + " • " + BuildFrontCardsCopy(frontBuildings, frontTimers, nowUtc), 128));
+            headline.text = hasActiveOperationSurface
+                ? "Shadow operations desk"
+                : warfrontWindows.Count > 0 ? "Operations desk" : summary.WarfrontSignals.Count > 0 ? "Operations snapshot" : "Operations review";
+            copy.text = LaneText(hasActiveOperationSurface
+                ? FirstNonBlank(activeOperationSurface.Headline, "Black-market active-operation cards are visible from the current payload.")
+                : warfrontWindows.Count > 0
+                    ? $"{warfrontWindows.Count} live operation window(s) open. Review routes, readiness, and direct actions."
+                    : summary.WarfrontSignals.Count > 0
+                        ? "Route posture and direct actions are visible from the current payload."
+                        : "No active operations snapshot is visible in the current payload.");
+            note.text = LaneText(hasActiveOperationSurface
+                ? BuildBlackMarketActiveOperationOverview(activeOperationSurface, summary, warfrontWindows.Count, warfrontTimers.Count, frontBuildings.Count)
+                : $"Lane {summary.City.SettlementLaneLabel} • windows {warfrontWindows.Count} • timers {warfrontTimers.Count} • fronts {frontBuildings.Count} • cells {summary.Armies.Count}");
+            cardsCopy.text = LaneText(Truncate(hasActiveOperationSurface
+                ? BuildBlackMarketActiveOperationCardsCopy(activeOperationSurface, frontBuildings, frontTimers, nowUtc)
+                : BuildCardsCopy(summary.Armies, reinforceState, reinforceTimer, reinforceOp, warfrontWindows.Count, otherWarfrontTimers.Count) + " • " + BuildFrontCardsCopy(frontBuildings, frontTimers, nowUtc), 128));
 
-            windowsValue.text = LaneText(warfrontWindows.Count > 0 ? $"{warfrontWindows.Count} open • {string.Join(" • ", warfrontWindows.Take(2).Select(window => HumanizeStatus(window.Status)))}" : "No active operations window.");
+            windowsValue.text = LaneText(hasActiveOperationSurface ? BuildBlackMarketActiveOperationCounterText(activeOperationSurface) : warfrontWindows.Count > 0 ? $"{warfrontWindows.Count} open • {string.Join(" • ", warfrontWindows.Take(2).Select(window => HumanizeStatus(window.Status)))}" : "No active operations window.");
             readinessValue.text = LaneText(BuildForceReadinessSummary(summary.Armies, reinforceState, reinforceOp));
             signalValue.text = LaneText(signalPairs.Count > 0 ? CompactSignalSummary(signalPairs) : frontBuildings.Count > 0 ? BuildFrontSignalSummary(frontBuildings, frontTimers, nowUtc) : "No operations status signals.");
             missionValue.text = LaneText(activeMission != null
@@ -311,11 +322,16 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                     : summaryState.MissionOffers.Count > 0
                         ? $"{summaryState.MissionOffers.Count} available support operation(s)."
                         : "No active support operation.");
-            pressureValue.text = LaneText(!string.IsNullOrWhiteSpace(primaryWarning) ? Truncate(primaryWarning, 96) : warfrontWindows.Count > 0 ? "Operations windows are open; no extra warning headline is active." : "No extra route-pressure warning surfaced.");
-            noteValue.text = LaneText(summaryState.HasRecentMissionReceipt(nowUtc)
-                ? Truncate(summaryState.RecentMissionReceipt, 128)
-                : BuildReinforcementDeskNote(summary.Armies, reinforceState, reinforceTimer, reinforceOp, warfrontWindows.Count > 0));
-            RenderCards(cards, LaneCards(BuildCards(summary, rankedArmies, warfrontWindows, activeMission, primaryWarning, signalPairs, reinforceState, reinforceTimer, reinforceOp)));
+            pressureValue.text = LaneText(hasActiveOperationSurface
+                ? Truncate(FirstNonBlank(activeOperationSurface.Detail, primaryWarning, "Shadow operation posture is visible from /api/me.blackMarketActiveOperationSurface."), 96)
+                : !string.IsNullOrWhiteSpace(primaryWarning) ? Truncate(primaryWarning, 96) : warfrontWindows.Count > 0 ? "Operations windows are open; no extra warning headline is active." : "No extra route-pressure warning surfaced.");
+            noteValue.text = LaneText(hasActiveOperationSurface
+                ? Truncate(FirstNonBlank(activeOperationSurface.Detail, BuildBlackMarketActiveOperationCounterText(activeOperationSurface)), 128)
+                : summaryState.HasRecentMissionReceipt(nowUtc)
+                    ? Truncate(summaryState.RecentMissionReceipt, 128)
+                    : BuildReinforcementDeskNote(summary.Armies, reinforceState, reinforceTimer, reinforceOp, warfrontWindows.Count > 0));
+            var baseOperationCards = BuildCards(summary, rankedArmies, warfrontWindows, activeMission, primaryWarning, signalPairs, reinforceState, reinforceTimer, reinforceOp);
+            RenderCards(cards, LaneCards(activeOperationCards.Concat(baseOperationCards).Take(4).ToList()));
             RenderFormationManagement(summary, rankedArmies, targetArmyId);
             RenderMissionBoard(summary, rankedArmies, activeMission, primaryWarning, nowUtc);
         }
@@ -1247,6 +1263,86 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             }
 
             return cards;
+        }
+
+        private List<CardView> BuildBlackMarketActiveOperationCards(BlackMarketActiveOperationSurfaceSnapshot surface, MissionSnapshot activeMission)
+        {
+            if (surface == null || surface.Cards == null || surface.Cards.Count == 0)
+            {
+                return new List<CardView>();
+            }
+
+            return surface.Cards
+                .Where(card => card != null)
+                .Take(4)
+                .Select(card => BuildBlackMarketActiveOperationCard(card, activeMission))
+                .ToList();
+        }
+
+        private CardView BuildBlackMarketActiveOperationCard(BlackMarketActiveOperationCardSnapshot card, MissionSnapshot activeMission)
+        {
+            var missionOfferId = (card.MissionOfferIds ?? new List<string>())
+                .FirstOrDefault(id => !string.IsNullOrWhiteSpace(id) && (summaryState.MissionOffers ?? new List<MissionOfferSnapshot>()).Any(offer => string.Equals(offer.Id, id, StringComparison.OrdinalIgnoreCase)))
+                ?? string.Empty;
+            var hasMissionOffer = !string.IsNullOrWhiteSpace(missionOfferId) && activeMission == null;
+            var actionIds = card.ActionIds ?? new List<string>();
+            var missionIds = card.MissionOfferIds ?? new List<string>();
+
+            return new CardView(
+                family: BuildBlackMarketActiveOperationFamily(card),
+                title: FirstNonBlank(card.Headline, HumanizeKey(card.Id), "Shadow operation"),
+                lore: BuildBlackMarketActiveOperationLore(card, actionIds.Count, missionIds.Count),
+                note: Truncate(FirstNonBlank(card.OperatorNote, card.Summary, card.SourceSurface, "Active-operation truth is visible from the backend surface."), 128),
+                buttonText: hasMissionOffer ? "Select mission" : actionIds.Count > 0 ? "World action visible" : "Read-only",
+                buttonEnabled: hasMissionOffer && !summaryState.IsActionBusy,
+                onClick: hasMissionOffer ? () => SelectMissionOfferFromActiveOperation(missionOfferId) : null);
+        }
+
+        private void SelectMissionOfferFromActiveOperation(string missionOfferId)
+        {
+            if (string.IsNullOrWhiteSpace(missionOfferId))
+            {
+                return;
+            }
+
+            selectedMissionOfferId = missionOfferId.Trim();
+            RenderCurrentMissionBoard();
+        }
+
+        private static string BuildBlackMarketActiveOperationFamily(BlackMarketActiveOperationCardSnapshot card)
+        {
+            var state = HumanizeStatus(card?.State);
+            var risk = string.IsNullOrWhiteSpace(card?.Risk) ? string.Empty : $" • {HumanizeStatus(card.Risk)} risk";
+            var kind = string.IsNullOrWhiteSpace(card?.Kind) ? "operation" : HumanizeKey(card.Kind);
+            return $"{state} {kind}{risk}".Trim();
+        }
+
+        private static string BuildBlackMarketActiveOperationLore(BlackMarketActiveOperationCardSnapshot card, int actionCount, int missionCount)
+        {
+            var refs = new List<string>();
+            if (actionCount > 0) refs.Add($"{actionCount} action ref{(actionCount == 1 ? string.Empty : "s")}");
+            if (missionCount > 0) refs.Add($"{missionCount} mission ref{(missionCount == 1 ? string.Empty : "s")}");
+            if (!string.IsNullOrWhiteSpace(card?.SourceSurface)) refs.Add(card.SourceSurface);
+
+            var prefix = FirstNonBlank(card?.Summary, "Black-market operation card surfaced from live payload truth.");
+            return Truncate(refs.Count > 0 ? $"{prefix} • {string.Join(" • ", refs)}" : prefix, 148);
+        }
+
+        private static string BuildBlackMarketActiveOperationOverview(BlackMarketActiveOperationSurfaceSnapshot surface, ShellSummarySnapshot summary, int windowCount, int timerCount, int frontCount)
+        {
+            return $"Lane {summary.City.SettlementLaneLabel} • active {surface.ActiveCount} • forming {surface.FormingCount} • cooling {surface.CoolingCount} • windows {windowCount} • timers {timerCount} • fronts {frontCount} • cells {summary.Armies.Count}";
+        }
+
+        private static string BuildBlackMarketActiveOperationCounterText(BlackMarketActiveOperationSurfaceSnapshot surface)
+        {
+            if (surface == null) return "No active-operation surface.";
+            return $"{surface.ActiveCount} live • {surface.FormingCount} forming • {surface.CoolingCount} cooling";
+        }
+
+        private static string BuildBlackMarketActiveOperationCardsCopy(BlackMarketActiveOperationSurfaceSnapshot surface, List<BuildingSnapshot> fronts, List<CityTimerEntrySnapshot> timers, DateTime nowUtc)
+        {
+            var headline = FirstNonBlank(surface?.Headline, BuildBlackMarketActiveOperationCounterText(surface));
+            return $"{BuildBlackMarketActiveOperationCounterText(surface)} • {headline} • {BuildFrontCardsCopy(fronts, timers, nowUtc)}";
         }
 
         private static List<CardView> BuildFrontCards(ShellSummarySnapshot summary, DateTime nowUtc)
