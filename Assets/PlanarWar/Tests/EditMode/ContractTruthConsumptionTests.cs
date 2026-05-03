@@ -3149,6 +3149,29 @@ namespace PlanarWar.Client.Tests.EditMode
 
 
         [Test]
+        public void Home_resource_summary_wrap_cleanup_keeps_readable_strip_contract()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var appStylePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(appStylePath), Is.True, "AppShell.uss should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(appStylePath);
+
+            Assert.That(uxml, Does.Contain("name=\"resources-value\""));
+            Assert.That(uxml, Does.Contain("home-resource-strip__value"));
+            Assert.That(uxml, Does.Contain("Empire at a glance"), "The resource strip should remain a live summary surface rather than fake setup or reward copy.");
+
+            Assert.That(uss, Does.Contain("Home resource summary wrap cleanup v1"));
+            Assert.That(uss, Does.Contain(".home-resource-strip__value"));
+            Assert.That(uss, Does.Contain("max-width: 100%"));
+            Assert.That(uss, Does.Contain("white-space: normal"));
+            Assert.That(uss, Does.Contain("overflow: visible"));
+        }
+
+
+        [Test]
         public void Home_quick_orders_button_width_cleanup_keeps_aligned_button_contract()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");

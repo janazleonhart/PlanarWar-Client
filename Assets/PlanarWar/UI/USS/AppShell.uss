@@ -2034,11 +2034,22 @@
 .home-resource-strip {
     padding-top: 10px;
     padding-bottom: 10px;
+    gap: 5px;
+    align-items: stretch;
+}
+
+/* Home resource summary wrap cleanup v1 */
+.home-resource-strip__value {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow: visible;
+    -unity-text-align: upper-left;
 }
 
 .home-resource-strip .ticker-value {
-    font-size: 16px;
-    line-height: 1.25;
+    font-size: 15px;
+    line-height: 1.35;
 }
 
 .home-quick-orders {
