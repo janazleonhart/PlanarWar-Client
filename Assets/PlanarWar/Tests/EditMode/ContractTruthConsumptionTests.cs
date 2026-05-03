@@ -4985,6 +4985,35 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
 
+        [Test]
+        public void Home_main_panel_padding_cleanup_tightens_home_spacing_without_changing_payload_or_actions()
+        {
+            var uxmlPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var ussPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+
+            Assert.That(File.Exists(uxmlPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(ussPath), Is.True, "AppShell.uss should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(uxmlPath);
+            var uss = File.ReadAllText(ussPath);
+
+            Assert.That(uxml, Does.Contain("screen-scroll-content summary-screen-content home-main-panel"), "The Home summary content should have a scoped main-panel spacing class.");
+            Assert.That(uxml, Does.Contain("name=\"resources-value\""), "Home resource payload truth should remain wired through the existing label.");
+            Assert.That(uxml, Does.Contain("name=\"refresh-button\""), "Refresh summary action should remain wired through the existing button.");
+            Assert.That(uxml, Does.Contain("name=\"home-development-button\""), "Home Development route action should remain wired through the existing button.");
+            Assert.That(uxml, Does.Contain("name=\"post-founder-development-button\""), "Next-desk Development action should remain wired through the existing button.");
+            Assert.That(uxml, Does.Contain("name=\"early-lane-posture-card\""), "Lane posture card should remain present and backend-driven.");
+            Assert.That(uss, Does.Contain("Home main panel padding cleanup v1"));
+            Assert.That(uss, Does.Contain(".home-main-panel"), "Home panel tightening should be scoped to the Home summary surface.");
+            Assert.That(uss, Does.Contain("gap: 10px"), "Home panel vertical rhythm should be tighter without collapsing sections.");
+            Assert.That(uss, Does.Contain("padding-bottom: 4px"), "Home panel bottom padding should be trimmed to show more useful content before scrolling.");
+            Assert.That(uss, Does.Contain(".home-main-panel .summary-card--action"), "Action-card padding should be tightened only inside the Home panel.");
+            Assert.That(uss, Does.Not.Contain("fake tutorial progress"));
+            Assert.That(uss, Does.Not.Contain("fake resource grant"));
+            Assert.That(uss, Does.Not.Contain("disable scrolling"));
+        }
+
+
 
     }
 }
