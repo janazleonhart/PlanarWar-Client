@@ -93,13 +93,14 @@ namespace PlanarWar.Client.UI
             };
             style.normal.textColor = Color.white;
 
-            GUILayout.BeginArea(new Rect(12, 12, 280, 170), style);
+            GUILayout.BeginArea(new Rect(12, 12, 320, 190), style);
             GUILayout.Label("Planar War Debug HUD");
             GUILayout.Space(6);
             GUILayout.Label($"WS: {_wsStatus}");
             GUILayout.Label($"Op: {_lastOp}");
             GUILayout.Label($"Shard: {_lastShard}");
-            GUILayout.Label($"Room: {_lastRoom}");
+            GUILayout.Label($"Room: {FormatRoomLabel(_lastRoom)}");
+            GUILayout.Label("Pocket shells may be unattached.");
             GUILayout.Label($"Chat: {_lastChat}");
             GUILayout.Label($"Error: {_lastError}");
             GUILayout.Space(8);
@@ -135,8 +136,16 @@ namespace PlanarWar.Client.UI
 
         private void OnWhereAmIResult(JObject payload)
         {
-            _lastRoom = payload?["roomId"]?.Read<string>() ?? _lastRoom;
+            var roomId = payload?["roomId"]?.Read<string>();
+            _lastRoom = string.IsNullOrWhiteSpace(roomId) ? "(unattached)" : roomId.Trim();
             _lastShard = payload?["shardId"]?.Read<string>() ?? _lastShard;
+        }
+
+        private static string FormatRoomLabel(string roomId)
+        {
+            return string.IsNullOrWhiteSpace(roomId) || roomId == "-"
+                ? "(unattached)"
+                : roomId;
         }
 
         private void OnChat(JObject payload)

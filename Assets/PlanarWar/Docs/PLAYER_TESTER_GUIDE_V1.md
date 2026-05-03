@@ -8,7 +8,7 @@ This guide is for early testers using the Unity client after the client gameplay
 
 ### 1. Connect
 
-Start the client and confirm the top bar shows a connected state. If chat room state is detached but HTTP summary refresh still works, gameplay actions may still function; report the room state separately instead of treating every disconnected room label as a gameplay failure.
+Start the client and confirm the top bar shows a connected state. If chat room state is detached but HTTP summary refresh still works, gameplay actions may still function; report the room state separately instead of treating every disconnected room label as a gameplay failure. City and Black Market command shells are pocket-management contexts, so a room-unattached label can be expected when the player is managing a settlement instead of standing in a physical MUD room.
 
 ### 2. Register or sign in
 
@@ -235,7 +235,9 @@ Gear compatibility should follow backend slot truth. Do not report “my favorit
 
 ## Social / Comms desk
 
-Social shows room state, recent comms, and filters. The bottom chat tray is the live chat surface.
+Social shows pocket/room state, recent comms, and filters. The bottom chat tray is the live chat surface.
+
+City and Black Market shells may show a pocket context instead of a physical room. That is not automatically a failure: settlements are management contexts and should not fake regional room membership. Room chat still needs a real WebSocket room attachment.
 
 Use filters to view:
 
@@ -301,5 +303,5 @@ For a quick tester pass, run this loop:
 14. Equip and unequip the crafted item if compatible.
 15. Open Operations.
 16. Start or resolve one available operation.
-17. Open Social and send or filter chat if room state is attached.
+17. Open Social and send or filter chat if room state is attached; if it shows a City/Market pocket context, confirm the copy explains that no physical room is attached.
 18. Report only concrete failures or unclear results.

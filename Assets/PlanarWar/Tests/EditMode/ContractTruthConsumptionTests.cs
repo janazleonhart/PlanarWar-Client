@@ -3019,6 +3019,35 @@ namespace PlanarWar.Client.Tests.EditMode
 
 
         [Test]
+        public void Unity_pocket_context_room_label_clarification_locks_no_fake_room_truth()
+        {
+            var guidePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Docs/PLAYER_TESTER_GUIDE_V1.md");
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/AppShellController.cs");
+            var hudPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/ConnectionHud.cs");
+            Assert.That(File.Exists(guidePath), Is.True, "Tester guide should be available from the Unity project root.");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(controllerPath), Is.True, "AppShellController.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(hudPath), Is.True, "ConnectionHud.cs should be available from the Unity project root.");
+
+            var guide = File.ReadAllText(guidePath);
+            var uxml = File.ReadAllText(appShellPath);
+            var controller = File.ReadAllText(controllerPath);
+            var hud = File.ReadAllText(hudPath);
+
+            Assert.That(uxml, Does.Contain("Room / Pocket"), "Top status strip should label the value as room/pocket truth instead of implying only physical rooms.");
+            Assert.That(uxml, Does.Contain("pocket/room state"), "Social navigation copy should acknowledge pocket context room truth.");
+            Assert.That(controller, Does.Contain("IsPocketManagementContext"), "Shell controller should derive pocket context from live summary + session room truth.");
+            Assert.That(controller, Does.Contain("Pocket context is expected for City/Black Market command shells"), "Comms copy should explain expected City/Black Market pocket contexts.");
+            Assert.That(controller, Does.Contain("No fake physical room is attached"), "Social copy must not pretend a settlement shell has physical MUD room membership.");
+            Assert.That(controller, Does.Contain("dedicated City/Market channels and relays remain deferred"), "The slice must not smuggle in dedicated channels or relay implementation.");
+            Assert.That(hud, Does.Contain("Pocket shells may be unattached."), "Debug HUD should not make expected pocket detachment look like a generic broken room state.");
+            Assert.That(guide, Does.Contain("pocket-management contexts"), "Tester guide should explain why City/Black Market shells can be room-unattached.");
+            Assert.That(guide, Does.Contain("should not fake regional room membership"), "Tester guide should keep no-fake-region guardrail explicit.");
+        }
+
+
+        [Test]
         public void Chapter_rail_status_labels_have_separation_styles()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
