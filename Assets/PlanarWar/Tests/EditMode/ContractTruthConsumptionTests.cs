@@ -4807,5 +4807,30 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
 
+        [Test]
+        public void Header_card_height_cleanup_tightens_top_strip_without_changing_payload_truth()
+        {
+            var uxmlPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var ussPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+
+            Assert.That(File.Exists(uxmlPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(ussPath), Is.True, "AppShell.uss should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(uxmlPath);
+            var uss = File.ReadAllText(ussPath);
+
+            Assert.That(uxml, Does.Contain("name=\"top-strip\""), "The top strip must remain the canonical header container.");
+            Assert.That(uxml, Does.Contain("name=\"connection-value\""), "Connection payload truth should stay wired through the existing label.");
+            Assert.That(uxml, Does.Contain("name=\"shard-value\""), "Shard payload truth should stay wired through the existing label.");
+            Assert.That(uxml, Does.Contain("name=\"room-value\""), "Room / Pocket payload truth should stay wired through the existing label.");
+            Assert.That(uxml, Does.Contain("name=\"last-updated-value\""), "Summary-status payload truth should stay wired through the existing label.");
+            Assert.That(uxml, Does.Contain("name=\"account-value\""), "Account payload truth should stay wired through the existing label.");
+            Assert.That(uss, Does.Contain("Header card height cleanup v1"));
+            Assert.That(uss, Does.Contain(".top-strip .metric-card"), "Header card tightening should be scoped to the top strip instead of shrinking every metric card in the client.");
+            Assert.That(uss, Does.Contain("min-height: 72px"), "Top header cards should be tightened enough to give the workspace more vertical room.");
+            Assert.That(uss, Does.Contain(".top-strip .auth-button-row .action-button"), "The sign-out button should be compacted only inside the top strip auth card.");
+        }
+
+
     }
 }
