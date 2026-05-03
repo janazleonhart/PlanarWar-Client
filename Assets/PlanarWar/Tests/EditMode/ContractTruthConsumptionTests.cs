@@ -114,6 +114,158 @@ namespace PlanarWar.Client.Tests.EditMode
                 ContractTruthText.BuildShadowEffectsValue(shadowEffects, "fallback"),
                 Is.EqualTo("Receipt chain linked • Covert carry carried"));
         }
+
+
+        [Test]
+        public void Formatter_builds_city_contract_recovery_board_copy_without_execution_language()
+        {
+            var board = new CityContractRecoveryBoardSnapshot
+            {
+                State = "opportunities_available",
+                Title = "City contract recovery board has candidate opportunities",
+                RecommendedCityDeskAction = "Target the regional recovery desk at the hottest eligible region.",
+                EligibleRegionIds = new List<string> { "ash_road" },
+                CandidateCount = 1,
+                Candidates = new List<CityContractRecoveryCandidateSnapshot>
+                {
+                    new CityContractRecoveryCandidateSnapshot
+                    {
+                        Title = "Stabilize Ash Road",
+                        Priority = "high",
+                        Desk = "regional_recovery",
+                        EligibleRegionIds = new List<string> { "ash_road" },
+                        NextReceiptFamily = "city_contract_regional_stabilization_receipt",
+                        RequiredResources = new CityContractRecoveryResourcesRequirementSnapshot
+                        {
+                            Affordability = "insufficient_resources",
+                            Required = new ResourceSnapshot { Food = 25, Materials = 40 },
+                            Shortfall = new ResourceSnapshot { Materials = 12 },
+                        },
+                    },
+                },
+            };
+
+            Assert.That(
+                ContractTruthText.BuildCityContractRecoveryBoardValue(board, "fallback"),
+                Is.EqualTo("1 candidate • Stabilize Ash Road • opportunities available"));
+            Assert.That(
+                ContractTruthText.BuildCityContractRecoveryResourcesValue(board.Candidates[0].RequiredResources, "fallback"),
+                Is.EqualTo("insufficient resources • Shortfall 12 materials"));
+            Assert.That(
+                ContractTruthText.BuildCityContractRecoveryBoardNote(board, "fallback"),
+                Does.Contain("Target the regional recovery desk"));
+            Assert.That(
+                ContractTruthText.BuildCityContractRecoveryBoardNote(board, "fallback"),
+                Does.Contain("Next receipt: city contract regional stabilization receipt"));
+        }
+
+        [Test]
+        public void Client_summary_mapper_captures_city_contract_recovery_board()
+        {
+            var summary = ShellSummarySnapshotMapper.Map(
+                "{" +
+                "\"hasCity\":true," +
+                "\"city\":{\"name\":\"Tempest\",\"settlementLane\":\"city\",\"settlementLaneProfile\":{\"label\":\"City\"}}," +
+                "\"cityContractRecoveryBoard\":{" +
+                "\"state\":\"opportunities_available\"," +
+                "\"title\":\"Recovery board\"," +
+                "\"summary\":\"One candidate can be summarized.\"," +
+                "\"settlementLane\":\"city\"," +
+                "\"recommendedFocus\":\"regional_recovery\"," +
+                "\"recommendedCityDeskAction\":\"Target regional recovery.\"," +
+                "\"eligibleRegionIds\":[\"ash_road\"]," +
+                "\"candidateCount\":1," +
+                "\"sourceSurfaces\":[\"/api/me.worldConsequences\",\"/api/me.cityMudWorldConsequenceBridge\"]," +
+                "\"guardrails\":[\"Read-only board\",\"Does not grant items or rewards\"]," +
+                "\"latestRelevantReceipt\":{\"id\":\"r1\",\"createdAt\":\"2026-05-03T00:00:00.000Z\",\"title\":\"Recovered route\",\"summary\":\"Relief moved.\",\"severity\":\"medium\",\"outcome\":\"success\",\"source\":\"runtime_response\",\"regionId\":\"ash_road\"}," +
+                "\"candidates\":[{" +
+                "\"id\":\"recovery_action_region_ash_road\"," +
+                "\"actionId\":\"action_region_ash_road\"," +
+                "\"title\":\"Stabilize Ash Road\"," +
+                "\"summary\":\"Recover a pressured route.\"," +
+                "\"priority\":\"high\"," +
+                "\"desk\":\"regional_recovery\"," +
+                "\"recommendedCityDeskAction\":\"Target the regional recovery desk.\"," +
+                "\"eligibleRegionIds\":[\"ash_road\"]," +
+                "\"sourcePressureConsequence\":{\"sourceHook\":\"motherBrainBurden\",\"sourceRegionId\":\"ash_road\",\"sourceLane\":\"regional\",\"priority\":\"high\",\"actionTitle\":\"Stabilize Ash Road\",\"actionSummary\":\"Recover route pressure.\",\"evidence\":[{\"label\":\"destabilization\",\"value\":42,\"tone\":\"high\"}]}," +
+                "\"requiredPosture\":{\"settlementLane\":\"city\",\"bridgeState\":\"pressured\",\"bridgeFocus\":\"regional_recovery\",\"bridgePosture\":\"support\",\"actionPriority\":\"high\"}," +
+                "\"requiredResources\":{\"required\":{\"food\":25,\"materials\":40},\"shortfall\":{\"materials\":12},\"affordability\":\"insufficient_resources\",\"executable\":false}," +
+                "\"nextReceiptFamily\":\"city_contract_regional_stabilization_receipt\"," +
+                "\"guardrails\":[\"Candidate only\"]," +
+                "\"latestRelevantSummary\":{\"id\":\"c1\",\"createdAt\":\"2026-05-03T00:00:00.000Z\",\"title\":\"Ash Road unstable\",\"summary\":\"Pressure rose.\",\"severity\":\"high\",\"source\":\"world\",\"regionId\":\"ash_road\"}," +
+                "\"recommendedMoves\":[\"Review supply support\"]" +
+                "}]" +
+                "}" +
+                "}");
+
+            Assert.That(summary.CityContractRecoveryBoard, Is.Not.Null);
+            Assert.That(summary.CityContractRecoveryBoard.State, Is.EqualTo("opportunities_available"));
+            Assert.That(summary.CityContractRecoveryBoard.CandidateCount, Is.EqualTo(1));
+            Assert.That(summary.CityContractRecoveryBoard.EligibleRegionIds, Does.Contain("ash_road"));
+            Assert.That(summary.CityContractRecoveryBoard.Guardrails, Does.Contain("Read-only board"));
+            Assert.That(summary.CityContractRecoveryBoard.LatestRelevantReceipt.Title, Is.EqualTo("Recovered route"));
+            Assert.That(summary.CityContractRecoveryBoard.Candidates, Has.Count.EqualTo(1));
+            Assert.That(summary.CityContractRecoveryBoard.Candidates[0].Title, Is.EqualTo("Stabilize Ash Road"));
+            Assert.That(summary.CityContractRecoveryBoard.Candidates[0].SourcePressureConsequence.Evidence[0].Value, Is.EqualTo(42));
+            Assert.That(summary.CityContractRecoveryBoard.Candidates[0].RequiredResources.Shortfall.Materials, Is.EqualTo(12));
+            Assert.That(summary.CityContractRecoveryBoard.Candidates[0].RequiredPosture.BridgeFocus, Is.EqualTo("regional_recovery"));
+            Assert.That(summary.CityContractRecoveryBoard.Candidates[0].RecommendedMoves, Does.Contain("Review supply support"));
+        }
+
+        [Test]
+        public void Client_summary_mapper_ignores_oversized_city_contract_recovery_board_numbers_without_breaking_city_summary()
+        {
+            var summary = ShellSummarySnapshotMapper.Map(
+                "{" +
+                "\"hasCity\":true," +
+                "\"city\":{\"name\":\"Tempest\",\"settlementLane\":\"city\",\"settlementLaneProfile\":{\"label\":\"City\"}}," +
+                "\"cityContractRecoveryBoard\":{" +
+                "\"state\":\"opportunities_available\"," +
+                "\"candidateCount\":9223372036854775807," +
+                "\"eligibleRegionIds\":[\"ash_road\"]," +
+                "\"candidates\":[{" +
+                "\"title\":\"Stabilize Ash Road\"," +
+                "\"sourcePressureConsequence\":{\"evidence\":[{\"label\":\"oversized signal\",\"value\":9223372036854775807,\"tone\":\"watch\"}]}," +
+                "\"requiredResources\":{\"required\":{\"food\":25},\"affordability\":\"advisory_only\",\"cooldownMsRemaining\":9223372036854775807}" +
+                "}]" +
+                "}" +
+                "}");
+
+            Assert.That(summary.HasCity, Is.True);
+            Assert.That(summary.City.Name, Is.EqualTo("Tempest"));
+            Assert.That(summary.CityContractRecoveryBoard, Is.Not.Null);
+            Assert.That(summary.CityContractRecoveryBoard.CandidateCount, Is.EqualTo(1));
+            Assert.That(summary.CityContractRecoveryBoard.Candidates, Has.Count.EqualTo(1));
+            Assert.That(summary.CityContractRecoveryBoard.Candidates[0].SourcePressureConsequence.Evidence[0].Value, Is.Null);
+            Assert.That(summary.CityContractRecoveryBoard.Candidates[0].RequiredResources.CooldownMsRemaining, Is.Null);
+        }
+
+        [Test]
+        public void Home_surface_exposes_city_contract_recovery_board_without_execution_claims()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var summaryPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs");
+            var guidePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Docs/PLAYER_TESTER_GUIDE_V1.md");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(summaryPath), Is.True, "SummaryScreenController.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(guidePath), Is.True, "PLAYER_TESTER_GUIDE_V1.md should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var summary = File.ReadAllText(summaryPath);
+            var guide = File.ReadAllText(guidePath);
+
+            Assert.That(uxml, Does.Contain("city-contract-recovery-board-card"));
+            Assert.That(uxml, Does.Contain("city-contract-recovery-board-candidate-value"));
+            Assert.That(uxml, Does.Contain("city-contract-recovery-board-resources-value"));
+            Assert.That(uxml, Does.Contain("city-contract-recovery-board-receipt-value"));
+            Assert.That(summary, Does.Contain("RenderCityContractRecoveryBoard"));
+            Assert.That(summary, Does.Contain("CityContractRecoveryBoard"));
+            Assert.That(guide, Does.Contain("Regional recovery board"));
+            Assert.That(guide, Does.Contain("/api/me.cityContractRecoveryBoard"));
+            Assert.That(guide, Does.Contain("does not execute contracts"));
+            Assert.That(guide, Does.Not.Contain("recovery reward button"));
+        }
+
         [Test]
         public void Development_front_lane_counts_operator_front_timers_as_visible_front_timing()
         {

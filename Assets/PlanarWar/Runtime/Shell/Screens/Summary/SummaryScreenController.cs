@@ -112,6 +112,19 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private readonly Label cityMudConsequenceBridgeGuardrails;
         private readonly Button cityMudConsequenceBridgeButton;
         private ShellScreen cityMudConsequenceBridgeRecommendedScreen = ShellScreen.City;
+        private readonly VisualElement cityContractRecoveryBoardCard;
+        private readonly Label cityContractRecoveryBoardBadge;
+        private readonly Label cityContractRecoveryBoardHeadline;
+        private readonly Label cityContractRecoveryBoardSummary;
+        private readonly Label cityContractRecoveryBoardRecommended;
+        private readonly Label cityContractRecoveryBoardReason;
+        private readonly Label cityContractRecoveryBoardRegions;
+        private readonly Label cityContractRecoveryBoardCandidate;
+        private readonly Label cityContractRecoveryBoardResources;
+        private readonly Label cityContractRecoveryBoardReceipt;
+        private readonly Label cityContractRecoveryBoardGuardrails;
+        private readonly Button cityContractRecoveryBoardButton;
+        private ShellScreen cityContractRecoveryBoardRecommendedScreen = ShellScreen.City;
         private readonly VisualElement founderSetupCard;
         private readonly TextField founderCityNameField;
         private readonly Label founderSetupHeadline;
@@ -228,6 +241,18 @@ namespace PlanarWar.Client.UI.Screens.Summary
             cityMudConsequenceBridgeFollowThrough = root.Q<Label>("city-mud-consequence-bridge-follow-through-value");
             cityMudConsequenceBridgeGuardrails = root.Q<Label>("city-mud-consequence-bridge-guardrails-value");
             cityMudConsequenceBridgeButton = root.Q<Button>("city-mud-consequence-bridge-button");
+            cityContractRecoveryBoardCard = root.Q<VisualElement>("city-contract-recovery-board-card");
+            cityContractRecoveryBoardBadge = root.Q<Label>("city-contract-recovery-board-badge-value");
+            cityContractRecoveryBoardHeadline = root.Q<Label>("city-contract-recovery-board-headline-value");
+            cityContractRecoveryBoardSummary = root.Q<Label>("city-contract-recovery-board-summary-value");
+            cityContractRecoveryBoardRecommended = root.Q<Label>("city-contract-recovery-board-recommended-value");
+            cityContractRecoveryBoardReason = root.Q<Label>("city-contract-recovery-board-reason-value");
+            cityContractRecoveryBoardRegions = root.Q<Label>("city-contract-recovery-board-regions-value");
+            cityContractRecoveryBoardCandidate = root.Q<Label>("city-contract-recovery-board-candidate-value");
+            cityContractRecoveryBoardResources = root.Q<Label>("city-contract-recovery-board-resources-value");
+            cityContractRecoveryBoardReceipt = root.Q<Label>("city-contract-recovery-board-receipt-value");
+            cityContractRecoveryBoardGuardrails = root.Q<Label>("city-contract-recovery-board-guardrails-value");
+            cityContractRecoveryBoardButton = root.Q<Button>("city-contract-recovery-board-button");
             founderSetupCard = root.Q<VisualElement>("founder-setup-card");
             founderCityNameField = root.Q<TextField>("founder-city-name-field");
             founderSetupHeadline = root.Q<Label>("founder-setup-headline-value");
@@ -254,6 +279,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             motherBrainActionPathButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(motherBrainActionPathRecommendedScreen, onNavigateRequested));
             publicInfrastructureEconomySpineButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(publicInfrastructureEconomySpineRecommendedScreen, onNavigateRequested));
             cityMudConsequenceBridgeButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(cityMudConsequenceBridgeRecommendedScreen, onNavigateRequested));
+            cityContractRecoveryBoardButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(cityContractRecoveryBoardRecommendedScreen, onNavigateRequested));
         }
 
         public void Render(ShellSummarySnapshot s, bool isSummaryLoaded, bool isActionBusy = false, string actionStatus = null, bool actionFailed = false)
@@ -281,6 +307,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             RenderMotherBrainActionPath(s, isSummaryLoaded);
             RenderPublicInfrastructureEconomySpine(s, isSummaryLoaded);
             RenderCityMudConsequenceBridge(s, isSummaryLoaded);
+            RenderCityContractRecoveryBoard(s, isSummaryLoaded);
 
             RenderPressureDesk(s);
         }
@@ -634,6 +661,137 @@ namespace PlanarWar.Client.UI.Screens.Summary
             return "Public infrastructure receipt follow-through is waiting on backend state.";
         }
 
+
+
+        private void RenderCityContractRecoveryBoard(ShellSummarySnapshot summary, bool isSummaryLoaded)
+        {
+            var board = summary?.CityContractRecoveryBoard;
+            var shouldShow = isSummaryLoaded && summary != null && summary.HasCity && board != null;
+            if (cityContractRecoveryBoardCard != null)
+            {
+                cityContractRecoveryBoardCard.style.display = shouldShow ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            if (!shouldShow)
+            {
+                return;
+            }
+
+            var recommendedScreen = ResolveCityContractRecoveryBoardScreen(board);
+            cityContractRecoveryBoardRecommendedScreen = recommendedScreen;
+            var lead = board.Candidates != null && board.Candidates.Count > 0 ? board.Candidates[0] : null;
+
+            if (cityContractRecoveryBoardBadge != null)
+            {
+                cityContractRecoveryBoardBadge.text = $"Recovery board • {HumanizeToken(FirstNonBlank(board.State, board.RecommendedFocus, "watch"))}";
+            }
+
+            if (cityContractRecoveryBoardHeadline != null)
+            {
+                cityContractRecoveryBoardHeadline.text = FirstNonBlank(board.Title, "City contract recovery board");
+            }
+
+            if (cityContractRecoveryBoardSummary != null)
+            {
+                cityContractRecoveryBoardSummary.text = FirstNonBlank(board.Summary, "Regional recovery candidates from /api/me.cityContractRecoveryBoard will appear here when backend truth supports them.");
+            }
+
+            if (cityContractRecoveryBoardRecommended != null)
+            {
+                cityContractRecoveryBoardRecommended.text = FirstNonBlank(board.RecommendedCityDeskAction, ContractTruthText.BuildCityContractRecoveryBoardValue(board, "Watch regional recovery truth."));
+            }
+
+            if (cityContractRecoveryBoardReason != null)
+            {
+                cityContractRecoveryBoardReason.text = ContractTruthText.BuildCityContractRecoveryBoardNote(board, "This read-only board consumes existing consequence, receipt, and city-support truth only; it does not execute contracts or invent rewards.");
+            }
+
+            if (cityContractRecoveryBoardRegions != null)
+            {
+                cityContractRecoveryBoardRegions.text = FormatCityContractRecoveryRegions(board);
+            }
+
+            if (cityContractRecoveryBoardCandidate != null)
+            {
+                cityContractRecoveryBoardCandidate.text = lead == null
+                    ? "No candidate card is strong enough to list yet."
+                    : ContractTruthText.BuildCityContractRecoveryCandidateValue(lead, "Regional recovery candidate waiting on backend summary.");
+            }
+
+            if (cityContractRecoveryBoardResources != null)
+            {
+                cityContractRecoveryBoardResources.text = lead == null
+                    ? "Runtime resource requirement: none surfaced."
+                    : ContractTruthText.BuildCityContractRecoveryResourcesValue(lead.RequiredResources, "Runtime resource requirement: advisory only.");
+            }
+
+            if (cityContractRecoveryBoardReceipt != null)
+            {
+                cityContractRecoveryBoardReceipt.text = FormatCityContractRecoveryReceipt(board, lead);
+            }
+
+            if (cityContractRecoveryBoardGuardrails != null)
+            {
+                cityContractRecoveryBoardGuardrails.text = FormatPostureList(board.Guardrails, "Read-only board: no fake rewards, item grants, levels, taxes, queue timers, protection, exposure, Rogue Director, TOMS, Crucible, or autonomous Mother Brain behavior.");
+            }
+
+            if (cityContractRecoveryBoardButton != null)
+            {
+                cityContractRecoveryBoardButton.text = BuildPostureButtonLabel(recommendedScreen, summary);
+                cityContractRecoveryBoardButton.SetEnabled(true);
+            }
+        }
+
+        private static ShellScreen ResolveCityContractRecoveryBoardScreen(CityContractRecoveryBoardSnapshot board)
+        {
+            var lane = NormalizeLane(board?.SettlementLane);
+            if (lane == "black_market")
+            {
+                return ShellScreen.BlackMarket;
+            }
+
+            var focus = (board?.RecommendedFocus ?? string.Empty).Trim().Replace("-", "_").Replace(" ", "_").ToLowerInvariant();
+            if (focus == "regional_recovery" || focus == "public_backbone" || focus == "city_support")
+            {
+                return ShellScreen.City;
+            }
+
+            return ShellScreen.City;
+        }
+
+        private static string FormatCityContractRecoveryRegions(CityContractRecoveryBoardSnapshot board)
+        {
+            if (board?.EligibleRegionIds != null && board.EligibleRegionIds.Count > 0)
+            {
+                return $"Eligible regions: {string.Join(", ", board.EligibleRegionIds)}.";
+            }
+
+            return "Eligible regions: none surfaced yet.";
+        }
+
+        private static string FormatCityContractRecoveryReceipt(CityContractRecoveryBoardSnapshot board, CityContractRecoveryCandidateSnapshot lead)
+        {
+            var lines = new List<string>();
+            if (!string.IsNullOrWhiteSpace(lead?.NextReceiptFamily))
+            {
+                lines.Add($"Next receipt family: {HumanizeToken(lead.NextReceiptFamily)}.");
+            }
+
+            var receipt = board?.LatestRelevantReceipt ?? lead?.LatestRelevantSummary ?? board?.LatestRelevantConsequence;
+            if (receipt != null)
+            {
+                lines.Add($"Latest relevant truth: {FirstNonBlank(receipt.Title, receipt.Id, "receipt")} • {HumanizeToken(receipt.Severity)} • {FirstNonBlank(receipt.RegionId, "unknown region")}.");
+            }
+
+            if (lead?.RecommendedMoves != null && lead.RecommendedMoves.Count > 0)
+            {
+                lines.Add(FormatPostureList(lead.RecommendedMoves, string.Empty));
+            }
+
+            return lines.Count > 0
+                ? string.Join("\n", lines.Where(line => !string.IsNullOrWhiteSpace(line)))
+                : "No latest recovery receipt or consequence summary surfaced yet.";
+        }
 
         private void RenderCityMudConsequenceBridge(ShellSummarySnapshot summary, bool isSummaryLoaded)
         {

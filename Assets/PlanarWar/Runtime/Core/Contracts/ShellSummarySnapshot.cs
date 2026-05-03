@@ -17,6 +17,7 @@ namespace PlanarWar.Client.Core.Contracts
         public MotherBrainPressureStatusSnapshot MotherBrainPressureStatus { get; set; }
         public PublicInfrastructureSummarySnapshot PublicInfrastructureSummary { get; set; }
         public CityMudWorldConsequenceBridgeSnapshot CityMudWorldConsequenceBridge { get; set; }
+        public CityContractRecoveryBoardSnapshot CityContractRecoveryBoard { get; set; }
         public bool HasCity { get; set; }
         public CitySummarySnapshot City { get; set; } = new();
         public List<BuildingSnapshot> Buildings { get; set; } = new();
@@ -273,6 +274,101 @@ namespace PlanarWar.Client.Core.Contracts
         public string CreatedAt { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
         public string Summary { get; set; } = string.Empty;
+        public string Severity { get; set; } = string.Empty;
+        public string Outcome { get; set; } = string.Empty;
+        public string Source { get; set; } = string.Empty;
+        public string RegionId { get; set; } = string.Empty;
+        public string RuntimeActionId { get; set; } = string.Empty;
+    }
+
+    [Serializable]
+    public sealed class CityContractRecoveryBoardSnapshot
+    {
+        public string State { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Summary { get; set; } = string.Empty;
+        public string SettlementLane { get; set; } = string.Empty;
+        public string RecommendedFocus { get; set; } = string.Empty;
+        public string RecommendedCityDeskAction { get; set; } = string.Empty;
+        public List<string> EligibleRegionIds { get; set; } = new();
+        public int CandidateCount { get; set; }
+        public List<CityContractRecoveryCandidateSnapshot> Candidates { get; set; } = new();
+        public List<string> SourceSurfaces { get; set; } = new();
+        public List<string> Guardrails { get; set; } = new();
+        public CityContractRecoveryReceiptSnapshot LatestRelevantReceipt { get; set; }
+        public CityContractRecoveryReceiptSnapshot LatestRelevantConsequence { get; set; }
+    }
+
+    [Serializable]
+    public sealed class CityContractRecoveryCandidateSnapshot
+    {
+        public string Id { get; set; } = string.Empty;
+        public string ActionId { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Summary { get; set; } = string.Empty;
+        public string Priority { get; set; } = string.Empty;
+        public string Desk { get; set; } = string.Empty;
+        public string RecommendedCityDeskAction { get; set; } = string.Empty;
+        public List<string> EligibleRegionIds { get; set; } = new();
+        public CityContractRecoverySourceSummarySnapshot SourcePressureConsequence { get; set; }
+        public CityContractRecoveryRequiredPostureSnapshot RequiredPosture { get; set; }
+        public CityContractRecoveryResourcesRequirementSnapshot RequiredResources { get; set; }
+        public string NextReceiptFamily { get; set; } = string.Empty;
+        public List<string> Guardrails { get; set; } = new();
+        public CityContractRecoveryReceiptSnapshot LatestRelevantSummary { get; set; }
+        public List<string> RecommendedMoves { get; set; } = new();
+    }
+
+    [Serializable]
+    public sealed class CityContractRecoverySourceSummarySnapshot
+    {
+        public string SourceHook { get; set; } = string.Empty;
+        public string SourceRegionId { get; set; } = string.Empty;
+        public string SourceLane { get; set; } = string.Empty;
+        public string Priority { get; set; } = string.Empty;
+        public string ActionTitle { get; set; } = string.Empty;
+        public string ActionSummary { get; set; } = string.Empty;
+        public CityContractRecoveryReceiptSnapshot LatestConsequence { get; set; }
+        public List<CityContractRecoveryEvidenceSnapshot> Evidence { get; set; } = new();
+    }
+
+    [Serializable]
+    public sealed class CityContractRecoveryEvidenceSnapshot
+    {
+        public string Label { get; set; } = string.Empty;
+        public int? Value { get; set; }
+        public string Tone { get; set; } = string.Empty;
+    }
+
+    [Serializable]
+    public sealed class CityContractRecoveryRequiredPostureSnapshot
+    {
+        public string SettlementLane { get; set; } = string.Empty;
+        public string BridgeState { get; set; } = string.Empty;
+        public string BridgeFocus { get; set; } = string.Empty;
+        public string BridgePosture { get; set; } = string.Empty;
+        public string ActionPriority { get; set; } = string.Empty;
+    }
+
+    [Serializable]
+    public sealed class CityContractRecoveryResourcesRequirementSnapshot
+    {
+        public ResourceSnapshot Required { get; set; } = new();
+        public ResourceSnapshot Shortfall { get; set; }
+        public string Affordability { get; set; } = string.Empty;
+        public bool Executable { get; set; }
+        public string ReadyAt { get; set; } = string.Empty;
+        public int? CooldownMsRemaining { get; set; }
+    }
+
+    [Serializable]
+    public sealed class CityContractRecoveryReceiptSnapshot
+    {
+        public string Id { get; set; } = string.Empty;
+        public string CreatedAt { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Summary { get; set; } = string.Empty;
+        public string Detail { get; set; } = string.Empty;
         public string Severity { get; set; } = string.Empty;
         public string Outcome { get; set; } = string.Empty;
         public string Source { get; set; } = string.Empty;

@@ -130,6 +130,25 @@ Important: this surface is guidance, receipt truth, and follow-through explanati
 
 Report the card if it is missing when backend city-to-MUD bridge truth is visible elsewhere, recommends the wrong desk, shows raw object/JSON text, hides follow-through guidance or guardrails, or implies player cities are mandatory for baseline MUD progression.
 
+### Regional recovery board
+
+Home can also show a **Regional recovery board** card when live `/api/me.cityContractRecoveryBoard` truth exists. This card summarizes existing city-backed regional recovery candidate truth for the full-session Unity client.
+
+Use it to read:
+
+- the current recovery-board state
+- the recommended city desk/action
+- eligible region IDs
+- the top recovery candidate
+- runtime resource requirements when the backend already knows them
+- the next receipt family
+- the latest relevant receipt or consequence summary
+- guardrails that keep this board read-only
+
+Important: this surface is guidance only. It does not execute contracts, start queues, grant rewards, grant items, grant levels, fake MUD progression, create taxes, create public-service protection, create shadow exposure, activate Rogue Director, activate TOMS/Crucible, make Mother Brain autonomous, or fabricate player identity/action truth.
+
+Report the card if it is missing when backend recovery-board truth is visible elsewhere, recommends the wrong desk, shows raw object/JSON text, hides resource/receipt/guardrail details, or implies player cities are mandatory for baseline MUD progression.
+
 ## Development desk
 
 Development contains the growth lane:

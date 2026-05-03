@@ -184,6 +184,7 @@ namespace PlanarWar.Client.Core.Mapping
                 MotherBrainPressureStatus = MapMotherBrainPressureStatus(summary["motherBrainPressureStatus"] as JObject ?? summary["mother_brain_pressure_status"] as JObject),
                 PublicInfrastructureSummary = MapPublicInfrastructureSummary(summary["publicInfrastructureSummary"] as JObject ?? summary["public_infrastructure_summary"] as JObject),
                 CityMudWorldConsequenceBridge = MapCityMudWorldConsequenceBridge(summary["cityMudWorldConsequenceBridge"] as JObject ?? summary["city_mud_world_consequence_bridge"] as JObject),
+                CityContractRecoveryBoard = MapCityContractRecoveryBoard(summary["cityContractRecoveryBoard"] as JObject ?? summary["city_contract_recovery_board"] as JObject),
                 HasCity = summary["hasCity"]?.Read<bool>() ?? false,
                 City = new CitySummarySnapshot
                 {
@@ -683,6 +684,129 @@ namespace PlanarWar.Client.Core.Mapping
             };
         }
 
+
+        private static CityContractRecoveryBoardSnapshot MapCityContractRecoveryBoard(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new CityContractRecoveryBoardSnapshot
+            {
+                State = FirstNonBlank(ReadText(obj["state"]), ReadText(obj["status"])),
+                Title = FirstNonBlank(ReadText(obj["title"]), ReadText(obj["headline"]), ReadText(obj["name"])),
+                Summary = FirstNonBlank(ReadText(obj["summary"]), ReadText(obj["description"]), ReadText(obj["detail"])),
+                SettlementLane = FirstNonBlank(ReadText(obj["settlementLane"]), ReadText(obj["settlement_lane"]), ReadText(obj["lane"])),
+                RecommendedFocus = FirstNonBlank(ReadText(obj["recommendedFocus"]), ReadText(obj["recommended_focus"]), ReadText(obj["focus"])),
+                RecommendedCityDeskAction = FirstNonBlank(ReadText(obj["recommendedCityDeskAction"]), ReadText(obj["recommended_city_desk_action"]), ReadText(obj["recommendedAction"]), ReadText(obj["recommended_action"])),
+                EligibleRegionIds = MapStringArray(FirstArray(obj["eligibleRegionIds"], obj["eligible_region_ids"], obj["regions"])),
+                CandidateCount = FirstInt(obj["candidateCount"], obj["candidate_count"]) ?? (FirstArray(obj["candidates"])?.Count ?? 0),
+                Candidates = FirstArray(obj["candidates"])?.OfType<JObject>().Select(MapCityContractRecoveryCandidate).Where(candidate => candidate != null).ToList() ?? new List<CityContractRecoveryCandidateSnapshot>(),
+                SourceSurfaces = MapStringArray(FirstArray(obj["sourceSurfaces"], obj["source_surfaces"])),
+                Guardrails = MapStringArray(FirstArray(obj["guardrails"], obj["guardrailSignals"], obj["guardrail_signals"])),
+                LatestRelevantReceipt = MapCityContractRecoveryReceipt(FirstObject(obj["latestRelevantReceipt"], obj["latest_relevant_receipt"])),
+                LatestRelevantConsequence = MapCityContractRecoveryReceipt(FirstObject(obj["latestRelevantConsequence"], obj["latest_relevant_consequence"])),
+            };
+        }
+
+        private static CityContractRecoveryCandidateSnapshot MapCityContractRecoveryCandidate(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new CityContractRecoveryCandidateSnapshot
+            {
+                Id = FirstNonBlank(ReadText(obj["id"]), ReadText(obj["candidateId"]), ReadText(obj["candidate_id"])),
+                ActionId = FirstNonBlank(ReadText(obj["actionId"]), ReadText(obj["action_id"])),
+                Title = FirstNonBlank(ReadText(obj["title"]), ReadText(obj["headline"]), ReadText(obj["name"])),
+                Summary = FirstNonBlank(ReadText(obj["summary"]), ReadText(obj["description"]), ReadText(obj["detail"])),
+                Priority = FirstNonBlank(ReadText(obj["priority"]), ReadText(obj["severity"])),
+                Desk = FirstNonBlank(ReadText(obj["desk"]), ReadText(obj["recommendedDesk"]), ReadText(obj["recommended_desk"])),
+                RecommendedCityDeskAction = FirstNonBlank(ReadText(obj["recommendedCityDeskAction"]), ReadText(obj["recommended_city_desk_action"]), ReadText(obj["recommendedAction"]), ReadText(obj["recommended_action"])),
+                EligibleRegionIds = MapStringArray(FirstArray(obj["eligibleRegionIds"], obj["eligible_region_ids"], obj["regions"])),
+                SourcePressureConsequence = MapCityContractRecoverySourceSummary(FirstObject(obj["sourcePressureConsequence"], obj["source_pressure_consequence"], obj["source"])),
+                RequiredPosture = MapCityContractRecoveryRequiredPosture(FirstObject(obj["requiredPosture"], obj["required_posture"])),
+                RequiredResources = MapCityContractRecoveryResourcesRequirement(FirstObject(obj["requiredResources"], obj["required_resources"])),
+                NextReceiptFamily = FirstNonBlank(ReadText(obj["nextReceiptFamily"]), ReadText(obj["next_receipt_family"]), ReadText(obj["receiptFamily"]), ReadText(obj["receipt_family"])),
+                Guardrails = MapStringArray(FirstArray(obj["guardrails"], obj["guardrailSignals"], obj["guardrail_signals"])),
+                LatestRelevantSummary = MapCityContractRecoveryReceipt(FirstObject(obj["latestRelevantSummary"], obj["latest_relevant_summary"])),
+                RecommendedMoves = MapStringArray(FirstArray(obj["recommendedMoves"], obj["recommended_moves"], obj["moves"])),
+            };
+        }
+
+        private static CityContractRecoverySourceSummarySnapshot MapCityContractRecoverySourceSummary(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new CityContractRecoverySourceSummarySnapshot
+            {
+                SourceHook = FirstNonBlank(ReadText(obj["sourceHook"]), ReadText(obj["source_hook"]), ReadText(obj["hook"])),
+                SourceRegionId = FirstNonBlank(ReadText(obj["sourceRegionId"]), ReadText(obj["source_region_id"]), ReadText(obj["regionId"]), ReadText(obj["region_id"])),
+                SourceLane = FirstNonBlank(ReadText(obj["sourceLane"]), ReadText(obj["source_lane"]), ReadText(obj["lane"])),
+                Priority = FirstNonBlank(ReadText(obj["priority"]), ReadText(obj["severity"])),
+                ActionTitle = FirstNonBlank(ReadText(obj["actionTitle"]), ReadText(obj["action_title"]), ReadText(obj["title"])),
+                ActionSummary = FirstNonBlank(ReadText(obj["actionSummary"]), ReadText(obj["action_summary"]), ReadText(obj["summary"])),
+                LatestConsequence = MapCityContractRecoveryReceipt(FirstObject(obj["latestConsequence"], obj["latest_consequence"])),
+                Evidence = FirstArray(obj["evidence"], obj["signals"])?.OfType<JObject>().Select(MapCityContractRecoveryEvidence).Where(evidence => evidence != null).ToList() ?? new List<CityContractRecoveryEvidenceSnapshot>(),
+            };
+        }
+
+        private static CityContractRecoveryEvidenceSnapshot MapCityContractRecoveryEvidence(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new CityContractRecoveryEvidenceSnapshot
+            {
+                Label = FirstNonBlank(ReadText(obj["label"]), ReadText(obj["name"])),
+                Value = FirstInt(obj["value"], obj["score"], obj["count"]),
+                Tone = FirstNonBlank(ReadText(obj["tone"]), ReadText(obj["severity"])),
+            };
+        }
+
+        private static CityContractRecoveryRequiredPostureSnapshot MapCityContractRecoveryRequiredPosture(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new CityContractRecoveryRequiredPostureSnapshot
+            {
+                SettlementLane = FirstNonBlank(ReadText(obj["settlementLane"]), ReadText(obj["settlement_lane"]), ReadText(obj["lane"])),
+                BridgeState = FirstNonBlank(ReadText(obj["bridgeState"]), ReadText(obj["bridge_state"])),
+                BridgeFocus = FirstNonBlank(ReadText(obj["bridgeFocus"]), ReadText(obj["bridge_focus"])),
+                BridgePosture = FirstNonBlank(ReadText(obj["bridgePosture"]), ReadText(obj["bridge_posture"])),
+                ActionPriority = FirstNonBlank(ReadText(obj["actionPriority"]), ReadText(obj["action_priority"]), ReadText(obj["priority"])),
+            };
+        }
+
+        private static CityContractRecoveryResourcesRequirementSnapshot MapCityContractRecoveryResourcesRequirement(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new CityContractRecoveryResourcesRequirementSnapshot
+            {
+                Required = MapResource(FirstObject(obj["required"], obj["cost"]), true),
+                Shortfall = MapResource(FirstObject(obj["shortfall"], obj["missing"]), true),
+                Affordability = FirstNonBlank(ReadText(obj["affordability"]), ReadText(obj["state"])),
+                Executable = obj["executable"]?.Read<bool>() ?? false,
+                ReadyAt = FirstNonBlank(ReadText(obj["readyAt"]), ReadText(obj["ready_at"])),
+                CooldownMsRemaining = FirstInt(obj["cooldownMsRemaining"], obj["cooldown_ms_remaining"]),
+            };
+        }
+
+        private static CityContractRecoveryReceiptSnapshot MapCityContractRecoveryReceipt(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new CityContractRecoveryReceiptSnapshot
+            {
+                Id = FirstNonBlank(ReadText(obj["id"]), ReadText(obj["receiptId"]), ReadText(obj["receipt_id"])),
+                CreatedAt = FirstNonBlank(ReadText(obj["createdAt"]), ReadText(obj["created_at"])),
+                Title = FirstNonBlank(ReadText(obj["title"]), ReadText(obj["headline"]), ReadText(obj["name"])),
+                Summary = FirstNonBlank(ReadText(obj["summary"]), ReadText(obj["description"])),
+                Detail = FirstNonBlank(ReadText(obj["detail"]), ReadText(obj["note"])),
+                Severity = FirstNonBlank(ReadText(obj["severity"]), ReadText(obj["level"])),
+                Outcome = FirstNonBlank(ReadText(obj["outcome"]), ReadText(obj["result"])),
+                Source = FirstNonBlank(ReadText(obj["source"]), ReadText(obj["kind"])),
+                RegionId = FirstNonBlank(ReadText(obj["regionId"]), ReadText(obj["region_id"]), ReadText(obj["sourceRegionId"]), ReadText(obj["source_region_id"])),
+                RuntimeActionId = FirstNonBlank(ReadText(obj["runtimeActionId"]), ReadText(obj["runtime_action_id"])),
+            };
+        }
 
         private static CityMudWorldConsequenceBridgeSnapshot MapCityMudWorldConsequenceBridge(JObject obj)
         {
@@ -1829,11 +1953,74 @@ namespace PlanarWar.Client.Core.Mapping
             if (tokens == null) return null;
             foreach (var token in tokens)
             {
-                var value = token?.Read<int?>();
-                if (value.HasValue) return value;
+                if (TryReadInt(token, out var value))
+                {
+                    return value;
+                }
             }
 
             return null;
+        }
+
+        private static bool TryReadInt(JToken token, out int value)
+        {
+            value = default;
+            if (token == null || token.Type == JTokenType.Null || token.Type == JTokenType.Undefined)
+            {
+                return false;
+            }
+
+            try
+            {
+                switch (token.Type)
+                {
+                    case JTokenType.Integer:
+                    {
+                        var raw = token.Value<long>();
+                        if (raw < int.MinValue || raw > int.MaxValue) return false;
+                        value = (int)raw;
+                        return true;
+                    }
+
+                    case JTokenType.Float:
+                    {
+                        var raw = token.Value<double>();
+                        if (double.IsNaN(raw) || double.IsInfinity(raw) || raw < int.MinValue || raw > int.MaxValue) return false;
+                        value = (int)Math.Truncate(raw);
+                        return true;
+                    }
+
+                    case JTokenType.String:
+                    {
+                        var text = token.Value<string>();
+                        if (string.IsNullOrWhiteSpace(text)) return false;
+                        text = text.Trim();
+
+                        if (long.TryParse(text, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var asLong))
+                        {
+                            if (asLong < int.MinValue || asLong > int.MaxValue) return false;
+                            value = (int)asLong;
+                            return true;
+                        }
+
+                        if (double.TryParse(text, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var asDouble))
+                        {
+                            if (double.IsNaN(asDouble) || double.IsInfinity(asDouble) || asDouble < int.MinValue || asDouble > int.MaxValue) return false;
+                            value = (int)Math.Truncate(asDouble);
+                            return true;
+                        }
+
+                        return false;
+                    }
+
+                    default:
+                        return false;
+                }
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         private static List<string> MapStringArray(JArray array)

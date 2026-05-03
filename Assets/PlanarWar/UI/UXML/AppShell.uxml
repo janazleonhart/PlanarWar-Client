@@ -407,6 +407,50 @@
                     </ui:VisualElement>
                 </ui:VisualElement>
 
+
+                <ui:VisualElement name="city-contract-recovery-board-card" class="summary-card summary-card--full summary-card--action early-lane-posture-card">
+                    <ui:VisualElement class="development-actions-head">
+                        <ui:Label text="Regional recovery board" class="eyebrow" />
+                        <ui:Label name="city-contract-recovery-board-badge-value" text="Waiting on city contract recovery truth" class="chapter-row__badge" />
+                    </ui:VisualElement>
+                    <ui:Label name="city-contract-recovery-board-headline-value" text="Regional recovery board waiting on backend truth." class="rail-note-title" />
+                    <ui:Label name="city-contract-recovery-board-summary-value" text="This card consumes /api/me.cityContractRecoveryBoard when the backend provides it." class="summary-value summary-value--glance" />
+
+                    <ui:VisualElement class="summary-grid summary-grid--glance early-lane-posture-grid">
+                        <ui:VisualElement class="summary-card glance-card">
+                            <ui:Label text="Recommended desk action" class="eyebrow" />
+                            <ui:Label name="city-contract-recovery-board-recommended-value" text="No regional recovery recommendation surfaced." class="summary-value summary-value--glance" />
+                            <ui:Label name="city-contract-recovery-board-reason-value" text="Read-only city contract recovery guidance will appear here from live /api/me truth." class="metric-subvalue metric-subvalue--wrap" />
+                            <ui:Button name="city-contract-recovery-board-button" text="Open Development" class="action-button action-button--primary" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card glance-card">
+                            <ui:Label text="Eligible regions" class="eyebrow" />
+                            <ui:Label name="city-contract-recovery-board-regions-value" text="No eligible recovery regions surfaced yet." class="summary-value summary-value--glance" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card glance-card">
+                            <ui:Label text="Top candidate" class="eyebrow" />
+                            <ui:Label name="city-contract-recovery-board-candidate-value" text="No recovery candidate surfaced yet." class="summary-value summary-value--glance" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card glance-card">
+                            <ui:Label text="Runtime requirement" class="eyebrow" />
+                            <ui:Label name="city-contract-recovery-board-resources-value" text="Runtime resource requirement: none surfaced." class="summary-value summary-value--glance" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card glance-card">
+                            <ui:Label text="Receipt and latest truth" class="eyebrow" />
+                            <ui:Label name="city-contract-recovery-board-receipt-value" text="No recovery receipt or consequence summary surfaced yet." class="summary-value summary-value--glance" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-card glance-card">
+                            <ui:Label text="Guardrails" class="eyebrow" />
+                            <ui:Label name="city-contract-recovery-board-guardrails-value" text="No fake rewards, item grants, levels, taxes, queue timers, protection, exposure, Rogue Director, TOMS, Crucible, or autonomous Mother Brain behavior." class="summary-value summary-value--glance" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
 <ui:VisualElement name="founder-setup-card" class="summary-card summary-card--full summary-card--action founder-setup-card">
                     <ui:VisualElement class="development-actions-head">
                         <ui:Label text="Settlement setup" class="eyebrow" />
