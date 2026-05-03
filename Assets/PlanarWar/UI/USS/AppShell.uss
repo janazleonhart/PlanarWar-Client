@@ -2685,3 +2685,26 @@
 .comms-panel--minimized .comms-hint-line {
     max-height: 13px;
 }
+
+/* Bottom chat expand button placement cleanup v1 */
+.comms-panel--minimized .comms-header-row {
+    min-height: 32px;
+    align-items: center;
+    gap: 12px;
+}
+
+.comms-panel--minimized .chat-chip-row--minimized {
+    align-self: center;
+    flex-shrink: 0;
+    min-width: 92px;
+    margin-left: 12px;
+}
+
+.comms-panel--minimized .chat-toggle-button {
+    min-width: 76px;
+    max-width: 92px;
+    height: 30px;
+    min-height: 30px;
+    padding-left: 10px;
+    padding-right: 10px;
+}

@@ -4783,5 +4783,29 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
 
+        [Test]
+        public void Bottom_chat_expand_button_placement_cleanup_keeps_collapsed_toggle_aligned_without_chat_architecture_changes()
+        {
+            var ussPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/AppShellController.cs");
+
+            Assert.That(File.Exists(ussPath), Is.True, "AppShell.uss should be available from the Unity project root.");
+            Assert.That(File.Exists(controllerPath), Is.True, "AppShellController.cs should be available from the Unity project root.");
+
+            var uss = File.ReadAllText(ussPath);
+            var controller = File.ReadAllText(controllerPath);
+
+            Assert.That(uss, Does.Contain("Bottom chat expand button placement cleanup v1"));
+            Assert.That(uss, Does.Contain(".comms-panel--minimized .comms-header-row"), "Collapsed comms should align the latest-line stack and Expand toggle through the minimized header row.");
+            Assert.That(uss, Does.Contain(".comms-panel--minimized .chat-chip-row--minimized"), "Collapsed comms should keep the minimized chip row as a compact right-side toggle lane.");
+            Assert.That(uss, Does.Contain("max-width: 92px"), "Collapsed Expand button should stay compact instead of stretching like a full chat filter chip.");
+            Assert.That(controller, Does.Contain("chat-chip-row--minimized"), "Controller should keep toggling the minimized filter-row class instead of replacing chat state.");
+            Assert.That(controller, Does.Contain("commsToggleButton.text = isCommsMinimized ? \"Expand\" : \"Minimize\""));
+            Assert.That(controller, Does.Contain("hasUnreadPriorityComms: false, hasPrivateMessage: false"), "This layout cleanup must not fake private-message or unread-priority state before chat truth exposes it.");
+            Assert.That(controller, Does.Not.Contain("city chat channel"));
+            Assert.That(controller, Does.Not.Contain("guild relay"));
+        }
+
+
     }
 }
