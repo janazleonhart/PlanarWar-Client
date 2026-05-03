@@ -338,7 +338,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                         ? $"{summaryState.MissionOffers.Count} available support operation(s)."
                         : "No active support operation.");
             pressureValue.text = LaneText(hasActiveOperationSurface
-                ? Truncate(FirstNonBlank(activeOperationSurface.Detail, primaryWarning, "Shadow operation posture is visible from /api/me.blackMarketActiveOperationSurface."), 96)
+                ? Truncate(FirstNonBlank(activeOperationSurface.Detail, primaryWarning, "Shadow operation posture is visible from live Black Market operation truth."), 96)
                 : !string.IsNullOrWhiteSpace(primaryWarning) ? Truncate(primaryWarning, 96) : warfrontWindows.Count > 0 ? "Operations windows are open; no extra warning headline is active." : "No extra route-pressure warning surfaced.");
             noteValue.text = LaneText(hasActiveOperationSurface
                 ? Truncate(FirstNonBlank(activeOperationSurface.Detail, BuildBlackMarketActiveOperationCounterText(activeOperationSurface)), 128)
@@ -1393,7 +1393,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private static string BuildBlackMarketOperationDetailProof(BlackMarketActiveOperationCardSnapshot card)
         {
             var proof = BuildBlackMarketActiveOperationReferenceSummary(card, card?.ActionIds?.Count ?? 0, card?.MissionOfferIds?.Count ?? 0);
-            return $"Proof: {FirstNonBlank(proof, "No source/action/mission refs supplied on this active-operation card.")}";
+            return $"Proof: {FirstNonBlank(proof, "No proof signals supplied on this active-operation card.")}";
         }
 
         private static string BuildBlackMarketOperationDetailBlockers(BlackMarketActiveOperationCardSnapshot card, MissionSnapshot activeMission)
@@ -1420,9 +1420,11 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private static string BuildBlackMarketOperationDetailRefs(BlackMarketActiveOperationCardSnapshot card)
         {
             var refs = new List<string>();
-            if (!string.IsNullOrWhiteSpace(card?.SourceSurface)) refs.Add($"source {card.SourceSurface}");
-            if ((card?.ActionIds?.Count ?? 0) > 0) refs.Add($"world actions {Truncate(string.Join(", ", card.ActionIds), 96)}");
-            if ((card?.MissionOfferIds?.Count ?? 0) > 0) refs.Add($"mission refs {Truncate(string.Join(", ", card.MissionOfferIds), 96)}");
+            if (!string.IsNullOrWhiteSpace(card?.SourceSurface)) refs.Add("source surface visible");
+            var actionCount = card?.ActionIds?.Count ?? 0;
+            var missionCount = card?.MissionOfferIds?.Count ?? 0;
+            if (actionCount > 0) refs.Add($"{actionCount} world-action ref{(actionCount == 1 ? string.Empty : "s")}");
+            if (missionCount > 0) refs.Add($"{missionCount} mission ref{(missionCount == 1 ? string.Empty : "s")}");
             return refs.Count == 0 ? "Refs: none supplied." : $"Refs: {string.Join(" • ", refs)}";
         }
 
@@ -1487,7 +1489,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private static string BuildBlackMarketActiveOperationReferenceSummary(BlackMarketActiveOperationCardSnapshot card, int actionCount, int missionCount)
         {
             var refs = new List<string>();
-            if (!string.IsNullOrWhiteSpace(card?.SourceSurface)) refs.Add(card.SourceSurface);
+            if (!string.IsNullOrWhiteSpace(card?.SourceSurface)) refs.Add("source surface visible");
             if (actionCount > 0) refs.Add($"{actionCount} world-action ref{(actionCount == 1 ? string.Empty : "s")}");
             if (missionCount > 0) refs.Add($"{missionCount} mission ref{(missionCount == 1 ? string.Empty : "s")}");
             return refs.Count == 0 ? string.Empty : string.Join(" • ", refs);
@@ -1917,8 +1919,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 title: useBlackMarketForceTerms ? $"Exploit {regionLabel}" : $"Assault {regionLabel}",
                 lore: $"{armyName} • direct timed push",
                 note: useBlackMarketForceTerms
-                    ? "Uses /api/warfront/assault to exploit a live pressure window for Cashflow, Materials, Influence, and control pressure. Occupation is only a hold posture."
-                    : "Uses /api/warfront/assault to push control, reduce threat pressure, and earn rewards. Occupation is only a hold posture.",
+                    ? "Uses the warfront assault handler to exploit a live pressure window for Cashflow, Materials, Influence, and control pressure. Occupation is only a hold posture."
+                    : "Uses the warfront assault handler to push control, reduce threat pressure, and earn rewards. Occupation is only a hold posture.",
                 buttonText: GetWarfrontAssaultButtonText(),
                 buttonEnabled: assaultEnabled,
                 onClick: assaultEnabled ? () => TriggerWarfrontAssaultFor(regionId, army.Id, selectedDispatchHeroId?.Trim() ?? string.Empty) : null));
@@ -1928,8 +1930,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 title: useBlackMarketForceTerms ? $"Raid {regionLabel}" : $"Quick strike {regionLabel}",
                 lore: $"{armyName} • {heroName}",
                 note: useBlackMarketForceTerms
-                    ? "Uses /api/garrisons/strike for a faster hero-led raid against caches, lairs, or lieutenants. Needs an idle hero."
-                    : "Uses /api/garrisons/strike for a faster hero-led raid against camps, caches, or lieutenants. Needs an idle hero.",
+                    ? "Uses the hero raid handler for a faster operative-led raid against caches, lairs, or lieutenants. Needs an idle operative."
+                    : "Uses the hero raid handler for a faster hero-led raid against camps, caches, or lieutenants. Needs an idle hero.",
                 buttonText: GetQuickStrikeButtonText(),
                 buttonEnabled: quickStrikeEnabled,
                 onClick: quickStrikeEnabled ? () => TriggerGarrisonStrikeFor(regionId, army.Id, FirstNonBlank(selectedDispatchHeroId, hero.Id)) : null));
@@ -2116,7 +2118,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var pending = summaryState.IsActionBusy && string.Equals(summaryState.PendingMissionOfferId, offer?.Id, StringComparison.OrdinalIgnoreCase);
             var title = BuildMissionOfferDisplayTitle(offer);
             var meta = BuildMissionOfferMeta(offer);
-            var note = FirstNonBlank(BuildMissionEffectSummary(offer?.Summary, offer?.Payoff, offer?.Risk), "Mission board offer surfaced from /api/missions/offers.");
+            var note = FirstNonBlank(BuildMissionEffectSummary(offer?.Summary, offer?.Payoff, offer?.Risk), "Mission board offer surfaced from live mission-board truth.");
             return new CardView(
                 family: "Mission offer",
                 title: title,
