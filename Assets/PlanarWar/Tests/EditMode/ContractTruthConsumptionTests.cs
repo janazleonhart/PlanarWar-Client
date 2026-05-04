@@ -5200,5 +5200,37 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
 
+        [Test]
+        public void Black_market_operation_cards_show_potential_impact_without_promising_rewards()
+        {
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/BlackMarket/BlackMarketScreenController.cs");
+            var uxmlPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var ussPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+
+            Assert.That(File.Exists(controllerPath), Is.True, "BlackMarketScreenController.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(uxmlPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(ussPath), Is.True, "AppShell.uss should be available from the Unity project root.");
+
+            var controller = File.ReadAllText(controllerPath);
+            var uxml = File.ReadAllText(uxmlPath);
+            var uss = File.ReadAllText(ussPath);
+
+            Assert.That(controller, Does.Contain("Black Market operation impact preview v1"), "Impact preview should be an explicit player-facing clarity slice, not an execution slice.");
+            Assert.That(controller, Does.Contain("BuildBlackMarketOperationImpactPreview"), "Operation cards and selected detail should derive potential impact from existing operation truth.");
+            Assert.That(controller, Does.Contain("Potential impact:"), "Operation cards should show a player-facing payoff/impact hint.");
+            Assert.That(controller, Does.Contain("May soften patrol or guard friction"), "Bribery/patrol operations should explain how they may help later mission/action choices without promising success.");
+            Assert.That(controller, Does.Contain("covert mission leads or action hooks"), "Impact copy should help players decide what supports their next covert move.");
+            Assert.That(controller, Does.Contain("payoff only appears after a supported action path is wired or completed"), "Action-backed impact copy must stay honest while Unity execution is not live.");
+            Assert.That(uxml, Does.Contain("warfront-operation-detail-impact-value"), "Selected operation detail should include a dedicated impact preview line.");
+            Assert.That(uxml, Does.Contain("operations-operation-detail__impact"), "Impact preview should have a scoped styling hook.");
+            Assert.That(uss, Does.Contain("Black Market operation impact preview v1"));
+            Assert.That(uss, Does.Contain(".operations-operation-detail__impact"));
+            Assert.That(controller, Does.Not.Contain("guaranteed reward"), "Impact preview must not promise rewards.");
+            Assert.That(controller, Does.Not.Contain("guaranteed success"), "Impact preview must not promise mission success.");
+            Assert.That(controller, Does.Not.Contain("Execute shadow operation"), "Impact preview must not fake shadow-operation execution.");
+            Assert.That(controller, Does.Not.Contain("Grant shadow reward"), "Impact preview must not fake rewards.");
+        }
+
+
     }
 }

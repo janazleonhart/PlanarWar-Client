@@ -40,6 +40,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private readonly VisualElement operationDetailRoot;
         private readonly Label operationDetailTitle;
         private readonly Label operationDetailStatus;
+        private readonly Label operationDetailImpact;
         private readonly Label operationDetailReceipt;
         private readonly Label operationDetailProof;
         private readonly Label operationDetailBlockers;
@@ -140,6 +141,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             operationDetailRoot = root.Q<VisualElement>("warfront-operation-detail-root");
             operationDetailTitle = root.Q<Label>("warfront-operation-detail-title-value");
             operationDetailStatus = root.Q<Label>("warfront-operation-detail-status-value");
+            operationDetailImpact = root.Q<Label>("warfront-operation-detail-impact-value");
             operationDetailReceipt = root.Q<Label>("warfront-operation-detail-receipt-value");
             operationDetailProof = root.Q<Label>("warfront-operation-detail-proof-value");
             operationDetailBlockers = root.Q<Label>("warfront-operation-detail-blockers-value");
@@ -1370,6 +1372,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             operationDetailRoot.style.display = DisplayStyle.Flex;
             if (operationDetailTitle != null) operationDetailTitle.text = FirstNonBlank(selected.Headline, HumanizeKey(selected.Id), "Shadow operation detail");
             if (operationDetailStatus != null) operationDetailStatus.text = BuildBlackMarketOperationDetailStatus(selected);
+            if (operationDetailImpact != null) operationDetailImpact.text = BuildBlackMarketOperationDetailImpactPreview(selected);
             if (operationDetailReceipt != null) operationDetailReceipt.text = BuildBlackMarketOperationDetailReceipt(selected, surface);
             if (operationDetailProof != null) operationDetailProof.text = BuildBlackMarketOperationDetailProof(selected);
             if (operationDetailBlockers != null) operationDetailBlockers.text = BuildBlackMarketOperationDetailBlockers(selected, activeMission);
@@ -1483,6 +1486,12 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 lines.Add($"Readiness: {readiness}");
             }
 
+            var impact = BuildBlackMarketOperationImpactPreview(card, actionCount, missionCount, hasMissionLead);
+            if (!string.IsNullOrWhiteSpace(impact))
+            {
+                lines.Add($"Potential impact: {Truncate(impact, 112)}");
+            }
+
             var missionLeadGuidance = BuildBlackMarketOperationMissionLeadGuidance(hasMissionLead, hasActiveMission, canSelectMissionLead);
             if (!string.IsNullOrWhiteSpace(missionLeadGuidance))
             {
@@ -1505,7 +1514,70 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 lines.Add("Receipt: active-operation payload is visible, but no extra detail was supplied.");
             }
 
-            return string.Join(Environment.NewLine, lines.Take(4));
+            return string.Join(Environment.NewLine, lines.Take(5));
+        }
+
+        private static string BuildBlackMarketOperationDetailImpactPreview(BlackMarketActiveOperationCardSnapshot card)
+        {
+            var actionCount = card?.ActionIds?.Count ?? 0;
+            var missionCount = card?.MissionOfferIds?.Count ?? 0;
+            var hasMissionLead = missionCount > 0;
+            return $"Potential impact: {BuildBlackMarketOperationImpactPreview(card, actionCount, missionCount, hasMissionLead)}";
+        }
+
+        // Black Market operation impact preview v1: explain likely tactical payoff from existing card truth without promising rewards or executing world effects.
+        private static string BuildBlackMarketOperationImpactPreview(BlackMarketActiveOperationCardSnapshot card, int actionCount, int missionCount, bool hasMissionLead)
+        {
+            var kind = (card?.Kind ?? string.Empty).ToLowerInvariant();
+            var headline = (card?.Headline ?? string.Empty).ToLowerInvariant();
+            var summary = (card?.Summary ?? string.Empty).ToLowerInvariant();
+            var text = $"{kind} {headline} {summary}";
+
+            var hookText = actionCount > 0
+                ? " It currently exposes a covert action hook, but payoff only appears after a supported action path is wired or completed."
+                : string.Empty;
+            var missionText = hasMissionLead
+                ? " It also exposes a mission lead, so the useful next call is reviewing that existing offer."
+                : string.Empty;
+
+            if (ContainsAny(text, "brib", "patrol", "guard", "bribe"))
+            {
+                return $"May soften patrol or guard friction around the active window, which can make later covert mission leads or action hooks easier to justify when supported by real receipts.{missionText}{hookText}".Trim();
+            }
+
+            if (ContainsAny(text, "contain", "heat", "crackdown", "bite"))
+            {
+                return $"May keep black-market heat from spilling into harsher public crackdowns, buying safer room for follow-up cells, fronts, or mission leads when the backend records the outcome.{missionText}{hookText}".Trim();
+            }
+
+            if (ContainsAny(text, "counterfeit", "paper", "forged", "ledger", "dirty"))
+            {
+                return $"May improve forged-paper or counterfeit-route leverage, helping future dirty-liquidity, front movement, or mission setup decisions once a real completion path records the result.{missionText}{hookText}".Trim();
+            }
+
+            if (ContainsAny(text, "backbone", "public", "desk", "bureau", "queue", "service"))
+            {
+                return $"May reveal public-service pressure that private lanes can exploit or avoid, helping choose whether to route through covert cells instead of exposed public desks.{missionText}{hookText}".Trim();
+            }
+
+            if (ContainsAny(text, "mission", "lead", "offer"))
+            {
+                return $"May open a clearer mission choice from the existing Mission Board; review the lead to judge risk, region, and cell fit before committing.{missionText}{hookText}".Trim();
+            }
+
+            var risk = HumanizeStatus(card?.Risk);
+            var state = HumanizeStatus(card?.State);
+            return $"Shows a {state} operation signal with {risk} risk; use it to compare which pressure window, mission lead, or action hook best supports the city pocket before committing elsewhere.{missionText}{hookText}".Trim();
+        }
+
+        private static bool ContainsAny(string haystack, params string[] needles)
+        {
+            if (string.IsNullOrWhiteSpace(haystack))
+            {
+                return false;
+            }
+
+            return needles.Any(needle => !string.IsNullOrWhiteSpace(needle) && haystack.IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
         private static string BuildBlackMarketOperationActionLabel(int actionCount, bool hasMissionLead, bool hasActiveMission)
