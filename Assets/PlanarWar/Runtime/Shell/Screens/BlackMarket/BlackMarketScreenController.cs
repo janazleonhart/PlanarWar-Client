@@ -1302,7 +1302,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var missionOfferId = (card.MissionOfferIds ?? new List<string>())
                 .FirstOrDefault(id => !string.IsNullOrWhiteSpace(id) && (summaryState.MissionOffers ?? new List<MissionOfferSnapshot>()).Any(offer => string.Equals(offer.Id, id, StringComparison.OrdinalIgnoreCase)))
                 ?? string.Empty;
-            var hasMissionOffer = !string.IsNullOrWhiteSpace(missionOfferId) && activeMission == null;
+            var hasMissionLead = !string.IsNullOrWhiteSpace(missionOfferId);
+            var canSelectMissionLead = hasMissionLead && activeMission == null;
             var actionIds = card.ActionIds ?? new List<string>();
             var missionIds = card.MissionOfferIds ?? new List<string>();
 
@@ -1310,10 +1311,10 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 family: BuildBlackMarketActiveOperationFamily(card),
                 title: FirstNonBlank(card.Headline, HumanizeKey(card.Id), "Shadow operation"),
                 lore: BuildBlackMarketActiveOperationLore(card, actionIds.Count, missionIds.Count),
-                note: BuildBlackMarketActiveOperationReceiptDetail(card, actionIds.Count, missionIds.Count),
-                buttonText: hasMissionOffer ? "Select mission" : actionIds.Count > 0 ? "Action signal visible" : "Read-only",
-                buttonEnabled: hasMissionOffer && !summaryState.IsActionBusy,
-                onClick: hasMissionOffer ? () => SelectMissionOfferFromActiveOperation(missionOfferId) : null,
+                note: BuildBlackMarketActiveOperationReceiptDetail(card, actionIds.Count, missionIds.Count, hasMissionLead, activeMission != null),
+                buttonText: BuildBlackMarketOperationActionLabel(actionIds.Count, hasMissionLead, activeMission != null),
+                buttonEnabled: canSelectMissionLead && !summaryState.IsActionBusy,
+                onClick: canSelectMissionLead ? () => SelectMissionOfferFromActiveOperation(missionOfferId) : null,
                 isSelected: string.Equals(selectedBlackMarketOperationCardId, selectionKey, StringComparison.OrdinalIgnoreCase),
                 onSelect: () => SelectBlackMarketOperationCard(selectionKey));
         }
@@ -1406,7 +1407,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
             if ((card?.ActionIds?.Count ?? 0) > 0)
             {
-                blockers.Add("covert action execution is not live in this client yet");
+                blockers.Add("covert action hook visible, execution pending");
             }
 
             if (blockers.Count == 0)
@@ -1458,13 +1459,19 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             return Truncate(string.Join(" • ", parts.Where(part => !string.IsNullOrWhiteSpace(part))), 232);
         }
 
-        private static string BuildBlackMarketActiveOperationReceiptDetail(BlackMarketActiveOperationCardSnapshot card, int actionCount, int missionCount)
+        private static string BuildBlackMarketActiveOperationReceiptDetail(BlackMarketActiveOperationCardSnapshot card, int actionCount, int missionCount, bool hasMissionLead, bool hasActiveMission)
         {
             var lines = new List<string>();
             var operatorNote = FirstNonBlank(card?.OperatorNote, card?.Summary);
             if (!string.IsNullOrWhiteSpace(operatorNote))
             {
                 lines.Add($"Receipt: {Truncate(operatorNote, 112)}");
+            }
+
+            var readiness = BuildBlackMarketOperationReadinessLabel(actionCount, hasMissionLead, hasActiveMission);
+            if (!string.IsNullOrWhiteSpace(readiness))
+            {
+                lines.Add($"Readiness: {readiness}");
             }
 
             var proof = BuildBlackMarketActiveOperationReferenceSummary(card, actionCount, missionCount);
@@ -1483,7 +1490,47 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 lines.Add("Receipt: active-operation payload is visible, but no extra detail was supplied.");
             }
 
-            return string.Join(Environment.NewLine, lines.Take(3));
+            return string.Join(Environment.NewLine, lines.Take(4));
+        }
+
+        private static string BuildBlackMarketOperationActionLabel(int actionCount, bool hasMissionLead, bool hasActiveMission)
+        {
+            if (hasMissionLead && !hasActiveMission)
+            {
+                return "Select mission lead";
+            }
+
+            if (hasMissionLead && hasActiveMission)
+            {
+                return "Mission lead blocked";
+            }
+
+            if (actionCount > 0)
+            {
+                return "Action hook not live";
+            }
+
+            return "Read-only signal";
+        }
+
+        private static string BuildBlackMarketOperationReadinessLabel(int actionCount, bool hasMissionLead, bool hasActiveMission)
+        {
+            if (hasMissionLead && !hasActiveMission)
+            {
+                return "mission lead selectable";
+            }
+
+            if (hasMissionLead && hasActiveMission)
+            {
+                return "mission lead waiting for current mission";
+            }
+
+            if (actionCount > 0)
+            {
+                return "covert action hook visible, execution pending";
+            }
+
+            return "read-only operation signal";
         }
 
         private static string BuildBlackMarketActiveOperationReferenceSummary(BlackMarketActiveOperationCardSnapshot card, int actionCount, int missionCount)

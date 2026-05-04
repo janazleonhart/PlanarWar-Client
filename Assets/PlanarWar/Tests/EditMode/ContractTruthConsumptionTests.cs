@@ -5051,7 +5051,7 @@ namespace PlanarWar.Client.Tests.EditMode
             var controller = File.ReadAllText(controllerPath);
             Assert.That(controller, Does.Contain("summary.BlackMarketActiveOperation"), "Operations desk should consume /api/me.blackMarketActiveOperationSurface from mapped summary truth.");
             Assert.That(controller, Does.Contain("BuildBlackMarketActiveOperationCards"), "Operations desk should promote active-operation cards into the visible action board.");
-            Assert.That(controller, Does.Contain("Action signal visible"), "Action-backed cards stay honest/read-only until a real execution handler is wired.");
+            Assert.That(controller, Does.Contain("Action hook not live"), "Action-backed cards stay honest/read-only until a real execution handler is wired.");
             Assert.That(controller, Does.Contain("Select mission"), "Mission-backed operation cards may select the existing mission board instead of inventing a new action path.");
             Assert.That(controller, Does.Not.Contain("Execute shadow operation"), "This slice must not fake first-class operation execution.");
         }
@@ -5079,7 +5079,7 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(controller, Does.Not.Contain("source surface visible"), "Player-facing operation cards should not show dev/source-surface wording." );
             Assert.That(controller, Does.Not.Contain("world-action ref"), "Player-facing operation cards should not show backend-ref wording." );
             Assert.That(controller, Does.Not.Contain("mission ref"), "Player-facing operation cards should not show backend-ref wording." );
-            Assert.That(controller, Does.Contain("Action signal visible"), "Action-backed cards remain honest/read-only until Unity has a real handler." );
+            Assert.That(controller, Does.Contain("Action hook not live"), "Action-backed cards remain honest/read-only until Unity has a real handler." );
             Assert.That(uxml, Does.Contain("operations-receipt-detail-surface-v1"), "The operations action board should carry a scoped receipt-detail styling hook." );
             Assert.That(uss, Does.Contain("Black Market operations receipt detail surface v1"));
             Assert.That(uss, Does.Contain(".operations-receipt-detail-surface-v1 .warfront-desk-card .metric-subvalue"));
@@ -5107,7 +5107,7 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(controller, Does.Contain("RenderBlackMarketOperationDetail"), "The Operations desk should render a focused selected-operation detail panel from existing payload truth.");
             Assert.That(controller, Does.Contain("SelectBlackMarketOperationCard"), "Selecting a visible operation card should update detail focus without inventing execution.");
             Assert.That(controller, Does.Contain("BuildBlackMarketOperationDetailBlockers"), "Focused details should call out blockers/read-only execution gaps from current truth.");
-            Assert.That(controller, Does.Contain("covert action execution is not live in this client yet"), "Action hooks must stay honest/read-only until a real handler exists.");
+            Assert.That(controller, Does.Contain("covert action hook visible, execution pending"), "Action hooks must stay honest/read-only until a real handler exists.");
             Assert.That(controller, Does.Not.Contain("source {card.SourceSurface}"), "Focused detail refs should not expose raw source-surface strings to players.");
             Assert.That(controller, Does.Not.Contain("Truncate(string.Join(\", \", card.ActionIds)"), "Focused detail refs should show counts instead of raw action ids.");
             Assert.That(controller, Does.Not.Contain("Truncate(string.Join(\", \", card.MissionOfferIds)"), "Focused detail refs should show counts instead of raw mission ids.");
@@ -5153,6 +5153,29 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(controller, Does.Not.Contain("Execute shadow operation"), "This slice must not fake shadow-operation execution.");
             Assert.That(controller, Does.Not.Contain("Grant shadow reward"), "This slice must not fake rewards for operation cards.");
             Assert.That(controller, Does.Not.Contain("/api/me.worldConsequenceActions.playerActions"), "Player-facing card expansion must not reintroduce raw API route strings.");
+        }
+
+
+        [Test]
+        public void Black_market_operation_cards_show_clear_readiness_labels_without_fake_execution()
+        {
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/BlackMarket/BlackMarketScreenController.cs");
+
+            Assert.That(File.Exists(controllerPath), Is.True, "BlackMarketScreenController.cs should be available from the Unity project root.");
+
+            var controller = File.ReadAllText(controllerPath);
+
+            Assert.That(controller, Does.Contain("BuildBlackMarketOperationActionLabel"), "Operation card buttons should derive player-facing readiness labels from existing payload truth.");
+            Assert.That(controller, Does.Contain("BuildBlackMarketOperationReadinessLabel"), "Operation cards should expose a readable readiness line instead of vague dev-state labels.");
+            Assert.That(controller, Does.Contain("Select mission lead"), "Mission-backed cards should clearly tell the player that the visible action selects an existing mission lead.");
+            Assert.That(controller, Does.Contain("Mission lead blocked"), "Mission-backed cards should stay honest when a current mission blocks selection.");
+            Assert.That(controller, Does.Contain("Action hook not live"), "Action-backed cards should avoid looking executable until a real Unity handler exists.");
+            Assert.That(controller, Does.Contain("Read-only signal"), "Cards without selectable mission/action hooks should describe themselves as read-only signals.");
+            Assert.That(controller, Does.Contain("Readiness:"), "Visible card receipt detail should include a readiness line players can understand.");
+            Assert.That(controller, Does.Contain("covert action hook visible, execution pending"), "Covert action hooks should be visible but explicitly unwired instead of pretending execution exists.");
+            Assert.That(controller, Does.Not.Contain("Execute shadow operation"), "This slice must not fake shadow-operation execution.");
+            Assert.That(controller, Does.Not.Contain("Grant shadow reward"), "This slice must not fake rewards for operation cards.");
+            Assert.That(controller, Does.Not.Contain("World action visible"), "Player-facing operation card buttons should not use backend-ish world-action wording.");
         }
 
 
