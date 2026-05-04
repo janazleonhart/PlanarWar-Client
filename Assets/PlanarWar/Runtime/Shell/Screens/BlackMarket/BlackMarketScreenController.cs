@@ -1311,7 +1311,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 title: FirstNonBlank(card.Headline, HumanizeKey(card.Id), "Shadow operation"),
                 lore: BuildBlackMarketActiveOperationLore(card, actionIds.Count, missionIds.Count),
                 note: BuildBlackMarketActiveOperationReceiptDetail(card, actionIds.Count, missionIds.Count),
-                buttonText: hasMissionOffer ? "Select mission" : actionIds.Count > 0 ? "World action visible" : "Read-only",
+                buttonText: hasMissionOffer ? "Select mission" : actionIds.Count > 0 ? "Action signal visible" : "Read-only",
                 buttonEnabled: hasMissionOffer && !summaryState.IsActionBusy,
                 onClick: hasMissionOffer ? () => SelectMissionOfferFromActiveOperation(missionOfferId) : null,
                 isSelected: string.Equals(selectedBlackMarketOperationCardId, selectionKey, StringComparison.OrdinalIgnoreCase),
@@ -1406,7 +1406,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
             if ((card?.ActionIds?.Count ?? 0) > 0)
             {
-                blockers.Add("world-action execution handler not wired in Unity");
+                blockers.Add("covert action execution is not live in this client yet");
             }
 
             if (blockers.Count == 0)
@@ -1420,12 +1420,12 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private static string BuildBlackMarketOperationDetailRefs(BlackMarketActiveOperationCardSnapshot card)
         {
             var refs = new List<string>();
-            if (!string.IsNullOrWhiteSpace(card?.SourceSurface)) refs.Add("source surface visible");
+            if (!string.IsNullOrWhiteSpace(card?.SourceSurface)) refs.Add("operation signal verified");
             var actionCount = card?.ActionIds?.Count ?? 0;
             var missionCount = card?.MissionOfferIds?.Count ?? 0;
-            if (actionCount > 0) refs.Add($"{actionCount} world-action ref{(actionCount == 1 ? string.Empty : "s")}");
-            if (missionCount > 0) refs.Add($"{missionCount} mission ref{(missionCount == 1 ? string.Empty : "s")}");
-            return refs.Count == 0 ? "Refs: none supplied." : $"Refs: {string.Join(" • ", refs)}";
+            if (actionCount > 0) refs.Add($"{actionCount} covert action hook{(actionCount == 1 ? string.Empty : "s")}");
+            if (missionCount > 0) refs.Add($"{missionCount} mission lead{(missionCount == 1 ? string.Empty : "s")}");
+            return refs.Count == 0 ? "Signals: none supplied." : $"Signals: {string.Join(" • ", refs)}";
         }
 
         private void SelectMissionOfferFromActiveOperation(string missionOfferId)
@@ -1489,9 +1489,9 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private static string BuildBlackMarketActiveOperationReferenceSummary(BlackMarketActiveOperationCardSnapshot card, int actionCount, int missionCount)
         {
             var refs = new List<string>();
-            if (!string.IsNullOrWhiteSpace(card?.SourceSurface)) refs.Add("source surface visible");
-            if (actionCount > 0) refs.Add($"{actionCount} world-action ref{(actionCount == 1 ? string.Empty : "s")}");
-            if (missionCount > 0) refs.Add($"{missionCount} mission ref{(missionCount == 1 ? string.Empty : "s")}");
+            if (!string.IsNullOrWhiteSpace(card?.SourceSurface)) refs.Add("operation signal verified");
+            if (actionCount > 0) refs.Add($"{actionCount} covert action hook{(actionCount == 1 ? string.Empty : "s")}");
+            if (missionCount > 0) refs.Add($"{missionCount} mission lead{(missionCount == 1 ? string.Empty : "s")}");
             return refs.Count == 0 ? string.Empty : string.Join(" • ", refs);
         }
 

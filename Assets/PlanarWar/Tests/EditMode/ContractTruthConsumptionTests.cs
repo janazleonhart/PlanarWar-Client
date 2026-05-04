@@ -5051,7 +5051,7 @@ namespace PlanarWar.Client.Tests.EditMode
             var controller = File.ReadAllText(controllerPath);
             Assert.That(controller, Does.Contain("summary.BlackMarketActiveOperation"), "Operations desk should consume /api/me.blackMarketActiveOperationSurface from mapped summary truth.");
             Assert.That(controller, Does.Contain("BuildBlackMarketActiveOperationCards"), "Operations desk should promote active-operation cards into the visible action board.");
-            Assert.That(controller, Does.Contain("World action visible"), "World-action cards stay honest/read-only until a real execution handler is wired.");
+            Assert.That(controller, Does.Contain("Action signal visible"), "Action-backed cards stay honest/read-only until a real execution handler is wired.");
             Assert.That(controller, Does.Contain("Select mission"), "Mission-backed operation cards may select the existing mission board instead of inventing a new action path.");
             Assert.That(controller, Does.Not.Contain("Execute shadow operation"), "This slice must not fake first-class operation execution.");
         }
@@ -5073,10 +5073,13 @@ namespace PlanarWar.Client.Tests.EditMode
 
             Assert.That(controller, Does.Contain("BuildBlackMarketActiveOperationReceiptDetail"), "Active operation cards should expose receipt/proof/detail text from existing payload fields.");
             Assert.That(controller, Does.Contain("BuildBlackMarketActiveOperationReferenceSummary"), "Receipt detail should summarize source surface and backend references instead of inventing execution." );
-            Assert.That(controller, Does.Contain("source surface visible"), "Player-facing operation proof should acknowledge source truth without exposing raw route strings." );
+            Assert.That(controller, Does.Contain("operation signal verified"), "Player-facing operation proof should acknowledge source truth without exposing raw route strings or dev-only ref wording." );
             Assert.That(controller, Does.Contain("Receipt:"), "Visible operation cards should label the existing operator note/summary as receipt detail." );
-            Assert.That(controller, Does.Contain("Proof:"), "Visible operation cards should label source/action/mission refs as proof detail." );
-            Assert.That(controller, Does.Contain("World action visible"), "World-action-backed cards remain honest/read-only until Unity has a real handler." );
+            Assert.That(controller, Does.Contain("Proof:"), "Visible operation cards should label source/action/mission hooks as proof detail." );
+            Assert.That(controller, Does.Not.Contain("source surface visible"), "Player-facing operation cards should not show dev/source-surface wording." );
+            Assert.That(controller, Does.Not.Contain("world-action ref"), "Player-facing operation cards should not show backend-ref wording." );
+            Assert.That(controller, Does.Not.Contain("mission ref"), "Player-facing operation cards should not show backend-ref wording." );
+            Assert.That(controller, Does.Contain("Action signal visible"), "Action-backed cards remain honest/read-only until Unity has a real handler." );
             Assert.That(uxml, Does.Contain("operations-receipt-detail-surface-v1"), "The operations action board should carry a scoped receipt-detail styling hook." );
             Assert.That(uss, Does.Contain("Black Market operations receipt detail surface v1"));
             Assert.That(uss, Does.Contain(".operations-receipt-detail-surface-v1 .warfront-desk-card .metric-subvalue"));
@@ -5104,10 +5107,16 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(controller, Does.Contain("RenderBlackMarketOperationDetail"), "The Operations desk should render a focused selected-operation detail panel from existing payload truth.");
             Assert.That(controller, Does.Contain("SelectBlackMarketOperationCard"), "Selecting a visible operation card should update detail focus without inventing execution.");
             Assert.That(controller, Does.Contain("BuildBlackMarketOperationDetailBlockers"), "Focused details should call out blockers/read-only execution gaps from current truth.");
-            Assert.That(controller, Does.Contain("world-action execution handler not wired in Unity"), "World-action refs must stay honest/read-only until a real handler exists.");
+            Assert.That(controller, Does.Contain("covert action execution is not live in this client yet"), "Action hooks must stay honest/read-only until a real handler exists.");
             Assert.That(controller, Does.Not.Contain("source {card.SourceSurface}"), "Focused detail refs should not expose raw source-surface strings to players.");
             Assert.That(controller, Does.Not.Contain("Truncate(string.Join(\", \", card.ActionIds)"), "Focused detail refs should show counts instead of raw action ids.");
             Assert.That(controller, Does.Not.Contain("Truncate(string.Join(\", \", card.MissionOfferIds)"), "Focused detail refs should show counts instead of raw mission ids.");
+            Assert.That(controller, Does.Not.Contain("source surface visible"), "Focused detail refs should not show dev/source-surface wording to players.");
+            Assert.That(controller, Does.Not.Contain("world-action ref"), "Focused detail refs should not show backend-ref wording to players.");
+            Assert.That(controller, Does.Not.Contain("mission ref"), "Focused detail refs should not show backend-ref wording to players.");
+            Assert.That(controller, Does.Contain("covert action hook"), "Focused detail refs should use player-facing covert action hook wording.");
+            Assert.That(controller, Does.Contain("mission lead"), "Focused detail refs should use player-facing mission lead wording.");
+            Assert.That(controller, Does.Contain("Signals:"), "Focused detail refs should label player-facing operation signals instead of raw refs.");
             Assert.That(uxml, Does.Contain("warfront-operation-detail-root"), "Operations should include a selected-operation detail panel in the existing action board.");
             Assert.That(uxml, Does.Contain("warfront-operation-detail-blockers-value"), "Focused detail should have a blockers line, even when it only says no blocker field was supplied.");
             Assert.That(uxml, Does.Contain("operations-operation-detail-selection-v1"), "The detail panel should use a scoped styling hook.");
