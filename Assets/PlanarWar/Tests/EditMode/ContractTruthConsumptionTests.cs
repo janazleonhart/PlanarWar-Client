@@ -5156,6 +5156,27 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
 
+
+
+        [Test]
+        public void Black_market_operation_mission_leads_route_to_existing_mission_board_without_fake_creation()
+        {
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/BlackMarket/BlackMarketScreenController.cs");
+
+            Assert.That(File.Exists(controllerPath), Is.True, "BlackMarketScreenController.cs should be available from the Unity project root.");
+
+            var controller = File.ReadAllText(controllerPath);
+
+            Assert.That(controller, Does.Contain("Black Market operation mission lead selection cleanup v1"), "Mission-lead selection should be explicitly protected as a client-only clarity slice.");
+            Assert.That(controller, Does.Contain("BuildBlackMarketOperationMissionLeadGuidance"), "Mission-backed operation cards should explain where the Select mission lead button goes.");
+            Assert.That(controller, Does.Contain("button opens the existing Mission Board offer; it does not create a new mission."), "Selectable mission leads should clearly route to the existing Mission Board instead of implying fake creation.");
+            Assert.That(controller, Does.Contain("Next: select this mission lead to review the existing Mission Board offer."), "Focused operation detail should give the same mission-board path when a lead is available.");
+            Assert.That(controller, Does.Contain("finish the active mission before reviewing this lead."), "Blocked mission leads should explain the active-mission gate without inventing bypasses.");
+            Assert.That(controller, Does.Not.Contain("Create mission lead"), "This slice must not invent mission creation.");
+            Assert.That(controller, Does.Not.Contain("Generate mission reward"), "This slice must not invent mission rewards.");
+            Assert.That(controller, Does.Not.Contain("Execute shadow operation"), "This slice must not fake shadow-operation execution.");
+        }
+
         [Test]
         public void Black_market_operation_cards_show_clear_readiness_labels_without_fake_execution()
         {

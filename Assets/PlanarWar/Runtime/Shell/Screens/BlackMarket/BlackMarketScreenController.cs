@@ -97,6 +97,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private string selectedDispatchHeroId = string.Empty;
         private string selectedMissionOfferId = string.Empty;
         private string selectedBlackMarketOperationCardId = string.Empty;
+        // Black Market operation mission lead selection cleanup v1: keep mission-backed operation cards tied to the existing Mission Board path.
         private Action missionPrimaryAction;
         private bool missionPrimaryActionEnabled;
         private bool suppressManagementEvents;
@@ -1311,7 +1312,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 family: BuildBlackMarketActiveOperationFamily(card),
                 title: FirstNonBlank(card.Headline, HumanizeKey(card.Id), "Shadow operation"),
                 lore: BuildBlackMarketActiveOperationLore(card, actionIds.Count, missionIds.Count),
-                note: BuildBlackMarketActiveOperationReceiptDetail(card, actionIds.Count, missionIds.Count, hasMissionLead, activeMission != null),
+                note: BuildBlackMarketActiveOperationReceiptDetail(card, actionIds.Count, missionIds.Count, hasMissionLead, activeMission != null, canSelectMissionLead),
                 buttonText: BuildBlackMarketOperationActionLabel(actionIds.Count, hasMissionLead, activeMission != null),
                 buttonEnabled: canSelectMissionLead && !summaryState.IsActionBusy,
                 onClick: canSelectMissionLead ? () => SelectMissionOfferFromActiveOperation(missionOfferId) : null,
@@ -1399,13 +1400,21 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
         private static string BuildBlackMarketOperationDetailBlockers(BlackMarketActiveOperationCardSnapshot card, MissionSnapshot activeMission)
         {
-            var blockers = new List<string>();
-            if (activeMission != null && (card?.MissionOfferIds?.Count ?? 0) > 0)
+            var missionCount = card?.MissionOfferIds?.Count ?? 0;
+            var actionCount = card?.ActionIds?.Count ?? 0;
+
+            if (missionCount > 0 && activeMission == null)
             {
-                blockers.Add("active mission already running");
+                return "Next: select this mission lead to review the existing Mission Board offer.";
             }
 
-            if ((card?.ActionIds?.Count ?? 0) > 0)
+            var blockers = new List<string>();
+            if (activeMission != null && missionCount > 0)
+            {
+                blockers.Add("active mission already running; complete or clear it before reviewing this mission lead");
+            }
+
+            if (actionCount > 0)
             {
                 blockers.Add("covert action hook visible, execution pending");
             }
@@ -1459,7 +1468,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             return Truncate(string.Join(" • ", parts.Where(part => !string.IsNullOrWhiteSpace(part))), 232);
         }
 
-        private static string BuildBlackMarketActiveOperationReceiptDetail(BlackMarketActiveOperationCardSnapshot card, int actionCount, int missionCount, bool hasMissionLead, bool hasActiveMission)
+        private static string BuildBlackMarketActiveOperationReceiptDetail(BlackMarketActiveOperationCardSnapshot card, int actionCount, int missionCount, bool hasMissionLead, bool hasActiveMission, bool canSelectMissionLead)
         {
             var lines = new List<string>();
             var operatorNote = FirstNonBlank(card?.OperatorNote, card?.Summary);
@@ -1472,6 +1481,12 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             if (!string.IsNullOrWhiteSpace(readiness))
             {
                 lines.Add($"Readiness: {readiness}");
+            }
+
+            var missionLeadGuidance = BuildBlackMarketOperationMissionLeadGuidance(hasMissionLead, hasActiveMission, canSelectMissionLead);
+            if (!string.IsNullOrWhiteSpace(missionLeadGuidance))
+            {
+                lines.Add($"Mission lead: {missionLeadGuidance}");
             }
 
             var proof = BuildBlackMarketActiveOperationReferenceSummary(card, actionCount, missionCount);
@@ -1531,6 +1546,26 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             }
 
             return "read-only operation signal";
+        }
+
+        private static string BuildBlackMarketOperationMissionLeadGuidance(bool hasMissionLead, bool hasActiveMission, bool canSelectMissionLead)
+        {
+            if (!hasMissionLead)
+            {
+                return string.Empty;
+            }
+
+            if (canSelectMissionLead)
+            {
+                return "button opens the existing Mission Board offer; it does not create a new mission.";
+            }
+
+            if (hasActiveMission)
+            {
+                return "finish the active mission before reviewing this lead.";
+            }
+
+            return "lead visible, but the matching Mission Board offer is not selectable from this payload.";
         }
 
         private static string BuildBlackMarketActiveOperationReferenceSummary(BlackMarketActiveOperationCardSnapshot card, int actionCount, int missionCount)
