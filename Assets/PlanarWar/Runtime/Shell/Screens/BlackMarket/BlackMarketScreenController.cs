@@ -37,6 +37,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private readonly Label missionBoardStatus;
         private readonly Label missionBoardEffect;
         private readonly Label missionBoardAssignment;
+        private readonly VisualElement operationTypePicker;
+        private readonly Label operationTypeSummary;
         private readonly VisualElement operationDetailRoot;
         private readonly Label operationDetailTitle;
         private readonly Label operationDetailStatus;
@@ -98,6 +100,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private string selectedDispatchHeroId = string.Empty;
         private string selectedMissionOfferId = string.Empty;
         private string selectedBlackMarketOperationCardId = string.Empty;
+        private string selectedBlackMarketOperationTypeKey = string.Empty;
         // Black Market operation mission lead selection cleanup v1: keep mission-backed operation cards tied to the existing Mission Board path.
         private Action missionPrimaryAction;
         private bool missionPrimaryActionEnabled;
@@ -138,6 +141,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             missionBoardStatus = root.Q<Label>("warfront-mission-board-status-value");
             missionBoardEffect = root.Q<Label>("warfront-mission-board-effect-value");
             missionBoardAssignment = root.Q<Label>("warfront-mission-board-assignment-value");
+            operationTypePicker = root.Q<VisualElement>("warfront-operation-type-picker");
+            operationTypeSummary = root.Q<Label>("warfront-operation-type-summary-value");
             operationDetailRoot = root.Q<VisualElement>("warfront-operation-detail-root");
             operationDetailTitle = root.Q<Label>("warfront-operation-detail-title-value");
             operationDetailStatus = root.Q<Label>("warfront-operation-detail-status-value");
@@ -349,7 +354,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                     ? Truncate(summaryState.RecentMissionReceipt, 128)
                     : BuildReinforcementDeskNote(summary.Armies, reinforceState, reinforceTimer, reinforceOp, warfrontWindows.Count > 0));
             var baseOperationCards = BuildCards(summary, rankedArmies, warfrontWindows, activeMission, primaryWarning, signalPairs, reinforceState, reinforceTimer, reinforceOp);
-            RenderCards(cards, LaneCards(activeOperationCards.Concat(baseOperationCards).Take(4).ToList()));
+            var boardCards = hasActiveOperationSurface ? activeOperationCards : baseOperationCards;
+            RenderCards(cards, LaneCards(boardCards.Take(4).ToList()));
             RenderBlackMarketOperationDetail(activeOperationSurface, activeMission);
             RenderFormationManagement(summary, rankedArmies, targetArmyId);
             RenderMissionBoard(summary, rankedArmies, activeMission, primaryWarning, nowUtc);
@@ -1291,10 +1297,10 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 return new List<CardView>();
             }
 
+            EnsureSelectedBlackMarketOperationType(surface);
             EnsureSelectedBlackMarketOperationCard(surface);
 
-            return surface.Cards
-                .Where(card => card != null)
+            return GetFocusedBlackMarketOperationCards(surface)
                 .Take(4)
                 .Select((card, index) => BuildBlackMarketActiveOperationCard(card, activeMission, ResolveBlackMarketOperationSelectionKey(card, index)))
                 .ToList();
@@ -1333,9 +1339,36 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             Render(summaryState.Snapshot);
         }
 
+        private void SelectBlackMarketOperationType(string typeKey)
+        {
+            if (string.IsNullOrWhiteSpace(typeKey))
+            {
+                return;
+            }
+
+            selectedBlackMarketOperationTypeKey = typeKey.Trim();
+            selectedBlackMarketOperationCardId = string.Empty;
+            Render(summaryState.Snapshot);
+        }
+
+        private void EnsureSelectedBlackMarketOperationType(BlackMarketActiveOperationSurfaceSnapshot surface)
+        {
+            var types = GetBlackMarketOperationTypeChoices(surface);
+            if (types.Count == 0)
+            {
+                selectedBlackMarketOperationTypeKey = string.Empty;
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(selectedBlackMarketOperationTypeKey) || types.All(type => !string.Equals(type.Key, selectedBlackMarketOperationTypeKey, StringComparison.OrdinalIgnoreCase)))
+            {
+                selectedBlackMarketOperationTypeKey = types[0].Key;
+            }
+        }
+
         private void EnsureSelectedBlackMarketOperationCard(BlackMarketActiveOperationSurfaceSnapshot surface)
         {
-            var cards = surface?.Cards?.Where(card => card != null).Take(4).ToList() ?? new List<BlackMarketActiveOperationCardSnapshot>();
+            var cards = GetFocusedBlackMarketOperationCards(surface).Take(4).ToList();
             if (cards.Count == 0)
             {
                 selectedBlackMarketOperationCardId = string.Empty;
@@ -1349,6 +1382,51 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             }
         }
 
+        private void RenderBlackMarketOperationTypeFocus(BlackMarketActiveOperationSurfaceSnapshot surface)
+        {
+            if (operationTypePicker == null && operationTypeSummary == null)
+            {
+                return;
+            }
+
+            if (surface == null || surface.Cards == null || surface.Cards.Count == 0)
+            {
+                if (operationTypePicker != null) operationTypePicker.style.display = DisplayStyle.None;
+                if (operationTypeSummary != null) operationTypeSummary.text = "No operation types are visible yet.";
+                return;
+            }
+
+            EnsureSelectedBlackMarketOperationType(surface);
+            var choices = GetBlackMarketOperationTypeChoices(surface);
+            var selected = choices.FirstOrDefault(choice => string.Equals(choice.Key, selectedBlackMarketOperationTypeKey, StringComparison.OrdinalIgnoreCase)) ?? choices.FirstOrDefault();
+
+            if (operationTypeSummary != null)
+            {
+                operationTypeSummary.text = BuildBlackMarketOperationTypeFocusSummary(selected, surface);
+            }
+
+            if (operationTypePicker == null)
+            {
+                return;
+            }
+
+            operationTypePicker.style.display = DisplayStyle.Flex;
+            operationTypePicker.Clear();
+            foreach (var choice in choices)
+            {
+                var isSelected = string.Equals(choice.Key, selectedBlackMarketOperationTypeKey, StringComparison.OrdinalIgnoreCase);
+                var button = new Button(() => SelectBlackMarketOperationType(choice.Key))
+                {
+                    text = $"{choice.Label} • {choice.Count}"
+                };
+                button.AddToClassList("operations-choice");
+                button.AddToClassList("operations-operation-type-choice");
+                button.EnableInClassList("operations-choice--selected", isSelected);
+                button.tooltip = $"Focus {choice.Label} operations without hiding selected detail truth.";
+                operationTypePicker.Add(button);
+            }
+        }
+
         private void RenderBlackMarketOperationDetail(BlackMarketActiveOperationSurfaceSnapshot surface, MissionSnapshot activeMission)
         {
             if (operationDetailRoot == null)
@@ -1356,13 +1434,14 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 return;
             }
 
-            var cards = surface?.Cards?.Where(card => card != null).Take(4).ToList() ?? new List<BlackMarketActiveOperationCardSnapshot>();
+            var cards = GetFocusedBlackMarketOperationCards(surface).Take(4).ToList();
             if (surface == null || cards.Count == 0)
             {
                 operationDetailRoot.style.display = DisplayStyle.None;
                 return;
             }
 
+            EnsureSelectedBlackMarketOperationType(surface);
             EnsureSelectedBlackMarketOperationCard(surface);
             var selected = cards
                 .Select((card, index) => new { Card = card, Key = ResolveBlackMarketOperationSelectionKey(card, index) })
@@ -1377,6 +1456,60 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             if (operationDetailProof != null) operationDetailProof.text = BuildBlackMarketOperationDetailProof(selected);
             if (operationDetailBlockers != null) operationDetailBlockers.text = BuildBlackMarketOperationDetailBlockers(selected, activeMission);
             if (operationDetailRefs != null) operationDetailRefs.text = BuildBlackMarketOperationDetailRefs(selected);
+        }
+
+        private List<BlackMarketActiveOperationCardSnapshot> GetFocusedBlackMarketOperationCards(BlackMarketActiveOperationSurfaceSnapshot surface)
+        {
+            var cards = surface?.Cards?.Where(card => card != null).ToList() ?? new List<BlackMarketActiveOperationCardSnapshot>();
+            if (cards.Count == 0)
+            {
+                return cards;
+            }
+
+            EnsureSelectedBlackMarketOperationType(surface);
+            return cards
+                .Where(card => string.Equals(BuildBlackMarketOperationTypeKey(card), selectedBlackMarketOperationTypeKey, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        private static List<OperationTypeChoice> GetBlackMarketOperationTypeChoices(BlackMarketActiveOperationSurfaceSnapshot surface)
+        {
+            var choices = new List<OperationTypeChoice>();
+            foreach (var card in surface?.Cards ?? new List<BlackMarketActiveOperationCardSnapshot>())
+            {
+                if (card == null) continue;
+                var key = BuildBlackMarketOperationTypeKey(card);
+                var existing = choices.FirstOrDefault(choice => string.Equals(choice.Key, key, StringComparison.OrdinalIgnoreCase));
+                if (existing != null)
+                {
+                    existing.Count += 1;
+                    existing.Risks.Add(HumanizeStatus(card.Risk));
+                    existing.States.Add(HumanizeStatus(card.State));
+                    continue;
+                }
+
+                choices.Add(new OperationTypeChoice(key, HumanizeKey(FirstNonBlank(card.Kind, "operation")), HumanizeStatus(card.Risk), HumanizeStatus(card.State)));
+            }
+
+            return choices;
+        }
+
+        private static string BuildBlackMarketOperationTypeKey(BlackMarketActiveOperationCardSnapshot card)
+        {
+            return FirstNonBlank(card?.Kind, "operation").Trim().ToLowerInvariant();
+        }
+
+        private static string BuildBlackMarketOperationTypeFocusSummary(OperationTypeChoice selected, BlackMarketActiveOperationSurfaceSnapshot surface)
+        {
+            if (selected == null)
+            {
+                return "Type focus: no operation type selected.";
+            }
+
+            var totalTypes = GetBlackMarketOperationTypeChoices(surface).Count;
+            var riskText = selected.Risks.Count > 0 ? string.Join("/", selected.Risks.Where(risk => !string.IsNullOrWhiteSpace(risk)).Distinct().Take(3)) : "unknown risk";
+            var stateText = selected.States.Count > 0 ? string.Join("/", selected.States.Where(state => !string.IsNullOrWhiteSpace(state)).Distinct().Take(3)) : "unknown state";
+            return $"Type focus: {selected.Label} • {selected.Count} candidate{(selected.Count == 1 ? string.Empty : "s")} • risks {riskText} • states {stateText} • {totalTypes} type{(totalTypes == 1 ? string.Empty : "s")} visible";
         }
 
         private static string ResolveBlackMarketOperationSelectionKey(BlackMarketActiveOperationCardSnapshot card, int index)
@@ -3212,6 +3345,24 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private static string FirstNonBlank(params string[] values) => values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? string.Empty;
         private static string Truncate(string value, int maxLen) => string.IsNullOrWhiteSpace(value) || value.Length <= maxLen ? value ?? string.Empty : value.Substring(0, Math.Max(0, maxLen - 1)).TrimEnd() + "…";
         private static string FormatRemaining(TimeSpan? span) => !span.HasValue ? "time unknown" : span.Value <= TimeSpan.Zero ? "now" : span.Value.ToString(span.Value.TotalHours >= 1 ? @"hh\:mm\:ss" : @"mm\:ss");
+
+        private sealed class OperationTypeChoice
+        {
+            public string Key { get; }
+            public string Label { get; }
+            public int Count { get; set; }
+            public List<string> Risks { get; } = new();
+            public List<string> States { get; } = new();
+
+            public OperationTypeChoice(string key, string label, string risk, string state)
+            {
+                Key = string.IsNullOrWhiteSpace(key) ? "operation" : key;
+                Label = string.IsNullOrWhiteSpace(label) ? "Operation" : label;
+                Count = 1;
+                if (!string.IsNullOrWhiteSpace(risk)) Risks.Add(risk);
+                if (!string.IsNullOrWhiteSpace(state)) States.Add(state);
+            }
+        }
 
         private sealed class InfoCard
         {

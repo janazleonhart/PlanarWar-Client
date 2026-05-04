@@ -879,6 +879,16 @@
                         <ui:VisualElement class="summary-card summary-card--full warfront-cards-shell operations-action-board operations-receipt-detail-surface-v1 operations-operation-card-expansion-v1">
                             <ui:Label text="Action board" class="eyebrow" />
                             <ui:Label name="warfront-cards-copy-value" text="Live operations, timers, and direct actions surface here." class="metric-subvalue metric-subvalue--wrap" />
+                            <ui:VisualElement class="operations-operation-type-focus-v1 operations-operation-type-focus">
+                                <ui:VisualElement class="operations-management-head operations-type-focus__head">
+                                    <ui:VisualElement class="operations-management-title-stack">
+                                        <ui:Label text="Operation type focus" class="eyebrow operations-picker-label" />
+                                        <ui:Label name="warfront-operation-type-summary-value" text="Type focus appears when Black Market operation cards are visible." class="metric-subvalue metric-subvalue--wrap" />
+                                    </ui:VisualElement>
+                                    <ui:Label text="Focused candidates" class="operations-pill" />
+                                </ui:VisualElement>
+                                <ui:VisualElement name="warfront-operation-type-picker" class="operations-choice-list operations-choice-list--operation-types" />
+                            </ui:VisualElement>
                             <ui:VisualElement class="summary-grid summary-grid--desk-cards warfront-cards-grid">
                                 <ui:VisualElement name="warfront-card-1-root" class="summary-card glance-card warfront-desk-card">
                                     <ui:Label name="warfront-card-1-title" text="Operations window" class="eyebrow" />

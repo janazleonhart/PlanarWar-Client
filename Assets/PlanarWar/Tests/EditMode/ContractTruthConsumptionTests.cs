@@ -5232,5 +5232,37 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
 
+
+        [Test]
+        public void Black_market_operation_type_focus_filters_candidates_without_fake_variants()
+        {
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/BlackMarket/BlackMarketScreenController.cs");
+            var uxmlPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var ussPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+
+            Assert.That(File.Exists(controllerPath), Is.True, "BlackMarketScreenController.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(uxmlPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(ussPath), Is.True, "AppShell.uss should be available from the Unity project root.");
+
+            var controller = File.ReadAllText(controllerPath);
+            var uxml = File.ReadAllText(uxmlPath);
+            var uss = File.ReadAllText(ussPath);
+
+            Assert.That(controller, Does.Contain("selectedBlackMarketOperationTypeKey"), "The Operations desk should remember the selected operation type locally.");
+            Assert.That(controller, Does.Contain("RenderBlackMarketOperationTypeFocus"), "The Operations desk should render a type-focus picker before showing candidate cards.");
+            Assert.That(controller, Does.Contain("GetFocusedBlackMarketOperationCards"), "Operation cards should be filtered by the selected payload kind/type instead of dumping every card at once.");
+            Assert.That(controller, Does.Contain("Type focus:"), "The focused picker should explain how many candidate operations and risks are visible for the selected type.");
+            Assert.That(controller, Does.Contain("Focused candidates"), "The type selector should frame visible cards as focused candidates, not fake new operation variants.");
+            Assert.That(uxml, Does.Contain("operations-operation-type-focus-v1"), "Operations action board should carry a scoped type-focus hook.");
+            Assert.That(uxml, Does.Contain("warfront-operation-type-picker"), "Operations action board should include a local type picker.");
+            Assert.That(uxml, Does.Contain("warfront-operation-type-summary-value"), "Operations action board should include a focused-type summary line.");
+            Assert.That(uss, Does.Contain("Black Market operation type focus v1"));
+            Assert.That(uss, Does.Contain(".operations-choice-list--operation-types"));
+            Assert.That(controller, Does.Not.Contain("Generate risk variant"), "This slice must not invent low/medium/high operation variants client-side.");
+            Assert.That(controller, Does.Not.Contain("Create shadow operation"), "This slice must not invent operation creation.");
+            Assert.That(controller, Does.Not.Contain("Execute shadow operation"), "This slice must not fake shadow-operation execution.");
+            Assert.That(controller, Does.Not.Contain("Grant shadow reward"), "This slice must not fake rewards for operation cards.");
+        }
+
     }
 }
