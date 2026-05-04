@@ -1387,7 +1387,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private static string BuildBlackMarketOperationDetailReceipt(BlackMarketActiveOperationCardSnapshot card, BlackMarketActiveOperationSurfaceSnapshot surface)
         {
             var receipt = FirstNonBlank(card?.OperatorNote, card?.Summary, surface?.Detail, surface?.Headline);
-            return $"Receipt: {Truncate(FirstNonBlank(receipt, "No receipt text was supplied by this active-operation card."), 220)}";
+            return $"Receipt: {Truncate(FirstNonBlank(receipt, "No receipt text was supplied by this active-operation card."), 320)}";
         }
 
         private static string BuildBlackMarketOperationDetailProof(BlackMarketActiveOperationCardSnapshot card)
@@ -1455,7 +1455,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             if (!string.IsNullOrWhiteSpace(card?.Risk)) parts.Add($"Risk {HumanizeStatus(card.Risk)}");
             var refs = BuildBlackMarketActiveOperationReferenceSummary(card, actionCount, missionCount);
             if (!string.IsNullOrWhiteSpace(refs)) parts.Add(refs);
-            return Truncate(string.Join(" • ", parts.Where(part => !string.IsNullOrWhiteSpace(part))), 168);
+            return Truncate(string.Join(" • ", parts.Where(part => !string.IsNullOrWhiteSpace(part))), 232);
         }
 
         private static string BuildBlackMarketActiveOperationReceiptDetail(BlackMarketActiveOperationCardSnapshot card, int actionCount, int missionCount)
@@ -1464,7 +1464,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var operatorNote = FirstNonBlank(card?.OperatorNote, card?.Summary);
             if (!string.IsNullOrWhiteSpace(operatorNote))
             {
-                lines.Add($"Receipt: {Truncate(operatorNote, 74)}");
+                lines.Add($"Receipt: {Truncate(operatorNote, 112)}");
             }
 
             var proof = BuildBlackMarketActiveOperationReferenceSummary(card, actionCount, missionCount);

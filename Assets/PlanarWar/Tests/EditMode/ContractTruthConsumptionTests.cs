@@ -5127,5 +5127,34 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
 
+        [Test]
+        public void Black_market_operation_cards_expand_readability_without_fake_execution()
+        {
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/BlackMarket/BlackMarketScreenController.cs");
+            var uxmlPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var ussPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+
+            Assert.That(File.Exists(controllerPath), Is.True, "BlackMarketScreenController.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(uxmlPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(ussPath), Is.True, "AppShell.uss should be available from the Unity project root.");
+
+            var controller = File.ReadAllText(controllerPath);
+            var uxml = File.ReadAllText(uxmlPath);
+            var uss = File.ReadAllText(ussPath);
+
+            Assert.That(controller, Does.Contain("), 232)"), "Operation card lore should allow more player-facing context before truncating.");
+            Assert.That(controller, Does.Contain("), 320)"), "Selected operation receipt detail should allow more existing payload truth before truncating.");
+            Assert.That(controller, Does.Contain("Truncate(operatorNote, 112)"), "Card receipt notes should be less aggressively shortened while staying bounded.");
+            Assert.That(uxml, Does.Contain("operations-operation-card-expansion-v1"), "Operations action board should carry a scoped card-expansion readability hook.");
+            Assert.That(uxml, Does.Contain("operations-operation-detail--expanded"), "Selected operation detail should carry a scoped expanded readability hook.");
+            Assert.That(uss, Does.Contain("Black Market operation card expansion cleanup v1"));
+            Assert.That(uss, Does.Contain(".operations-operation-card-expansion-v1 .warfront-desk-card"), "Operation card expansion should be scoped to the Black Market operations board.");
+            Assert.That(uss, Does.Contain("max-height: 92px"), "Focused operation detail lines should allow more receipt/proof/blocker copy before clipping.");
+            Assert.That(controller, Does.Not.Contain("Execute shadow operation"), "This slice must not fake shadow-operation execution.");
+            Assert.That(controller, Does.Not.Contain("Grant shadow reward"), "This slice must not fake rewards for operation cards.");
+            Assert.That(controller, Does.Not.Contain("/api/me.worldConsequenceActions.playerActions"), "Player-facing card expansion must not reintroduce raw API route strings.");
+        }
+
+
     }
 }
