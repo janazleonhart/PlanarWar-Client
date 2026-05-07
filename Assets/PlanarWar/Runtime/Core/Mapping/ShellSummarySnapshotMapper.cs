@@ -4,6 +4,7 @@ using PlanarWar.Client.Network;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace PlanarWar.Client.Core.Mapping
 {
@@ -182,6 +183,7 @@ namespace PlanarWar.Client.Core.Mapping
                 CitySetupChoices = MapSettlementSetupChoices(summary["citySetupChoices"] ?? summary["city_setup_choices"] ?? summary["setupChoices"] ?? summary["setup_choices"]),
                 EarlyLanePosture = MapEarlyLanePosture(summary["earlyLanePosture"] as JObject ?? summary["early_lane_posture"] as JObject),
                 MotherBrainPressureStatus = MapMotherBrainPressureStatus(summary["motherBrainPressureStatus"] as JObject ?? summary["mother_brain_pressure_status"] as JObject),
+                ClientPressureSurface = MapClientPressureSurface(FirstObject(summary["clientPressureSurface"], summary["client_pressure_surface"])),
                 PublicInfrastructureSummary = MapPublicInfrastructureSummary(summary["publicInfrastructureSummary"] as JObject ?? summary["public_infrastructure_summary"] as JObject),
                 CityMudWorldConsequenceBridge = MapCityMudWorldConsequenceBridge(summary["cityMudWorldConsequenceBridge"] as JObject ?? summary["city_mud_world_consequence_bridge"] as JObject),
                 CityContractRecoveryBoard = MapCityContractRecoveryBoard(summary["cityContractRecoveryBoard"] as JObject ?? summary["city_contract_recovery_board"] as JObject),
@@ -615,6 +617,164 @@ namespace PlanarWar.Client.Core.Mapping
                     obj["proof_signals"],
                     obj["liveProofSignals"],
                     obj["live_proof_signals"])),
+            };
+        }
+
+        private static ClientPressureSurfaceSnapshot MapClientPressureSurface(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new ClientPressureSurfaceSnapshot
+            {
+                SchemaVersion = FirstInt(obj["schemaVersion"], obj["schema_version"]) ?? 0,
+                Lane = ReadClientPressureText(obj["lane"]),
+                State = ReadClientPressureText(obj["state"]),
+                Severity = ReadClientPressureText(obj["severity"]),
+                Title = ReadClientPressureText(obj["title"]),
+                Summary = ReadClientPressureText(obj["summary"]),
+                PrimaryFocus = FirstNonBlank(ReadClientPressureText(obj["primaryFocus"]), ReadClientPressureText(obj["primary_focus"])),
+                CtaLabel = FirstNonBlank(ReadClientPressureText(obj["ctaLabel"]), ReadClientPressureText(obj["cta_label"])),
+                WhyNow = FirstNonBlank(ReadClientPressureText(obj["whyNow"]), ReadClientPressureText(obj["why_now"])),
+                NavigationIntent = MapClientPressureNavigationIntent(FirstObject(obj["navigationIntent"], obj["navigation_intent"])),
+                ActionCards = FirstArray(obj["actionCards"], obj["action_cards"])?.OfType<JObject>().Select(MapClientPressureActionCard).Where(card => card != null).ToList() ?? new List<ClientPressureActionCardSnapshot>(),
+                ProgressTrail = FirstArray(obj["progressTrail"], obj["progress_trail"])?.OfType<JObject>().Select(MapClientPressureProgressTrailEntry).Where(entry => entry != null).ToList() ?? new List<ClientPressureProgressTrailEntrySnapshot>(),
+                AttentionBadge = MapClientPressureAttentionBadge(FirstObject(obj["attentionBadge"], obj["attention_badge"])),
+                ConsumptionContract = MapClientPressureConsumptionContract(FirstObject(obj["consumptionContract"], obj["consumption_contract"])),
+                QuickSessionSummary = MapClientPressureQuickSessionSummary(FirstObject(obj["quickSessionSummary"], obj["quick_session_summary"])),
+                PressureScore = obj["pressureScore"]?.Read<double?>() ?? obj["pressure_score"]?.Read<double?>(),
+                ExposureScore = obj["exposureScore"]?.Read<double?>() ?? obj["exposure_score"]?.Read<double?>(),
+                OpenWindowCount = FirstInt(obj["openWindowCount"], obj["open_window_count"]),
+                LatestProofTitle = FirstNonBlank(ReadClientPressureText(obj["latestProofTitle"]), ReadClientPressureText(obj["latest_proof_title"])),
+                LatestProofAt = FirstNonBlank(ReadClientPressureText(obj["latestProofAt"]), ReadClientPressureText(obj["latest_proof_at"])),
+                LatestProofOutcome = FirstNonBlank(ReadClientPressureText(obj["latestProofOutcome"]), ReadClientPressureText(obj["latest_proof_outcome"])),
+                MissionLead = MapClientPressureMissionLead(FirstObject(obj["missionLead"], obj["mission_lead"])),
+                Signals = MapClientPressureStringArray(FirstArray(obj["signals"])),
+                Guardrails = MapClientPressureStringArray(FirstArray(obj["guardrails"])),
+            };
+        }
+
+        private static ClientPressureNavigationIntentSnapshot MapClientPressureNavigationIntent(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new ClientPressureNavigationIntentSnapshot
+            {
+                Workspace = ReadClientPressureText(obj["workspace"]),
+                Section = ReadClientPressureText(obj["section"]),
+                Emphasis = ReadClientPressureText(obj["emphasis"]),
+                Action = ReadClientPressureText(obj["action"]),
+                Label = ReadClientPressureText(obj["label"]),
+                Reason = ReadClientPressureText(obj["reason"]),
+            };
+        }
+
+        private static ClientPressureActionCardSnapshot MapClientPressureActionCard(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new ClientPressureActionCardSnapshot
+            {
+                Id = ReadClientPressureText(obj["id"]),
+                Kind = ReadClientPressureText(obj["kind"]),
+                Label = ReadClientPressureText(obj["label"]),
+                Summary = ReadClientPressureText(obj["summary"]),
+                Priority = ReadClientPressureText(obj["priority"]),
+                Workspace = ReadClientPressureText(obj["workspace"]),
+                Section = ReadClientPressureText(obj["section"]),
+                Enabled = obj["enabled"]?.Read<bool>() ?? false,
+                Source = ReadClientPressureText(obj["source"]),
+            };
+        }
+
+        private static ClientPressureProgressTrailEntrySnapshot MapClientPressureProgressTrailEntry(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new ClientPressureProgressTrailEntrySnapshot
+            {
+                Phase = ReadClientPressureText(obj["phase"]),
+                Emphasis = ReadClientPressureText(obj["emphasis"]),
+                Label = ReadClientPressureText(obj["label"]),
+                Summary = ReadClientPressureText(obj["summary"]),
+                At = ReadClientPressureText(obj["at"]),
+                Outcome = ReadClientPressureText(obj["outcome"]),
+            };
+        }
+
+        private static ClientPressureAttentionBadgeSnapshot MapClientPressureAttentionBadge(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new ClientPressureAttentionBadgeSnapshot
+            {
+                Tone = ReadClientPressureText(obj["tone"]),
+                Label = ReadClientPressureText(obj["label"]),
+                Summary = ReadClientPressureText(obj["summary"]),
+                Placement = ReadClientPressureText(obj["placement"]),
+                ActionCardId = FirstNonBlank(ReadClientPressureText(obj["actionCardId"]), ReadClientPressureText(obj["action_card_id"])),
+                MissionId = FirstNonBlank(ReadClientPressureText(obj["missionId"]), ReadClientPressureText(obj["mission_id"])),
+                ProofAt = FirstNonBlank(ReadClientPressureText(obj["proofAt"]), ReadClientPressureText(obj["proof_at"])),
+                ShowInFastSession = obj["showInFastSession"]?.Read<bool>() ?? obj["show_in_fast_session"]?.Read<bool>() ?? false,
+                ShowInGameplayHud = obj["showInGameplayHud"]?.Read<bool>() ?? obj["show_in_gameplay_hud"]?.Read<bool>() ?? false,
+            };
+        }
+
+        private static ClientPressureConsumptionContractSnapshot MapClientPressureConsumptionContract(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new ClientPressureConsumptionContractSnapshot
+            {
+                SchemaVersion = FirstInt(obj["schemaVersion"], obj["schema_version"]) ?? 0,
+                ClientTargets = MapClientPressureStringArray(FirstArray(obj["clientTargets"], obj["client_targets"])),
+                PrimaryActionCardId = FirstNonBlank(ReadClientPressureText(obj["primaryActionCardId"]), ReadClientPressureText(obj["primary_action_card_id"])),
+                PrimaryMissionId = FirstNonBlank(ReadClientPressureText(obj["primaryMissionId"]), ReadClientPressureText(obj["primary_mission_id"])),
+                CanInspectMission = obj["canInspectMission"]?.Read<bool>() ?? obj["can_inspect_mission"]?.Read<bool>() ?? false,
+                CanInspectPressureStatus = obj["canInspectPressureStatus"]?.Read<bool>() ?? obj["can_inspect_pressure_status"]?.Read<bool>() ?? false,
+                HasProgressTrail = obj["hasProgressTrail"]?.Read<bool>() ?? obj["has_progress_trail"]?.Read<bool>() ?? false,
+                HasProof = obj["hasProof"]?.Read<bool>() ?? obj["has_proof"]?.Read<bool>() ?? false,
+                HasFollowupLead = obj["hasFollowupLead"]?.Read<bool>() ?? obj["has_followup_lead"]?.Read<bool>() ?? false,
+                RewardsAreBackendAuthored = obj["rewardsAreBackendAuthored"]?.Read<bool>() ?? obj["rewards_are_backend_authored"]?.Read<bool>() ?? false,
+                RecommendedPowerIsBackendAuthored = obj["recommendedPowerIsBackendAuthored"]?.Read<bool>() ?? obj["recommended_power_is_backend_authored"]?.Read<bool>() ?? false,
+                ExecutionEnabled = obj["executionEnabled"]?.Read<bool>() ?? obj["execution_enabled"]?.Read<bool>() ?? false,
+                ClientMutationRequired = obj["clientMutationRequired"]?.Read<bool>() ?? obj["client_mutation_required"]?.Read<bool>() ?? false,
+            };
+        }
+
+        private static ClientPressureQuickSessionSummarySnapshot MapClientPressureQuickSessionSummary(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new ClientPressureQuickSessionSummarySnapshot
+            {
+                Headline = ReadClientPressureText(obj["headline"]),
+                Body = ReadClientPressureText(obj["body"]),
+                Bullets = MapClientPressureStringArray(FirstArray(obj["bullets"])),
+                PrimaryActionCardId = FirstNonBlank(ReadClientPressureText(obj["primaryActionCardId"]), ReadClientPressureText(obj["primary_action_card_id"])),
+                PrimaryMissionId = FirstNonBlank(ReadClientPressureText(obj["primaryMissionId"]), ReadClientPressureText(obj["primary_mission_id"])),
+                ShowMissionLead = obj["showMissionLead"]?.Read<bool>() ?? obj["show_mission_lead"]?.Read<bool>() ?? false,
+                ShowProofTrail = obj["showProofTrail"]?.Read<bool>() ?? obj["show_proof_trail"]?.Read<bool>() ?? false,
+                EmptyState = obj["emptyState"]?.Read<bool>() ?? obj["empty_state"]?.Read<bool>() ?? false,
+                ClientTargets = MapClientPressureStringArray(FirstArray(obj["clientTargets"], obj["client_targets"])),
+            };
+        }
+
+        private static ClientPressureMissionLeadSnapshot MapClientPressureMissionLead(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new ClientPressureMissionLeadSnapshot
+            {
+                MissionId = FirstNonBlank(ReadClientPressureText(obj["missionId"]), ReadClientPressureText(obj["mission_id"]), ReadClientPressureText(obj["id"])),
+                Title = ReadClientPressureText(obj["title"]),
+                Summary = ReadClientPressureText(obj["summary"]),
+                Reason = ReadClientPressureText(obj["reason"]),
+                Priority = ReadClientPressureText(obj["priority"]),
+                Kind = ReadClientPressureText(obj["kind"]),
+                Difficulty = ReadClientPressureText(obj["difficulty"]),
+                RecommendedPower = obj["recommendedPower"]?.Read<double?>() ?? obj["recommended_power"]?.Read<double?>(),
+                ExpectedRewards = MapNumberDictionary(FirstObject(obj["expectedRewards"], obj["expected_rewards"], obj["rewards"])),
+                ResponseTags = MapClientPressureStringArray(FirstArray(obj["responseTags"], obj["response_tags"])),
             };
         }
 
@@ -1943,6 +2103,33 @@ namespace PlanarWar.Client.Core.Mapping
 
             var value = token.Read<string>();
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+
+        private static string ReadClientPressureText(JToken token)
+        {
+            return SanitizeClientPressureText(ReadText(token));
+        }
+
+        private static List<string> MapClientPressureStringArray(JArray array)
+        {
+            if (array == null) return new List<string>();
+
+            return array
+                .Select(ReadClientPressureText)
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private static string SanitizeClientPressureText(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return string.Empty;
+
+            var sanitized = value.Trim();
+            sanitized = Regex.Replace(sanitized, @"/api[^\s,;)]*", "backend surface", RegexOptions.IgnoreCase);
+            sanitized = Regex.Replace(sanitized, @"\bruntimeActionId\b", "runtime proof", RegexOptions.IgnoreCase);
+            sanitized = Regex.Replace(sanitized, @"\baction_[A-Za-z0-9_\-]+", "backend action", RegexOptions.IgnoreCase);
+            return sanitized.Trim();
         }
 
         private static JObject FirstObject(params JToken[] tokens) => tokens?.OfType<JObject>().FirstOrDefault();

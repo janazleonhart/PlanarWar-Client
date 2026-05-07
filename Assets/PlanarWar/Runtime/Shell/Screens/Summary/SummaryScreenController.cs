@@ -1066,6 +1066,13 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
         private void RenderMotherBrainActionPath(ShellSummarySnapshot summary, bool isSummaryLoaded)
         {
+            var clientPressureSurface = summary?.ClientPressureSurface;
+            if (isSummaryLoaded && summary != null && summary.HasCity && clientPressureSurface != null)
+            {
+                RenderClientPressureSurface(clientPressureSurface, summary);
+                return;
+            }
+
             var pressure = summary?.MotherBrainPressureStatus;
             var actionPath = pressure?.ActionPath;
             var shouldShow = isSummaryLoaded && summary != null && summary.HasCity && pressure != null && actionPath != null;
@@ -1132,6 +1139,259 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 motherBrainActionPathButton.text = BuildPostureButtonLabel(recommendedScreen, summary);
                 motherBrainActionPathButton.SetEnabled(true);
             }
+        }
+
+        private void RenderClientPressureSurface(ClientPressureSurfaceSnapshot surface, ShellSummarySnapshot summary)
+        {
+            if (motherBrainActionPathCard != null)
+            {
+                motherBrainActionPathCard.style.display = DisplayStyle.Flex;
+            }
+
+            var recommendedScreen = ResolveClientPressureScreen(surface, summary);
+            motherBrainActionPathRecommendedScreen = recommendedScreen;
+            var primaryActionCard = SelectPrimaryClientPressureActionCard(surface);
+
+            if (motherBrainActionPathBadge != null)
+            {
+                motherBrainActionPathBadge.text = BuildClientPressureBadge(surface);
+            }
+
+            if (motherBrainActionPathHeadline != null)
+            {
+                motherBrainActionPathHeadline.text = FirstNonBlank(
+                    surface.QuickSessionSummary?.Headline,
+                    surface.AttentionBadge?.Label,
+                    surface.Title,
+                    "Pressure summary");
+            }
+
+            if (motherBrainActionPathDetail != null)
+            {
+                motherBrainActionPathDetail.text = FirstNonBlank(
+                    surface.QuickSessionSummary?.Body,
+                    surface.AttentionBadge?.Summary,
+                    surface.Summary,
+                    "Client-safe pressure surface is present, but no summary copy was provided.");
+            }
+
+            if (motherBrainActionPathRecommended != null)
+            {
+                motherBrainActionPathRecommended.text = FirstNonBlank(
+                    primaryActionCard?.Label,
+                    surface.NavigationIntent?.Label,
+                    surface.CtaLabel,
+                    BuildPostureButtonLabel(recommendedScreen, summary));
+            }
+
+            if (motherBrainActionPathReason != null)
+            {
+                motherBrainActionPathReason.text = FirstNonBlank(
+                    primaryActionCard?.Summary,
+                    surface.NavigationIntent?.Reason,
+                    surface.WhyNow,
+                    "This card consumes the client pressure summary only; it does not execute missions, mutate state, create rewards, or start timers.");
+            }
+
+            if (motherBrainActionPathBlockers != null)
+            {
+                motherBrainActionPathBlockers.text = FormatClientPressureContract(surface);
+            }
+
+            if (motherBrainActionPathProof != null)
+            {
+                motherBrainActionPathProof.text = FormatClientPressureProgress(surface);
+            }
+
+            if (motherBrainActionPathReceipt != null)
+            {
+                motherBrainActionPathReceipt.text = FormatClientPressureMissionLead(surface);
+            }
+
+            if (motherBrainActionPathButton != null)
+            {
+                motherBrainActionPathButton.text = FirstNonBlank(
+                    primaryActionCard?.Label,
+                    surface.NavigationIntent?.Label,
+                    BuildPostureButtonLabel(recommendedScreen, summary));
+                motherBrainActionPathButton.SetEnabled(true);
+            }
+        }
+
+        private static ShellScreen ResolveClientPressureScreen(ClientPressureSurfaceSnapshot surface, ShellSummarySnapshot summary)
+        {
+            var workspace = FirstNonBlank(
+                surface?.NavigationIntent?.Workspace,
+                SelectPrimaryClientPressureActionCard(surface)?.Workspace,
+                surface?.PrimaryFocus);
+            var normalized = (workspace ?? string.Empty).Trim().Replace("-", "_").Replace(" ", "_").ToLowerInvariant();
+
+            if (normalized == "heroes" || normalized == "hero" || normalized == "operatives" || normalized == "operative" || normalized == "hero_readiness")
+            {
+                return ShellScreen.Heroes;
+            }
+
+            if (normalized == "development" || normalized == "build_queue" || normalized == "research")
+            {
+                return ShellScreen.City;
+            }
+
+            if (surface?.ConsumptionContract?.CanInspectMission == true || normalized == "operations" || normalized == "mission_board" || normalized == "status" || normalized == "pressure_status")
+            {
+                return ShellScreen.BlackMarket;
+            }
+
+            return ResolvePostureScreen("operations", summary);
+        }
+
+        private static ClientPressureActionCardSnapshot SelectPrimaryClientPressureActionCard(ClientPressureSurfaceSnapshot surface)
+        {
+            if (surface?.ActionCards == null || surface.ActionCards.Count == 0)
+            {
+                return null;
+            }
+
+            var preferredId = FirstNonBlank(surface.ConsumptionContract?.PrimaryActionCardId, surface.QuickSessionSummary?.PrimaryActionCardId, surface.AttentionBadge?.ActionCardId);
+            if (!string.IsNullOrWhiteSpace(preferredId))
+            {
+                var preferred = surface.ActionCards.FirstOrDefault(card => card != null && string.Equals(card.Id, preferredId, StringComparison.OrdinalIgnoreCase));
+                if (preferred != null)
+                {
+                    return preferred;
+                }
+            }
+
+            return surface.ActionCards.FirstOrDefault(card => card != null && card.Enabled) ?? surface.ActionCards.FirstOrDefault(card => card != null);
+        }
+
+        private static string BuildClientPressureBadge(ClientPressureSurfaceSnapshot surface)
+        {
+            var badge = FirstNonBlank(surface?.AttentionBadge?.Label, "Client pressure");
+            var state = FirstNonBlank(surface?.State, surface?.Severity, surface?.AttentionBadge?.Tone, "watch");
+            return $"{badge} • {HumanizeToken(state)}";
+        }
+
+        private static string FormatClientPressureContract(ClientPressureSurfaceSnapshot surface)
+        {
+            var contract = surface?.ConsumptionContract;
+            if (contract == null)
+            {
+                return "Client contract pending: pressure surface is read-only and does not require mutation.";
+            }
+
+            var lines = new List<string>
+            {
+                contract.ExecutionEnabled
+                    ? "Execution flag is unexpectedly enabled; treat this as inspect-only until backend verify says otherwise."
+                    : "Execution disabled: this Unity card is inspect-only.",
+                contract.ClientMutationRequired
+                    ? "Client mutation requested by backend contract."
+                    : "No client mutation required."
+            };
+
+            if (contract.ClientTargets != null && contract.ClientTargets.Count > 0)
+            {
+                lines.Add($"Targets: {string.Join(" • ", contract.ClientTargets.Take(3).Select(HumanizeToken))}.");
+            }
+
+            if (contract.CanInspectMission && !string.IsNullOrWhiteSpace(contract.PrimaryMissionId))
+            {
+                lines.Add("Primary action: inspect the existing board offer.");
+            }
+            else if (contract.CanInspectPressureStatus)
+            {
+                lines.Add("Primary action: inspect pressure status.");
+            }
+            else
+            {
+                lines.Add("Primary action: monitor only.");
+            }
+
+            if (contract.RewardsAreBackendAuthored || contract.RecommendedPowerIsBackendAuthored)
+            {
+                lines.Add("Rewards and recommended power remain backend-authored.");
+            }
+
+            return string.Join("\n", lines);
+        }
+
+        private static string FormatClientPressureProgress(ClientPressureSurfaceSnapshot surface)
+        {
+            var lines = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(surface?.LatestProofTitle))
+            {
+                var bits = new List<string> { surface.LatestProofTitle };
+                if (!string.IsNullOrWhiteSpace(surface.LatestProofOutcome)) bits.Add(HumanizeToken(surface.LatestProofOutcome));
+                if (!string.IsNullOrWhiteSpace(surface.LatestProofAt)) bits.Add(surface.LatestProofAt);
+                lines.Add($"Latest proof: {string.Join(" • ", bits)}.");
+            }
+
+            if (surface?.ProgressTrail != null && surface.ProgressTrail.Count > 0)
+            {
+                lines.AddRange(surface.ProgressTrail
+                    .Where(entry => entry != null && !string.IsNullOrWhiteSpace(FirstNonBlank(entry.Label, entry.Summary)))
+                    .Take(3)
+                    .Select(entry => $"• {FirstNonBlank(entry.Label, entry.Summary)}{FormatOptionalTokenSuffix(entry.Outcome, entry.At)}."));
+            }
+
+            if (surface?.QuickSessionSummary?.Bullets != null && surface.QuickSessionSummary.Bullets.Count > 0)
+            {
+                lines.AddRange(surface.QuickSessionSummary.Bullets
+                    .Where(bullet => !string.IsNullOrWhiteSpace(bullet))
+                    .Take(2)
+                    .Select(bullet => $"• {bullet.Trim()}"));
+            }
+
+            if (surface?.Signals != null && surface.Signals.Count > 0)
+            {
+                lines.AddRange(surface.Signals
+                    .Where(signal => !string.IsNullOrWhiteSpace(signal))
+                    .Take(2)
+                    .Select(signal => $"• {signal.Trim()}"));
+            }
+
+            return lines.Count == 0
+                ? "No client-safe pressure trail surfaced yet."
+                : string.Join("\n", lines);
+        }
+
+        private static string FormatClientPressureMissionLead(ClientPressureSurfaceSnapshot surface)
+        {
+            var lines = new List<string>();
+            var lead = surface?.MissionLead;
+
+            if (lead != null)
+            {
+                var leadBits = new List<string>();
+                if (!string.IsNullOrWhiteSpace(lead.Kind)) leadBits.Add(HumanizeToken(lead.Kind));
+                if (!string.IsNullOrWhiteSpace(lead.Difficulty)) leadBits.Add(HumanizeToken(lead.Difficulty));
+                if (lead.RecommendedPower.HasValue) leadBits.Add($"power {lead.RecommendedPower.Value:0}");
+                var suffix = leadBits.Count > 0 ? $" ({string.Join(" • ", leadBits)})" : string.Empty;
+                lines.Add($"Mission lead: {FirstNonBlank(lead.Title, lead.MissionId, "existing board offer")}{suffix}.");
+
+                if (!string.IsNullOrWhiteSpace(lead.Reason))
+                {
+                    lines.Add(lead.Reason.Trim());
+                }
+
+                if (lead.ExpectedRewards != null && lead.ExpectedRewards.Count > 0)
+                {
+                    lines.Add("Backend rewards: " + string.Join(" • ", lead.ExpectedRewards.OrderBy(pair => pair.Key).Take(4).Select(pair => $"{HumanizeToken(pair.Key)} {pair.Value:0.##}")) + ".");
+                }
+            }
+
+            if (surface?.Guardrails != null && surface.Guardrails.Count > 0)
+            {
+                lines.AddRange(surface.Guardrails
+                    .Where(guardrail => !string.IsNullOrWhiteSpace(guardrail))
+                    .Take(2)
+                    .Select(guardrail => $"• {guardrail.Trim()}"));
+            }
+
+            return lines.Count == 0
+                ? "No mission lead surfaced. This card does not invent board offers, rewards, timers, or mission execution."
+                : string.Join("\n", lines);
         }
 
         private static string FormatMotherBrainReceiptFollowThrough(MotherBrainPressureActionPathSnapshot actionPath)

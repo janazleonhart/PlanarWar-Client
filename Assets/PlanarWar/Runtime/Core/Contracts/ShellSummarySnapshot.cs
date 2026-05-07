@@ -15,6 +15,7 @@ namespace PlanarWar.Client.Core.Contracts
         public List<SettlementSetupChoiceSnapshot> CitySetupChoices { get; set; } = new();
         public EarlyLanePostureSnapshot EarlyLanePosture { get; set; }
         public MotherBrainPressureStatusSnapshot MotherBrainPressureStatus { get; set; }
+        public ClientPressureSurfaceSnapshot ClientPressureSurface { get; set; }
         public PublicInfrastructureSummarySnapshot PublicInfrastructureSummary { get; set; }
         public CityMudWorldConsequenceBridgeSnapshot CityMudWorldConsequenceBridge { get; set; }
         public CityContractRecoveryBoardSnapshot CityContractRecoveryBoard { get; set; }
@@ -158,6 +159,132 @@ namespace PlanarWar.Client.Core.Contracts
         public string RecommendedDesk { get; set; } = string.Empty;
         public string RecommendedActionLabel { get; set; } = string.Empty;
         public List<string> Signals { get; set; } = new();
+    }
+
+    [Serializable]
+    public sealed class ClientPressureSurfaceSnapshot
+    {
+        public int SchemaVersion { get; set; }
+        public string Lane { get; set; } = string.Empty;
+        public string State { get; set; } = string.Empty;
+        public string Severity { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Summary { get; set; } = string.Empty;
+        public string PrimaryFocus { get; set; } = string.Empty;
+        public string CtaLabel { get; set; } = string.Empty;
+        public string WhyNow { get; set; } = string.Empty;
+        public ClientPressureNavigationIntentSnapshot NavigationIntent { get; set; }
+        public List<ClientPressureActionCardSnapshot> ActionCards { get; set; } = new();
+        public List<ClientPressureProgressTrailEntrySnapshot> ProgressTrail { get; set; } = new();
+        public ClientPressureAttentionBadgeSnapshot AttentionBadge { get; set; }
+        public ClientPressureConsumptionContractSnapshot ConsumptionContract { get; set; }
+        public ClientPressureQuickSessionSummarySnapshot QuickSessionSummary { get; set; }
+        public double? PressureScore { get; set; }
+        public double? ExposureScore { get; set; }
+        public int? OpenWindowCount { get; set; }
+        public string LatestProofTitle { get; set; } = string.Empty;
+        public string LatestProofAt { get; set; } = string.Empty;
+        public string LatestProofOutcome { get; set; } = string.Empty;
+        public ClientPressureMissionLeadSnapshot MissionLead { get; set; }
+        public List<string> Signals { get; set; } = new();
+        public List<string> Guardrails { get; set; } = new();
+    }
+
+    [Serializable]
+    public sealed class ClientPressureNavigationIntentSnapshot
+    {
+        public string Workspace { get; set; } = string.Empty;
+        public string Section { get; set; } = string.Empty;
+        public string Emphasis { get; set; } = string.Empty;
+        public string Action { get; set; } = string.Empty;
+        public string Label { get; set; } = string.Empty;
+        public string Reason { get; set; } = string.Empty;
+    }
+
+    [Serializable]
+    public sealed class ClientPressureActionCardSnapshot
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Kind { get; set; } = string.Empty;
+        public string Label { get; set; } = string.Empty;
+        public string Summary { get; set; } = string.Empty;
+        public string Priority { get; set; } = string.Empty;
+        public string Workspace { get; set; } = string.Empty;
+        public string Section { get; set; } = string.Empty;
+        public bool Enabled { get; set; }
+        public string Source { get; set; } = string.Empty;
+    }
+
+    [Serializable]
+    public sealed class ClientPressureProgressTrailEntrySnapshot
+    {
+        public string Phase { get; set; } = string.Empty;
+        public string Emphasis { get; set; } = string.Empty;
+        public string Label { get; set; } = string.Empty;
+        public string Summary { get; set; } = string.Empty;
+        public string At { get; set; } = string.Empty;
+        public string Outcome { get; set; } = string.Empty;
+    }
+
+    [Serializable]
+    public sealed class ClientPressureAttentionBadgeSnapshot
+    {
+        public string Tone { get; set; } = string.Empty;
+        public string Label { get; set; } = string.Empty;
+        public string Summary { get; set; } = string.Empty;
+        public string Placement { get; set; } = string.Empty;
+        public string ActionCardId { get; set; } = string.Empty;
+        public string MissionId { get; set; } = string.Empty;
+        public string ProofAt { get; set; } = string.Empty;
+        public bool ShowInFastSession { get; set; }
+        public bool ShowInGameplayHud { get; set; }
+    }
+
+    [Serializable]
+    public sealed class ClientPressureConsumptionContractSnapshot
+    {
+        public int SchemaVersion { get; set; }
+        public List<string> ClientTargets { get; set; } = new();
+        public string PrimaryActionCardId { get; set; } = string.Empty;
+        public string PrimaryMissionId { get; set; } = string.Empty;
+        public bool CanInspectMission { get; set; }
+        public bool CanInspectPressureStatus { get; set; }
+        public bool HasProgressTrail { get; set; }
+        public bool HasProof { get; set; }
+        public bool HasFollowupLead { get; set; }
+        public bool RewardsAreBackendAuthored { get; set; }
+        public bool RecommendedPowerIsBackendAuthored { get; set; }
+        public bool ExecutionEnabled { get; set; }
+        public bool ClientMutationRequired { get; set; }
+    }
+
+    [Serializable]
+    public sealed class ClientPressureQuickSessionSummarySnapshot
+    {
+        public string Headline { get; set; } = string.Empty;
+        public string Body { get; set; } = string.Empty;
+        public List<string> Bullets { get; set; } = new();
+        public string PrimaryActionCardId { get; set; } = string.Empty;
+        public string PrimaryMissionId { get; set; } = string.Empty;
+        public bool ShowMissionLead { get; set; }
+        public bool ShowProofTrail { get; set; }
+        public bool EmptyState { get; set; }
+        public List<string> ClientTargets { get; set; } = new();
+    }
+
+    [Serializable]
+    public sealed class ClientPressureMissionLeadSnapshot
+    {
+        public string MissionId { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Summary { get; set; } = string.Empty;
+        public string Reason { get; set; } = string.Empty;
+        public string Priority { get; set; } = string.Empty;
+        public string Kind { get; set; } = string.Empty;
+        public string Difficulty { get; set; } = string.Empty;
+        public double? RecommendedPower { get; set; }
+        public Dictionary<string, double> ExpectedRewards { get; set; } = new();
+        public List<string> ResponseTags { get; set; } = new();
     }
 
     [Serializable]
