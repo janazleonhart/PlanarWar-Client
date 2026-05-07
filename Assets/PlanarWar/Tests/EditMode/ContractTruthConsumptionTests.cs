@@ -5264,5 +5264,37 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(controller, Does.Not.Contain("Grant shadow reward"), "This slice must not fake rewards for operation cards.");
         }
 
+
+        [Test]
+        public void Unity_operations_pressure_leads_highlight_existing_mission_board_truth_without_fake_execution()
+        {
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/BlackMarket/BlackMarketScreenController.cs");
+            var ussPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+
+            Assert.That(File.Exists(controllerPath), Is.True, "BlackMarketScreenController.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(ussPath), Is.True, "AppShell.uss should be available from the Unity project root.");
+
+            var controller = File.ReadAllText(controllerPath);
+            var uss = File.ReadAllText(ussPath);
+
+            Assert.That(controller, Does.Contain("Unity Operations Pressure Lead Highlight v1"), "Pressure lead highlight should be an explicit Unity client clarity slice.");
+            Assert.That(controller, Does.Contain("ResolveClientPressureMissionLeadId"), "Operations should resolve pressure mission leads from the client pressure surface without new backend calls.");
+            Assert.That(controller, Does.Contain("ApplyClientPressureMissionLeadSelection"), "Operations should focus a matching active-operation card when one points at the pressure lead.");
+            Assert.That(controller, Does.Contain("BuildPressureMissionLeadBoardCopy"), "Mission Board copy should explain whether the pressure lead is available, hidden, or missing.");
+            Assert.That(controller, Does.Contain("Pressure lead matched this Mission Board offer"), "Available pressure leads should select existing Mission Board offers.");
+            Assert.That(controller, Does.Contain("Pressure lead is hidden by current board state"), "Hidden leads should be distinguished from missing leads when active missions or reports block selection.");
+            Assert.That(controller, Does.Contain("Pressure lead is missing from the current Mission Board payload"), "Missing leads should be honest instead of inventing client-side offers.");
+            Assert.That(controller, Does.Contain("Select pressure lead"), "Pressure-backed operation cards should use a player-facing select label, not backend IDs.");
+            Assert.That(controller, Does.Contain("operations-choice--pressure-lead"), "Mission Board picker should expose a scoped visual highlight for matched pressure leads.");
+            Assert.That(controller, Does.Contain("warfront-desk-card--pressure-lead"), "Operation cards should expose a scoped visual highlight for matched pressure leads.");
+            Assert.That(uss, Does.Contain("Unity Operations Pressure Lead Highlight v1"));
+            Assert.That(uss, Does.Contain(".operations-choice--pressure-lead"));
+            Assert.That(uss, Does.Contain(".warfront-desk-card--pressure-lead"));
+            Assert.That(controller, Does.Not.Contain("Create pressure mission"), "This slice must not invent mission creation.");
+            Assert.That(controller, Does.Not.Contain("Execute pressure mission"), "This slice must not execute missions from the pressure card.");
+            Assert.That(controller, Does.Not.Contain("Generate pressure reward"), "This slice must not fake pressure rewards.");
+            Assert.That(controller, Does.Not.Contain("/api/me clientPressureSurface"), "Player-facing pressure lead highlight must not expose raw API contract text.");
+        }
+
     }
 }

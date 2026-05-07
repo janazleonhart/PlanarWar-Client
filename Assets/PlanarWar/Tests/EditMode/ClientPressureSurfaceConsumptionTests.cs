@@ -1,6 +1,8 @@
 using NUnit.Framework;
+using PlanarWar.Client.Core.Application;
 using PlanarWar.Client.Core.Contracts;
 using PlanarWar.Client.Core.Mapping;
+using PlanarWar.Client.UI.Screens.Summary;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -81,8 +83,102 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(source, Does.Contain("Primary action: inspect the existing board offer."));
             Assert.That(source, Does.Contain("does not execute missions"));
             Assert.That(source, Does.Not.Contain("Primary mission: {contract.PrimaryMissionId}"));
+            Assert.That(source, Does.Not.Contain("lead.Title, lead.MissionId"));
             Assert.That(source, Does.Not.Contain("/api/me clientPressureSurface"));
             Assert.That(source, Does.Not.Contain("PostJsonAsync"));
+        }
+
+        [Test]
+        public void Unity_pressure_card_routes_existing_leads_to_safe_local_desks()
+        {
+            var summary = new ShellSummarySnapshot
+            {
+                HasCity = true,
+                City = new CitySummarySnapshot
+                {
+                    Name = "Tempest",
+                    SettlementLane = "black_market",
+                    SettlementLaneLabel = "Black Market"
+                }
+            };
+
+            AssertPressureRoute(
+                new ClientPressureSurfaceSnapshot
+                {
+                    PrimaryFocus = "missions",
+                    NavigationIntent = new ClientPressureNavigationIntentSnapshot { Workspace = "operations", Section = "mission_board" },
+                    ActionCards = new List<ClientPressureActionCardSnapshot>
+                    {
+                        new() { Id = "mission_lead", Kind = "inspect_mission", Workspace = "operations", Section = "mission_board", Enabled = true }
+                    },
+                    ConsumptionContract = new ClientPressureConsumptionContractSnapshot { CanInspectMission = true, PrimaryMissionId = "mission_shadow_followup" },
+                    MissionLead = new ClientPressureMissionLeadSnapshot { MissionId = "mission_shadow_followup", Title = "Follow-up Lead" }
+                },
+                summary,
+                ShellScreen.BlackMarket);
+
+            AssertPressureRoute(
+                new ClientPressureSurfaceSnapshot
+                {
+                    PrimaryFocus = "development",
+                    NavigationIntent = new ClientPressureNavigationIntentSnapshot { Workspace = "development", Section = "build_queue" },
+                    ActionCards = new List<ClientPressureActionCardSnapshot>
+                    {
+                        new() { Id = "development_pressure", Kind = "review_development", Workspace = "development", Section = "build_queue", Enabled = true }
+                    }
+                },
+                summary,
+                ShellScreen.City);
+
+            AssertPressureRoute(
+                new ClientPressureSurfaceSnapshot
+                {
+                    PrimaryFocus = "heroes",
+                    NavigationIntent = new ClientPressureNavigationIntentSnapshot { Workspace = "heroes", Section = "hero_readiness" },
+                    ActionCards = new List<ClientPressureActionCardSnapshot>
+                    {
+                        new() { Id = "readiness_pressure", Kind = "review_readiness", Workspace = "heroes", Section = "hero_readiness", Enabled = true }
+                    }
+                },
+                summary,
+                ShellScreen.Heroes);
+
+            AssertPressureRoute(
+                new ClientPressureSurfaceSnapshot
+                {
+                    PrimaryFocus = "status",
+                    NavigationIntent = new ClientPressureNavigationIntentSnapshot { Workspace = "status", Section = "pressure_status" },
+                    ActionCards = new List<ClientPressureActionCardSnapshot>
+                    {
+                        new() { Id = "latest_proof", Kind = "review_pressure", Workspace = "status", Section = "pressure_status", Enabled = true }
+                    },
+                    ConsumptionContract = new ClientPressureConsumptionContractSnapshot { CanInspectPressureStatus = true, HasProof = true, HasProgressTrail = true },
+                    LatestProofTitle = "Guided receipt proof"
+                },
+                summary,
+                ShellScreen.Summary);
+
+            AssertPressureRoute(
+                new ClientPressureSurfaceSnapshot
+                {
+                    PrimaryFocus = "home",
+                    NavigationIntent = new ClientPressureNavigationIntentSnapshot { Workspace = "home", Section = "overview" },
+                    ActionCards = new List<ClientPressureActionCardSnapshot>
+                    {
+                        new() { Id = "overview", Kind = "monitor_overview", Workspace = "home", Section = "overview", Enabled = true }
+                    }
+                },
+                summary,
+                ShellScreen.Summary);
+        }
+
+        private static void AssertPressureRoute(ClientPressureSurfaceSnapshot surface, ShellSummarySnapshot summary, ShellScreen expected)
+        {
+            var method = typeof(SummaryScreenController).GetMethod("ResolveClientPressureScreen", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.That(method, Is.Not.Null, "ResolveClientPressureScreen should stay available for pressure-route guard coverage.");
+
+            var actual = (ShellScreen)method.Invoke(null, new object[] { surface, summary });
+            Assert.That(actual, Is.EqualTo(expected));
         }
 
         private static IEnumerable<string> CollectSnapshotStrings(object value)

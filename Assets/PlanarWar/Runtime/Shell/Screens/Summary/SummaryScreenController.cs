@@ -1220,28 +1220,121 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
         private static ShellScreen ResolveClientPressureScreen(ClientPressureSurfaceSnapshot surface, ShellSummarySnapshot summary)
         {
-            var workspace = FirstNonBlank(
-                surface?.NavigationIntent?.Workspace,
-                SelectPrimaryClientPressureActionCard(surface)?.Workspace,
-                surface?.PrimaryFocus);
-            var normalized = (workspace ?? string.Empty).Trim().Replace("-", "_").Replace(" ", "_").ToLowerInvariant();
+            var primaryActionCard = SelectPrimaryClientPressureActionCard(surface);
+            var contract = surface?.ConsumptionContract;
 
-            if (normalized == "heroes" || normalized == "hero" || normalized == "operatives" || normalized == "operative" || normalized == "hero_readiness")
-            {
-                return ShellScreen.Heroes;
-            }
-
-            if (normalized == "development" || normalized == "build_queue" || normalized == "research")
-            {
-                return ShellScreen.City;
-            }
-
-            if (surface?.ConsumptionContract?.CanInspectMission == true || normalized == "operations" || normalized == "mission_board" || normalized == "status" || normalized == "pressure_status")
+            if (HasClientPressureMissionLead(surface, contract))
             {
                 return ShellScreen.BlackMarket;
             }
 
-            return ResolvePostureScreen("operations", summary);
+            var workspace = NormalizeClientPressureRouteToken(FirstNonBlank(surface?.NavigationIntent?.Workspace, primaryActionCard?.Workspace, surface?.PrimaryFocus));
+            var section = NormalizeClientPressureRouteToken(FirstNonBlank(surface?.NavigationIntent?.Section, primaryActionCard?.Section));
+            var kind = NormalizeClientPressureRouteToken(primaryActionCard?.Kind);
+            var focus = NormalizeClientPressureRouteToken(surface?.PrimaryFocus);
+            var placement = NormalizeClientPressureRouteToken(surface?.AttentionBadge?.Placement);
+
+            if (IsClientPressureHeroRoute(workspace, section, kind, focus, placement))
+            {
+                return ShellScreen.Heroes;
+            }
+
+            if (IsClientPressureDevelopmentRoute(workspace, section, kind, focus))
+            {
+                return ShellScreen.City;
+            }
+
+            if (IsClientPressureOperationsRoute(workspace, section, kind, focus))
+            {
+                return ShellScreen.BlackMarket;
+            }
+
+            if (IsClientPressureStatusRoute(surface, contract, workspace, section, kind, focus, placement))
+            {
+                return ShellScreen.Summary;
+            }
+
+            return ShellScreen.Summary;
+        }
+
+        private static bool HasClientPressureMissionLead(ClientPressureSurfaceSnapshot surface, ClientPressureConsumptionContractSnapshot contract)
+        {
+            return surface?.MissionLead != null
+                || contract?.CanInspectMission == true
+                || contract?.HasFollowupLead == true
+                || !string.IsNullOrWhiteSpace(contract?.PrimaryMissionId)
+                || !string.IsNullOrWhiteSpace(surface?.QuickSessionSummary?.PrimaryMissionId)
+                || !string.IsNullOrWhiteSpace(surface?.AttentionBadge?.MissionId);
+        }
+
+        private static bool IsClientPressureHeroRoute(string workspace, string section, string kind, string focus, string placement)
+        {
+            return workspace == "heroes"
+                || workspace == "hero"
+                || workspace == "operatives"
+                || workspace == "operative"
+                || section == "hero_readiness"
+                || kind == "review_readiness"
+                || focus == "heroes"
+                || focus == "hero"
+                || focus == "hero_readiness"
+                || placement == "heroes"
+                || placement == "hero";
+        }
+
+        private static bool IsClientPressureDevelopmentRoute(string workspace, string section, string kind, string focus)
+        {
+            return workspace == "development"
+                || workspace == "build_queue"
+                || workspace == "research"
+                || section == "build_queue"
+                || section == "development"
+                || section == "research"
+                || kind == "review_development"
+                || focus == "development"
+                || focus == "build_queue"
+                || focus == "research";
+        }
+
+        private static bool IsClientPressureOperationsRoute(string workspace, string section, string kind, string focus)
+        {
+            return workspace == "operations"
+                || workspace == "operation"
+                || workspace == "mission_board"
+                || workspace == "missions"
+                || section == "mission_board"
+                || kind == "inspect_mission"
+                || focus == "operations"
+                || focus == "operation"
+                || focus == "missions";
+        }
+
+        private static bool IsClientPressureStatusRoute(ClientPressureSurfaceSnapshot surface, ClientPressureConsumptionContractSnapshot contract, string workspace, string section, string kind, string focus, string placement)
+        {
+            return workspace == "status"
+                || workspace == "home"
+                || workspace == "summary"
+                || section == "pressure_status"
+                || section == "overview"
+                || kind == "review_pressure"
+                || kind == "monitor_overview"
+                || focus == "status"
+                || focus == "home"
+                || focus == "summary"
+                || placement == "status"
+                || placement == "home"
+                || contract?.CanInspectPressureStatus == true
+                || contract?.HasProof == true
+                || contract?.HasProgressTrail == true
+                || surface?.ProgressTrail?.Count > 0
+                || !string.IsNullOrWhiteSpace(surface?.LatestProofTitle)
+                || !string.IsNullOrWhiteSpace(surface?.LatestProofAt)
+                || !string.IsNullOrWhiteSpace(surface?.LatestProofOutcome);
+        }
+
+        private static string NormalizeClientPressureRouteToken(string value)
+        {
+            return (value ?? string.Empty).Trim().Replace("-", "_").Replace(" ", "_").ToLowerInvariant();
         }
 
         private static ClientPressureActionCardSnapshot SelectPrimaryClientPressureActionCard(ClientPressureSurfaceSnapshot surface)
@@ -1368,7 +1461,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 if (!string.IsNullOrWhiteSpace(lead.Difficulty)) leadBits.Add(HumanizeToken(lead.Difficulty));
                 if (lead.RecommendedPower.HasValue) leadBits.Add($"power {lead.RecommendedPower.Value:0}");
                 var suffix = leadBits.Count > 0 ? $" ({string.Join(" • ", leadBits)})" : string.Empty;
-                lines.Add($"Mission lead: {FirstNonBlank(lead.Title, lead.MissionId, "existing board offer")}{suffix}.");
+                lines.Add($"Mission lead: {FirstNonBlank(lead.Title, "existing board offer")}{suffix}.");
 
                 if (!string.IsNullOrWhiteSpace(lead.Reason))
                 {
@@ -1575,6 +1668,11 @@ namespace PlanarWar.Client.UI.Screens.Summary
             {
                 var lane = NormalizeLane(summary?.City?.SettlementLane);
                 return string.Equals(lane, "black_market", StringComparison.OrdinalIgnoreCase) ? "Open Operatives" : "Open Heroes";
+            }
+
+            if (screen == ShellScreen.Summary)
+            {
+                return "Open Summary";
             }
 
             return "Open Development";

@@ -101,7 +101,9 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private string selectedMissionOfferId = string.Empty;
         private string selectedBlackMarketOperationCardId = string.Empty;
         private string selectedBlackMarketOperationTypeKey = string.Empty;
+        private string currentPressureMissionLeadId = string.Empty;
         // Black Market operation mission lead selection cleanup v1: keep mission-backed operation cards tied to the existing Mission Board path.
+        // Unity Operations Pressure Lead Highlight v1: route pressure leads into existing Operations/Mission Board selection without inventing execution.
         private Action missionPrimaryAction;
         private bool missionPrimaryActionEnabled;
         private bool suppressManagementEvents;
@@ -315,6 +317,8 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var frontBuildings = SelectFrontBuildings(summary);
             var frontTimers = SelectFrontTimers(summary);
             var activeOperationSurface = useBlackMarketForceTerms ? summary.BlackMarketActiveOperation : null;
+            currentPressureMissionLeadId = ResolveClientPressureMissionLeadId(summary?.ClientPressureSurface);
+            ApplyClientPressureMissionLeadSelection(activeOperationSurface, currentPressureMissionLeadId);
             var activeOperationCards = BuildBlackMarketActiveOperationCards(activeOperationSurface, activeMission);
             var hasActiveOperationSurface = activeOperationSurface != null && (activeOperationSurface.Cards.Count > 0 || activeOperationSurface.ActiveCount > 0 || activeOperationSurface.FormingCount > 0 || activeOperationSurface.CoolingCount > 0);
 
@@ -356,6 +360,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var baseOperationCards = BuildCards(summary, rankedArmies, warfrontWindows, activeMission, primaryWarning, signalPairs, reinforceState, reinforceTimer, reinforceOp);
             var boardCards = hasActiveOperationSurface ? activeOperationCards : baseOperationCards;
             RenderCards(cards, LaneCards(boardCards.Take(4).ToList()));
+            RenderBlackMarketOperationTypeFocus(activeOperationSurface);
             RenderBlackMarketOperationDetail(activeOperationSurface, activeMission);
             RenderFormationManagement(summary, rankedArmies, targetArmyId);
             RenderMissionBoard(summary, rankedArmies, activeMission, primaryWarning, nowUtc);
@@ -378,30 +383,212 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var offers = (summaryState.MissionOffers ?? new List<MissionOfferSnapshot>())
                 .Where(offer => offer != null && !string.IsNullOrWhiteSpace(offer.Id))
                 .ToList();
+            var pressureMissionLeadId = ResolveClientPressureMissionLeadId(summary?.ClientPressureSurface);
+            var pressureLeadOffer = FindPressureMissionLeadOffer(offers, pressureMissionLeadId);
+            var hasRecentReceipt = summaryState.HasRecentMissionReceipt(nowUtc);
+
+            if (pressureLeadOffer != null && activeMission == null && !hasRecentReceipt)
+            {
+                selectedMissionOfferId = pressureLeadOffer.Id;
+            }
 
             if (activeMission != null)
             {
-                RenderActiveMissionBoard(activeMission, summary, primaryWarning, nowUtc);
+                RenderActiveMissionBoard(activeMission, summary, primaryWarning, nowUtc, pressureMissionLeadId, pressureLeadOffer);
                 return;
             }
 
-            if (summaryState.HasRecentMissionReceipt(nowUtc))
+            if (hasRecentReceipt)
             {
-                RenderRecentMissionReceiptBoard(summary, rankedArmies, offers, nowUtc);
+                RenderRecentMissionReceiptBoard(summary, rankedArmies, offers, nowUtc, pressureMissionLeadId, pressureLeadOffer);
                 return;
             }
 
-            RenderMissionOfferBoard(summary, rankedArmies, offers);
+            RenderMissionOfferBoard(summary, rankedArmies, offers, pressureMissionLeadId, pressureLeadOffer);
         }
 
-        private void RenderRecentMissionReceiptBoard(ShellSummarySnapshot summary, IReadOnlyList<ArmySnapshot> rankedArmies, IReadOnlyList<MissionOfferSnapshot> offers, DateTime nowUtc)
+
+        private enum PressureMissionLeadBoardState
+        {
+            None,
+            Available,
+            HiddenByActiveMission,
+            HiddenByReceipt,
+            Missing
+        }
+
+        private static string ResolveClientPressureMissionLeadId(ClientPressureSurfaceSnapshot surface)
+        {
+            return FirstNonBlank(
+                surface?.MissionLead?.MissionId,
+                surface?.ConsumptionContract?.PrimaryMissionId,
+                surface?.QuickSessionSummary?.PrimaryMissionId,
+                surface?.AttentionBadge?.MissionId);
+        }
+
+        private static MissionOfferSnapshot FindPressureMissionLeadOffer(IEnumerable<MissionOfferSnapshot> offers, string pressureMissionLeadId)
+        {
+            if (string.IsNullOrWhiteSpace(pressureMissionLeadId))
+            {
+                return null;
+            }
+
+            return offers?.FirstOrDefault(offer => offer != null && SameMissionId(offer.Id, pressureMissionLeadId));
+        }
+
+        private static bool SameMissionId(string left, string right)
+        {
+            return !string.IsNullOrWhiteSpace(left)
+                && !string.IsNullOrWhiteSpace(right)
+                && string.Equals(left.Trim(), right.Trim(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void ApplyClientPressureMissionLeadSelection(BlackMarketActiveOperationSurfaceSnapshot surface, string pressureMissionLeadId)
+        {
+            if (surface?.Cards == null || surface.Cards.Count == 0 || string.IsNullOrWhiteSpace(pressureMissionLeadId))
+            {
+                return;
+            }
+
+            var match = surface.Cards.FirstOrDefault(card => CardMatchesPressureMissionLead(card, pressureMissionLeadId));
+            if (match == null)
+            {
+                return;
+            }
+
+            selectedBlackMarketOperationTypeKey = BuildBlackMarketOperationTypeKey(match);
+            var focusedCards = surface.Cards
+                .Where(card => card != null)
+                .Where(card => string.Equals(BuildBlackMarketOperationTypeKey(card), selectedBlackMarketOperationTypeKey, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            var index = Math.Max(0, focusedCards.FindIndex(card => ReferenceEquals(card, match) || CardMatchesPressureMissionLead(card, pressureMissionLeadId)));
+            selectedBlackMarketOperationCardId = ResolveBlackMarketOperationSelectionKey(focusedCards[index], index);
+        }
+
+        private static bool CardMatchesPressureMissionLead(BlackMarketActiveOperationCardSnapshot card, string pressureMissionLeadId)
+        {
+            return !string.IsNullOrWhiteSpace(pressureMissionLeadId)
+                && (card?.MissionOfferIds ?? new List<string>()).Any(id => SameMissionId(id, pressureMissionLeadId));
+        }
+
+        private static string BuildPressureMissionLeadBoardCopy(string pressureMissionLeadId, MissionOfferSnapshot pressureLeadOffer, PressureMissionLeadBoardState state)
+        {
+            if (string.IsNullOrWhiteSpace(pressureMissionLeadId) || state == PressureMissionLeadBoardState.None)
+            {
+                return string.Empty;
+            }
+
+            switch (state)
+            {
+                case PressureMissionLeadBoardState.Available:
+                    return "Pressure lead matched this Mission Board offer. It is selected below; starting it still uses the normal backend mission path.";
+                case PressureMissionLeadBoardState.HiddenByActiveMission:
+                    return "Pressure lead is hidden by current board state: an active mission is already running, so Unity only preserves the lead instead of inventing a bypass.";
+                case PressureMissionLeadBoardState.HiddenByReceipt:
+                    return "Pressure lead is hidden by current board state: the latest mission report is still being shown, so Unity waits for the existing board to clear.";
+                case PressureMissionLeadBoardState.Missing:
+                    return "Pressure lead is missing from the current Mission Board payload. Unity will not create a fake offer or execute anything client-side.";
+                default:
+                    return string.Empty;
+            }
+        }
+
+        private static string BuildPressureMissionLeadBoardAssignment(string pressureMissionLeadId, MissionOfferSnapshot pressureLeadOffer, PressureMissionLeadBoardState state)
+        {
+            if (string.IsNullOrWhiteSpace(pressureMissionLeadId) || state == PressureMissionLeadBoardState.None)
+            {
+                return string.Empty;
+            }
+
+            switch (state)
+            {
+                case PressureMissionLeadBoardState.Available:
+                    return pressureLeadOffer == null
+                        ? "Pressure lead: available on the existing Mission Board."
+                        : $"Pressure lead: {BuildMissionOfferDisplayTitle(pressureLeadOffer, "mission")} is selected from existing board truth.";
+                case PressureMissionLeadBoardState.HiddenByActiveMission:
+                    return "Pressure lead state: hidden by active mission; finish or clear the active mission before selecting the lead.";
+                case PressureMissionLeadBoardState.HiddenByReceipt:
+                    return "Pressure lead state: hidden by report window; review the completion report before selecting another offer.";
+                case PressureMissionLeadBoardState.Missing:
+                    return "Pressure lead state: missing from visible offers; no client fallback action is available.";
+                default:
+                    return string.Empty;
+            }
+        }
+
+        private static string BuildPressureMissionLeadStatusLine(string pressureMissionLeadId, MissionOfferSnapshot selectedOffer, MissionOfferSnapshot pressureLeadOffer, PressureMissionLeadBoardState state)
+        {
+            if (string.IsNullOrWhiteSpace(pressureMissionLeadId) || state == PressureMissionLeadBoardState.None)
+            {
+                return string.Empty;
+            }
+
+            if (state == PressureMissionLeadBoardState.Available && pressureLeadOffer != null && SameMissionId(selectedOffer?.Id, pressureLeadOffer.Id))
+            {
+                return $"Pressure lead available • {BuildMissionOfferMeta(selectedOffer)}";
+            }
+
+            if (state == PressureMissionLeadBoardState.Missing)
+            {
+                return $"Pressure lead missing • showing ordinary board offer: {BuildMissionOfferMeta(selectedOffer)}";
+            }
+
+            return string.Empty;
+        }
+
+        private static string BuildPressureMissionLeadEffectLine(string pressureMissionLeadId, MissionOfferSnapshot selectedOffer, MissionOfferSnapshot pressureLeadOffer, PressureMissionLeadBoardState state)
+        {
+            if (string.IsNullOrWhiteSpace(pressureMissionLeadId) || state == PressureMissionLeadBoardState.None)
+            {
+                return string.Empty;
+            }
+
+            if (state == PressureMissionLeadBoardState.Available && pressureLeadOffer != null && SameMissionId(selectedOffer?.Id, pressureLeadOffer.Id))
+            {
+                return FirstNonBlank(
+                    BuildMissionEffectSummary(pressureLeadOffer.Summary, pressureLeadOffer.Payoff, pressureLeadOffer.Risk),
+                    "Existing pressure lead has no extra risk/payoff text, so the board keeps its normal backend-authored summary.");
+            }
+
+            return string.Empty;
+        }
+
+        private static string BuildPressureMissionLeadPickerEmptyText(string pressureMissionLeadId, PressureMissionLeadBoardState state)
+        {
+            if (string.IsNullOrWhiteSpace(pressureMissionLeadId))
+            {
+                return string.Empty;
+            }
+
+            switch (state)
+            {
+                case PressureMissionLeadBoardState.HiddenByActiveMission:
+                    return "Pressure lead is waiting behind the active mission.";
+                case PressureMissionLeadBoardState.HiddenByReceipt:
+                    return "Pressure lead is waiting behind the latest completion report.";
+                case PressureMissionLeadBoardState.Missing:
+                    return "Pressure lead is not visible in current Mission Board offers.";
+                default:
+                    return string.Empty;
+            }
+        }
+
+        private static string AppendSentence(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : $" • {value}";
+        }
+
+        private void RenderRecentMissionReceiptBoard(ShellSummarySnapshot summary, IReadOnlyList<ArmySnapshot> rankedArmies, IReadOnlyList<MissionOfferSnapshot> offers, DateTime nowUtc, string pressureMissionLeadId, MissionOfferSnapshot pressureLeadOffer)
         {
             missionPrimaryAction = null;
             missionPrimaryActionEnabled = false;
 
             if (missionBoardCopy != null)
             {
-                missionBoardCopy.text = LaneText("Latest completion report is shown before the next mission offer so the result is not buried in quick action cards.");
+                missionBoardCopy.text = LaneText(FirstNonBlank(
+                    BuildPressureMissionLeadBoardCopy(pressureMissionLeadId, pressureLeadOffer, PressureMissionLeadBoardState.HiddenByReceipt),
+                    "Latest completion report is shown before the next mission offer so the result is not buried in quick action cards."));
             }
 
             if (missionBoardTitle != null)
@@ -424,10 +611,11 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 var offerText = offers != null && offers.Count > 0
                     ? $"{offers.Count} mission offer(s) remain available after the report window."
                     : "No follow-up mission offer is visible yet.";
-                missionBoardAssignment.text = LaneText($"{BuildRecentMissionReceiptAnchor(nowUtc)} • {offerText}");
+                var pressureText = BuildPressureMissionLeadBoardAssignment(pressureMissionLeadId, pressureLeadOffer, PressureMissionLeadBoardState.HiddenByReceipt);
+                missionBoardAssignment.text = LaneText($"{BuildRecentMissionReceiptAnchor(nowUtc)} • {offerText}{AppendSentence(pressureText)}");
             }
 
-            RenderMissionOfferPicker(new List<MissionOfferSnapshot>(), string.Empty, false, LaneText("Mission offers wait while the completion report is visible."));
+            RenderMissionOfferPicker(new List<MissionOfferSnapshot>(), string.Empty, false, LaneText(FirstNonBlank(BuildPressureMissionLeadPickerEmptyText(pressureMissionLeadId, PressureMissionLeadBoardState.HiddenByReceipt), "Mission offers wait while the completion report is visible.")), pressureMissionLeadId);
             if (missionPrimaryButton != null)
             {
                 missionPrimaryButton.text = "Report received";
@@ -435,7 +623,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             }
         }
 
-        private void RenderActiveMissionBoard(MissionSnapshot activeMission, ShellSummarySnapshot summary, string primaryWarning, DateTime nowUtc)
+        private void RenderActiveMissionBoard(MissionSnapshot activeMission, ShellSummarySnapshot summary, string primaryWarning, DateTime nowUtc, string pressureMissionLeadId, MissionOfferSnapshot pressureLeadOffer)
         {
             var hasInstance = !string.IsNullOrWhiteSpace(activeMission?.InstanceId);
             var ready = activeMission?.FinishesAtUtc.HasValue == true && activeMission.FinishesAtUtc.Value <= nowUtc;
@@ -444,7 +632,9 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
             if (missionBoardCopy != null)
             {
-                missionBoardCopy.text = LaneText("Active mission is shown separately from quick action cards so assignment and completion state stay readable.");
+                missionBoardCopy.text = LaneText(FirstNonBlank(
+                    BuildPressureMissionLeadBoardCopy(pressureMissionLeadId, pressureLeadOffer, PressureMissionLeadBoardState.HiddenByActiveMission),
+                    "Active mission is shown separately from quick action cards so assignment and completion state stay readable."));
             }
 
             if (missionBoardTitle != null)
@@ -468,14 +658,12 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
             if (missionBoardAssignment != null)
             {
-                missionBoardAssignment.text = LaneText(BuildMissionCommitmentSummary(activeMission, summary?.Armies ?? new List<ArmySnapshot>(), summary?.Heroes ?? new List<HeroSnapshot>()));
-                if (string.IsNullOrWhiteSpace(missionBoardAssignment.text))
-                {
-                    missionBoardAssignment.text = LaneText("Assignment payload is not exposed for this active mission.");
-                }
+                var assignmentText = BuildMissionCommitmentSummary(activeMission, summary?.Armies ?? new List<ArmySnapshot>(), summary?.Heroes ?? new List<HeroSnapshot>());
+                var pressureText = BuildPressureMissionLeadBoardAssignment(pressureMissionLeadId, pressureLeadOffer, PressureMissionLeadBoardState.HiddenByActiveMission);
+                missionBoardAssignment.text = LaneText(FirstNonBlank($"{assignmentText}{AppendSentence(pressureText)}".Trim(), "Assignment payload is not exposed for this active mission."));
             }
 
-            RenderMissionOfferPicker(new List<MissionOfferSnapshot>(), string.Empty, false, LaneText("Mission offers wait while an active mission is running."));
+            RenderMissionOfferPicker(new List<MissionOfferSnapshot>(), string.Empty, false, LaneText(FirstNonBlank(BuildPressureMissionLeadPickerEmptyText(pressureMissionLeadId, PressureMissionLeadBoardState.HiddenByActiveMission), "Mission offers wait while an active mission is running.")), pressureMissionLeadId);
             missionPrimaryActionEnabled = ready && hasInstance && !summaryState.IsActionBusy && onCompleteMissionRequested != null;
             missionPrimaryAction = missionPrimaryActionEnabled ? () => TriggerCompleteMission(activeMission.InstanceId) : null;
             if (missionPrimaryButton != null)
@@ -485,17 +673,18 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             }
         }
 
-        private void RenderMissionOfferBoard(ShellSummarySnapshot summary, IReadOnlyList<ArmySnapshot> rankedArmies, List<MissionOfferSnapshot> offers)
+        private void RenderMissionOfferBoard(ShellSummarySnapshot summary, IReadOnlyList<ArmySnapshot> rankedArmies, List<MissionOfferSnapshot> offers, string pressureMissionLeadId, MissionOfferSnapshot pressureLeadOffer)
         {
             if (offers.Count == 0)
             {
                 selectedMissionOfferId = string.Empty;
-                if (missionBoardCopy != null) missionBoardCopy.text = LaneText("No mission offers are visible in the current payload.");
-                if (missionBoardTitle != null) missionBoardTitle.text = summaryState.HasRecentMissionReceipt(DateTime.UtcNow) ? BuildRecentMissionDisplayTitle() : "No mission offer";
-                if (missionBoardStatus != null) missionBoardStatus.text = summaryState.HasRecentMissionReceipt(DateTime.UtcNow) ? Truncate(summaryState.RecentMissionReceipt, 128) : "No active mission or mission offer is available.";
-                if (missionBoardEffect != null) missionBoardEffect.text = "Mission board stays honest instead of inventing fake work.";
-                if (missionBoardAssignment != null) missionBoardAssignment.text = BuildMissionStartAssignmentSummary(summary, rankedArmies);
-                RenderMissionOfferPicker(offers, string.Empty, false, LaneText("No mission offers available."));
+                var emptyLeadState = string.IsNullOrWhiteSpace(pressureMissionLeadId) ? PressureMissionLeadBoardState.None : PressureMissionLeadBoardState.Missing;
+                if (missionBoardCopy != null) missionBoardCopy.text = LaneText(FirstNonBlank(BuildPressureMissionLeadBoardCopy(pressureMissionLeadId, null, emptyLeadState), "No mission offers are visible in the current payload."));
+                if (missionBoardTitle != null) missionBoardTitle.text = emptyLeadState == PressureMissionLeadBoardState.Missing ? "Pressure lead not visible" : summaryState.HasRecentMissionReceipt(DateTime.UtcNow) ? BuildRecentMissionDisplayTitle() : "No mission offer";
+                if (missionBoardStatus != null) missionBoardStatus.text = emptyLeadState == PressureMissionLeadBoardState.Missing ? "Missing from current Mission Board offers." : summaryState.HasRecentMissionReceipt(DateTime.UtcNow) ? Truncate(summaryState.RecentMissionReceipt, 128) : "No active mission or mission offer is available.";
+                if (missionBoardEffect != null) missionBoardEffect.text = emptyLeadState == PressureMissionLeadBoardState.Missing ? "Unity will not create, refresh, or execute a pressure lead that the mission payload does not currently expose." : "Mission board stays honest instead of inventing fake work.";
+                if (missionBoardAssignment != null) missionBoardAssignment.text = FirstNonBlank(BuildPressureMissionLeadBoardAssignment(pressureMissionLeadId, null, emptyLeadState), BuildMissionStartAssignmentSummary(summary, rankedArmies));
+                RenderMissionOfferPicker(offers, string.Empty, false, LaneText(FirstNonBlank(BuildPressureMissionLeadPickerEmptyText(pressureMissionLeadId, emptyLeadState), "No mission offers available.")), pressureMissionLeadId);
                 missionPrimaryAction = null;
                 missionPrimaryActionEnabled = false;
                 if (missionPrimaryButton != null)
@@ -506,6 +695,11 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 return;
             }
 
+            if (pressureLeadOffer != null)
+            {
+                selectedMissionOfferId = pressureLeadOffer.Id;
+            }
+
             if (string.IsNullOrWhiteSpace(selectedMissionOfferId) || offers.All(offer => !string.Equals(offer.Id, selectedMissionOfferId, StringComparison.OrdinalIgnoreCase)))
             {
                 selectedMissionOfferId = offers[0].Id;
@@ -514,10 +708,17 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var selectedOffer = offers.FirstOrDefault(offer => string.Equals(offer.Id, selectedMissionOfferId, StringComparison.OrdinalIgnoreCase)) ?? offers[0];
             selectedMissionOfferId = selectedOffer.Id;
             var pending = summaryState.IsActionBusy && string.Equals(summaryState.PendingMissionOfferId, selectedOffer.Id, StringComparison.OrdinalIgnoreCase);
+            var leadState = string.IsNullOrWhiteSpace(pressureMissionLeadId)
+                ? PressureMissionLeadBoardState.None
+                : pressureLeadOffer != null
+                    ? PressureMissionLeadBoardState.Available
+                    : PressureMissionLeadBoardState.Missing;
 
             if (missionBoardCopy != null)
             {
-                missionBoardCopy.text = LaneText($"{offers.Count} mission offer(s) visible. Start uses the selected cell, selected operative/hero, and balanced response posture.");
+                missionBoardCopy.text = LaneText(FirstNonBlank(
+                    BuildPressureMissionLeadBoardCopy(pressureMissionLeadId, pressureLeadOffer, leadState),
+                    $"{offers.Count} mission offer(s) visible. Start uses the selected cell, selected operative/hero, and balanced response posture."));
             }
 
             if (missionBoardTitle != null)
@@ -527,20 +728,27 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
             if (missionBoardStatus != null)
             {
-                missionBoardStatus.text = BuildMissionOfferMeta(selectedOffer);
+                missionBoardStatus.text = FirstNonBlank(
+                    BuildPressureMissionLeadStatusLine(pressureMissionLeadId, selectedOffer, pressureLeadOffer, leadState),
+                    BuildMissionOfferMeta(selectedOffer));
             }
 
             if (missionBoardEffect != null)
             {
-                missionBoardEffect.text = Truncate(FirstNonBlank(BuildMissionEffectSummary(selectedOffer.Summary, selectedOffer.Payoff, selectedOffer.Risk), "No risk/payoff summary is exposed for this offer."), 160);
+                missionBoardEffect.text = Truncate(FirstNonBlank(
+                    BuildPressureMissionLeadEffectLine(pressureMissionLeadId, selectedOffer, pressureLeadOffer, leadState),
+                    BuildMissionEffectSummary(selectedOffer.Summary, selectedOffer.Payoff, selectedOffer.Risk),
+                    "No risk/payoff summary is exposed for this offer."), 160);
             }
 
             if (missionBoardAssignment != null)
             {
-                missionBoardAssignment.text = BuildMissionStartAssignmentSummary(summary, rankedArmies);
+                missionBoardAssignment.text = FirstNonBlank(
+                    BuildPressureMissionLeadBoardAssignment(pressureMissionLeadId, pressureLeadOffer, leadState),
+                    BuildMissionStartAssignmentSummary(summary, rankedArmies));
             }
 
-            RenderMissionOfferPicker(offers, selectedOffer.Id, !summaryState.IsActionBusy, LaneText("No mission offers available."));
+            RenderMissionOfferPicker(offers, selectedOffer.Id, !summaryState.IsActionBusy, LaneText("No mission offers available."), pressureMissionLeadId);
             missionPrimaryActionEnabled = !summaryState.IsActionBusy && onStartMissionRequested != null && !string.IsNullOrWhiteSpace(selectedOffer.Id);
             missionPrimaryAction = missionPrimaryActionEnabled ? () => TriggerStartMission(selectedOffer.Id) : null;
             if (missionPrimaryButton != null)
@@ -550,7 +758,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             }
         }
 
-        private void RenderMissionOfferPicker(List<MissionOfferSnapshot> offers, string selectedOfferId, bool canSelect, string emptyText)
+        private void RenderMissionOfferPicker(List<MissionOfferSnapshot> offers, string selectedOfferId, bool canSelect, string emptyText, string pressureMissionLeadId = "")
         {
             if (missionOfferPicker == null)
             {
@@ -576,9 +784,12 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                     selectedMissionOfferId = offerId;
                     RenderCurrentMissionBoard();
                 });
-                button.text = BuildMissionOfferPickerLabel(offer);
+                var isPressureLead = SameMissionId(offer.Id, pressureMissionLeadId);
+                button.text = isPressureLead ? $"Pressure lead • {BuildMissionOfferPickerLabel(offer)}" : BuildMissionOfferPickerLabel(offer);
                 button.AddToClassList("operations-choice");
                 button.EnableInClassList("operations-choice--selected", string.Equals(offer.Id, selectedOfferId, StringComparison.OrdinalIgnoreCase));
+                button.EnableInClassList("operations-choice--pressure-lead", isPressureLead);
+                button.tooltip = isPressureLead ? "Pressure lead matched an existing Mission Board offer; this button only selects the offer." : string.Empty;
                 button.SetEnabled(canSelect || string.Equals(offer.Id, selectedOfferId, StringComparison.OrdinalIgnoreCase));
                 missionOfferPicker.Add(button);
             }
@@ -1309,22 +1520,24 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private CardView BuildBlackMarketActiveOperationCard(BlackMarketActiveOperationCardSnapshot card, MissionSnapshot activeMission, string selectionKey)
         {
             var missionOfferId = (card.MissionOfferIds ?? new List<string>())
-                .FirstOrDefault(id => !string.IsNullOrWhiteSpace(id) && (summaryState.MissionOffers ?? new List<MissionOfferSnapshot>()).Any(offer => string.Equals(offer.Id, id, StringComparison.OrdinalIgnoreCase)))
+                .FirstOrDefault(id => !string.IsNullOrWhiteSpace(id) && (summaryState.MissionOffers ?? new List<MissionOfferSnapshot>()).Any(offer => SameMissionId(offer.Id, id)))
                 ?? string.Empty;
             var hasMissionLead = !string.IsNullOrWhiteSpace(missionOfferId);
+            var isPressureMissionLead = CardMatchesPressureMissionLead(card, currentPressureMissionLeadId);
             var canSelectMissionLead = hasMissionLead && activeMission == null;
             var actionIds = card.ActionIds ?? new List<string>();
             var missionIds = card.MissionOfferIds ?? new List<string>();
 
             return new CardView(
-                family: BuildBlackMarketActiveOperationFamily(card),
+                family: isPressureMissionLead ? $"Pressure lead • {BuildBlackMarketActiveOperationFamily(card)}" : BuildBlackMarketActiveOperationFamily(card),
                 title: FirstNonBlank(card.Headline, HumanizeKey(card.Id), "Shadow operation"),
                 lore: BuildBlackMarketActiveOperationLore(card, actionIds.Count, missionIds.Count),
-                note: BuildBlackMarketActiveOperationReceiptDetail(card, actionIds.Count, missionIds.Count, hasMissionLead, activeMission != null, canSelectMissionLead),
-                buttonText: BuildBlackMarketOperationActionLabel(actionIds.Count, hasMissionLead, activeMission != null),
+                note: BuildBlackMarketActiveOperationReceiptDetail(card, actionIds.Count, missionIds.Count, hasMissionLead, activeMission != null, canSelectMissionLead, isPressureMissionLead),
+                buttonText: isPressureMissionLead && canSelectMissionLead ? "Select pressure lead" : BuildBlackMarketOperationActionLabel(actionIds.Count, hasMissionLead, activeMission != null),
                 buttonEnabled: canSelectMissionLead && !summaryState.IsActionBusy,
                 onClick: canSelectMissionLead ? () => SelectMissionOfferFromActiveOperation(missionOfferId) : null,
                 isSelected: string.Equals(selectedBlackMarketOperationCardId, selectionKey, StringComparison.OrdinalIgnoreCase),
+                isPressureLead: isPressureMissionLead,
                 onSelect: () => SelectBlackMarketOperationCard(selectionKey));
         }
 
@@ -1448,14 +1661,15 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 .FirstOrDefault(entry => string.Equals(entry.Key, selectedBlackMarketOperationCardId, StringComparison.OrdinalIgnoreCase))
                 ?.Card ?? cards[0];
 
+            var isPressureMissionLead = CardMatchesPressureMissionLead(selected, currentPressureMissionLeadId);
             operationDetailRoot.style.display = DisplayStyle.Flex;
             if (operationDetailTitle != null) operationDetailTitle.text = FirstNonBlank(selected.Headline, HumanizeKey(selected.Id), "Shadow operation detail");
-            if (operationDetailStatus != null) operationDetailStatus.text = BuildBlackMarketOperationDetailStatus(selected);
+            if (operationDetailStatus != null) operationDetailStatus.text = BuildBlackMarketOperationDetailStatus(selected, isPressureMissionLead);
             if (operationDetailImpact != null) operationDetailImpact.text = BuildBlackMarketOperationDetailImpactPreview(selected);
             if (operationDetailReceipt != null) operationDetailReceipt.text = BuildBlackMarketOperationDetailReceipt(selected, surface);
             if (operationDetailProof != null) operationDetailProof.text = BuildBlackMarketOperationDetailProof(selected);
-            if (operationDetailBlockers != null) operationDetailBlockers.text = BuildBlackMarketOperationDetailBlockers(selected, activeMission);
-            if (operationDetailRefs != null) operationDetailRefs.text = BuildBlackMarketOperationDetailRefs(selected);
+            if (operationDetailBlockers != null) operationDetailBlockers.text = BuildBlackMarketOperationDetailBlockers(selected, activeMission, isPressureMissionLead);
+            if (operationDetailRefs != null) operationDetailRefs.text = BuildBlackMarketOperationDetailRefs(selected, isPressureMissionLead);
         }
 
         private List<BlackMarketActiveOperationCardSnapshot> GetFocusedBlackMarketOperationCards(BlackMarketActiveOperationSurfaceSnapshot surface)
@@ -1517,9 +1731,11 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             return FirstNonBlank(card?.Id, card?.Headline, card?.Kind, $"operation-{index + 1}").Trim();
         }
 
-        private static string BuildBlackMarketOperationDetailStatus(BlackMarketActiveOperationCardSnapshot card)
+        private static string BuildBlackMarketOperationDetailStatus(BlackMarketActiveOperationCardSnapshot card, bool isPressureMissionLead)
         {
-            return $"Selected operation • {BuildBlackMarketActiveOperationFamily(card)}";
+            return isPressureMissionLead
+                ? $"Pressure lead selected • {BuildBlackMarketActiveOperationFamily(card)}"
+                : $"Selected operation • {BuildBlackMarketActiveOperationFamily(card)}";
         }
 
         private static string BuildBlackMarketOperationDetailReceipt(BlackMarketActiveOperationCardSnapshot card, BlackMarketActiveOperationSurfaceSnapshot surface)
@@ -1534,14 +1750,16 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             return $"Proof: {FirstNonBlank(proof, "No proof signals supplied on this active-operation card.")}";
         }
 
-        private static string BuildBlackMarketOperationDetailBlockers(BlackMarketActiveOperationCardSnapshot card, MissionSnapshot activeMission)
+        private static string BuildBlackMarketOperationDetailBlockers(BlackMarketActiveOperationCardSnapshot card, MissionSnapshot activeMission, bool isPressureMissionLead)
         {
             var missionCount = card?.MissionOfferIds?.Count ?? 0;
             var actionCount = card?.ActionIds?.Count ?? 0;
 
             if (missionCount > 0 && activeMission == null)
             {
-                return "Next: select this mission lead to review the existing Mission Board offer.";
+                return isPressureMissionLead
+                    ? "Next: pressure lead is available; select it to review the existing Mission Board offer."
+                    : "Next: select this mission lead to review the existing Mission Board offer.";
             }
 
             var blockers = new List<string>();
@@ -1563,9 +1781,10 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             return $"Blockers: {string.Join(" • ", blockers)}";
         }
 
-        private static string BuildBlackMarketOperationDetailRefs(BlackMarketActiveOperationCardSnapshot card)
+        private static string BuildBlackMarketOperationDetailRefs(BlackMarketActiveOperationCardSnapshot card, bool isPressureMissionLead)
         {
             var refs = new List<string>();
+            if (isPressureMissionLead) refs.Add("pressure card matched this operation");
             if (!string.IsNullOrWhiteSpace(card?.SourceSurface)) refs.Add("operation signal verified");
             var actionCount = card?.ActionIds?.Count ?? 0;
             var missionCount = card?.MissionOfferIds?.Count ?? 0;
@@ -1604,9 +1823,13 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             return Truncate(string.Join(" • ", parts.Where(part => !string.IsNullOrWhiteSpace(part))), 232);
         }
 
-        private static string BuildBlackMarketActiveOperationReceiptDetail(BlackMarketActiveOperationCardSnapshot card, int actionCount, int missionCount, bool hasMissionLead, bool hasActiveMission, bool canSelectMissionLead)
+        private static string BuildBlackMarketActiveOperationReceiptDetail(BlackMarketActiveOperationCardSnapshot card, int actionCount, int missionCount, bool hasMissionLead, bool hasActiveMission, bool canSelectMissionLead, bool isPressureMissionLead = false)
         {
             var lines = new List<string>();
+            if (isPressureMissionLead)
+            {
+                lines.Add("Pressure lead: matched from Summary; selecting this card only focuses the existing board offer.");
+            }
             var operatorNote = FirstNonBlank(card?.OperatorNote, card?.Summary);
             if (!string.IsNullOrWhiteSpace(operatorNote))
             {
@@ -3393,6 +3616,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 {
                     root.style.display = DisplayStyle.Flex;
                     root.EnableInClassList("warfront-desk-card--selected", card.IsSelected);
+                    root.EnableInClassList("warfront-desk-card--pressure-lead", card.IsPressureLead);
                 }
 
                 selectAction = card.OnSelect;
@@ -3416,6 +3640,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 if (root != null)
                 {
                     root.EnableInClassList("warfront-desk-card--selected", false);
+                    root.EnableInClassList("warfront-desk-card--pressure-lead", false);
                     root.style.display = DisplayStyle.None;
                 }
             }
@@ -3431,9 +3656,10 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             public bool ButtonEnabled { get; }
             public Action OnClick { get; }
             public bool IsSelected { get; }
+            public bool IsPressureLead { get; }
             public Action OnSelect { get; }
 
-            public CardView(string family, string title, string lore, string note, string buttonText = null, bool buttonEnabled = false, Action onClick = null, bool isSelected = false, Action onSelect = null)
+            public CardView(string family, string title, string lore, string note, string buttonText = null, bool buttonEnabled = false, Action onClick = null, bool isSelected = false, bool isPressureLead = false, Action onSelect = null)
             {
                 Family = family;
                 Title = title;
@@ -3443,6 +3669,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
                 ButtonEnabled = buttonEnabled;
                 OnClick = onClick;
                 IsSelected = isSelected;
+                IsPressureLead = isPressureLead;
                 OnSelect = onSelect;
             }
         }
