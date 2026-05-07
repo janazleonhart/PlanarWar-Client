@@ -174,7 +174,7 @@ namespace PlanarWar.Client.Tests.EditMode
                 Does.Contain("Target the regional recovery desk"));
             Assert.That(
                 ContractTruthText.BuildCityContractRecoveryBoardNote(board, "fallback"),
-                Does.Contain("Next receipt: city contract regional stabilization receipt"));
+                Does.Contain("Next report: city contract regional stabilization receipt"));
         }
 
         [Test]
@@ -5294,6 +5294,32 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(controller, Does.Not.Contain("Execute pressure mission"), "This slice must not execute missions from the pressure card.");
             Assert.That(controller, Does.Not.Contain("Generate pressure reward"), "This slice must not fake pressure rewards.");
             Assert.That(controller, Does.Not.Contain("/api/me clientPressureSurface"), "Player-facing pressure lead highlight must not expose raw API contract text.");
+        }
+
+
+        [Test]
+        public void Unity_pressure_receipt_outcome_copy_stays_player_facing_without_raw_runtime_ids()
+        {
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs");
+            var formatterPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Core/Presentation/ContractTruthText.cs");
+
+            Assert.That(File.Exists(controllerPath), Is.True, "SummaryScreenController.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(formatterPath), Is.True, "ContractTruthText.cs should be available from the Unity project root.");
+
+            var controller = File.ReadAllText(controllerPath);
+            var formatter = File.ReadAllText(formatterPath);
+
+            Assert.That(controller, Does.Contain("Unity Pressure Receipt Outcome Copy v1"), "Receipt/outcome cleanup should be an explicit streamer-safety slice.");
+            Assert.That(controller, Does.Contain("CleanPlayerFacingText"), "Summary receipt copy should pass raw-ish labels through a small player-facing sanitizer.");
+            Assert.That(controller, Does.Contain("FormatRegionList"), "Region lists should show human names instead of raw runtime ids.");
+            Assert.That(controller, Does.Contain("Select(CleanPlayerFacingText)"), "Follow-through lines should stay readable and pass through player-facing cleanup.");
+            Assert.That(controller, Does.Contain("Available on: {FormatClientTargets(contract.ClientTargets)}."), "Client targets should be translated into player-facing surfaces.");
+            Assert.That(controller, Does.Not.Contain("region {receipt.RegionId}"), "Receipt signals must not show raw region-id interpolation.");
+            Assert.That(controller, Does.Not.Contain("action {receipt.RuntimeActionId}"), "Receipt signals must not show runtime action ids.");
+            Assert.That(controller, Does.Not.Contain("Runtime action:"), "Mother Brain receipt copy should not print raw runtime action ids.");
+            Assert.That(controller, Does.Not.Contain("Backend rewards:"), "Reward previews should not use backend-ish labels in player-facing copy.");
+            Assert.That(controller, Does.Not.Contain("/api/me exposes the bridge"), "Fallback copy should not show raw API routes.");
+            Assert.That(formatter, Does.Contain("Next report:"), "Shared formatter should use report language for recovery follow-through.");
         }
 
     }

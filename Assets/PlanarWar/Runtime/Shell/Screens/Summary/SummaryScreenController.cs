@@ -390,11 +390,11 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             var label = FirstNonBlank(posture.Label, ResolveLaneLabel(posture.Lane, summary.City?.SettlementLaneLabel));
             var headline = FirstNonBlank(posture.Headline, $"{label} lane posture");
-            var summaryText = FirstNonBlank(posture.Summary, "Backend lane posture is live, but no summary copy was provided.");
+            var summaryText = FirstNonBlank(posture.Summary, "Lane posture is live, but no summary copy was provided.");
             var actionPath = posture.ActionPath;
             var recommendedDesk = FirstNonBlank(actionPath?.RecommendedDesk, posture.RecommendedDesk);
             var recommendedAction = FirstNonBlank(actionPath?.RecommendedActionLabel, posture.RecommendedActionLabel, BuildFallbackPostureAction(posture, summary));
-            var reason = FirstNonBlank(actionPath?.WhyThisMatters, posture.NextStepReason, "Recommendation comes from live /api/me earlyLanePosture truth.");
+            var reason = FirstNonBlank(actionPath?.WhyThisMatters, posture.NextStepReason, "Recommendation comes from the live settlement posture summary.");
             var recommendedScreen = ResolvePostureScreen(recommendedDesk, summary);
             earlyLanePostureRecommendedScreen = recommendedScreen;
 
@@ -441,8 +441,8 @@ namespace PlanarWar.Client.UI.Screens.Summary
             if (earlyLanePostureActionPathReceipt != null)
             {
                 earlyLanePostureActionPathReceipt.text = string.IsNullOrWhiteSpace(actionPath?.NextReceiptFamily)
-                    ? "Next receipt family: not surfaced yet."
-                    : $"Next receipt family: {HumanizeToken(actionPath.NextReceiptFamily)}.";
+                    ? "Next report type: not surfaced yet."
+                    : $"Next report type: {HumanizeToken(actionPath.NextReceiptFamily)}.";
             }
 
             if (earlyLanePostureStrengths != null)
@@ -577,7 +577,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
                 if (!string.IsNullOrWhiteSpace(followThrough.LatestReceiptId) || !string.IsNullOrWhiteSpace(followThrough.LatestReceiptAt))
                 {
-                    lines.Add($"Latest receipt: {FirstNonBlank(followThrough.LatestReceiptId, "unknown")} at {FirstNonBlank(followThrough.LatestReceiptAt, "unknown time")}.");
+                    lines.Add($"Latest report: {FirstNonBlank(followThrough.LatestReceiptId, "unknown")} at {FirstNonBlank(followThrough.LatestReceiptAt, "unknown time")}.");
                 }
 
                 if (!string.IsNullOrWhiteSpace(followThrough.LatestService) || !string.IsNullOrWhiteSpace(followThrough.LatestMode))
@@ -602,17 +602,17 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
                 if (followThrough.ReceiptCount.HasValue)
                 {
-                    lines.Add($"Receipt count: {followThrough.ReceiptCount.Value}.");
+                    lines.Add($"Report count: {followThrough.ReceiptCount.Value}.");
                 }
 
                 if (!string.IsNullOrWhiteSpace(followThrough.RecommendedMode) || !string.IsNullOrWhiteSpace(followThrough.RecommendedService))
                 {
-                    lines.Add($"Recommended receipt path: {HumanizeToken(followThrough.RecommendedMode)} / {HumanizeToken(followThrough.RecommendedService)}.");
+                    lines.Add($"Recommended report path: {HumanizeToken(followThrough.RecommendedMode)} / {HumanizeToken(followThrough.RecommendedService)}.");
                 }
 
                 if (!string.IsNullOrWhiteSpace(followThrough.NextReceiptFamily))
                 {
-                    lines.Add($"Next receipt family: {HumanizeToken(followThrough.NextReceiptFamily)}.");
+                    lines.Add($"Next report type: {HumanizeToken(followThrough.NextReceiptFamily)}.");
                 }
 
                 if (followThrough.Signals != null && followThrough.Signals.Count > 0)
@@ -639,7 +639,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
                 if (!string.IsNullOrWhiteSpace(spine?.NextReceiptFamily))
                 {
-                    lines.Add($"Next receipt family: {HumanizeToken(spine.NextReceiptFamily)}.");
+                    lines.Add($"Next report type: {HumanizeToken(spine.NextReceiptFamily)}.");
                 }
 
                 if (infrastructure?.ServiceHeat.HasValue == true || infrastructure?.QueuePressure.HasValue == true || infrastructure?.PressureScore.HasValue == true)
@@ -658,7 +658,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 return string.Join("\n", lines.Where(line => !string.IsNullOrWhiteSpace(line)));
             }
 
-            return "Public infrastructure receipt follow-through is waiting on backend state.";
+            return "Public infrastructure follow-through is waiting on live server state.";
         }
 
 
@@ -693,7 +693,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (cityContractRecoveryBoardSummary != null)
             {
-                cityContractRecoveryBoardSummary.text = FirstNonBlank(board.Summary, "Regional recovery candidates from /api/me.cityContractRecoveryBoard will appear here when backend truth supports them.");
+                cityContractRecoveryBoardSummary.text = FirstNonBlank(board.Summary, "Regional recovery candidates will appear here when backend truth supports them.");
             }
 
             if (cityContractRecoveryBoardRecommended != null)
@@ -763,7 +763,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
         {
             if (board?.EligibleRegionIds != null && board.EligibleRegionIds.Count > 0)
             {
-                return $"Eligible regions: {string.Join(", ", board.EligibleRegionIds)}.";
+                return $"Eligible regions: {FormatRegionList(board.EligibleRegionIds)}.";
             }
 
             return "Eligible regions: none surfaced yet.";
@@ -774,13 +774,13 @@ namespace PlanarWar.Client.UI.Screens.Summary
             var lines = new List<string>();
             if (!string.IsNullOrWhiteSpace(lead?.NextReceiptFamily))
             {
-                lines.Add($"Next receipt family: {HumanizeToken(lead.NextReceiptFamily)}.");
+                lines.Add($"Next report type: {HumanizeToken(lead.NextReceiptFamily)}.");
             }
 
             var receipt = board?.LatestRelevantReceipt ?? lead?.LatestRelevantSummary ?? board?.LatestRelevantConsequence;
             if (receipt != null)
             {
-                lines.Add($"Latest relevant truth: {FirstNonBlank(receipt.Title, receipt.Id, "receipt")} • {HumanizeToken(receipt.Severity)} • {FirstNonBlank(receipt.RegionId, "unknown region")}.");
+                lines.Add($"Latest relevant truth: {CleanPlayerFacingText(FirstNonBlank(receipt.Title, receipt.Id, "report"))} • {HumanizeToken(receipt.Severity)} • {HumanizeRegionId(receipt.RegionId)}.");
             }
 
             if (lead?.RecommendedMoves != null && lead.RecommendedMoves.Count > 0)
@@ -790,7 +790,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             return lines.Count > 0
                 ? string.Join("\n", lines.Where(line => !string.IsNullOrWhiteSpace(line)))
-                : "No latest recovery receipt or consequence summary surfaced yet.";
+                : "No latest recovery report or consequence summary surfaced yet.";
         }
 
         private void RenderCityMudConsequenceBridge(ShellSummarySnapshot summary, bool isSummaryLoaded)
@@ -822,7 +822,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (cityMudConsequenceBridgeSummary != null)
             {
-                cityMudConsequenceBridgeSummary.text = FirstNonBlank(bridge.Summary, "City support and world-consequence truth will appear here when /api/me exposes the bridge.");
+                cityMudConsequenceBridgeSummary.text = FirstNonBlank(bridge.Summary, "City support and world-consequence truth will appear here when the live summary exposes the bridge.");
             }
 
             if (cityMudConsequenceBridgeRecommended != null)
@@ -915,7 +915,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
         {
             var lines = new List<string>
             {
-                $"Affected regions: {((bridge?.AffectedRegionIds != null && bridge.AffectedRegionIds.Count > 0) ? string.Join(", ", bridge.AffectedRegionIds) : "none")}.",
+                $"Affected regions: {FormatRegionList(bridge?.AffectedRegionIds)}.",
                 $"World consequences: {bridge?.WorldConsequenceTotal ?? 0}; severe {bridge?.SevereConsequenceCount ?? 0}; destabilization {bridge?.DestabilizationScore ?? 0}.",
             };
 
@@ -933,7 +933,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (!string.IsNullOrWhiteSpace(bridge?.NextReceiptFamily))
             {
-                lines.Add($"Next receipt family: {HumanizeToken(bridge.NextReceiptFamily)}.");
+                lines.Add($"Next report type: {HumanizeToken(bridge.NextReceiptFamily)}.");
             }
 
             if (bridge?.LatestRuntimeResponse != null)
@@ -953,7 +953,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (lines.Count == 0)
             {
-                return "No City ↔ MUD receipt signals surfaced yet.";
+                return "No City ↔ MUD follow-through reports surfaced yet.";
             }
 
             return string.Join("\n", lines.Where(line => !string.IsNullOrWhiteSpace(line)));
@@ -964,7 +964,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             var followThrough = bridge?.FollowThrough;
             if (followThrough == null)
             {
-                return "City ↔ MUD bridge follow-through is waiting on backend state.";
+                return "City ↔ MUD bridge follow-through is waiting on live server state.";
             }
 
             var lines = new List<string>
@@ -986,32 +986,32 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (!string.IsNullOrWhiteSpace(followThrough.NextReceiptFamily))
             {
-                lines.Add($"Next receipt family: {HumanizeToken(followThrough.NextReceiptFamily)}.");
+                lines.Add($"Next report type: {HumanizeToken(followThrough.NextReceiptFamily)}.");
             }
 
             if (!string.IsNullOrWhiteSpace(followThrough.LatestRuntimeResponseTitle))
             {
-                lines.Add($"Latest runtime response: {followThrough.LatestRuntimeResponseTitle}{FormatOptionalTokenSuffix(followThrough.LatestRuntimeResponseOutcome, followThrough.LatestRuntimeActionId)}.");
+                lines.Add($"Latest runtime response: {CleanPlayerFacingText(followThrough.LatestRuntimeResponseTitle)}{FormatOptionalTokenSuffix(followThrough.LatestRuntimeResponseOutcome, string.Empty)}.");
             }
 
             if (!string.IsNullOrWhiteSpace(followThrough.LatestWorldConsequenceTitle))
             {
-                lines.Add($"Latest world consequence: {followThrough.LatestWorldConsequenceTitle}{FormatOptionalTokenSuffix(string.Empty, followThrough.LatestWorldConsequenceAt)}.");
+                lines.Add($"Latest world consequence: {CleanPlayerFacingText(followThrough.LatestWorldConsequenceTitle)}{FormatOptionalTokenSuffix(string.Empty, followThrough.LatestWorldConsequenceAt)}.");
             }
 
             if (!string.IsNullOrWhiteSpace(followThrough.LatestBridgeReceiptTitle))
             {
-                lines.Add($"Latest bridge receipt: {followThrough.LatestBridgeReceiptTitle}{FormatOptionalTokenSuffix(string.Empty, followThrough.LatestBridgeReceiptAt)}.");
+                lines.Add($"Latest bridge report: {CleanPlayerFacingText(followThrough.LatestBridgeReceiptTitle)}{FormatOptionalTokenSuffix(string.Empty, followThrough.LatestBridgeReceiptAt)}.");
             }
 
             if (followThrough.ClearWhen != null && followThrough.ClearWhen.Count > 0)
             {
-                lines.Add("Clear when: " + string.Join(" ", followThrough.ClearWhen));
+                lines.Add("Clear when: " + string.Join(" ", followThrough.ClearWhen.Where(line => !string.IsNullOrWhiteSpace(line)).Select(CleanPlayerFacingText)));
             }
 
             if (followThrough.WatchNext != null && followThrough.WatchNext.Count > 0)
             {
-                lines.Add("Watch next: " + string.Join(" ", followThrough.WatchNext));
+                lines.Add("Watch next: " + string.Join(" ", followThrough.WatchNext.Where(line => !string.IsNullOrWhiteSpace(line)).Select(CleanPlayerFacingText)));
             }
 
             if (followThrough.Signals != null && followThrough.Signals.Count > 0)
@@ -1019,14 +1019,14 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 lines.Add(FormatPostureList(followThrough.Signals, string.Empty));
             }
 
-            return string.Join("", lines.Where(line => !string.IsNullOrWhiteSpace(line)));
+            return string.Join("\n", lines.Where(line => !string.IsNullOrWhiteSpace(line)).Select(CleanPlayerFacingText));
         }
 
         private static string FormatOptionalTokenSuffix(string first, string second)
         {
             var parts = new List<string>();
             if (!string.IsNullOrWhiteSpace(first)) parts.Add(HumanizeToken(first));
-            if (!string.IsNullOrWhiteSpace(second)) parts.Add(second);
+            if (!string.IsNullOrWhiteSpace(second)) parts.Add(CleanPlayerFacingText(second));
             return parts.Count > 0 ? $" ({string.Join(", ", parts)})" : string.Empty;
         }
 
@@ -1037,12 +1037,11 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 return "none.";
             }
 
-            var title = FirstNonBlank(receipt.Title, receipt.Id, "unknown receipt");
+            var title = CleanPlayerFacingText(FirstNonBlank(receipt.Title, "follow-through report"));
             var stateParts = new List<string>();
             if (!string.IsNullOrWhiteSpace(receipt.Outcome)) stateParts.Add(HumanizeToken(receipt.Outcome));
             if (!string.IsNullOrWhiteSpace(receipt.Severity)) stateParts.Add(HumanizeToken(receipt.Severity));
-            if (!string.IsNullOrWhiteSpace(receipt.RegionId)) stateParts.Add($"region {receipt.RegionId}");
-            if (!string.IsNullOrWhiteSpace(receipt.RuntimeActionId)) stateParts.Add($"action {receipt.RuntimeActionId}");
+            if (!string.IsNullOrWhiteSpace(receipt.RegionId)) stateParts.Add(HumanizeRegionId(receipt.RegionId));
 
             var suffix = stateParts.Count > 0 ? $" ({string.Join(", ", stateParts)})" : string.Empty;
             return $"{title}{suffix}.";
@@ -1384,7 +1383,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (contract.ClientTargets != null && contract.ClientTargets.Count > 0)
             {
-                lines.Add($"Targets: {string.Join(" • ", contract.ClientTargets.Take(3).Select(HumanizeToken))}.");
+                lines.Add($"Available on: {FormatClientTargets(contract.ClientTargets)}.");
             }
 
             if (contract.CanInspectMission && !string.IsNullOrWhiteSpace(contract.PrimaryMissionId))
@@ -1402,7 +1401,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (contract.RewardsAreBackendAuthored || contract.RecommendedPowerIsBackendAuthored)
             {
-                lines.Add("Rewards and recommended power remain backend-authored.");
+                lines.Add("Rewards and power guidance come from the server.");
             }
 
             return string.Join("\n", lines);
@@ -1470,7 +1469,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
                 if (lead.ExpectedRewards != null && lead.ExpectedRewards.Count > 0)
                 {
-                    lines.Add("Backend rewards: " + string.Join(" • ", lead.ExpectedRewards.OrderBy(pair => pair.Key).Take(4).Select(pair => $"{HumanizeToken(pair.Key)} {pair.Value:0.##}")) + ".");
+                    lines.Add("Backend-listed reward preview: " + string.Join(" • ", lead.ExpectedRewards.OrderBy(pair => pair.Key).Take(4).Select(pair => $"{HumanizeToken(pair.Key)} {pair.Value:0.##}")) + ".");
                 }
             }
 
@@ -1513,7 +1512,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 {
                     receiptBits.Add(HumanizeToken(followThrough.LatestReceiptState));
                 }
-                lines.Add($"Latest receipt: {string.Join(" • ", receiptBits)}.");
+                lines.Add($"Latest report: {string.Join(" • ", receiptBits)}.");
             }
 
             if (!string.IsNullOrWhiteSpace(followThrough?.Summary))
@@ -1523,12 +1522,12 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (!string.IsNullOrWhiteSpace(followThrough?.LatestRuntimeActionId))
             {
-                lines.Add($"Runtime action: {followThrough.LatestRuntimeActionId.Trim()}.");
+                lines.Add("Runtime response is linked to a server action.");
             }
 
             if (!string.IsNullOrWhiteSpace(followThrough?.SourceRegionId))
             {
-                lines.Add($"Source region: {HumanizeToken(followThrough.SourceRegionId)}.");
+                lines.Add($"Source region: {HumanizeRegionId(followThrough.SourceRegionId)}.");
             }
 
             if (followThrough?.ResponseHistory != null && followThrough.ResponseHistory.Count > 0)
@@ -1599,8 +1598,8 @@ namespace PlanarWar.Client.UI.Screens.Summary
             }
 
             return string.IsNullOrWhiteSpace(actionPath?.NextReceiptFamily)
-                ? "Next receipt family: not surfaced yet."
-                : $"Next receipt family: {HumanizeToken(actionPath.NextReceiptFamily)}.";
+                ? "Next report type: not surfaced yet."
+                : $"Next report type: {HumanizeToken(actionPath.NextReceiptFamily)}.";
         }
 
         private static string FormatMotherBrainResponseHistoryEntry(MotherBrainPressureResponseHistoryEntrySnapshot entry)
@@ -1619,16 +1618,129 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (!string.IsNullOrWhiteSpace(entry.SourceRegionId))
             {
-                bits.Add(HumanizeToken(entry.SourceRegionId));
+                bits.Add(HumanizeRegionId(entry.SourceRegionId));
             }
 
             if (!string.IsNullOrWhiteSpace(entry.RuntimeActionId))
             {
-                bits.Add(entry.RuntimeActionId.Trim());
+                bits.Add("server-linked action");
             }
 
             var suffix = bits.Count > 0 ? $" ({string.Join(" • ", bits)})" : string.Empty;
             return $"• {entry.Title.Trim()}{suffix}.";
+        }
+
+        // Unity Pressure Receipt Outcome Copy v1: keep receipt/outcome text readable without hiding backend truth.
+        private static string CleanPlayerFacingText(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            var text = value.Trim()
+                .Replace("/api/me", "the live account summary")
+                .Replace("/api/internal", "internal server route")
+                .Replace("runtimeActionId", "runtime action")
+                .Replace("Runtime action id", "Runtime action")
+                .Replace("receipt family", "report type")
+                .Replace("Receipt family", "Report type")
+                .Replace("sourceRegionId", "source region")
+                .Replace("source region id", "source region");
+
+            return HumanizeInlineTokens(text);
+        }
+
+        private static string HumanizeInlineTokens(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            var parts = value.Split(new[] { ' ', '\n', '\t' }, StringSplitOptions.None);
+            for (var i = 0; i < parts.Length; i++)
+            {
+                parts[i] = HumanizeTokenPart(parts[i]);
+            }
+
+            return string.Join(" ", parts)
+                .Replace(" \n ", "\n")
+                .Replace(" ,", ",")
+                .Replace(" .", ".")
+                .Trim();
+        }
+
+        private static string HumanizeTokenPart(string part)
+        {
+            if (string.IsNullOrWhiteSpace(part) || (!part.Contains("_") && !part.Contains("-")))
+            {
+                return part;
+            }
+
+            var prefix = string.Empty;
+            var suffix = string.Empty;
+            var core = part.Trim();
+            while (core.Length > 0 && char.IsPunctuation(core[0]) && core[0] != '_' && core[0] != '-')
+            {
+                prefix += core[0];
+                core = core.Substring(1);
+            }
+
+            while (core.Length > 0 && char.IsPunctuation(core[core.Length - 1]) && core[core.Length - 1] != '_' && core[core.Length - 1] != '-')
+            {
+                suffix = core[core.Length - 1] + suffix;
+                core = core.Substring(0, core.Length - 1);
+            }
+
+            if (core.Length == 0 || core.Contains("/") || core.Any(char.IsDigit))
+            {
+                return part;
+            }
+
+            return prefix + HumanizeToken(core) + suffix;
+        }
+
+        private static string HumanizeRegionId(string regionId)
+        {
+            var region = HumanizeToken(regionId);
+            if (string.IsNullOrWhiteSpace(region))
+            {
+                return "unknown region";
+            }
+
+            return HumanizeWords(region, region);
+        }
+
+        private static string FormatRegionList(IEnumerable<string> regionIds)
+        {
+            var regions = regionIds?
+                .Where(regionId => !string.IsNullOrWhiteSpace(regionId))
+                .Select(HumanizeRegionId)
+                .Take(4)
+                .ToList() ?? new List<string>();
+
+            return regions.Count == 0 ? "none" : string.Join(", ", regions);
+        }
+
+        private static string FormatClientTargets(IEnumerable<string> targets)
+        {
+            var labels = targets?
+                .Where(target => !string.IsNullOrWhiteSpace(target))
+                .Select(target =>
+                {
+                    var normalized = NormalizeClientPressureRouteToken(target);
+                    switch (normalized)
+                    {
+                        case "unity_gameplay": return "gameplay client";
+                        case "web_fast_session": return "quick-session web";
+                        default: return HumanizeToken(target);
+                    }
+                })
+                .Take(3)
+                .ToList() ?? new List<string>();
+
+            return labels.Count == 0 ? "this client" : string.Join(" • ", labels);
         }
 
         private static string HumanizeToken(string value)
@@ -1704,7 +1816,8 @@ namespace PlanarWar.Client.UI.Screens.Summary
         {
             var clean = entries?
                 .Where(entry => !string.IsNullOrWhiteSpace(entry))
-                .Select(entry => entry.Trim())
+                .Select(CleanPlayerFacingText)
+                .Where(entry => !string.IsNullOrWhiteSpace(entry))
                 .Take(3)
                 .ToList() ?? new List<string>();
 
@@ -1899,7 +2012,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 SetPressureDesk(
                     badge: summary.FounderMode ? "Founder mode" : "No settlement",
                     headline: "Pressure / contract desk is waiting on a real settlement snapshot.",
-                    detail: "The command surface cannot tell you what seam is live, why the board is bending, or which answer lane is honest until /api/me has a live city or black-market payload.",
+                    detail: "The command surface cannot tell you what seam is live, why the board is bending, or which answer lane is honest until the live account summary has a city or black-market payload.",
                     seamTitle: "Live seam",
                     seamValue: "No lane loaded.",
                     seamNote: "Found a settlement first so the main desk can bind pressure, contracts, and reply posture to something real.",
@@ -2066,7 +2179,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
         {
             if (summary?.HasCity != true)
             {
-                return "The quick-decision strip stays empty until /api/me has a real settlement payload.";
+                return "The quick-decision strip stays empty until the live account summary has a real settlement payload.";
             }
 
             if (string.Equals(lane, "black_market", StringComparison.OrdinalIgnoreCase))
@@ -2541,7 +2654,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             var strongestPosture = BuildOperationPosture(strongest, summary, lane: "city");
             var receipt = surface?.LatestSupportReceipt;
             var bend = BuildCivicDemandValue(surface);
-            var receiptLine = receipt != null ? $"Latest receipt: {receipt.Title}." : string.Empty;
+            var receiptLine = receipt != null ? $"Latest report: {receipt.Title}." : string.Empty;
             return FirstNonBlank(
                 $"Board bend: {bend}. Leading posture: {strongestPosture}. {receiptLine}".Trim(),
                 surface?.RecommendedAction,
@@ -2557,7 +2670,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             var strongestPosture = BuildOperationPosture(strongest, summary, lane: "black_market");
             var receipt = payoff?.RecentReceipts?.FirstOrDefault();
             var bend = BuildShadowDemandValue(runtime, payoff);
-            var receiptLine = receipt != null ? $"Latest receipt: {receipt.Title}." : string.Empty;
+            var receiptLine = receipt != null ? $"Latest report: {receipt.Title}." : string.Empty;
             return FirstNonBlank(
                 $"Shadow books: {bend}. Lead posture: {strongestPosture}. {receiptLine}".Trim(),
                 runtime?.PublicBackbonePressure?.RecommendedAction,
@@ -3020,7 +3133,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
         {
             if (surface?.LatestSupportReceipt != null)
             {
-                return $"Latest receipt: {surface.LatestSupportReceipt.Title} • {surface.LatestSupportReceipt.Summary}";
+                return $"Latest report: {surface.LatestSupportReceipt.Title} • {surface.LatestSupportReceipt.Summary}";
             }
 
             return FirstNonBlank(

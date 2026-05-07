@@ -128,7 +128,7 @@ namespace PlanarWar.Client.Core.Presentation
             var joined = JoinNonBlank(
                 board.RecommendedCityDeskAction,
                 board.EligibleRegionIds != null && board.EligibleRegionIds.Count > 0
-                    ? $"Regions: {string.Join(", ", board.EligibleRegionIds)}"
+                    ? $"Regions: {HumanizeRegionList(board.EligibleRegionIds)}"
                     : string.Empty,
                 board.Candidates != null && board.Candidates.Count > 0
                     ? BuildCityContractRecoveryCandidateNote(board.Candidates[0], string.Empty)
@@ -156,8 +156,8 @@ namespace PlanarWar.Client.Core.Presentation
             }
 
             var resources = BuildCityContractRecoveryResourcesValue(candidate.RequiredResources, string.Empty);
-            var receipt = string.IsNullOrWhiteSpace(candidate.NextReceiptFamily) ? string.Empty : $"Next receipt: {HumanizeWords(candidate.NextReceiptFamily, "watch receipt")}";
-            var regions = candidate.EligibleRegionIds != null && candidate.EligibleRegionIds.Count > 0 ? $"Regions: {string.Join(", ", candidate.EligibleRegionIds)}" : string.Empty;
+            var receipt = string.IsNullOrWhiteSpace(candidate.NextReceiptFamily) ? string.Empty : $"Next report: {HumanizeWords(candidate.NextReceiptFamily, "watch report")}";
+            var regions = candidate.EligibleRegionIds != null && candidate.EligibleRegionIds.Count > 0 ? $"Regions: {HumanizeRegionList(candidate.EligibleRegionIds)}" : string.Empty;
             var note = JoinNonBlank(resources, receipt, regions);
             return string.IsNullOrWhiteSpace(note) ? fallback : note;
         }
@@ -247,6 +247,19 @@ namespace PlanarWar.Client.Core.Presentation
         {
             if (!value.HasValue || value.Value <= 0) return;
             parts.Add($"{value.Value:0.#} {label}");
+        }
+
+        private static string HumanizeRegionList(System.Collections.Generic.IEnumerable<string> regionIds)
+        {
+            if (regionIds == null) return string.Empty;
+            var parts = new System.Collections.Generic.List<string>();
+            foreach (var regionId in regionIds)
+            {
+                var region = HumanizeWords(regionId, string.Empty);
+                if (!string.IsNullOrWhiteSpace(region)) parts.Add(region);
+                if (parts.Count >= 4) break;
+            }
+            return string.Join(", ", parts);
         }
 
         private static string FirstNonBlank(params string[] values)
