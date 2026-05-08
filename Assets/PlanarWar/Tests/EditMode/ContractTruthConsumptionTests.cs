@@ -2514,6 +2514,26 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
         [Test]
+        public void Home_snapshot_cards_stay_above_pressure_detail_stack_for_quick_resource_reads()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var quickOrdersIndex = uxml.IndexOf("home-quick-orders", StringComparison.Ordinal);
+            var timerSnapshotIndex = uxml.IndexOf("home-snapshot-grid--timers", StringComparison.Ordinal);
+            var statusSnapshotIndex = uxml.IndexOf("home-snapshot-grid--status", StringComparison.Ordinal);
+            var postureIndex = uxml.IndexOf("post-founder-handoff-card", StringComparison.Ordinal);
+            var pressureDeskIndex = uxml.IndexOf("home-pressure-desk", StringComparison.Ordinal);
+
+            Assert.That(quickOrdersIndex, Is.GreaterThanOrEqualTo(0));
+            Assert.That(timerSnapshotIndex, Is.GreaterThan(quickOrdersIndex), "Home timer/resource snapshot cards should sit directly after quick orders so testers can read city output without diving past pressure reports.");
+            Assert.That(statusSnapshotIndex, Is.GreaterThan(timerSnapshotIndex), "Production snapshot should stay paired with the timer strip near the top of Home.");
+            Assert.That(postureIndex, Is.GreaterThan(statusSnapshotIndex), "Detailed posture/action reports should stay below the quick resource snapshot block.");
+            Assert.That(pressureDeskIndex, Is.GreaterThan(statusSnapshotIndex), "Recommended-action detail should not push production/resource output to the bottom of Home.");
+        }
+
+        [Test]
         public void Development_surface_uses_compact_action_boards_and_hides_duplicate_support_grid()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");

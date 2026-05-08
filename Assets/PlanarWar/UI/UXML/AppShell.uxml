@@ -231,6 +231,68 @@
                     </ui:VisualElement>
                 </ui:VisualElement>
 
+                <ui:VisualElement class="summary-grid summary-grid--timers home-timer-strip home-snapshot-grid home-snapshot-grid--timers">
+                    <ui:VisualElement class="summary-card timer-card home-snapshot-card">
+                        <ui:Label text="Research timer" class="eyebrow" />
+                        <ui:Label name="research-timer-value" text="No active research timer." class="summary-value summary-value--glance home-snapshot-card__value" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="summary-card timer-card home-snapshot-card">
+                        <ui:Label text="Build / Workshop" class="eyebrow" />
+                        <ui:Label name="workshop-timer-value" text="No active workshop queue." class="summary-value summary-value--glance home-snapshot-card__value" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="summary-card timer-card home-snapshot-card">
+                        <ui:Label text="Active mission" class="eyebrow" />
+                        <ui:Label name="mission-timer-value" text="No active mission clock." class="summary-value summary-value--glance home-snapshot-card__value" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="summary-card timer-card home-snapshot-card">
+                        <ui:Label text="Next resource tick" class="eyebrow" />
+                        <ui:Label name="resource-tick-value" text="Tick timing unavailable." class="summary-value summary-value--glance home-snapshot-card__value" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement name="timer-diagnostic-card" class="summary-card timer-card home-dev-diagnostic-gated">
+                        <ui:Label text="Timer diagnostic" class="eyebrow" />
+                        <ui:Label name="timer-diag-now-value" text="Live UI clock unavailable." class="summary-value summary-value--glance" />
+                        <ui:Label name="timer-diag-heartbeat-value" text="Heartbeat #0" class="metric-subvalue metric-subvalue--wrap" />
+                        <ui:Label name="timer-diag-raw-value" text="raw: waiting for summary payload" class="metric-subvalue metric-subvalue--wrap" />
+                        <ui:Label name="timer-diag-computed-value" text="diag: waiting for countdown computation" class="metric-subvalue metric-subvalue--wrap" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement class="summary-grid summary-grid--glance home-status-grid home-snapshot-grid home-snapshot-grid--status">
+                    <ui:VisualElement class="summary-card glance-card home-snapshot-card">
+                        <ui:Label text="Production snapshot" class="eyebrow" />
+                        <ui:Label name="production-value" text="No production snapshot." class="summary-value summary-value--glance home-snapshot-card__value" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="summary-card glance-card home-snapshot-card">
+                        <ui:Label text="Active research" class="eyebrow" />
+                        <ui:Label name="research-value" text="No active research." class="summary-value summary-value--glance home-snapshot-card__value" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="summary-card glance-card home-snapshot-card">
+                        <ui:Label text="Warning pressure" class="eyebrow" />
+                        <ui:Label name="warnings-value" text="No active threat warnings." class="summary-value summary-value--glance home-snapshot-card__value" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="summary-card glance-card home-snapshot-card">
+                        <ui:Label text="Ready now" class="eyebrow" />
+                        <ui:Label name="ready-ops-value" text="No opening operations surfaced." class="summary-value summary-value--glance home-snapshot-card__value" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="summary-card glance-card home-snapshot-card">
+                        <ui:Label text="Hero corps" class="eyebrow" />
+                        <ui:Label name="hero-status-value" text="No officer corps visible." class="summary-value summary-value--glance home-snapshot-card__value" />
+                    </ui:VisualElement>
+
+                    <ui:VisualElement class="summary-card glance-card home-snapshot-card">
+                        <ui:Label text="Forces readiness" class="eyebrow" />
+                        <ui:Label name="army-status-value" text="No formations visible." class="summary-value summary-value--glance home-snapshot-card__value" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
                 <ui:VisualElement name="post-founder-handoff-card" class="summary-card summary-card--full summary-card--action post-founder-handoff-card">
                     <ui:VisualElement class="development-actions-head">
                         <ui:Label text="Next desks" class="eyebrow" />
@@ -536,67 +598,7 @@
                     <ui:VisualElement name="pressure-operations-strip" class="summary-grid pressure-operations-strip home-fast-option-strip" />
                 </ui:VisualElement>
 
-                <ui:VisualElement class="summary-grid summary-grid--timers home-timer-strip home-snapshot-grid home-snapshot-grid--timers">
-                    <ui:VisualElement class="summary-card timer-card home-snapshot-card">
-                        <ui:Label text="Research timer" class="eyebrow" />
-                        <ui:Label name="research-timer-value" text="No active research timer." class="summary-value summary-value--glance home-snapshot-card__value" />
-                    </ui:VisualElement>
 
-                    <ui:VisualElement class="summary-card timer-card home-snapshot-card">
-                        <ui:Label text="Build / Workshop" class="eyebrow" />
-                        <ui:Label name="workshop-timer-value" text="No active workshop queue." class="summary-value summary-value--glance home-snapshot-card__value" />
-                    </ui:VisualElement>
-
-                    <ui:VisualElement class="summary-card timer-card home-snapshot-card">
-                        <ui:Label text="Active mission" class="eyebrow" />
-                        <ui:Label name="mission-timer-value" text="No active mission clock." class="summary-value summary-value--glance home-snapshot-card__value" />
-                    </ui:VisualElement>
-
-                    <ui:VisualElement class="summary-card timer-card home-snapshot-card">
-                        <ui:Label text="Next resource tick" class="eyebrow" />
-                        <ui:Label name="resource-tick-value" text="Tick timing unavailable." class="summary-value summary-value--glance home-snapshot-card__value" />
-                    </ui:VisualElement>
-
-                    <ui:VisualElement name="timer-diagnostic-card" class="summary-card timer-card home-dev-diagnostic-gated">
-                        <ui:Label text="Timer diagnostic" class="eyebrow" />
-                        <ui:Label name="timer-diag-now-value" text="Live UI clock unavailable." class="summary-value summary-value--glance" />
-                        <ui:Label name="timer-diag-heartbeat-value" text="Heartbeat #0" class="metric-subvalue metric-subvalue--wrap" />
-                        <ui:Label name="timer-diag-raw-value" text="raw: waiting for summary payload" class="metric-subvalue metric-subvalue--wrap" />
-                        <ui:Label name="timer-diag-computed-value" text="diag: waiting for countdown computation" class="metric-subvalue metric-subvalue--wrap" />
-                    </ui:VisualElement>
-                </ui:VisualElement>
-
-                <ui:VisualElement class="summary-grid summary-grid--glance home-status-grid home-snapshot-grid home-snapshot-grid--status">
-                    <ui:VisualElement class="summary-card glance-card home-snapshot-card">
-                        <ui:Label text="Production snapshot" class="eyebrow" />
-                        <ui:Label name="production-value" text="No production snapshot." class="summary-value summary-value--glance home-snapshot-card__value" />
-                    </ui:VisualElement>
-
-                    <ui:VisualElement class="summary-card glance-card home-snapshot-card">
-                        <ui:Label text="Active research" class="eyebrow" />
-                        <ui:Label name="research-value" text="No active research." class="summary-value summary-value--glance home-snapshot-card__value" />
-                    </ui:VisualElement>
-
-                    <ui:VisualElement class="summary-card glance-card home-snapshot-card">
-                        <ui:Label text="Warning pressure" class="eyebrow" />
-                        <ui:Label name="warnings-value" text="No active threat warnings." class="summary-value summary-value--glance home-snapshot-card__value" />
-                    </ui:VisualElement>
-
-                    <ui:VisualElement class="summary-card glance-card home-snapshot-card">
-                        <ui:Label text="Ready now" class="eyebrow" />
-                        <ui:Label name="ready-ops-value" text="No opening operations surfaced." class="summary-value summary-value--glance home-snapshot-card__value" />
-                    </ui:VisualElement>
-
-                    <ui:VisualElement class="summary-card glance-card home-snapshot-card">
-                        <ui:Label text="Hero corps" class="eyebrow" />
-                        <ui:Label name="hero-status-value" text="No officer corps visible." class="summary-value summary-value--glance home-snapshot-card__value" />
-                    </ui:VisualElement>
-
-                    <ui:VisualElement class="summary-card glance-card home-snapshot-card">
-                        <ui:Label text="Forces readiness" class="eyebrow" />
-                        <ui:Label name="army-status-value" text="No formations visible." class="summary-value summary-value--glance home-snapshot-card__value" />
-                    </ui:VisualElement>
-                </ui:VisualElement>
             
                     </ui:VisualElement>
                 </ui:ScrollView>
