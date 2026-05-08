@@ -5552,14 +5552,21 @@ namespace PlanarWar.Client.Tests.EditMode
             }
 
             Assert.That(uss, Does.Contain("Home pressure summary chip routing v1"));
+            Assert.That(uss, Does.Contain("Home pressure summary chip focus v1"));
             Assert.That(uss, Does.Contain(".home-pressure-summary-chip--clickable"));
+            Assert.That(uss, Does.Contain(".home-pressure-summary-chip--selected"));
             Assert.That(controller, Does.Contain("Unity Home Pressure Summary Chip Routing v1"));
+            Assert.That(controller, Does.Contain("Unity Home Pressure Summary Chip Focus v1"));
             Assert.That(controller, Does.Contain("ExpandHomePressureDetailsTo"));
+            Assert.That(controller, Does.Contain("homePressureFocusedDetailCard"));
+            Assert.That(controller, Does.Contain("ReferenceEquals(homePressureFocusedDetailCard, targetCard)"));
+            Assert.That(controller, Does.Contain("Keep the chip strip in place"));
+            Assert.That(controller, Does.Contain("SetHomePressureSummaryChipSelected"));
+            Assert.That(controller, Does.Contain("IsHomePressureDetailTarget"));
             Assert.That(controller, Does.Contain("homePressureSummaryPublicChip?.RegisterCallback<ClickEvent>(_ => ExpandHomePressureDetailsTo(publicInfrastructureEconomySpineCard));"));
             Assert.That(controller, Does.Contain("homePressureSummaryRegionalChip?.RegisterCallback<ClickEvent>(_ => ExpandHomePressureDetailsTo(cityMudConsequenceBridgeCard));"));
             Assert.That(controller, Does.Contain("homePressureSummaryRecoveryChip?.RegisterCallback<ClickEvent>(_ => ExpandHomePressureDetailsTo(cityContractRecoveryBoardCard));"));
             Assert.That(controller, Does.Contain("homePressureSummaryActionChip?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(homeRecommendedActionsScreen, onNavigateRequested));"));
-            Assert.That(controller, Does.Not.Contain("Execute"), "Summary chips should not execute missions or actions from Home.");
             Assert.That(controller, Does.Not.Contain("StartMission"), "Summary chips should not start mission actions from Home.");
         }
 

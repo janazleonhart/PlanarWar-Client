@@ -54,6 +54,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private readonly VisualElement homePressureDeskCard;
         private ShellScreen homeRecommendedActionsScreen = ShellScreen.City;
         private bool homePressureDetailsExpanded;
+        private VisualElement homePressureFocusedDetailCard;
         private ShellSummarySnapshot lastRenderedSummary;
         private bool lastRenderedIsSummaryLoaded;
         private readonly Label pressureDeskBadge;
@@ -331,6 +332,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             cityContractRecoveryBoardButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(cityContractRecoveryBoardRecommendedScreen, onNavigateRequested));
             homeRecommendedActionsPrimaryButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(homeRecommendedActionsScreen, onNavigateRequested));
             homeRecommendedActionsDetailsButton?.RegisterCallback<ClickEvent>(_ => ToggleHomePressureDetails());
+            // Unity Home Pressure Summary Chip Routing v1: summary chips route to existing detail cards or desks only.
             homePressureSummaryPublicChip?.RegisterCallback<ClickEvent>(_ => ExpandHomePressureDetailsTo(publicInfrastructureEconomySpineCard));
             homePressureSummaryRegionalChip?.RegisterCallback<ClickEvent>(_ => ExpandHomePressureDetailsTo(cityMudConsequenceBridgeCard));
             homePressureSummaryRecoveryChip?.RegisterCallback<ClickEvent>(_ => ExpandHomePressureDetailsTo(cityContractRecoveryBoardCard));
@@ -390,6 +392,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
         private void ToggleHomePressureDetails()
         {
+            homePressureFocusedDetailCard = null;
             homePressureDetailsExpanded = !homePressureDetailsExpanded;
             ApplyHomePressureDetailsVisibility(lastRenderedSummary, lastRenderedIsSummaryLoaded);
 
@@ -401,17 +404,24 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
         private void ExpandHomePressureDetailsTo(VisualElement targetCard)
         {
-            // Unity Home Pressure Summary Chip Routing v1: summary chips reveal the matching existing detail card only.
-            homePressureDetailsExpanded = true;
-            ApplyHomePressureDetailsVisibility(lastRenderedSummary, lastRenderedIsSummaryLoaded);
-
-            if (summaryScroll != null && targetCard != null && targetCard.style.display.value != DisplayStyle.None)
+            // Unity Home Pressure Summary Chip Focus v1: clicking a summary chip toggles only its matching detail card.
+            if (targetCard == null)
             {
-                summaryScroll.ScrollTo(targetCard);
                 return;
             }
 
-            ScrollToPressureDetails();
+            if (homePressureDetailsExpanded && ReferenceEquals(homePressureFocusedDetailCard, targetCard))
+            {
+                homePressureDetailsExpanded = false;
+                homePressureFocusedDetailCard = null;
+                ApplyHomePressureDetailsVisibility(lastRenderedSummary, lastRenderedIsSummaryLoaded);
+                return;
+            }
+
+            homePressureFocusedDetailCard = targetCard;
+            homePressureDetailsExpanded = true;
+            ApplyHomePressureDetailsVisibility(lastRenderedSummary, lastRenderedIsSummaryLoaded);
+            // Keep the chip strip in place so the same chip can collapse its focused detail again.
         }
 
         private void ApplyHomePressureDetailsVisibility(ShellSummarySnapshot summary, bool isSummaryLoaded)
@@ -426,6 +436,8 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 SetHomePressureDetailCardVisible(cityMudConsequenceBridgeCard, false);
                 SetHomePressureDetailCardVisible(cityContractRecoveryBoardCard, false);
                 SetHomePressureDetailCardVisible(homePressureDeskCard, false);
+                homePressureFocusedDetailCard = null;
+                UpdateHomePressureSummaryChipSelection();
                 if (homeRecommendedActionsDetailsButton != null)
                 {
                     homeRecommendedActionsDetailsButton.text = "Review pressure details";
@@ -446,16 +458,19 @@ namespace PlanarWar.Client.UI.Screens.Summary
             if (!hasAnyDetails)
             {
                 homePressureDetailsExpanded = false;
+                homePressureFocusedDetailCard = null;
             }
 
             var showDetails = homePressureDetailsExpanded && hasAnyDetails;
-            SetHomePressureDetailCardVisible(postFounderHandoffCard, showDetails);
-            SetHomePressureDetailCardVisible(earlyLanePostureCard, showDetails && summary.EarlyLanePosture != null);
-            SetHomePressureDetailCardVisible(motherBrainActionPathCard, showDetails && hasMotherBrainDetails);
-            SetHomePressureDetailCardVisible(publicInfrastructureEconomySpineCard, showDetails && summary.PublicInfrastructureSummary?.EconomySpine != null);
-            SetHomePressureDetailCardVisible(cityMudConsequenceBridgeCard, showDetails && summary.CityMudWorldConsequenceBridge != null);
-            SetHomePressureDetailCardVisible(cityContractRecoveryBoardCard, showDetails && summary.CityContractRecoveryBoard != null);
-            SetHomePressureDetailCardVisible(homePressureDeskCard, showDetails);
+            var hasFocusedCard = homePressureFocusedDetailCard != null;
+            SetHomePressureDetailCardVisible(postFounderHandoffCard, showDetails && !hasFocusedCard);
+            SetHomePressureDetailCardVisible(earlyLanePostureCard, showDetails && !hasFocusedCard && summary.EarlyLanePosture != null);
+            SetHomePressureDetailCardVisible(motherBrainActionPathCard, showDetails && !hasFocusedCard && hasMotherBrainDetails);
+            SetHomePressureDetailCardVisible(publicInfrastructureEconomySpineCard, showDetails && IsHomePressureDetailTarget(publicInfrastructureEconomySpineCard) && summary.PublicInfrastructureSummary?.EconomySpine != null);
+            SetHomePressureDetailCardVisible(cityMudConsequenceBridgeCard, showDetails && IsHomePressureDetailTarget(cityMudConsequenceBridgeCard) && summary.CityMudWorldConsequenceBridge != null);
+            SetHomePressureDetailCardVisible(cityContractRecoveryBoardCard, showDetails && IsHomePressureDetailTarget(cityContractRecoveryBoardCard) && summary.CityContractRecoveryBoard != null);
+            SetHomePressureDetailCardVisible(homePressureDeskCard, showDetails && !hasFocusedCard);
+            UpdateHomePressureSummaryChipSelection();
 
             if (homeRecommendedActionsDetailsButton != null)
             {
@@ -474,6 +489,32 @@ namespace PlanarWar.Client.UI.Screens.Summary
                     homeRecommendedActionsCard.RemoveFromClassList("home-recommended-actions-card--expanded");
                 }
             }
+        }
+
+        private bool IsHomePressureDetailTarget(VisualElement card)
+        {
+            return homePressureFocusedDetailCard == null || ReferenceEquals(homePressureFocusedDetailCard, card);
+        }
+
+        private void UpdateHomePressureSummaryChipSelection()
+        {
+            SetHomePressureSummaryChipSelected(homePressureSummaryPublicChip, publicInfrastructureEconomySpineCard);
+            SetHomePressureSummaryChipSelected(homePressureSummaryRegionalChip, cityMudConsequenceBridgeCard);
+            SetHomePressureSummaryChipSelected(homePressureSummaryRecoveryChip, cityContractRecoveryBoardCard);
+            homePressureSummaryActionChip?.RemoveFromClassList("home-pressure-summary-chip--selected");
+        }
+
+        private void SetHomePressureSummaryChipSelected(VisualElement chip, VisualElement targetCard)
+        {
+            if (chip == null)
+            {
+                return;
+            }
+
+            var selected = homePressureDetailsExpanded
+                && homePressureFocusedDetailCard != null
+                && ReferenceEquals(homePressureFocusedDetailCard, targetCard);
+            chip.EnableInClassList("home-pressure-summary-chip--selected", selected);
         }
 
         private static void SetHomePressureDetailCardVisible(VisualElement card, bool visible)
