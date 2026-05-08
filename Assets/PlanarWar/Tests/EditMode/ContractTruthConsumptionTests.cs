@@ -5451,5 +5451,25 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(formatter, Does.Contain("Next report:"), "Shared formatter should use report language for recovery follow-through.");
         }
 
+        [Test]
+        public void Home_pressure_detail_copy_hides_raw_report_ids_and_off_scale_debug_numbers()
+        {
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs");
+            Assert.That(File.Exists(controllerPath), Is.True, "SummaryScreenController.cs should be available from the Unity project root.");
+
+            var controller = File.ReadAllText(controllerPath);
+
+            Assert.That(controller, Does.Contain("Unity Pressure Detail Readability v1"), "Deep Home pressure details should have an explicit readability guard.");
+            Assert.That(controller, Does.Contain("FormatLoggedReportLine"), "Logged reports should summarize server truth without printing raw report ids.");
+            Assert.That(controller, Does.Contain("NormalizeScientificNotationForPlayerFacingCopy"), "Off-scale scientific notation should be converted before player-facing display.");
+            Assert.That(controller, Does.Contain("Regex.Replace(value"), "Scientific notation cleanup should be centralized instead of hand-patched per card.");
+            Assert.That(controller, Does.Contain("lines.Add(CleanPlayerFacingText(followThrough.Title));"));
+            Assert.That(controller, Does.Contain("lines.Add(CleanPlayerFacingText(followThrough.Summary));"));
+            Assert.That(controller, Does.Not.Contain("Latest report: {FirstNonBlank(followThrough.LatestReceiptId"), "Home public-service detail copy must not print raw report ids.");
+            Assert.That(controller, Does.Not.Contain("lines.Add(followThrough.Title);"), "Follow-through titles should pass through player-facing cleanup.");
+            Assert.That(controller, Does.Not.Contain("lines.Add(followThrough.Summary);"), "Follow-through summaries should pass through player-facing cleanup.");
+        }
+
+
     }
 }

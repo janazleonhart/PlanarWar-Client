@@ -4,6 +4,7 @@ using PlanarWar.Client.Core.Presentation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using UnityEngine.UIElements;
 
@@ -822,17 +823,17 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
                 if (!string.IsNullOrWhiteSpace(followThrough.Title))
                 {
-                    lines.Add(followThrough.Title);
+                    lines.Add(CleanPlayerFacingText(followThrough.Title));
                 }
 
                 if (!string.IsNullOrWhiteSpace(followThrough.Summary))
                 {
-                    lines.Add(followThrough.Summary);
+                    lines.Add(CleanPlayerFacingText(followThrough.Summary));
                 }
 
                 if (!string.IsNullOrWhiteSpace(followThrough.LatestReceiptId) || !string.IsNullOrWhiteSpace(followThrough.LatestReceiptAt))
                 {
-                    lines.Add($"Latest report: {FirstNonBlank(followThrough.LatestReceiptId, "unknown")} at {FirstNonBlank(followThrough.LatestReceiptAt, "unknown time")}.");
+                    lines.Add(FormatLoggedReportLine(followThrough.LatestReceiptAt));
                 }
 
                 if (!string.IsNullOrWhiteSpace(followThrough.LatestService) || !string.IsNullOrWhiteSpace(followThrough.LatestMode))
@@ -1695,7 +1696,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 lines.AddRange(surface.Signals
                     .Where(signal => !string.IsNullOrWhiteSpace(signal))
                     .Take(2)
-                    .Select(signal => $"• {signal.Trim()}"));
+                    .Select(signal => $"• {CleanPlayerFacingText(signal)}"));
             }
 
             return lines.Count == 0
@@ -1753,12 +1754,12 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (!string.IsNullOrWhiteSpace(followThrough?.Title))
             {
-                lines.Add(followThrough.Title.Trim());
+                lines.Add(CleanPlayerFacingText(followThrough.Title));
             }
 
             if (!string.IsNullOrWhiteSpace(followThrough?.LatestReceiptTitle))
             {
-                var receiptBits = new List<string> { followThrough.LatestReceiptTitle.Trim() };
+                var receiptBits = new List<string> { CleanPlayerFacingText(followThrough.LatestReceiptTitle) };
                 if (!string.IsNullOrWhiteSpace(followThrough.LatestReceiptOutcome))
                 {
                     receiptBits.Add(HumanizeToken(followThrough.LatestReceiptOutcome));
@@ -1772,7 +1773,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (!string.IsNullOrWhiteSpace(followThrough?.Summary))
             {
-                lines.Add(followThrough.Summary.Trim());
+                lines.Add(CleanPlayerFacingText(followThrough.Summary));
             }
 
             if (!string.IsNullOrWhiteSpace(followThrough?.LatestRuntimeActionId))
@@ -1804,12 +1805,12 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
                 if (!string.IsNullOrWhiteSpace(recovery.Title))
                 {
-                    lines.Add(recovery.Title.Trim());
+                    lines.Add(CleanPlayerFacingText(recovery.Title));
                 }
 
                 if (!string.IsNullOrWhiteSpace(recovery.Summary))
                 {
-                    lines.Add(recovery.Summary.Trim());
+                    lines.Add(CleanPlayerFacingText(recovery.Summary));
                 }
 
                 if (recovery.Blockers != null && recovery.Blockers.Count > 0)
@@ -1821,20 +1822,20 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 {
                     lines.AddRange(recovery.ClearWhen
                         .Where(line => !string.IsNullOrWhiteSpace(line))
-                        .Select(line => $"Clear when: {line.Trim()}")
+                        .Select(line => $"Clear when: {CleanPlayerFacingText(line)}")
                         .Take(2));
                 }
 
                 if (!string.IsNullOrWhiteSpace(recovery.RecommendedActionLabel))
                 {
-                    lines.Add($"Recovery action: {recovery.RecommendedActionLabel.Trim()}.");
+                    lines.Add($"Recovery action: {CleanPlayerFacingText(recovery.RecommendedActionLabel)}.");
                 }
 
                 if (recovery.Signals != null && recovery.Signals.Count > 0)
                 {
                     lines.AddRange(recovery.Signals
                         .Where(signal => !string.IsNullOrWhiteSpace(signal))
-                        .Select(signal => $"• {signal.Trim()}")
+                        .Select(signal => $"• {CleanPlayerFacingText(signal)}")
                         .Take(2));
                 }
             }
@@ -1843,7 +1844,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             {
                 lines.AddRange(followThrough.Signals
                     .Where(signal => !string.IsNullOrWhiteSpace(signal))
-                    .Select(signal => $"• {signal.Trim()}")
+                    .Select(signal => $"• {CleanPlayerFacingText(signal)}")
                     .Take(3));
             }
 
@@ -1882,10 +1883,11 @@ namespace PlanarWar.Client.UI.Screens.Summary
             }
 
             var suffix = bits.Count > 0 ? $" ({string.Join(" • ", bits)})" : string.Empty;
-            return $"• {entry.Title.Trim()}{suffix}.";
+            return $"• {CleanPlayerFacingText(entry.Title)}{suffix}.";
         }
 
         // Unity Player-Facing Copy Sanitization v1: keep pressure/report copy readable without hiding server truth.
+        // Unity Pressure Detail Readability v1: deep Home pressure details must not leak raw report ids or off-scale debug numbers.
         private static string CleanPlayerFacingText(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -1901,7 +1903,22 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 .Replace("sourceRegionId", "source region")
                 .Replace("source region id", "source region"));
 
+            text = NormalizeScientificNotationForPlayerFacingCopy(text);
             return HumanizeInlineTokens(text);
+        }
+
+        private static string FormatLoggedReportLine(string loggedAt)
+        {
+            return string.IsNullOrWhiteSpace(loggedAt)
+                ? "Latest report: logged."
+                : $"Latest report: logged at {CleanPlayerFacingText(loggedAt)}.";
+        }
+
+        private static string NormalizeScientificNotationForPlayerFacingCopy(string value)
+        {
+            return string.IsNullOrWhiteSpace(value)
+                ? string.Empty
+                : Regex.Replace(value, @"[-+]?\d+(?:\.\d+)?[eE][+-]?\d+", "off-scale");
         }
 
         private static string HumanizeInlineTokens(string value)
