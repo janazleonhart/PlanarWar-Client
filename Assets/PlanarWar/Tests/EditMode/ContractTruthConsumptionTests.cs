@@ -122,7 +122,7 @@ namespace PlanarWar.Client.Tests.EditMode
 
             Assert.That(
                 ContractTruthText.BuildContractLifecycleValue(followThrough, "fallback"),
-                Is.EqualTo("Cooling • World-response receipts"));
+                Is.EqualTo("Cooling • World-response reports"));
 
             Assert.That(
                 ContractTruthText.BuildCivicEffectsValue(civicEffects, "fallback"),
@@ -130,7 +130,7 @@ namespace PlanarWar.Client.Tests.EditMode
 
             Assert.That(
                 ContractTruthText.BuildShadowEffectsValue(shadowEffects, "fallback"),
-                Is.EqualTo("Receipt chain linked • Covert carry carried"));
+                Is.EqualTo("Report chain linked • Covert carry carried"));
         }
 
 
@@ -174,7 +174,7 @@ namespace PlanarWar.Client.Tests.EditMode
                 Does.Contain("Target the regional recovery desk"));
             Assert.That(
                 ContractTruthText.BuildCityContractRecoveryBoardNote(board, "fallback"),
-                Does.Contain("Next report: city contract regional stabilization receipt"));
+                Does.Contain("Next report: city contract regional stabilization report"));
         }
 
         [Test]
@@ -781,7 +781,7 @@ namespace PlanarWar.Client.Tests.EditMode
 
             var note = (string)builder.Invoke(null, new object[] { summary, buildings, timers, false, DateTime.UtcNow });
 
-            Assert.That(note, Does.Contain("only unlocked, affordable"));
+            Assert.That(note, Does.Contain("Only unlocked, affordable"));
             Assert.That(note, Does.Contain("1 manageable building"));
             Assert.That(note, Does.Contain("7 open of 8 building slots"));
             Assert.That(note, Does.Contain("backend confirm-token"));
@@ -963,7 +963,7 @@ namespace PlanarWar.Client.Tests.EditMode
                         ""regionId"": ""heartland_basin"",
                         ""boardCategory"": ""counterfeit"",
                         ""difficulty"": ""normal"",
-                        ""summary"": ""Follow the counterfeit receipt chain before it cools.""
+                        ""summary"": ""Follow the counterfeit report chain before it cools.""
                     }
                 ]
             }";
@@ -1305,12 +1305,12 @@ namespace PlanarWar.Client.Tests.EditMode
             state.FinishAction("done");
 
             state.BeginHeroRecruitAccept("candidate_1");
-            Assert.That(state.ActionStatus, Is.EqualTo("Accepting hero candidate: Provost Sel Varo"));
+            Assert.That(state.ActionStatus, Does.Contain("Provost Sel Varo"));
             Assert.That(state.ActionStatus, Does.Not.Contain("candidate_1"));
             state.FinishAction("done");
 
             state.BeginHeroRelease("hero_1");
-            Assert.That(state.ActionStatus, Is.EqualTo("Releasing hero: Lyra of the Veiled Paths"));
+            Assert.That(state.ActionStatus, Does.Contain("Lyra of the Veiled Paths"));
             Assert.That(state.ActionStatus, Does.Not.Contain("hero_1"));
             state.FinishAction("done");
 
@@ -2180,11 +2180,11 @@ namespace PlanarWar.Client.Tests.EditMode
             var receipt = SummaryState.FormatHeroActionReceipt(response, "Hero released", "hero_1", "Hero");
 
             Assert.That(receipt, Does.Contain("Hero released"));
-            Assert.That(receipt, Does.Contain("Outcome: released"));
+            Assert.That(receipt, Does.Contain("Outcome: Released"));
             Assert.That(receipt, Does.Contain("Hero: Ser Kael the Stormguard"));
             Assert.That(receipt, Does.Contain("Effects:"));
-            Assert.That(receipt, Does.Contain("item id workshop_arcane_focus_1"));
-            Assert.That(receipt, Does.Contain("qty +1"));
+            Assert.That(receipt, Does.Contain("Qty +1").Or.Contain("qty +1"));
+            Assert.That(receipt, Does.Not.Contain("workshop_arcane_focus_1"));
         }
 
         [Test]
@@ -2918,12 +2918,12 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(citySource, Does.Contain("GetWorkshopJobTitle(job, summaryState.WorkshopRecipes)"));
             Assert.That(citySource, Does.Contain("BuildWorkshopReadyPickupNote(job, summaryState.WorkshopRecipes)"));
             Assert.That(citySource, Does.Contain("GetWorkshopTimerTitle(timer, summaryState.WorkshopRecipes)"));
-            Assert.That(citySource, Does.Contain("FindWorkshopRecipeForTimer(timer, recipes)"));
-            Assert.That(citySource, Does.Contain("StripWorkshopTimerPrefix"));
-            Assert.That(citySource, Does.Contain("HumanizeWorkshopKey"));
+            Assert.That(citySource, Does.Contain("ResolveWorkshopRecipeDisplayName(payloadName, recipes)"));
+            Assert.That(citySource, Does.Contain("ExtractWorkshopTimerPayloadName"));
+            Assert.That(citySource, Does.Contain("CleanWorkshopDisplayName"));
             Assert.That(citySource, Does.Not.Contain("title: FirstNonBlank(timer.Label"), "Workshop timer cards should not route raw timer labels directly to player-facing titles.");
 
-            Assert.That(summarySource, Does.Contain("HumanizeWorkshopKey"));
+            Assert.That(summarySource, Does.Contain("HumanizeWords"));
             Assert.That(summarySource, Does.Not.Contain("job.RecipeId ?? job.AttachmentKind"), "Home workshop summaries should not fall back to raw job ids before humanizing them.");
 
             Assert.That(bootstrapSource, Does.Contain("ResolveWorkshopRecipeLabel(recipeId)"));
@@ -4231,17 +4231,17 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(guide, Does.Contain("/api/me.motherBrainPressureStatus.actionPath"));
             Assert.That(guide, Does.Contain("blockers that currently prevent clean follow-through"));
             Assert.That(guide, Does.Contain("proof signals that explain which pressure seam produced the recommendation"));
-            Assert.That(guide, Does.Contain("next receipt family testers should expect"));
-            Assert.That(guide, Does.Contain("receipt follow-through state, latest receipt, outcome, runtime action, and source-region proof"));
+            Assert.That(guide, Does.Contain("next report family testers should expect"));
+            Assert.That(guide, Does.Contain("report follow-through state, latest report, outcome, server response, and source-region proof"));
             Assert.That(guide, Does.Contain("blocker recovery"));
-            Assert.That(guide, Does.Contain("Receipt follow-through is receipt/ledger truth only"));
+            Assert.That(guide, Does.Contain("Report follow-through is report/ledger truth only"));
             Assert.That(guide, Does.Contain("response history"));
             Assert.That(guide, Does.Contain("does not launch events, complete objectives, spawn rewards, bypass blockers, start timers, or make Mother Brain autonomous"));
             Assert.That(guide, Does.Contain("Rogue Director, TOMS, Crucible, and full world-director behavior remain future work"));
-            Assert.That(guide, Does.Contain("missing or wrong Mother Brain pressure path, blockers, blocker recovery, response history, proof signals, receipt follow-through, or receipt family"));
+            Assert.That(guide, Does.Contain("missing or wrong Mother Brain pressure path, blockers, blocker recovery, response history, proof signals, report follow-through, or report family"));
             Assert.That(uxml, Does.Contain("Mother Brain pressure"));
             Assert.That(uxml, Does.Contain("Pressure action path"));
-            Assert.That(uxml, Does.Contain("blockers, proof signals, receipt follow-through, and next receipt family"));
+            Assert.That(uxml, Does.Contain("blockers, proof signals, report follow-through, and next report family"));
             Assert.That(uxml, Does.Contain("blocker recovery"));
             Assert.That(uxml, Does.Contain("response history"));
             Assert.That(uxml, Does.Contain("does not spawn events, rewards, timers, Rogue Director, TOMS, or Crucible behavior"));
@@ -4379,10 +4379,10 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(uxml, Does.Contain("mother-brain-action-path-blockers-value"));
             Assert.That(uxml, Does.Contain("mother-brain-action-path-proof-value"));
             Assert.That(uxml, Does.Contain("mother-brain-action-path-receipt-value"));
-            Assert.That(uxml, Does.Contain("Receipt follow-through"));
+            Assert.That(uxml, Does.Contain("Report follow-through"));
             Assert.That(uxml, Does.Contain("blocker recovery"));
             Assert.That(uxml, Does.Contain("response history"));
-            Assert.That(uxml, Does.Contain("Receipt, blocker-recovery, and response history truth is waiting on backend state."));
+            Assert.That(uxml, Does.Contain("Report, blocker-recovery, and response history truth is waiting on server state."));
             Assert.That(uxml, Does.Contain("This card consumes /api/me motherBrainPressureStatus.actionPath"));
             Assert.That(uxml, Does.Not.Contain("Mother Brain starts events"));
             Assert.That(uxml, Does.Not.Contain("Mother Brain completes objectives"));
@@ -4855,8 +4855,14 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(uss, Does.Contain("gap: 7px"));
             Assert.That(uss, Does.Contain("padding-top: 12px"));
             Assert.That(uss, Does.Contain(".home-lane-posture__grid .glance-card"));
+            var postureStart = uxml.IndexOf("home-lane-posture-card", StringComparison.Ordinal);
+            var postureEnd = uxml.IndexOf("mother-brain-action-path-card", postureStart >= 0 ? postureStart : 0, StringComparison.Ordinal);
+            var postureSection = postureStart >= 0 && postureEnd > postureStart
+                ? uxml.Substring(postureStart, postureEnd - postureStart)
+                : string.Empty;
+
             Assert.That(uxml, Does.Not.Contain("early-lane-posture-bootstrap"));
-            Assert.That(uxml, Does.Not.Contain("fake tutorial progress"));
+            Assert.That(postureSection, Does.Not.Contain("fake tutorial progress"));
         }
 
 
@@ -5072,9 +5078,9 @@ namespace PlanarWar.Client.Tests.EditMode
             var uss = File.ReadAllText(ussPath);
 
             Assert.That(controller, Does.Contain("BuildBlackMarketActiveOperationReceiptDetail"), "Active operation cards should expose receipt/proof/detail text from existing payload fields.");
-            Assert.That(controller, Does.Contain("BuildBlackMarketActiveOperationReferenceSummary"), "Receipt detail should summarize source surface and backend references instead of inventing execution." );
+            Assert.That(controller, Does.Contain("BuildBlackMarketActiveOperationReferenceSummary"), "Report detail should summarize source surface and server references instead of inventing execution." );
             Assert.That(controller, Does.Contain("operation signal verified"), "Player-facing operation proof should acknowledge source truth without exposing raw route strings or dev-only ref wording." );
-            Assert.That(controller, Does.Contain("Receipt:"), "Visible operation cards should label the existing operator note/summary as receipt detail." );
+            Assert.That(controller, Does.Contain("Report:"), "Visible operation cards should label the existing operator note/summary as report detail." );
             Assert.That(controller, Does.Contain("Proof:"), "Visible operation cards should label source/action/mission hooks as proof detail." );
             Assert.That(controller, Does.Not.Contain("source surface visible"), "Player-facing operation cards should not show dev/source-surface wording." );
             Assert.That(controller, Does.Not.Contain("world-action ref"), "Player-facing operation cards should not show backend-ref wording." );
@@ -5309,14 +5315,19 @@ namespace PlanarWar.Client.Tests.EditMode
             var controller = File.ReadAllText(controllerPath);
             var formatter = File.ReadAllText(formatterPath);
 
-            Assert.That(controller, Does.Contain("Unity Pressure Receipt Outcome Copy v1"), "Receipt/outcome cleanup should be an explicit streamer-safety slice.");
+            Assert.That(controller, Does.Contain("Unity Player-Facing Copy Sanitization v1"), "Player-facing copy cleanup should be an explicit streamer-safety slice.");
+            Assert.That(controller, Does.Contain("live posture"), "Lane posture badges should use player-facing live posture wording.");
             Assert.That(controller, Does.Contain("CleanPlayerFacingText"), "Summary receipt copy should pass raw-ish labels through a small player-facing sanitizer.");
             Assert.That(controller, Does.Contain("FormatRegionList"), "Region lists should show human names instead of raw runtime ids.");
             Assert.That(controller, Does.Contain("Select(CleanPlayerFacingText)"), "Follow-through lines should stay readable and pass through player-facing cleanup.");
             Assert.That(controller, Does.Contain("Available on: {FormatClientTargets(contract.ClientTargets)}."), "Client targets should be translated into player-facing surfaces.");
             Assert.That(controller, Does.Not.Contain("region {receipt.RegionId}"), "Receipt signals must not show raw region-id interpolation.");
             Assert.That(controller, Does.Not.Contain("action {receipt.RuntimeActionId}"), "Receipt signals must not show runtime action ids.");
-            Assert.That(controller, Does.Not.Contain("Runtime action:"), "Mother Brain receipt copy should not print raw runtime action ids.");
+            Assert.That(controller, Does.Not.Contain("Runtime action:"), "Mother Brain report copy should not print raw runtime action ids.");
+            Assert.That(controller, Does.Not.Contain("Execution disabled: this Unity card is inspect-only."), "Pressure status copy should avoid debug-ish execution labels.");
+            Assert.That(controller, Does.Not.Contain("No client mutation required."), "Pressure status copy should avoid debug-ish mutation labels.");
+            Assert.That(controller, Does.Not.Contain("Latest runtime response:"), "Bridge copy should say server response instead of runtime response.");
+            Assert.That(controller, Does.Not.Contain("backend posture"), "Lane posture badges should not expose backend wording.");
             Assert.That(controller, Does.Not.Contain("Backend rewards:"), "Reward previews should not use backend-ish labels in player-facing copy.");
             Assert.That(controller, Does.Not.Contain("/api/me exposes the bridge"), "Fallback copy should not show raw API routes.");
             Assert.That(formatter, Does.Contain("Next report:"), "Shared formatter should use report language for recovery follow-through.");

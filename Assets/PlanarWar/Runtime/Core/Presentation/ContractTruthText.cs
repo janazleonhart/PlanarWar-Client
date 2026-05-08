@@ -54,7 +54,7 @@ namespace PlanarWar.Client.Core.Presentation
                 return fallback;
             }
 
-            return $"Receipt chain {HumanizeWords(effects.ReceiptChainState, "unknown")} • Covert carry {HumanizeWords(effects.CovertCarryState, "unknown")}";
+            return $"Report chain {HumanizeWords(effects.ReceiptChainState, "unknown")} • Covert carry {HumanizeWords(effects.CovertCarryState, "unknown")}";
         }
 
         public static string BuildCivicEffectsNote(PublicBackboneContractEffectsSnapshot effects, ContractFollowThroughSnapshot followThrough, string fallback)
@@ -195,10 +195,10 @@ namespace PlanarWar.Client.Core.Presentation
                     return "Active missions";
                 case "/api/me/missionreceipts":
                 case "/api/me.missionreceipts":
-                    return "Mission receipts";
+                    return "Mission reports";
                 case "/api/me/worldconsequenceresponsereceipts":
                 case "/api/me.worldconsequenceresponsereceipts":
-                    return "World-response receipts";
+                    return "World-response reports";
                 default:
                     return HumanizeWords(sourceSurface, "Unknown surface");
             }
@@ -280,7 +280,23 @@ namespace PlanarWar.Client.Core.Presentation
                 return fallback;
             }
 
-            return normalized.Replace("_", " ").Replace("-", " ").Trim();
+            return NormalizePlayerFacingVocabulary(normalized.Replace("_", " ").Replace("-", " ").Trim());
+        }
+
+        private static string NormalizePlayerFacingVocabulary(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            return value
+                .Replace("city mud", "city-to-MUD")
+                .Replace("backend", "server")
+                .Replace("runtime response", "server response")
+                .Replace("runtime action", "server action")
+                .Replace("receipt family", "report type")
+                .Replace("receipt", "report");
         }
 
         private static string Normalize(string value)

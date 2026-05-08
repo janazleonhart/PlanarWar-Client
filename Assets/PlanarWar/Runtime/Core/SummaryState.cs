@@ -543,6 +543,11 @@ namespace PlanarWar.Client.Core
                 _ => string.Empty,
             };
 
+            if (!string.IsNullOrWhiteSpace(slotLabel))
+            {
+                return slotLabel;
+            }
+
             return BuildReceiptLabel(id, slotLabel, "gear slot");
         }
 
@@ -641,7 +646,7 @@ namespace PlanarWar.Client.Core
         {
             var trimmedAction = action?.Trim() ?? string.Empty;
             var trimmedReceipt = string.IsNullOrWhiteSpace(receipt)
-                ? "Roster action completed, but the backend did not return a readable receipt."
+                ? "Roster action completed, but the server did not return a readable report."
                 : receipt.Trim();
 
             RecentHeroReceiptAction = trimmedAction;
@@ -679,7 +684,7 @@ namespace PlanarWar.Client.Core
 
             if (string.IsNullOrWhiteSpace(responseJson))
             {
-                return $"{fallback}. No {noun.ToLowerInvariant()} receipt was returned.";
+                return $"{fallback}. No {noun.ToLowerInvariant()} report was returned.";
             }
 
             try
@@ -803,12 +808,12 @@ namespace PlanarWar.Client.Core
 
                 var readable = string.Join(" • ", parts.Where(part => !string.IsNullOrWhiteSpace(part)).Distinct());
                 return string.IsNullOrWhiteSpace(readable)
-                    ? $"{fallback}. Backend returned no readable {noun.ToLowerInvariant()} roster receipt."
+                    ? $"{fallback}. Server returned no readable {noun.ToLowerInvariant()} roster report."
                     : $"{action}. {readable}";
             }
             catch
             {
-                return $"{fallback}. Raw receipt: {responseJson.Trim()}";
+                return $"{fallback}. Raw report: {responseJson.Trim()}";
             }
         }
 
@@ -992,7 +997,7 @@ namespace PlanarWar.Client.Core
             }
             catch
             {
-                return $"{fallback} Raw receipt: {responseJson.Trim()}";
+                return $"{fallback} Raw report: {responseJson.Trim()}";
             }
         }
 
@@ -1184,6 +1189,12 @@ namespace PlanarWar.Client.Core
                 return FormatReceiptToken(token);
             }
 
+            var itemEffect = FormatItemEffectBundle(token);
+            if (!string.IsNullOrWhiteSpace(itemEffect))
+            {
+                return itemEffect;
+            }
+
             var pieces = new List<string>();
             foreach (var property in token.Children<JProperty>())
             {
@@ -1212,6 +1223,45 @@ namespace PlanarWar.Client.Core
             }
 
             return string.Join(", ", pieces);
+        }
+
+
+        private static string FormatItemEffectBundle(JToken token)
+        {
+            if (token == null || token.Type != JTokenType.Object)
+            {
+                return string.Empty;
+            }
+
+            var itemId = FirstReceiptText(Child(token, "itemId"), Child(token, "item_id"));
+            var itemName = FirstReceiptText(
+                Child(token, "name"),
+                Child(token, "itemName"),
+                Child(token, "item_name"),
+                Child(Child(token, "template"), "name"));
+            var qtyToken = Child(token, "qty") ?? Child(token, "quantity");
+            if (string.IsNullOrWhiteSpace(itemId) && string.IsNullOrWhiteSpace(itemName) && qtyToken == null)
+            {
+                return string.Empty;
+            }
+
+            var parts = new List<string>();
+            var label = !string.IsNullOrWhiteSpace(itemName) ? itemName.Trim() : HumanizeReceiptIdentifier(itemId);
+            if (!string.IsNullOrWhiteSpace(label))
+            {
+                parts.Add($"Returned {label}");
+            }
+
+            if (qtyToken != null && (qtyToken.Type == JTokenType.Integer || qtyToken.Type == JTokenType.Float))
+            {
+                var qty = qtyToken.Value<double>();
+                if (Math.Abs(qty) > 0.0001)
+                {
+                    parts.Add($"Qty {FormatSignedNumber(qty)}");
+                }
+            }
+
+            return string.Join(", ", parts);
         }
 
         private static string FormatFlatEffectDeltas(params JToken[] roots)

@@ -400,7 +400,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (earlyLanePostureBadge != null)
             {
-                earlyLanePostureBadge.text = $"{label} • backend posture";
+                earlyLanePostureBadge.text = $"{label} • live posture";
             }
 
             if (earlyLanePostureHeadline != null)
@@ -435,7 +435,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (earlyLanePostureActionPathWhy != null)
             {
-                earlyLanePostureActionPathWhy.text = FirstNonBlank(actionPath?.WhyThisMatters, "This path will appear when the backend exposes live action-path truth.");
+                earlyLanePostureActionPathWhy.text = FirstNonBlank(actionPath?.WhyThisMatters, "This path will appear when the server exposes live action-path truth.");
             }
 
             if (earlyLanePostureActionPathReceipt != null)
@@ -693,7 +693,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (cityContractRecoveryBoardSummary != null)
             {
-                cityContractRecoveryBoardSummary.text = FirstNonBlank(board.Summary, "Regional recovery candidates will appear here when backend truth supports them.");
+                cityContractRecoveryBoardSummary.text = FirstNonBlank(board.Summary, "Regional recovery candidates will appear here when server truth supports them.");
             }
 
             if (cityContractRecoveryBoardRecommended != null)
@@ -703,7 +703,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (cityContractRecoveryBoardReason != null)
             {
-                cityContractRecoveryBoardReason.text = ContractTruthText.BuildCityContractRecoveryBoardNote(board, "This read-only board consumes existing consequence, receipt, and city-support truth only; it does not execute contracts or invent rewards.");
+                cityContractRecoveryBoardReason.text = ContractTruthText.BuildCityContractRecoveryBoardNote(board, "This read-only board consumes existing consequence, report, and city-support truth only; it does not execute contracts or invent rewards.");
             }
 
             if (cityContractRecoveryBoardRegions != null)
@@ -715,7 +715,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             {
                 cityContractRecoveryBoardCandidate.text = lead == null
                     ? "No candidate card is strong enough to list yet."
-                    : ContractTruthText.BuildCityContractRecoveryCandidateValue(lead, "Regional recovery candidate waiting on backend summary.");
+                    : ContractTruthText.BuildCityContractRecoveryCandidateValue(lead, "Regional recovery candidate waiting on server summary.");
             }
 
             if (cityContractRecoveryBoardResources != null)
@@ -832,7 +832,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (cityMudConsequenceBridgeReason != null)
             {
-                cityMudConsequenceBridgeReason.text = FirstNonBlank(bridge.WhyThisMatters, "This bridge reads city support, public backbone, regional consequence, and receipt truth only; it does not grant items, fake progression, taxes, queues, or mandatory city gates.");
+                cityMudConsequenceBridgeReason.text = FirstNonBlank(bridge.WhyThisMatters, "This bridge reads city support, public backbone, regional consequence, and report truth only; it does not grant items, fake progression, taxes, queues, or mandatory city gates.");
             }
 
             if (cityMudConsequenceBridgeBridgeSignals != null)
@@ -938,7 +938,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (bridge?.LatestRuntimeResponse != null)
             {
-                lines.Add($"Latest runtime response: {FormatCityMudBridgeReceipt(bridge.LatestRuntimeResponse)}");
+                lines.Add($"Latest server response: {FormatCityMudBridgeReceipt(bridge.LatestRuntimeResponse)}");
             }
 
             if (bridge?.LatestWorldConsequence != null)
@@ -991,7 +991,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (!string.IsNullOrWhiteSpace(followThrough.LatestRuntimeResponseTitle))
             {
-                lines.Add($"Latest runtime response: {CleanPlayerFacingText(followThrough.LatestRuntimeResponseTitle)}{FormatOptionalTokenSuffix(followThrough.LatestRuntimeResponseOutcome, string.Empty)}.");
+                lines.Add($"Latest server response: {CleanPlayerFacingText(followThrough.LatestRuntimeResponseTitle)}{FormatOptionalTokenSuffix(followThrough.LatestRuntimeResponseOutcome, string.Empty)}.");
             }
 
             if (!string.IsNullOrWhiteSpace(followThrough.LatestWorldConsequenceTitle))
@@ -1368,17 +1368,17 @@ namespace PlanarWar.Client.UI.Screens.Summary
             var contract = surface?.ConsumptionContract;
             if (contract == null)
             {
-                return "Client contract pending: pressure surface is read-only and does not require mutation.";
+                return "Pressure card pending: this surface is read-only and does not start actions.";
             }
 
             var lines = new List<string>
             {
                 contract.ExecutionEnabled
-                    ? "Execution flag is unexpectedly enabled; treat this as inspect-only until backend verify says otherwise."
-                    : "Execution disabled: this Unity card is inspect-only.",
+                    ? "Action-start flag is unexpectedly enabled; keep this card inspect-only until server verify says otherwise."
+                    : "Inspect-only: this card does not start missions or change state.",
                 contract.ClientMutationRequired
-                    ? "Client mutation requested by backend contract."
-                    : "No client mutation required."
+                    ? "Server asked for a client-side action hook; no local hook is wired here."
+                    : "No client-side action is required here."
             };
 
             if (contract.ClientTargets != null && contract.ClientTargets.Count > 0)
@@ -1401,7 +1401,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (contract.RewardsAreBackendAuthored || contract.RecommendedPowerIsBackendAuthored)
             {
-                lines.Add("Rewards and power guidance come from the server.");
+                lines.Add("Reward preview and power guidance come from the server.");
             }
 
             return string.Join("\n", lines);
@@ -1469,7 +1469,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
                 if (lead.ExpectedRewards != null && lead.ExpectedRewards.Count > 0)
                 {
-                    lines.Add("Backend-listed reward preview: " + string.Join(" • ", lead.ExpectedRewards.OrderBy(pair => pair.Key).Take(4).Select(pair => $"{HumanizeToken(pair.Key)} {pair.Value:0.##}")) + ".");
+                    lines.Add("Server-listed reward preview: " + string.Join(" • ", lead.ExpectedRewards.OrderBy(pair => pair.Key).Take(4).Select(pair => $"{HumanizeToken(pair.Key)} {pair.Value:0.##}")) + ".");
                 }
             }
 
@@ -1522,7 +1522,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (!string.IsNullOrWhiteSpace(followThrough?.LatestRuntimeActionId))
             {
-                lines.Add("Runtime response is linked to a server action.");
+                lines.Add("Server response is linked to a server action.");
             }
 
             if (!string.IsNullOrWhiteSpace(followThrough?.SourceRegionId))
@@ -1630,7 +1630,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             return $"• {entry.Title.Trim()}{suffix}.";
         }
 
-        // Unity Pressure Receipt Outcome Copy v1: keep receipt/outcome text readable without hiding backend truth.
+        // Unity Player-Facing Copy Sanitization v1: keep pressure/report copy readable without hiding server truth.
         private static string CleanPlayerFacingText(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -1638,15 +1638,13 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 return string.Empty;
             }
 
-            var text = value.Trim()
+            var text = NormalizePlayerFacingVocabulary(value.Trim()
                 .Replace("/api/me", "the live account summary")
                 .Replace("/api/internal", "internal server route")
-                .Replace("runtimeActionId", "runtime action")
-                .Replace("Runtime action id", "Runtime action")
-                .Replace("receipt family", "report type")
-                .Replace("Receipt family", "Report type")
+                .Replace("runtimeActionId", "server action")
+                .Replace("Runtime action id", "Server action")
                 .Replace("sourceRegionId", "source region")
-                .Replace("source region id", "source region");
+                .Replace("source region id", "source region"));
 
             return HumanizeInlineTokens(text);
         }
@@ -1750,7 +1748,36 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 return string.Empty;
             }
 
-            return value.Trim().Replace("_", " ").Replace("-", " ");
+            return NormalizePlayerFacingVocabulary(value.Trim().Replace("_", " ").Replace("-", " "));
+        }
+
+        private static string NormalizePlayerFacingVocabulary(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            return value
+                .Replace("city_mud", "city-to-MUD")
+                .Replace("City mud", "City-to-MUD")
+                .Replace("city mud", "city-to-MUD")
+                .Replace("backend-authored", "server-authored")
+                .Replace("Backend-authored", "Server-authored")
+                .Replace("backend authored", "server-authored")
+                .Replace("Backend authored", "Server-authored")
+                .Replace("backend", "server")
+                .Replace("Backend", "Server")
+                .Replace("runtime response", "server response")
+                .Replace("Runtime response", "Server response")
+                .Replace("runtime action", "server action")
+                .Replace("Runtime action", "Server action")
+                .Replace("receipt family", "report type")
+                .Replace("Receipt family", "Report type")
+                .Replace("receipt", "report")
+                .Replace("Receipt", "Report")
+                .Replace("mud", "MUD")
+                .Replace("Mud", "MUD");
         }
 
         private static ShellScreen ResolvePostureScreen(string recommendedDesk, ShellSummarySnapshot summary)
@@ -1865,7 +1892,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             {
                 founderSetupCopy.text = summary.CanCreateCity
                     ? "Pick City for public growth or Black Market for a shadow operation. This calls the live bootstrap route; no settlement is invented locally."
-                    : "The client can read setup choices, but the backend has not marked this account as eligible to found one yet.";
+                    : "The client can read setup choices, but the server has not marked this account as eligible to found one yet.";
             }
 
             RenderFounderActionStatus(actionStatus, actionFailed);
@@ -1873,9 +1900,9 @@ namespace PlanarWar.Client.UI.Screens.Summary
             var cityChoice = FindSetupChoice(summary, "city");
             var marketChoice = FindSetupChoice(summary, "black_market");
             if (founderCityChoiceValue != null) founderCityChoiceValue.text = FormatSetupChoiceValue(cityChoice, "City", "Public growth, buildings, production, and civic development.");
-            if (founderCityChoiceNote != null) founderCityChoiceNote.text = FormatSetupChoiceNote(cityChoice, "Uses the public settlement lane when the backend exposes setup truth.");
+            if (founderCityChoiceNote != null) founderCityChoiceNote.text = FormatSetupChoiceNote(cityChoice, "Uses the public settlement lane when the server exposes setup truth.");
             if (founderMarketChoiceValue != null) founderMarketChoiceValue.text = FormatSetupChoiceValue(marketChoice, "Black Market", "Shadow operations, contacts, covert pressure, and deniable routing.");
-            if (founderMarketChoiceNote != null) founderMarketChoiceNote.text = FormatSetupChoiceNote(marketChoice, "Uses the black-market settlement lane when the backend exposes setup truth.");
+            if (founderMarketChoiceNote != null) founderMarketChoiceNote.text = FormatSetupChoiceNote(marketChoice, "Uses the black-market settlement lane when the server exposes setup truth.");
 
             var canFound = isSummaryLoaded && summary.CanCreateCity && !isActionBusy;
             SetFounderButton(founderCityPrimaryButton, FirstNonBlank(cityChoice?.CtaLabel, "Found City"), canFound);
@@ -2639,7 +2666,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             }).ToLowerInvariant();
 
             var score = 0;
-            if (posture.Contains("receipt-chain routing") && ContainsAny(context, "counterfeit", "permit", "throughput", "script", "window", "receipt", "paper", "ledger")) score += 6;
+            if ((posture.Contains("receipt-chain routing") || posture.Contains("report-chain routing")) && ContainsAny(context, "counterfeit", "permit", "throughput", "script", "window", "receipt", "paper", "ledger")) score += 6;
             if (posture.Contains("deniable cleanup") && ContainsAny(context, "cover", "cleanup", "contain", "cooling", "backlash", "repair", "wash")) score += 6;
             if (posture.Contains("heat management") && ContainsAny(context, "pressure", "backbone", "warning", "bribe", "leverage", "heat", "exposure")) score += 6;
             if (posture.Contains("shadow books") && ContainsAny(context, "exploit", "payoff", "cash", "window", "active", "carry", "route")) score += 6;
@@ -2688,7 +2715,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (receipt != null && PostureMatchesCivicReceipt(posture, receipt.SourceSurface))
             {
-                return $"Receipt-led: {receipt.Title} • {HumanizeWords(receipt.SourceSurface, "support surface")}";
+                return $"Report-led: {CleanPlayerFacingText(receipt.Title)} • {HumanizeWords(receipt.SourceSurface, "support surface")}";
             }
 
             return $"{bend} • {posture}";
@@ -2702,7 +2729,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             var posture = BuildOperationPosture(operation, summary, lane: "black_market");
             if (receipt != null && PostureMatchesShadowReceipt(posture, receipt))
             {
-                return $"Receipt-led: {receipt.Title} • {HumanizeWords(receipt.Severity, "live pressure")}";
+                return $"Report-led: {CleanPlayerFacingText(receipt.Title)} • {HumanizeWords(receipt.Severity, "live pressure")}";
             }
 
             return $"{BuildShadowDemandValue(runtime, payoff)} • {posture}";
@@ -2732,7 +2759,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 return false;
             }
 
-            if (postureText.Contains("receipt-chain routing")) return ContainsAny(text, "counterfeit", "throughput", "script", "permit", "receipt", "paper", "ledger");
+            if ((postureText.Contains("receipt-chain routing") || postureText.Contains("report-chain routing"))) return ContainsAny(text, "counterfeit", "throughput", "script", "permit", "receipt", "paper", "ledger");
             if (postureText.Contains("deniable cleanup")) return ContainsAny(text, "cover", "cleanup", "contain", "repair", "backlash", "wash", "cool");
             if (postureText.Contains("heat management")) return ContainsAny(text, "pressure", "warning", "bribe", "leverage", "heat", "exposure");
             if (postureText.Contains("shadow books")) return ContainsAny(text, "exploit", "payoff", "cash", "carry", "route");
@@ -2801,7 +2828,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 case "contain":
                     return "Deniable cleanup / route cooling";
                 case "counterfeit":
-                    return "Receipt-chain routing / forged paper";
+                    return "Report-chain routing / forged paper";
                 default:
                     return HumanizeWords(responsePosture, string.Empty);
             }

@@ -2122,7 +2122,8 @@
     gap: 10px;
 }
 
-.home-fast-option-strip .pressure-op-card {
+.home-fast-option-strip .pressure-op-card,
+.home-fast-option-card {
     min-height: 132px;
     gap: 6px;
     padding-top: 10px;
@@ -2362,13 +2363,22 @@
     align-items: stretch;
 }
 
-.operations-mission-board-section {
+.operations-mission-board-section,
+.operations-mission-card {
     min-width: 360px;
     flex-grow: 1;
 }
 
-.operations-mission-offer-picker .operations-choice {
+.operations-mission-offer-picker .operations-choice,
+.operations-mission-offer-choice {
     min-width: 220px;
+}
+
+.operations-mission-offer-choice--selected {
+    border-top-width: 1px;
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
 }
 
 

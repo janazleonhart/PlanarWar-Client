@@ -78,8 +78,8 @@ namespace PlanarWar.Client.Tests.EditMode
 
             var source = File.ReadAllText(controllerPath);
             Assert.That(source, Does.Contain("RenderClientPressureSurface(clientPressureSurface, summary)"));
-            Assert.That(source, Does.Contain("Execution disabled: this Unity card is inspect-only."));
-            Assert.That(source, Does.Contain("No client mutation required."));
+            Assert.That(source, Does.Contain("Inspect-only: this card does not start missions or change state."));
+            Assert.That(source, Does.Contain("No client-side action is required here."));
             Assert.That(source, Does.Contain("Primary action: inspect the existing board offer."));
             Assert.That(source, Does.Contain("does not execute missions"));
             Assert.That(source, Does.Not.Contain("Primary mission: {contract.PrimaryMissionId}"));

@@ -34,11 +34,14 @@ namespace PlanarWar.Client.Core.Mapping
                 city?["resource_tick_timing"],
                 city?["resourceTick"],
                 city?["resource_tick"]);
+            var missions = Child(summary["missions"]);
+            var missionBoard = Child(summary["missionBoard"]);
+            var missionBoardSnake = Child(summary["mission_board"]);
             var activeMissions = FirstArray(
                 summary["activeMissions"],
                 summary["active_missions"],
-                summary["missions"]?["activeMissions"],
-                summary["missions"]?["active_missions"],
+                missions?["activeMissions"],
+                missions?["active_missions"],
                 city?["activeMissions"],
                 city?["active_missions"]);
             var missionOffers = FirstArray(
@@ -47,10 +50,10 @@ namespace PlanarWar.Client.Core.Mapping
                 summary["currentOffers"],
                 summary["current_offers"],
                 summary["missions"],
-                summary["missionBoard"]?["missions"],
-                summary["mission_board"]?["missions"],
-                summary["missionBoard"]?["offers"],
-                summary["mission_board"]?["offers"],
+                missionBoard?["missions"],
+                missionBoardSnake?["missions"],
+                missionBoard?["offers"],
+                missionBoardSnake?["offers"],
                 city?["missionOffers"],
                 city?["mission_offers"],
                 city?["currentOffers"],
@@ -2134,6 +2137,7 @@ namespace PlanarWar.Client.Core.Mapping
 
         private static JObject FirstObject(params JToken[] tokens) => tokens?.OfType<JObject>().FirstOrDefault();
         private static JArray FirstArray(params JToken[] tokens) => tokens?.OfType<JArray>().FirstOrDefault();
+        private static JObject Child(JToken token) => token as JObject;
 
         private static int? FirstInt(params JToken[] tokens)
         {

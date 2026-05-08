@@ -481,7 +481,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             switch (state)
             {
                 case PressureMissionLeadBoardState.Available:
-                    return "Pressure lead matched this Mission Board offer. It is selected below; starting it still uses the normal backend mission path.";
+                    return "Pressure lead matched this Mission Board offer. It is selected below; starting it still uses the normal mission-start path.";
                 case PressureMissionLeadBoardState.HiddenByActiveMission:
                     return "Pressure lead is hidden by current board state: an active mission is already running, so Unity only preserves the lead instead of inventing a bypass.";
                 case PressureMissionLeadBoardState.HiddenByReceipt:
@@ -548,7 +548,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             {
                 return FirstNonBlank(
                     BuildMissionEffectSummary(pressureLeadOffer.Summary, pressureLeadOffer.Payoff, pressureLeadOffer.Risk),
-                    "Existing pressure lead has no extra risk/payoff text, so the board keeps its normal backend-authored summary.");
+                    "Existing pressure lead has no extra risk/payoff text, so the board keeps its normal server-authored summary.");
             }
 
             return string.Empty;
@@ -1723,7 +1723,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var totalTypes = GetBlackMarketOperationTypeChoices(surface).Count;
             var riskText = selected.Risks.Count > 0 ? string.Join("/", selected.Risks.Where(risk => !string.IsNullOrWhiteSpace(risk)).Distinct().Take(3)) : "unknown risk";
             var stateText = selected.States.Count > 0 ? string.Join("/", selected.States.Where(state => !string.IsNullOrWhiteSpace(state)).Distinct().Take(3)) : "unknown state";
-            return $"Type focus: {selected.Label} • {selected.Count} candidate{(selected.Count == 1 ? string.Empty : "s")} • risks {riskText} • states {stateText} • {totalTypes} type{(totalTypes == 1 ? string.Empty : "s")} visible";
+            return $"Type focus: {selected.Label} • Focused candidates {selected.Count} • risks {riskText} • states {stateText} • {totalTypes} type{(totalTypes == 1 ? string.Empty : "s")} visible";
         }
 
         private static string ResolveBlackMarketOperationSelectionKey(BlackMarketActiveOperationCardSnapshot card, int index)
@@ -1741,7 +1741,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
         private static string BuildBlackMarketOperationDetailReceipt(BlackMarketActiveOperationCardSnapshot card, BlackMarketActiveOperationSurfaceSnapshot surface)
         {
             var receipt = FirstNonBlank(card?.OperatorNote, card?.Summary, surface?.Detail, surface?.Headline);
-            return $"Receipt: {Truncate(FirstNonBlank(receipt, "No receipt text was supplied by this active-operation card."), 320)}";
+            return $"Report: {Truncate(FirstNonBlank(receipt, "No report text was supplied by this active-operation card."), 320)}";
         }
 
         private static string BuildBlackMarketOperationDetailProof(BlackMarketActiveOperationCardSnapshot card)
@@ -1833,7 +1833,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var operatorNote = FirstNonBlank(card?.OperatorNote, card?.Summary);
             if (!string.IsNullOrWhiteSpace(operatorNote))
             {
-                lines.Add($"Receipt: {Truncate(operatorNote, 112)}");
+                lines.Add($"Report: {Truncate(operatorNote, 112)}");
             }
 
             var readiness = BuildBlackMarketOperationReadinessLabel(actionCount, hasMissionLead, hasActiveMission);
@@ -1867,7 +1867,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
             if (lines.Count == 0)
             {
-                lines.Add("Receipt: active-operation payload is visible, but no extra detail was supplied.");
+                lines.Add("Report: active-operation payload is visible, but no extra detail was supplied.");
             }
 
             return string.Join(Environment.NewLine, lines.Take(5));
@@ -1898,12 +1898,12 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
 
             if (ContainsAny(text, "brib", "patrol", "guard", "bribe"))
             {
-                return $"May soften patrol or guard friction around the active window, which can make later covert mission leads or action hooks easier to justify when supported by real receipts.{missionText}{hookText}".Trim();
+                return $"May soften patrol or guard friction around the active window, which can make later covert mission leads or action hooks easier to justify when supported by real reports.{missionText}{hookText}".Trim();
             }
 
             if (ContainsAny(text, "contain", "heat", "crackdown", "bite"))
             {
-                return $"May keep black-market heat from spilling into harsher public crackdowns, buying safer room for follow-up cells, fronts, or mission leads when the backend records the outcome.{missionText}{hookText}".Trim();
+                return $"May keep black-market heat from spilling into harsher public crackdowns, buying safer room for follow-up cells, fronts, or mission leads when the server records the outcome.{missionText}{hookText}".Trim();
             }
 
             if (ContainsAny(text, "counterfeit", "paper", "forged", "ledger", "dirty"))
@@ -2307,7 +2307,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var receipt = NormalizeEmbeddedDisplayKeys(receiptText ?? string.Empty);
             if (string.IsNullOrWhiteSpace(receipt))
             {
-                return "Mission completed, but no readable backend receipt was returned.";
+                return "Mission completed, but no readable server report was returned.";
             }
 
             receipt = receipt.Replace("\r\n", "\n", StringComparison.Ordinal)
@@ -2351,7 +2351,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             }
 
             return lines.Count == 0
-                ? "Mission completed, but no readable backend receipt was returned."
+                ? "Mission completed, but no readable server report was returned."
                 : string.Join("\n", lines);
         }
 
@@ -2675,7 +2675,7 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             }
             else
             {
-                parts.Add("Mission is active; completion report waits for backend closeout.");
+                parts.Add("Mission is active; completion report waits for server closeout.");
             }
 
             return parts.Count > 0
@@ -3203,7 +3203,18 @@ namespace PlanarWar.Client.UI.Screens.BlackMarket
             var cleaned = value.Replace('_', ' ').Replace('-', ' ').Replace('.', ' ').Trim();
             var words = cleaned.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
             if (words.Length == 0) return string.Empty;
-            return string.Join(" ", words.Select(TitleCaseWord));
+            return NormalizePlayerFacingDisplayText(string.Join(" ", words.Select(TitleCaseWord)));
+        }
+
+        private static string NormalizePlayerFacingDisplayText(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return string.Empty;
+            return value
+                .Replace("Backend", "Server", StringComparison.OrdinalIgnoreCase)
+                .Replace("Runtime response", "Server response", StringComparison.OrdinalIgnoreCase)
+                .Replace("Runtime action", "Server action", StringComparison.OrdinalIgnoreCase)
+                .Replace("Receipt family", "Report type", StringComparison.OrdinalIgnoreCase)
+                .Replace("Receipt", "Report", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string NormalizeEmbeddedDisplayKeys(string value)
