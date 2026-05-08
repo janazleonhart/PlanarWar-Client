@@ -2581,6 +2581,56 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
 
+
+
+        [Test]
+        public void Home_pressure_details_collapse_under_recommended_actions_button_by_default()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var appStylePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(appStylePath), Is.True, "AppShell.uss should be available from the Unity project root.");
+            Assert.That(File.Exists(controllerPath), Is.True, "SummaryScreenController.cs should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(appStylePath);
+            var controller = File.ReadAllText(controllerPath);
+
+            var snapshotIndex = uxml.IndexOf("home-snapshot-grid--status", StringComparison.Ordinal);
+            var recommendedIndex = uxml.IndexOf("home-recommended-actions-card", StringComparison.Ordinal);
+            var detailsIndex = uxml.IndexOf("home-pressure-detail-card", StringComparison.Ordinal);
+
+            Assert.That(snapshotIndex, Is.GreaterThanOrEqualTo(0));
+            Assert.That(recommendedIndex, Is.GreaterThan(snapshotIndex), "Recommended actions should stay below the quick Home snapshot block.");
+            Assert.That(detailsIndex, Is.GreaterThan(recommendedIndex), "The detailed pressure stack should sit behind the recommended-actions button instead of crowding the first Home view.");
+
+            foreach (var marker in new[]
+            {
+                "home-pressure-detail-card",
+                "home-pressure-desk-card",
+                "post-founder-handoff-card",
+                "mother-brain-action-path-card",
+                "city-contract-recovery-board-card"
+            })
+            {
+                Assert.That(uxml, Does.Contain(marker), $"Home pressure-detail marker {marker} should stay wired.");
+            }
+
+            Assert.That(uss, Does.Contain("Home pressure detail collapse v1"));
+            Assert.That(uss, Does.Contain(".home-pressure-detail-card--collapsed"));
+            Assert.That(controller, Does.Contain("homePressureDetailsExpanded"));
+            Assert.That(controller, Does.Contain("ToggleHomePressureDetails"));
+            Assert.That(controller, Does.Contain("ApplyHomePressureDetailsVisibility"));
+            Assert.That(controller, Does.Contain("SetHomePressureDetailCardVisible"));
+            Assert.That(controller, Does.Contain("Hide pressure details"));
+            Assert.That(controller, Does.Contain("Review pressure details"));
+            Assert.That(controller, Does.Not.Contain("Create pressure detail action"));
+            Assert.That(controller, Does.Not.Contain("Execute pressure detail action"));
+            Assert.That(controller, Does.Not.Contain("Generate pressure detail reward"));
+        }
+
+
         [Test]
         public void Development_surface_uses_compact_action_boards_and_hides_duplicate_support_grid()
         {

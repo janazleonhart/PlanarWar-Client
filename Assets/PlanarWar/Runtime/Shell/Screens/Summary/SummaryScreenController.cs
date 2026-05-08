@@ -37,7 +37,11 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private readonly Label homeRecommendedActionsReason;
         private readonly Button homeRecommendedActionsPrimaryButton;
         private readonly Button homeRecommendedActionsDetailsButton;
+        private readonly VisualElement homePressureDeskCard;
         private ShellScreen homeRecommendedActionsScreen = ShellScreen.City;
+        private bool homePressureDetailsExpanded;
+        private ShellSummarySnapshot lastRenderedSummary;
+        private bool lastRenderedIsSummaryLoaded;
         private readonly Label pressureDeskBadge;
         private readonly Label pressureDeskHeadline;
         private readonly Label pressureDeskDetail;
@@ -179,6 +183,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             homeRecommendedActionsReason = root.Q<Label>("home-recommended-actions-reason-value");
             homeRecommendedActionsPrimaryButton = root.Q<Button>("home-recommended-actions-primary-button");
             homeRecommendedActionsDetailsButton = root.Q<Button>("home-recommended-actions-details-button");
+            homePressureDeskCard = root.Q<VisualElement>("home-pressure-desk-card");
             pressureDeskBadge = root.Q<Label>("pressure-desk-badge-value");
             pressureDeskHeadline = root.Q<Label>("pressure-desk-headline-value");
             pressureDeskDetail = root.Q<Label>("pressure-desk-detail-value");
@@ -298,12 +303,14 @@ namespace PlanarWar.Client.UI.Screens.Summary
             cityMudConsequenceBridgeButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(cityMudConsequenceBridgeRecommendedScreen, onNavigateRequested));
             cityContractRecoveryBoardButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(cityContractRecoveryBoardRecommendedScreen, onNavigateRequested));
             homeRecommendedActionsPrimaryButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(homeRecommendedActionsScreen, onNavigateRequested));
-            homeRecommendedActionsDetailsButton?.RegisterCallback<ClickEvent>(_ => ScrollToPressureDetails());
+            homeRecommendedActionsDetailsButton?.RegisterCallback<ClickEvent>(_ => ToggleHomePressureDetails());
         }
 
         public void Render(ShellSummarySnapshot s, bool isSummaryLoaded, bool isActionBusy = false, string actionStatus = null, bool actionFailed = false)
         {
             heartbeat++;
+            lastRenderedSummary = s;
+            lastRenderedIsSummaryLoaded = isSummaryLoaded;
             var nowUtc = DateTime.UtcNow;
 
             var activeResearches = SelectActiveResearches(s, nowUtc);
@@ -330,6 +337,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             RenderHomeRecommendedActions(s, isSummaryLoaded);
 
             RenderPressureDesk(s);
+            ApplyHomePressureDetailsVisibility(s, isSummaryLoaded);
         }
 
         private async void RequestSettlementBootstrap(string lane, Func<string, string, Task> onBootstrapCityRequested)
@@ -348,6 +356,89 @@ namespace PlanarWar.Client.UI.Screens.Summary
             onNavigateRequested?.Invoke(screen);
         }
 
+        private void ToggleHomePressureDetails()
+        {
+            homePressureDetailsExpanded = !homePressureDetailsExpanded;
+            ApplyHomePressureDetailsVisibility(lastRenderedSummary, lastRenderedIsSummaryLoaded);
+
+            if (homePressureDetailsExpanded)
+            {
+                ScrollToPressureDetails();
+            }
+        }
+
+        private void ApplyHomePressureDetailsVisibility(ShellSummarySnapshot summary, bool isSummaryLoaded)
+        {
+            var hasLiveSettlement = isSummaryLoaded && summary != null && summary.HasCity;
+            if (!hasLiveSettlement)
+            {
+                SetHomePressureDetailCardVisible(postFounderHandoffCard, false);
+                SetHomePressureDetailCardVisible(earlyLanePostureCard, false);
+                SetHomePressureDetailCardVisible(motherBrainActionPathCard, false);
+                SetHomePressureDetailCardVisible(publicInfrastructureEconomySpineCard, false);
+                SetHomePressureDetailCardVisible(cityMudConsequenceBridgeCard, false);
+                SetHomePressureDetailCardVisible(cityContractRecoveryBoardCard, false);
+                SetHomePressureDetailCardVisible(homePressureDeskCard, false);
+                if (homeRecommendedActionsDetailsButton != null)
+                {
+                    homeRecommendedActionsDetailsButton.text = "Review pressure details";
+                    homeRecommendedActionsDetailsButton.SetEnabled(false);
+                }
+                homeRecommendedActionsCard?.RemoveFromClassList("home-recommended-actions-card--expanded");
+                return;
+            }
+
+            var hasMotherBrainDetails = summary.ClientPressureSurface != null || summary.MotherBrainPressureStatus?.ActionPath != null;
+            var hasAnyDetails = summary.HasCity
+                || summary.EarlyLanePosture != null
+                || hasMotherBrainDetails
+                || summary.PublicInfrastructureSummary?.EconomySpine != null
+                || summary.CityMudWorldConsequenceBridge != null
+                || summary.CityContractRecoveryBoard != null;
+
+            if (!hasAnyDetails)
+            {
+                homePressureDetailsExpanded = false;
+            }
+
+            var showDetails = homePressureDetailsExpanded && hasAnyDetails;
+            SetHomePressureDetailCardVisible(postFounderHandoffCard, showDetails);
+            SetHomePressureDetailCardVisible(earlyLanePostureCard, showDetails && summary.EarlyLanePosture != null);
+            SetHomePressureDetailCardVisible(motherBrainActionPathCard, showDetails && hasMotherBrainDetails);
+            SetHomePressureDetailCardVisible(publicInfrastructureEconomySpineCard, showDetails && summary.PublicInfrastructureSummary?.EconomySpine != null);
+            SetHomePressureDetailCardVisible(cityMudConsequenceBridgeCard, showDetails && summary.CityMudWorldConsequenceBridge != null);
+            SetHomePressureDetailCardVisible(cityContractRecoveryBoardCard, showDetails && summary.CityContractRecoveryBoard != null);
+            SetHomePressureDetailCardVisible(homePressureDeskCard, showDetails);
+
+            if (homeRecommendedActionsDetailsButton != null)
+            {
+                homeRecommendedActionsDetailsButton.text = showDetails ? "Hide pressure details" : "Review pressure details";
+                homeRecommendedActionsDetailsButton.SetEnabled(hasAnyDetails);
+            }
+
+            if (homeRecommendedActionsCard != null)
+            {
+                if (showDetails)
+                {
+                    homeRecommendedActionsCard.AddToClassList("home-recommended-actions-card--expanded");
+                }
+                else
+                {
+                    homeRecommendedActionsCard.RemoveFromClassList("home-recommended-actions-card--expanded");
+                }
+            }
+        }
+
+        private static void SetHomePressureDetailCardVisible(VisualElement card, bool visible)
+        {
+            if (card == null)
+            {
+                return;
+            }
+
+            card.EnableInClassList("home-pressure-detail-card--collapsed", !visible);
+            card.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+        }
 
         private void ScrollToPressureDetails()
         {
@@ -367,10 +458,11 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 publicInfrastructureEconomySpineCard,
                 cityMudConsequenceBridgeCard,
                 cityContractRecoveryBoardCard,
+                homePressureDeskCard,
                 postFounderHandoffCard
             })
             {
-                if (card != null && card.resolvedStyle.display != DisplayStyle.None)
+                if (card != null && card.style.display.value != DisplayStyle.None)
                 {
                     return card;
                 }
