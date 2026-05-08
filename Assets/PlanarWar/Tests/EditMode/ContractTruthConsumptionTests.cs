@@ -5526,6 +5526,45 @@ namespace PlanarWar.Client.Tests.EditMode
 
 
         [Test]
+        public void Home_pressure_summary_chips_open_matching_existing_detail_surfaces_without_fake_actions()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var appStylePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(appStylePath), Is.True, "AppShell.uss should be available from the Unity project root.");
+            Assert.That(File.Exists(controllerPath), Is.True, "SummaryScreenController.cs should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(appStylePath);
+            var controller = File.ReadAllText(controllerPath);
+
+            foreach (var marker in new[]
+            {
+                "home-pressure-summary-public-chip",
+                "home-pressure-summary-regional-chip",
+                "home-pressure-summary-recovery-chip",
+                "home-pressure-summary-action-chip",
+                "home-pressure-summary-chip--clickable"
+            })
+            {
+                Assert.That(uxml, Does.Contain(marker), $"Pressure summary chip marker {marker} should stay wired.");
+            }
+
+            Assert.That(uss, Does.Contain("Home pressure summary chip routing v1"));
+            Assert.That(uss, Does.Contain(".home-pressure-summary-chip--clickable"));
+            Assert.That(controller, Does.Contain("Unity Home Pressure Summary Chip Routing v1"));
+            Assert.That(controller, Does.Contain("ExpandHomePressureDetailsTo"));
+            Assert.That(controller, Does.Contain("homePressureSummaryPublicChip?.RegisterCallback<ClickEvent>(_ => ExpandHomePressureDetailsTo(publicInfrastructureEconomySpineCard));"));
+            Assert.That(controller, Does.Contain("homePressureSummaryRegionalChip?.RegisterCallback<ClickEvent>(_ => ExpandHomePressureDetailsTo(cityMudConsequenceBridgeCard));"));
+            Assert.That(controller, Does.Contain("homePressureSummaryRecoveryChip?.RegisterCallback<ClickEvent>(_ => ExpandHomePressureDetailsTo(cityContractRecoveryBoardCard));"));
+            Assert.That(controller, Does.Contain("homePressureSummaryActionChip?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(homeRecommendedActionsScreen, onNavigateRequested));"));
+            Assert.That(controller, Does.Not.Contain("Execute"), "Summary chips should not execute missions or actions from Home.");
+            Assert.That(controller, Does.Not.Contain("StartMission"), "Summary chips should not start mission actions from Home.");
+        }
+
+
+        [Test]
         public void Home_pressure_headers_translate_backend_system_names_to_player_facing_labels()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");

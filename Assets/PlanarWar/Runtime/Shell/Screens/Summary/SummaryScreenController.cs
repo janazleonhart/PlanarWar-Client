@@ -39,6 +39,10 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private readonly Button homeRecommendedActionsPrimaryButton;
         private readonly Button homeRecommendedActionsDetailsButton;
         private readonly VisualElement homePressureSummaryStripCard;
+        private readonly VisualElement homePressureSummaryPublicChip;
+        private readonly VisualElement homePressureSummaryRegionalChip;
+        private readonly VisualElement homePressureSummaryRecoveryChip;
+        private readonly VisualElement homePressureSummaryActionChip;
         private readonly Label homePressureSummaryPublicState;
         private readonly Label homePressureSummaryPublicNote;
         private readonly Label homePressureSummaryRegionalState;
@@ -194,6 +198,10 @@ namespace PlanarWar.Client.UI.Screens.Summary
             homeRecommendedActionsPrimaryButton = root.Q<Button>("home-recommended-actions-primary-button");
             homeRecommendedActionsDetailsButton = root.Q<Button>("home-recommended-actions-details-button");
             homePressureSummaryStripCard = root.Q<VisualElement>("home-pressure-summary-strip-card");
+            homePressureSummaryPublicChip = root.Q<VisualElement>("home-pressure-summary-public-chip");
+            homePressureSummaryRegionalChip = root.Q<VisualElement>("home-pressure-summary-regional-chip");
+            homePressureSummaryRecoveryChip = root.Q<VisualElement>("home-pressure-summary-recovery-chip");
+            homePressureSummaryActionChip = root.Q<VisualElement>("home-pressure-summary-action-chip");
             homePressureSummaryPublicState = root.Q<Label>("home-pressure-summary-public-state-value");
             homePressureSummaryPublicNote = root.Q<Label>("home-pressure-summary-public-note-value");
             homePressureSummaryRegionalState = root.Q<Label>("home-pressure-summary-regional-state-value");
@@ -323,6 +331,10 @@ namespace PlanarWar.Client.UI.Screens.Summary
             cityContractRecoveryBoardButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(cityContractRecoveryBoardRecommendedScreen, onNavigateRequested));
             homeRecommendedActionsPrimaryButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(homeRecommendedActionsScreen, onNavigateRequested));
             homeRecommendedActionsDetailsButton?.RegisterCallback<ClickEvent>(_ => ToggleHomePressureDetails());
+            homePressureSummaryPublicChip?.RegisterCallback<ClickEvent>(_ => ExpandHomePressureDetailsTo(publicInfrastructureEconomySpineCard));
+            homePressureSummaryRegionalChip?.RegisterCallback<ClickEvent>(_ => ExpandHomePressureDetailsTo(cityMudConsequenceBridgeCard));
+            homePressureSummaryRecoveryChip?.RegisterCallback<ClickEvent>(_ => ExpandHomePressureDetailsTo(cityContractRecoveryBoardCard));
+            homePressureSummaryActionChip?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(homeRecommendedActionsScreen, onNavigateRequested));
         }
 
         public void Render(ShellSummarySnapshot s, bool isSummaryLoaded, bool isActionBusy = false, string actionStatus = null, bool actionFailed = false)
@@ -385,6 +397,21 @@ namespace PlanarWar.Client.UI.Screens.Summary
             {
                 ScrollToPressureDetails();
             }
+        }
+
+        private void ExpandHomePressureDetailsTo(VisualElement targetCard)
+        {
+            // Unity Home Pressure Summary Chip Routing v1: summary chips reveal the matching existing detail card only.
+            homePressureDetailsExpanded = true;
+            ApplyHomePressureDetailsVisibility(lastRenderedSummary, lastRenderedIsSummaryLoaded);
+
+            if (summaryScroll != null && targetCard != null && targetCard.style.display.value != DisplayStyle.None)
+            {
+                summaryScroll.ScrollTo(targetCard);
+                return;
+            }
+
+            ScrollToPressureDetails();
         }
 
         private void ApplyHomePressureDetailsVisibility(ShellSummarySnapshot summary, bool isSummaryLoaded)
