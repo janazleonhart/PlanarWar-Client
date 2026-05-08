@@ -38,6 +38,15 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private readonly Label homeRecommendedActionsReason;
         private readonly Button homeRecommendedActionsPrimaryButton;
         private readonly Button homeRecommendedActionsDetailsButton;
+        private readonly VisualElement homePressureSummaryStripCard;
+        private readonly Label homePressureSummaryPublicState;
+        private readonly Label homePressureSummaryPublicNote;
+        private readonly Label homePressureSummaryRegionalState;
+        private readonly Label homePressureSummaryRegionalNote;
+        private readonly Label homePressureSummaryRecoveryState;
+        private readonly Label homePressureSummaryRecoveryNote;
+        private readonly Label homePressureSummaryActionState;
+        private readonly Label homePressureSummaryActionNote;
         private readonly VisualElement homePressureDeskCard;
         private ShellScreen homeRecommendedActionsScreen = ShellScreen.City;
         private bool homePressureDetailsExpanded;
@@ -184,6 +193,15 @@ namespace PlanarWar.Client.UI.Screens.Summary
             homeRecommendedActionsReason = root.Q<Label>("home-recommended-actions-reason-value");
             homeRecommendedActionsPrimaryButton = root.Q<Button>("home-recommended-actions-primary-button");
             homeRecommendedActionsDetailsButton = root.Q<Button>("home-recommended-actions-details-button");
+            homePressureSummaryStripCard = root.Q<VisualElement>("home-pressure-summary-strip-card");
+            homePressureSummaryPublicState = root.Q<Label>("home-pressure-summary-public-state-value");
+            homePressureSummaryPublicNote = root.Q<Label>("home-pressure-summary-public-note-value");
+            homePressureSummaryRegionalState = root.Q<Label>("home-pressure-summary-regional-state-value");
+            homePressureSummaryRegionalNote = root.Q<Label>("home-pressure-summary-regional-note-value");
+            homePressureSummaryRecoveryState = root.Q<Label>("home-pressure-summary-recovery-state-value");
+            homePressureSummaryRecoveryNote = root.Q<Label>("home-pressure-summary-recovery-note-value");
+            homePressureSummaryActionState = root.Q<Label>("home-pressure-summary-action-state-value");
+            homePressureSummaryActionNote = root.Q<Label>("home-pressure-summary-action-note-value");
             homePressureDeskCard = root.Q<VisualElement>("home-pressure-desk-card");
             pressureDeskBadge = root.Q<Label>("pressure-desk-badge-value");
             pressureDeskHeadline = root.Q<Label>("pressure-desk-headline-value");
@@ -336,6 +354,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             RenderCityMudConsequenceBridge(s, isSummaryLoaded);
             RenderCityContractRecoveryBoard(s, isSummaryLoaded);
             RenderHomeRecommendedActions(s, isSummaryLoaded);
+            RenderHomePressureSummaryStrip(s, isSummaryLoaded);
 
             RenderPressureDesk(s);
             ApplyHomePressureDetailsVisibility(s, isSummaryLoaded);
@@ -470,6 +489,146 @@ namespace PlanarWar.Client.UI.Screens.Summary
             }
 
             return motherBrainActionPathCard ?? earlyLanePostureCard ?? postFounderHandoffCard;
+        }
+
+        private void RenderHomePressureSummaryStrip(ShellSummarySnapshot summary, bool isSummaryLoaded)
+        {
+            // Unity Home Pressure Summary Strip v1: translate live backend pressure into a small player-facing status strip.
+            var shouldShow = isSummaryLoaded && summary != null && summary.HasCity;
+            if (homePressureSummaryStripCard != null)
+            {
+                homePressureSummaryStripCard.style.display = shouldShow ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            if (!shouldShow)
+            {
+                return;
+            }
+
+            var publicChip = BuildPublicServicesPressureSummary(summary);
+            var regionalChip = BuildRegionalSupportPressureSummary(summary);
+            var recoveryChip = BuildRecoveryPressureSummary(summary);
+            var actionChip = BuildBestNextActionPressureSummary(summary);
+
+            SetPressureSummaryChip(homePressureSummaryPublicState, homePressureSummaryPublicNote, publicChip);
+            SetPressureSummaryChip(homePressureSummaryRegionalState, homePressureSummaryRegionalNote, regionalChip);
+            SetPressureSummaryChip(homePressureSummaryRecoveryState, homePressureSummaryRecoveryNote, recoveryChip);
+            SetPressureSummaryChip(homePressureSummaryActionState, homePressureSummaryActionNote, actionChip);
+        }
+
+        private static void SetPressureSummaryChip(Label stateLabel, Label noteLabel, HomePressureSummaryChipView chip)
+        {
+            if (stateLabel != null)
+            {
+                stateLabel.text = chip?.State ?? "Waiting";
+            }
+
+            if (noteLabel != null)
+            {
+                noteLabel.text = chip?.Note ?? "Live pressure truth has not surfaced yet.";
+            }
+        }
+
+        private HomePressureSummaryChipView BuildPublicServicesPressureSummary(ShellSummarySnapshot summary)
+        {
+            var spine = summary?.PublicInfrastructureSummary?.EconomySpine;
+            if (spine == null)
+            {
+                return new HomePressureSummaryChipView
+                {
+                    State = "Waiting",
+                    Note = "Public-service pressure has not surfaced yet."
+                };
+            }
+
+            return new HomePressureSummaryChipView
+            {
+                State = NormalizeHomePressureState(FirstNonBlank(spine.State, summary.PublicInfrastructureSummary?.RecommendedMode), fallback: "Watch"),
+                Note = Truncate(CleanPlayerFacingText(FirstNonBlank(
+                    spine.RecommendedActionLabel,
+                    spine.RecommendedService,
+                    spine.WhyThisMatters,
+                    spine.Summary,
+                    "Review public services before pressure compounds.")), 118)
+            };
+        }
+
+        private HomePressureSummaryChipView BuildRegionalSupportPressureSummary(ShellSummarySnapshot summary)
+        {
+            var bridge = summary?.CityMudWorldConsequenceBridge;
+            if (bridge == null)
+            {
+                return new HomePressureSummaryChipView
+                {
+                    State = "Waiting",
+                    Note = "Regional support pressure has not surfaced yet."
+                };
+            }
+
+            return new HomePressureSummaryChipView
+            {
+                State = NormalizeHomePressureState(FirstNonBlank(bridge.State, bridge.BridgeBand, bridge.RecommendedPosture, bridge.RecommendedFocus), fallback: "Watch"),
+                Note = Truncate(CleanPlayerFacingText(FirstNonBlank(
+                    bridge.RecommendedActionLabel,
+                    bridge.WhyThisMatters,
+                    bridge.Summary,
+                    "Use regional support selectively while pressure is active.")), 118)
+            };
+        }
+
+        private HomePressureSummaryChipView BuildRecoveryPressureSummary(ShellSummarySnapshot summary)
+        {
+            var board = summary?.CityContractRecoveryBoard;
+            if (board == null)
+            {
+                return new HomePressureSummaryChipView
+                {
+                    State = "Waiting",
+                    Note = "Recovery opportunities have not surfaced yet."
+                };
+            }
+
+            var lead = board.Candidates?.FirstOrDefault(candidate => candidate != null);
+            var state = board.CandidateCount > 0 || lead != null
+                ? "Active"
+                : NormalizeHomePressureState(FirstNonBlank(board.State, board.RecommendedFocus), fallback: "Watch");
+
+            return new HomePressureSummaryChipView
+            {
+                State = state,
+                Note = Truncate(CleanPlayerFacingText(FirstNonBlank(
+                    lead?.Title,
+                    board.RecommendedCityDeskAction,
+                    board.RecommendedFocus,
+                    board.Summary,
+                    "Review recovery opportunities when regional pressure is active.")), 118)
+            };
+        }
+
+        private HomePressureSummaryChipView BuildBestNextActionPressureSummary(ShellSummarySnapshot summary)
+        {
+            var action = BuildHomeRecommendedAction(summary);
+            return new HomePressureSummaryChipView
+            {
+                State = action.HasPressureDetails ? "Ready" : "Review",
+                Note = Truncate($"Next desk: {BuildDeskNoun(action.TargetScreen, summary)} — {CleanPlayerFacingText(FirstNonBlank(action.Headline, action.PrimaryButtonLabel, "review live guidance"))}", 118)
+            };
+        }
+
+        private static string NormalizeHomePressureState(string value, string fallback = "Watch")
+        {
+            var text = (value ?? string.Empty).Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return fallback;
+            }
+
+            if (ContainsAny(text, "critical", "crisis", "overloaded", "severe", "100/100")) return "Critical";
+            if (ContainsAny(text, "restricted", "blocked", "choking", "hostile")) return "Restricted";
+            if (ContainsAny(text, "strained", "strain", "high", "hot", "pressure")) return "Strained";
+            if (ContainsAny(text, "ready", "active", "open", "cooling", "engaged")) return "Active";
+            if (ContainsAny(text, "stable", "trusted", "low", "clear", "none")) return "Stable";
+            return HumanizeToken(text);
         }
 
         private void RenderHomeRecommendedActions(ShellSummarySnapshot summary, bool isSummaryLoaded)
@@ -3861,6 +4020,12 @@ namespace PlanarWar.Client.UI.Screens.Summary
             return anchor.Value.AddMilliseconds(skippedTicks * cadence.Value.TotalMilliseconds);
         }
 
+
+        private sealed class HomePressureSummaryChipView
+        {
+            public string State { get; set; } = "Waiting";
+            public string Note { get; set; } = "Live pressure truth has not surfaced yet.";
+        }
 
         private sealed class HomeRecommendedActionView
         {

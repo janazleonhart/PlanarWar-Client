@@ -307,6 +307,35 @@
                     </ui:VisualElement>
                 </ui:VisualElement>
 
+                <ui:VisualElement name="home-pressure-summary-strip-card" class="summary-card summary-card--full home-pressure-summary-strip-card">
+                    <ui:VisualElement class="development-actions-head home-pressure-summary-strip__head">
+                        <ui:Label text="Pressure summary" class="eyebrow" />
+                        <ui:Label text="Readable status" class="chapter-row__badge" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="summary-grid summary-grid--glance home-pressure-summary-strip__grid">
+                        <ui:VisualElement class="summary-card glance-card home-pressure-summary-chip home-pressure-summary-chip--public">
+                            <ui:Label text="Public services" class="eyebrow" />
+                            <ui:Label name="home-pressure-summary-public-state-value" text="Waiting" class="rail-note-title home-pressure-summary-chip__state" />
+                            <ui:Label name="home-pressure-summary-public-note-value" text="Public service pressure will appear here when live server truth exposes it." class="metric-subvalue metric-subvalue--wrap home-pressure-summary-chip__note" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="summary-card glance-card home-pressure-summary-chip home-pressure-summary-chip--regional">
+                            <ui:Label text="Regional support" class="eyebrow" />
+                            <ui:Label name="home-pressure-summary-regional-state-value" text="Waiting" class="rail-note-title home-pressure-summary-chip__state" />
+                            <ui:Label name="home-pressure-summary-regional-note-value" text="Regional support pressure will appear here when live server truth exposes it." class="metric-subvalue metric-subvalue--wrap home-pressure-summary-chip__note" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="summary-card glance-card home-pressure-summary-chip home-pressure-summary-chip--recovery">
+                            <ui:Label text="Recovery opportunities" class="eyebrow" />
+                            <ui:Label name="home-pressure-summary-recovery-state-value" text="Waiting" class="rail-note-title home-pressure-summary-chip__state" />
+                            <ui:Label name="home-pressure-summary-recovery-note-value" text="Recovery pressure will appear here when live server truth exposes it." class="metric-subvalue metric-subvalue--wrap home-pressure-summary-chip__note" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="summary-card glance-card home-pressure-summary-chip home-pressure-summary-chip--action">
+                            <ui:Label text="Best next action" class="eyebrow" />
+                            <ui:Label name="home-pressure-summary-action-state-value" text="Waiting" class="rail-note-title home-pressure-summary-chip__state" />
+                            <ui:Label name="home-pressure-summary-action-note-value" text="Recommended desk guidance will appear here when live server truth exposes it." class="metric-subvalue metric-subvalue--wrap home-pressure-summary-chip__note" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
                 <ui:VisualElement name="post-founder-handoff-card" class="summary-card summary-card--full summary-card--action post-founder-handoff-card home-pressure-detail-card">
                     <ui:VisualElement class="development-actions-head">
                         <ui:Label text="Next desks" class="eyebrow" />

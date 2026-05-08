@@ -5473,6 +5473,59 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
         [Test]
+        public void Home_pressure_summary_strip_translates_complex_pressure_into_compact_player_states()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var appStylePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(appStylePath), Is.True, "AppShell.uss should be available from the Unity project root.");
+            Assert.That(File.Exists(controllerPath), Is.True, "SummaryScreenController.cs should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(appStylePath);
+            var controller = File.ReadAllText(controllerPath);
+
+            var snapshotIndex = uxml.IndexOf("home-snapshot-grid--status", StringComparison.Ordinal);
+            var recommendedIndex = uxml.IndexOf("home-recommended-actions-card", StringComparison.Ordinal);
+            var summaryStripIndex = uxml.IndexOf("home-pressure-summary-strip-card", StringComparison.Ordinal);
+            var detailsIndex = uxml.IndexOf("home-pressure-detail-card", StringComparison.Ordinal);
+
+            Assert.That(snapshotIndex, Is.GreaterThanOrEqualTo(0));
+            Assert.That(recommendedIndex, Is.GreaterThan(snapshotIndex), "Recommended actions should stay below the quick resource snapshot.");
+            Assert.That(summaryStripIndex, Is.GreaterThan(recommendedIndex), "Pressure summary should sit near the recommended action, not below the deep report stack.");
+            Assert.That(detailsIndex, Is.GreaterThan(summaryStripIndex), "Deep pressure details should remain behind the compact summary strip.");
+
+            foreach (var marker in new[]
+            {
+                "Pressure summary",
+                "Readable status",
+                "home-pressure-summary-public-state-value",
+                "home-pressure-summary-regional-state-value",
+                "home-pressure-summary-recovery-state-value",
+                "home-pressure-summary-action-state-value",
+                "Best next action"
+            })
+            {
+                Assert.That(uxml, Does.Contain(marker), $"Home pressure summary marker {marker} should stay wired.");
+            }
+
+            Assert.That(uss, Does.Contain("Home pressure summary strip v1"));
+            Assert.That(uss, Does.Contain(".home-pressure-summary-strip-card"));
+            Assert.That(uss, Does.Contain(".home-pressure-summary-chip__state"));
+
+            Assert.That(controller, Does.Contain("Unity Home Pressure Summary Strip v1"));
+            Assert.That(controller, Does.Contain("RenderHomePressureSummaryStrip"));
+            Assert.That(controller, Does.Contain("BuildPublicServicesPressureSummary"));
+            Assert.That(controller, Does.Contain("BuildRegionalSupportPressureSummary"));
+            Assert.That(controller, Does.Contain("BuildRecoveryPressureSummary"));
+            Assert.That(controller, Does.Contain("BuildBestNextActionPressureSummary"));
+            Assert.That(controller, Does.Contain("NormalizeHomePressureState"));
+            Assert.That(controller, Does.Not.Contain("Overall pressure score"), "Do not invent one fake aggregate pressure number for unrelated systems.");
+        }
+
+
+        [Test]
         public void Home_pressure_headers_translate_backend_system_names_to_player_facing_labels()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
