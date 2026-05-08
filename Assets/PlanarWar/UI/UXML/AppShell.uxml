@@ -165,7 +165,7 @@
                             <ui:VisualElement class="summary-card auth-gate-card">
                                 <ui:Label text="Existing account" class="eyebrow" />
                                 <ui:Label text="Sign in" class="rail-note-title" />
-                                <ui:Label text="Use an existing account to load live /api/me truth, then continue to City or Black Market setup if this account has no settlement yet." class="summary-value summary-value--glance" />
+                                <ui:Label text="Use an existing account to load live account summary truth, then continue to City or Black Market setup if this account has no settlement yet." class="summary-value summary-value--glance" />
 
                                 <ui:VisualElement name="auth-login-fields" class="auth-inputs auth-login-stack">
                                     <ui:TextField name="login-name-field" label="Email or handle" class="auth-field" />
@@ -180,7 +180,7 @@
                             <ui:VisualElement class="summary-card auth-gate-card">
                                 <ui:Label text="New account" class="eyebrow" />
                                 <ui:Label text="Register" class="rail-note-title" />
-                                <ui:Label text="Create an account, authenticate, then continue into the same Home setup flow. Settlement choice still comes from backend truth." class="summary-value summary-value--glance" />
+                                <ui:Label text="Create an account, authenticate, then continue into the same Home setup flow. Settlement choice still comes from server truth." class="summary-value summary-value--glance" />
 
                                 <ui:VisualElement name="auth-register-fields" class="auth-inputs auth-login-stack">
                                     <ui:TextField name="register-handle-field" label="Display name" class="auth-field" />
@@ -325,25 +325,25 @@
                 <ui:VisualElement name="early-lane-posture-card" class="summary-card summary-card--full summary-card--action early-lane-posture-card home-lane-posture-card home-pressure-detail-card">
                     <ui:VisualElement class="development-actions-head">
                         <ui:Label text="Lane posture" class="eyebrow" />
-                        <ui:Label name="early-lane-posture-badge-value" text="Waiting on backend posture" class="chapter-row__badge" />
+                        <ui:Label name="early-lane-posture-badge-value" text="Waiting on server posture" class="chapter-row__badge" />
                     </ui:VisualElement>
-                    <ui:Label name="early-lane-posture-headline-value" text="Lane posture waiting on live backend truth." class="rail-note-title home-lane-posture__headline" />
-                    <ui:Label name="early-lane-posture-summary-value" text="This card consumes /api/me earlyLanePosture and actionPath when the backend provides it." class="summary-value summary-value--glance home-lane-posture__summary" />
+                    <ui:Label name="early-lane-posture-headline-value" text="Lane posture waiting on live server truth." class="rail-note-title home-lane-posture__headline" />
+                    <ui:Label name="early-lane-posture-summary-value" text="This card shows live lane posture and action-path guidance when the server provides it." class="summary-value summary-value--glance home-lane-posture__summary" />
 
                     <ui:VisualElement class="summary-grid summary-grid--glance early-lane-posture-grid home-lane-posture__grid">
                         <ui:VisualElement class="summary-card glance-card">
                             <ui:Label text="Recommended desk" class="eyebrow" />
                             <ui:Label name="early-lane-posture-recommended-value" text="No recommended desk surfaced." class="summary-value summary-value--glance" />
-                            <ui:Label name="early-lane-posture-reason-value" text="Reasoning will appear here when /api/me exposes early lane posture." class="metric-subvalue metric-subvalue--wrap" />
+                            <ui:Label name="early-lane-posture-reason-value" text="Reasoning will appear here when live lane posture is available." class="metric-subvalue metric-subvalue--wrap" />
                             <ui:Button name="early-lane-posture-action-button" text="Open Development" class="action-button action-button--primary" />
                         </ui:VisualElement>
 
                         <ui:VisualElement class="summary-card glance-card early-lane-action-path-card">
                             <ui:Label text="First-hour action path" class="eyebrow" />
                             <ui:Label name="early-lane-posture-action-path-title-value" text="No first-hour action path surfaced yet." class="summary-value summary-value--glance" />
-                            <ui:Label name="early-lane-posture-action-path-step-value" text="Current step will appear when /api/me.earlyLanePosture.actionPath is present." class="metric-subvalue metric-subvalue--wrap" />
-                            <ui:Label name="early-lane-posture-action-path-why-value" text="Why this matters will appear here from backend truth." class="metric-subvalue metric-subvalue--wrap" />
-                            <ui:Label name="early-lane-posture-action-path-receipt-value" text="Next receipt family: not surfaced yet." class="metric-subvalue metric-subvalue--wrap" />
+                            <ui:Label name="early-lane-posture-action-path-step-value" text="Current step will appear when live action-path guidance is present." class="metric-subvalue metric-subvalue--wrap" />
+                            <ui:Label name="early-lane-posture-action-path-why-value" text="Why this matters will appear here from server truth." class="metric-subvalue metric-subvalue--wrap" />
+                            <ui:Label name="early-lane-posture-action-path-receipt-value" text="Next report type: not surfaced yet." class="metric-subvalue metric-subvalue--wrap" />
                         </ui:VisualElement>
 
                         <ui:VisualElement class="summary-card glance-card">
@@ -365,17 +365,17 @@
 
                 <ui:VisualElement name="mother-brain-action-path-card" class="summary-card summary-card--full summary-card--action early-lane-posture-card home-pressure-detail-card">
                     <ui:VisualElement class="development-actions-head">
-                        <ui:Label text="Mother Brain pressure path" class="eyebrow" />
-                        <ui:Label name="mother-brain-action-path-badge-value" text="Waiting on Mother Brain pressure" class="chapter-row__badge" />
+                        <ui:Label text="Urgent pressure" class="eyebrow" />
+                        <ui:Label name="mother-brain-action-path-badge-value" text="Waiting on urgent pressure" class="chapter-row__badge" />
                     </ui:VisualElement>
-                    <ui:Label name="mother-brain-action-path-headline-value" text="Mother Brain pressure action path waiting on backend truth." class="rail-note-title" />
-                    <ui:Label name="mother-brain-action-path-detail-value" text="This card consumes /api/me motherBrainPressureStatus.actionPath when the backend provides it." class="summary-value summary-value--glance" />
+                    <ui:Label name="mother-brain-action-path-headline-value" text="Urgent pressure waiting on live server truth." class="rail-note-title" />
+                    <ui:Label name="mother-brain-action-path-detail-value" text="This card shows live pressure guidance when the server provides it." class="summary-value summary-value--glance" />
 
                     <ui:VisualElement class="summary-grid summary-grid--glance early-lane-posture-grid">
                         <ui:VisualElement class="summary-card glance-card">
                             <ui:Label text="Recommended response" class="eyebrow" />
-                            <ui:Label name="mother-brain-action-path-recommended-value" text="No Mother Brain response action surfaced." class="summary-value summary-value--glance" />
-                            <ui:Label name="mother-brain-action-path-reason-value" text="Reasoning will appear here from live Mother Brain pressure status." class="metric-subvalue metric-subvalue--wrap" />
+                            <ui:Label name="mother-brain-action-path-recommended-value" text="No pressure response surfaced yet." class="summary-value summary-value--glance" />
+                            <ui:Label name="mother-brain-action-path-reason-value" text="Reasoning will appear here from live pressure status." class="metric-subvalue metric-subvalue--wrap" />
                             <ui:Button name="mother-brain-action-path-button" text="Open Operations" class="action-button action-button--primary" />
                         </ui:VisualElement>
 
@@ -386,11 +386,11 @@
 
                         <ui:VisualElement class="summary-card glance-card">
                             <ui:Label text="Proof signals" class="eyebrow" />
-                            <ui:Label name="mother-brain-action-path-proof-value" text="No Mother Brain proof signals surfaced yet." class="summary-value summary-value--glance" />
+                            <ui:Label name="mother-brain-action-path-proof-value" text="No pressure proof signals surfaced yet." class="summary-value summary-value--glance" />
                         </ui:VisualElement>
 
                         <ui:VisualElement class="summary-card glance-card">
-                            <ui:Label text="Report follow-through + blocker recovery + response history" class="eyebrow" />
+                            <ui:Label text="Recent pressure reports" class="eyebrow" />
                             <ui:Label name="mother-brain-action-path-receipt-value" text="Report, blocker-recovery, and response history truth is waiting on server state." class="summary-value summary-value--glance" />
                         </ui:VisualElement>
                     </ui:VisualElement>
@@ -398,38 +398,38 @@
 
                 <ui:VisualElement name="public-infrastructure-economy-spine-card" class="summary-card summary-card--full summary-card--action early-lane-posture-card home-pressure-detail-card">
                     <ui:VisualElement class="development-actions-head">
-                        <ui:Label text="Public infrastructure economy spine" class="eyebrow" />
-                        <ui:Label name="public-infrastructure-economy-spine-badge-value" text="Waiting on public spine truth" class="chapter-row__badge" />
+                        <ui:Label text="Public services" class="eyebrow" />
+                        <ui:Label name="public-infrastructure-economy-spine-badge-value" text="Waiting on public service truth" class="chapter-row__badge" />
                     </ui:VisualElement>
-                    <ui:Label name="public-infrastructure-economy-spine-headline-value" text="Public infrastructure economy spine waiting on backend truth." class="rail-note-title" />
-                    <ui:Label name="public-infrastructure-economy-spine-summary-value" text="This card consumes /api/me publicInfrastructureSummary.economySpine when the backend provides it." class="summary-value summary-value--glance" />
+                    <ui:Label name="public-infrastructure-economy-spine-headline-value" text="Public services waiting on live server truth." class="rail-note-title" />
+                    <ui:Label name="public-infrastructure-economy-spine-summary-value" text="This card explains whether public services are stable, strained, or overloaded when the server provides that truth." class="summary-value summary-value--glance" />
 
                     <ui:VisualElement class="summary-grid summary-grid--glance early-lane-posture-grid">
                         <ui:VisualElement class="summary-card glance-card">
-                            <ui:Label text="Recommended service posture" class="eyebrow" />
-                            <ui:Label name="public-infrastructure-economy-spine-recommended-value" text="No public infrastructure recommendation surfaced." class="summary-value summary-value--glance" />
-                            <ui:Label name="public-infrastructure-economy-spine-reason-value" text="Reasoning will appear here from live public infrastructure economy-spine truth." class="metric-subvalue metric-subvalue--wrap" />
+                            <ui:Label text="Best next step" class="eyebrow" />
+                            <ui:Label name="public-infrastructure-economy-spine-recommended-value" text="No public-service recommendation surfaced yet." class="summary-value summary-value--glance" />
+                            <ui:Label name="public-infrastructure-economy-spine-reason-value" text="Reasoning will appear here from live public-service truth." class="metric-subvalue metric-subvalue--wrap" />
                             <ui:Button name="public-infrastructure-economy-spine-button" text="Open Development" class="action-button action-button--primary" />
                         </ui:VisualElement>
 
                         <ui:VisualElement class="summary-card glance-card">
-                            <ui:Label text="Public backbone signals" class="eyebrow" />
+                            <ui:Label text="Service signals" class="eyebrow" />
                             <ui:Label name="public-infrastructure-economy-spine-public-signals-value" text="No public-backbone signals surfaced yet." class="summary-value summary-value--glance" />
                         </ui:VisualElement>
 
                         <ui:VisualElement class="summary-card glance-card">
-                            <ui:Label text="City economy signals" class="eyebrow" />
+                            <ui:Label text="City support signals" class="eyebrow" />
                             <ui:Label name="public-infrastructure-economy-spine-city-signals-value" text="No city-economy signals surfaced yet." class="summary-value summary-value--glance" />
                         </ui:VisualElement>
 
                         <ui:VisualElement class="summary-card glance-card">
-                            <ui:Label text="Shadow-risk signals" class="eyebrow" />
+                            <ui:Label text="Shadow risk" class="eyebrow" />
                             <ui:Label name="public-infrastructure-economy-spine-shadow-signals-value" text="No shadow-risk signals surfaced yet." class="summary-value summary-value--glance" />
                         </ui:VisualElement>
 
                         <ui:VisualElement class="summary-card glance-card">
-                            <ui:Label text="Public service receipt follow-through" class="eyebrow" />
-                            <ui:Label name="public-infrastructure-economy-spine-receipt-value" text="Public infrastructure receipt follow-through is waiting on backend state." class="summary-value summary-value--glance" />
+                            <ui:Label text="Recent service reports" class="eyebrow" />
+                            <ui:Label name="public-infrastructure-economy-spine-receipt-value" text="Recent service reports are waiting on live server state." class="summary-value summary-value--glance" />
                         </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:VisualElement>
@@ -437,43 +437,43 @@
                 
                 <ui:VisualElement name="city-mud-consequence-bridge-card" class="summary-card summary-card--full summary-card--action early-lane-posture-card home-pressure-detail-card">
                     <ui:VisualElement class="development-actions-head">
-                        <ui:Label text="City ↔ MUD world-consequence bridge" class="eyebrow" />
-                        <ui:Label name="city-mud-consequence-bridge-badge-value" text="Waiting on City ↔ MUD bridge truth" class="chapter-row__badge" />
+                        <ui:Label text="Regional support" class="eyebrow" />
+                        <ui:Label name="city-mud-consequence-bridge-badge-value" text="Waiting on regional support truth" class="chapter-row__badge" />
                     </ui:VisualElement>
-                    <ui:Label name="city-mud-consequence-bridge-headline-value" text="City-to-MUD consequence bridge waiting on backend truth." class="rail-note-title" />
-                    <ui:Label name="city-mud-consequence-bridge-summary-value" text="This card consumes /api/me cityMudWorldConsequenceBridge when the backend provides it." class="summary-value summary-value--glance" />
+                    <ui:Label name="city-mud-consequence-bridge-headline-value" text="Regional support waiting on live server truth." class="rail-note-title" />
+                    <ui:Label name="city-mud-consequence-bridge-summary-value" text="This card explains how city support is affecting nearby MUD-facing play when the server provides that truth." class="summary-value summary-value--glance" />
 
                     <ui:VisualElement class="summary-grid summary-grid--glance early-lane-posture-grid">
                         <ui:VisualElement class="summary-card glance-card">
-                            <ui:Label text="Recommended bridge posture" class="eyebrow" />
-                            <ui:Label name="city-mud-consequence-bridge-recommended-value" text="No City ↔ MUD recommendation surfaced." class="summary-value summary-value--glance" />
-                            <ui:Label name="city-mud-consequence-bridge-reason-value" text="Reasoning will appear here from live city-to-MUD consequence bridge truth." class="metric-subvalue metric-subvalue--wrap" />
+                            <ui:Label text="Best next step" class="eyebrow" />
+                            <ui:Label name="city-mud-consequence-bridge-recommended-value" text="No regional support recommendation surfaced yet." class="summary-value summary-value--glance" />
+                            <ui:Label name="city-mud-consequence-bridge-reason-value" text="Reasoning will appear here from live regional-support truth." class="metric-subvalue metric-subvalue--wrap" />
                             <ui:Button name="city-mud-consequence-bridge-button" text="Open Development" class="action-button action-button--primary" />
                         </ui:VisualElement>
 
                         <ui:VisualElement class="summary-card glance-card">
-                            <ui:Label text="City support bridge signals" class="eyebrow" />
+                            <ui:Label text="City support" class="eyebrow" />
                             <ui:Label name="city-mud-consequence-bridge-bridge-signals-value" text="No city-support bridge signals surfaced yet." class="summary-value summary-value--glance" />
                         </ui:VisualElement>
 
                         <ui:VisualElement class="summary-card glance-card">
-                            <ui:Label text="MUD progression signals" class="eyebrow" />
+                            <ui:Label text="MUD-side signals" class="eyebrow" />
                             <ui:Label name="city-mud-consequence-bridge-progression-signals-value" text="No MUD progression signals surfaced yet." class="summary-value summary-value--glance" />
                         </ui:VisualElement>
 
                         <ui:VisualElement class="summary-card glance-card">
-                            <ui:Label text="Regional life signals" class="eyebrow" />
+                            <ui:Label text="Regional pressure" class="eyebrow" />
                             <ui:Label name="city-mud-consequence-bridge-regional-signals-value" text="No regional life signals surfaced yet." class="summary-value summary-value--glance" />
                         </ui:VisualElement>
 
                         <ui:VisualElement class="summary-card glance-card">
-                            <ui:Label text="Receipt and consequence signals" class="eyebrow" />
-                            <ui:Label name="city-mud-consequence-bridge-receipt-signals-value" text="City ↔ MUD receipt signals are waiting on backend state." class="summary-value summary-value--glance" />
+                            <ui:Label text="Recent reports" class="eyebrow" />
+                            <ui:Label name="city-mud-consequence-bridge-receipt-signals-value" text="Regional support reports are waiting on live server state." class="summary-value summary-value--glance" />
                         </ui:VisualElement>
 
                         <ui:VisualElement class="summary-card glance-card">
-                            <ui:Label text="Bridge follow-through" class="eyebrow" />
-                            <ui:Label name="city-mud-consequence-bridge-follow-through-value" text="City ↔ MUD bridge follow-through is waiting on backend state." class="summary-value summary-value--glance" />
+                            <ui:Label text="Support follow-through" class="eyebrow" />
+                            <ui:Label name="city-mud-consequence-bridge-follow-through-value" text="Regional support follow-through is waiting on live server state." class="summary-value summary-value--glance" />
                         </ui:VisualElement>
 
                         <ui:VisualElement class="summary-card glance-card">
@@ -486,17 +486,17 @@
 
                 <ui:VisualElement name="city-contract-recovery-board-card" class="summary-card summary-card--full summary-card--action early-lane-posture-card home-pressure-detail-card">
                     <ui:VisualElement class="development-actions-head">
-                        <ui:Label text="Regional recovery board" class="eyebrow" />
-                        <ui:Label name="city-contract-recovery-board-badge-value" text="Waiting on city contract recovery truth" class="chapter-row__badge" />
+                        <ui:Label text="Recovery opportunities" class="eyebrow" />
+                        <ui:Label name="city-contract-recovery-board-badge-value" text="Waiting on recovery opportunity truth" class="chapter-row__badge" />
                     </ui:VisualElement>
-                    <ui:Label name="city-contract-recovery-board-headline-value" text="Regional recovery board waiting on backend truth." class="rail-note-title" />
-                    <ui:Label name="city-contract-recovery-board-summary-value" text="This card consumes /api/me.cityContractRecoveryBoard when the backend provides it." class="summary-value summary-value--glance" />
+                    <ui:Label name="city-contract-recovery-board-headline-value" text="Recovery opportunities waiting on live server truth." class="rail-note-title" />
+                    <ui:Label name="city-contract-recovery-board-summary-value" text="This card summarizes recovery opportunities when the server provides them." class="summary-value summary-value--glance" />
 
                     <ui:VisualElement class="summary-grid summary-grid--glance early-lane-posture-grid">
                         <ui:VisualElement class="summary-card glance-card">
-                            <ui:Label text="Recommended desk action" class="eyebrow" />
+                            <ui:Label text="Best next step" class="eyebrow" />
                             <ui:Label name="city-contract-recovery-board-recommended-value" text="No regional recovery recommendation surfaced." class="summary-value summary-value--glance" />
-                            <ui:Label name="city-contract-recovery-board-reason-value" text="Read-only city contract recovery guidance will appear here from live /api/me truth." class="metric-subvalue metric-subvalue--wrap" />
+                            <ui:Label name="city-contract-recovery-board-reason-value" text="Read-only recovery guidance will appear here from live server truth." class="metric-subvalue metric-subvalue--wrap" />
                             <ui:Button name="city-contract-recovery-board-button" text="Open Development" class="action-button action-button--primary" />
                         </ui:VisualElement>
 
@@ -511,13 +511,13 @@
                         </ui:VisualElement>
 
                         <ui:VisualElement class="summary-card glance-card">
-                            <ui:Label text="Runtime requirement" class="eyebrow" />
-                            <ui:Label name="city-contract-recovery-board-resources-value" text="Runtime resource requirement: none surfaced." class="summary-value summary-value--glance" />
+                            <ui:Label text="Resource requirement" class="eyebrow" />
+                            <ui:Label name="city-contract-recovery-board-resources-value" text="Resource requirement: none surfaced yet." class="summary-value summary-value--glance" />
                         </ui:VisualElement>
 
                         <ui:VisualElement class="summary-card glance-card">
-                            <ui:Label text="Receipt and latest truth" class="eyebrow" />
-                            <ui:Label name="city-contract-recovery-board-receipt-value" text="No recovery receipt or consequence summary surfaced yet." class="summary-value summary-value--glance" />
+                            <ui:Label text="Recent recovery reports" class="eyebrow" />
+                            <ui:Label name="city-contract-recovery-board-receipt-value" text="No recovery report or consequence summary surfaced yet." class="summary-value summary-value--glance" />
                         </ui:VisualElement>
 
                         <ui:VisualElement class="summary-card glance-card">
@@ -533,7 +533,7 @@
                         <ui:Label text="Live bootstrap" class="chapter-row__badge" />
                     </ui:VisualElement>
                     <ui:Label name="founder-setup-headline-value" text="Choose how this account enters the world." class="rail-note-title" />
-                    <ui:Label name="founder-setup-copy-value" text="City and Black Market setup choices appear here only when /api/me exposes real founder truth." class="summary-value summary-value--glance" />
+                    <ui:Label name="founder-setup-copy-value" text="City and Black Market setup choices appear here only when server founder truth is available." class="summary-value summary-value--glance" />
                     <ui:TextField name="founder-city-name-field" label="Settlement name" class="founder-name-field" />
                     <ui:Label name="founder-action-status-value" text="" class="metric-subvalue metric-subvalue--wrap founder-action-status" />
                     <ui:VisualElement class="button-row founder-primary-actions">
@@ -545,14 +545,14 @@
                         <ui:VisualElement class="summary-card glance-card founder-choice-card">
                             <ui:Label text="City" class="eyebrow" />
                             <ui:Label name="founder-city-choice-value" text="Public growth, buildings, production, and civic development." class="summary-value summary-value--glance" />
-                            <ui:Label name="founder-city-choice-note" text="Setup details load from backend setup truth." class="metric-subvalue metric-subvalue--wrap" />
+                            <ui:Label name="founder-city-choice-note" text="Setup details load from server setup truth." class="metric-subvalue metric-subvalue--wrap" />
                             <ui:Button name="founder-city-button" text="Found City" class="action-button action-button--primary" />
                         </ui:VisualElement>
 
                         <ui:VisualElement class="summary-card glance-card founder-choice-card">
                             <ui:Label text="Black Market" class="eyebrow" />
                             <ui:Label name="founder-market-choice-value" text="Shadow operations, contacts, covert pressure, and deniable routing." class="summary-value summary-value--glance" />
-                            <ui:Label name="founder-market-choice-note" text="Setup details load from backend setup truth." class="metric-subvalue metric-subvalue--wrap" />
+                            <ui:Label name="founder-market-choice-note" text="Setup details load from server setup truth." class="metric-subvalue metric-subvalue--wrap" />
                             <ui:Button name="founder-market-button" text="Found Black Market" class="action-button" />
                         </ui:VisualElement>
                     </ui:VisualElement>
@@ -1308,17 +1308,17 @@
                             <ui:VisualElement class="summary-card glance-card guide-card">
                                 <ui:Label text="Lane posture" class="eyebrow" />
                                 <ui:Label text="First-hour action path" class="rail-note-title" />
-                                <ui:Label text="Read the Home posture card to see the backend-recommended next desk and receipt family. This guide does not complete objectives, grant rewards, start timers, or fake tutorial progress." class="summary-value summary-value--glance" />
+                                <ui:Label text="Read the Home posture card to see the server-recommended next desk and next report type. This guide does not complete objectives, grant rewards, start timers, or fake tutorial progress." class="summary-value summary-value--glance" />
                             </ui:VisualElement>
                             <ui:VisualElement class="summary-card glance-card guide-card">
-                                <ui:Label text="Mother Brain pressure" class="eyebrow" />
-                                <ui:Label text="Pressure action path" class="rail-note-title" />
-                                <ui:Label text="Read the Mother Brain pressure path for the current pressure step, blockers, proof signals, report follow-through, and next report family. Its button only opens the recommended desk; it does not spawn events, rewards, timers, Rogue Director, TOMS, or Crucible behavior." class="summary-value summary-value--glance" />
+                                <ui:Label text="Urgent pressure" class="eyebrow" />
+                                <ui:Label text="Pressure lead" class="rail-note-title" />
+                                <ui:Label text="Read the urgent pressure card for the current step, blockers, proof signals, recent reports, and next report type. Its button only opens the recommended desk; it does not spawn events, rewards, timers, Rogue Director, TOMS, or Crucible behavior." class="summary-value summary-value--glance" />
                             </ui:VisualElement>
                             <ui:VisualElement class="summary-card glance-card guide-card">
-                                <ui:Label text="Public infrastructure" class="eyebrow" />
-                                <ui:Label text="Economy spine" class="rail-note-title" />
-                                <ui:Label text="Read the public infrastructure economy-spine card for NPC public service posture, city-economy signals, shadow-risk signals, and the next receipt family. This surface does not apply fake taxes, queue timers, rewards, protection, or exposure mechanics." class="summary-value summary-value--glance" />
+                                <ui:Label text="Public services" class="eyebrow" />
+                                <ui:Label text="Service pressure" class="rail-note-title" />
+                                <ui:Label text="Read the public services card for NPC service posture, city support signals, shadow-risk signals, and the next report type. This surface does not apply fake taxes, queue timers, rewards, protection, or exposure mechanics." class="summary-value summary-value--glance" />
                             </ui:VisualElement>
                             <ui:VisualElement class="summary-card glance-card guide-card">
                                 <ui:Label text="Development" class="eyebrow" />
@@ -1349,8 +1349,8 @@
 
                         <ui:VisualElement class="summary-card summary-card--full guide-report-card">
                             <ui:Label text="What to report" class="eyebrow" />
-                            <ui:Label text="Report blocked login, failed founding, invisible receipts, stale timers, raw JSON or object text, misleading buttons, missing collect results, incompatible gear shown as wearable, missing lane posture, wrong first-hour action path, missing or wrong Mother Brain pressure path, hidden blockers, missing proof signals, or navigation dead ends." class="summary-value summary-value--glance" />
-                            <ui:Label text="Useful screenshots include the full desk, the lane posture/action path or Mother Brain pressure path card when relevant, blockers/proof signals, the action receipt, the selected item or mission, and the connection and summary status strip." class="metric-subvalue metric-subvalue--wrap" />
+                            <ui:Label text="Report blocked login, failed founding, invisible receipts, stale timers, raw JSON or object text, misleading buttons, missing collect results, incompatible gear shown as wearable, missing lane posture, wrong first-hour action path, missing or wrong urgent pressure card, hidden blockers, missing proof signals, or navigation dead ends." class="summary-value summary-value--glance" />
+                            <ui:Label text="Useful screenshots include the full desk, the lane posture/action path or urgent pressure card when relevant, blockers/proof signals, the action receipt, the selected item or mission, and the connection and summary status strip." class="metric-subvalue metric-subvalue--wrap" />
                             <ui:VisualElement class="button-row guide-actions">
                                 <ui:Button name="guide-back-home-button" text="Back to Home / Sign in" class="action-button action-button--primary" />
                             </ui:VisualElement>

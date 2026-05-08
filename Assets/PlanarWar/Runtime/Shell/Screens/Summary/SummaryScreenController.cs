@@ -748,47 +748,47 @@ namespace PlanarWar.Client.UI.Screens.Summary
             if (publicInfrastructureEconomySpineBadge != null)
             {
                 var state = FirstNonBlank(spine.State, infrastructure.StrainBand, "watch");
-                publicInfrastructureEconomySpineBadge.text = $"Public spine • {HumanizeToken(state)}";
+                publicInfrastructureEconomySpineBadge.text = $"Public services • {HumanizeToken(state)}";
             }
 
             if (publicInfrastructureEconomySpineHeadline != null)
             {
-                publicInfrastructureEconomySpineHeadline.text = FirstNonBlank(spine.Title, "Public infrastructure economy spine");
+                publicInfrastructureEconomySpineHeadline.text = TranslateHomePressureTitle(FirstNonBlank(spine.Title, "Public services"));
             }
 
             if (publicInfrastructureEconomySpineSummary != null)
             {
-                publicInfrastructureEconomySpineSummary.text = FirstNonBlank(spine.Summary, "NPC public services remain the baseline economy spine while player-city infrastructure optimizes the lane.");
+                publicInfrastructureEconomySpineSummary.text = TranslateHomePressureTitle(FirstNonBlank(spine.Summary, "NPC public services remain the baseline while player-city infrastructure optimizes the lane."));
             }
 
             if (publicInfrastructureEconomySpineRecommended != null)
             {
-                publicInfrastructureEconomySpineRecommended.text = FirstNonBlank(spine.RecommendedActionLabel, $"Open {BuildDeskNoun(recommendedScreen, summary)}");
+                publicInfrastructureEconomySpineRecommended.text = TranslateHomePressureTitle(FirstNonBlank(spine.RecommendedActionLabel, $"Open {BuildDeskNoun(recommendedScreen, summary)}"));
             }
 
             if (publicInfrastructureEconomySpineReason != null)
             {
-                publicInfrastructureEconomySpineReason.text = FirstNonBlank(spine.WhyThisMatters, "This surface reads public-backbone and city-economy pressure only; it does not apply fake taxes, queues, protection, rewards, or service outcomes.");
+                publicInfrastructureEconomySpineReason.text = TranslateHomePressureTitle(FirstNonBlank(spine.WhyThisMatters, "This card reads public-service and city-support pressure only; it does not apply fake taxes, queues, protection, rewards, or service outcomes."));
             }
 
             if (publicInfrastructureEconomySpinePublicSignals != null)
             {
-                publicInfrastructureEconomySpinePublicSignals.text = FormatPostureList(spine.PublicBackboneSignals, "No public-backbone signals surfaced yet.");
+                publicInfrastructureEconomySpinePublicSignals.text = TranslateHomePressureTitle(FormatPostureList(spine.PublicBackboneSignals, "No public-service signals surfaced yet."));
             }
 
             if (publicInfrastructureEconomySpineCitySignals != null)
             {
-                publicInfrastructureEconomySpineCitySignals.text = FormatPostureList(spine.CityEconomySignals, "No city-economy signals surfaced yet.");
+                publicInfrastructureEconomySpineCitySignals.text = TranslateHomePressureTitle(FormatPostureList(spine.CityEconomySignals, "No city-support signals surfaced yet."));
             }
 
             if (publicInfrastructureEconomySpineShadowSignals != null)
             {
-                publicInfrastructureEconomySpineShadowSignals.text = FormatPostureList(spine.ShadowRiskSignals, "No shadow-risk signals surfaced yet.");
+                publicInfrastructureEconomySpineShadowSignals.text = TranslateHomePressureTitle(FormatPostureList(spine.ShadowRiskSignals, "No shadow-risk signals surfaced yet."));
             }
 
             if (publicInfrastructureEconomySpineReceipt != null)
             {
-                publicInfrastructureEconomySpineReceipt.text = FormatPublicInfrastructureReceipt(spine, infrastructure);
+                publicInfrastructureEconomySpineReceipt.text = TranslateHomePressureTitle(FormatPublicInfrastructureReceipt(spine, infrastructure));
             }
 
             if (publicInfrastructureEconomySpineButton != null)
@@ -939,56 +939,56 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (cityContractRecoveryBoardBadge != null)
             {
-                cityContractRecoveryBoardBadge.text = $"Recovery board • {HumanizeToken(FirstNonBlank(board.State, board.RecommendedFocus, "watch"))}";
+                cityContractRecoveryBoardBadge.text = $"Recovery opportunities • {HumanizeToken(FirstNonBlank(board.State, board.RecommendedFocus, "watch"))}";
             }
 
             if (cityContractRecoveryBoardHeadline != null)
             {
-                cityContractRecoveryBoardHeadline.text = FirstNonBlank(board.Title, "City contract recovery board");
+                cityContractRecoveryBoardHeadline.text = TranslateHomePressureTitle(FirstNonBlank(board.Title, "Recovery opportunities"));
             }
 
             if (cityContractRecoveryBoardSummary != null)
             {
-                cityContractRecoveryBoardSummary.text = FirstNonBlank(board.Summary, "Regional recovery candidates will appear here when server truth supports them.");
+                cityContractRecoveryBoardSummary.text = TranslateHomePressureTitle(FirstNonBlank(board.Summary, "Regional recovery opportunities will appear here when server truth supports them."));
             }
 
             if (cityContractRecoveryBoardRecommended != null)
             {
-                cityContractRecoveryBoardRecommended.text = FirstNonBlank(board.RecommendedCityDeskAction, ContractTruthText.BuildCityContractRecoveryBoardValue(board, "Watch regional recovery truth."));
+                cityContractRecoveryBoardRecommended.text = TranslateHomePressureTitle(FirstNonBlank(board.RecommendedCityDeskAction, ContractTruthText.BuildCityContractRecoveryBoardValue(board, "Watch regional recovery truth.")));
             }
 
             if (cityContractRecoveryBoardReason != null)
             {
-                cityContractRecoveryBoardReason.text = ContractTruthText.BuildCityContractRecoveryBoardNote(board, "This read-only board consumes existing consequence, report, and city-support truth only; it does not execute contracts or invent rewards.");
+                cityContractRecoveryBoardReason.text = TranslateHomePressureTitle(ContractTruthText.BuildCityContractRecoveryBoardNote(board, "This read-only card consumes existing consequence, report, and city-support truth only; it does not execute contracts or invent rewards."));
             }
 
             if (cityContractRecoveryBoardRegions != null)
             {
-                cityContractRecoveryBoardRegions.text = FormatCityContractRecoveryRegions(board);
+                cityContractRecoveryBoardRegions.text = TranslateHomePressureTitle(FormatCityContractRecoveryRegions(board));
             }
 
             if (cityContractRecoveryBoardCandidate != null)
             {
-                cityContractRecoveryBoardCandidate.text = lead == null
-                    ? "No candidate card is strong enough to list yet."
-                    : ContractTruthText.BuildCityContractRecoveryCandidateValue(lead, "Regional recovery candidate waiting on server summary.");
+                cityContractRecoveryBoardCandidate.text = TranslateHomePressureTitle(lead == null
+                    ? "No recovery opportunity is strong enough to list yet."
+                    : ContractTruthText.BuildCityContractRecoveryCandidateValue(lead, "Regional recovery candidate waiting on server summary."));
             }
 
             if (cityContractRecoveryBoardResources != null)
             {
-                cityContractRecoveryBoardResources.text = lead == null
-                    ? "Runtime resource requirement: none surfaced."
-                    : ContractTruthText.BuildCityContractRecoveryResourcesValue(lead.RequiredResources, "Runtime resource requirement: advisory only.");
+                cityContractRecoveryBoardResources.text = TranslateHomePressureTitle(lead == null
+                    ? "Resource requirement: none surfaced yet."
+                    : ContractTruthText.BuildCityContractRecoveryResourcesValue(lead.RequiredResources, "Resource requirement: advisory only."));
             }
 
             if (cityContractRecoveryBoardReceipt != null)
             {
-                cityContractRecoveryBoardReceipt.text = FormatCityContractRecoveryReceipt(board, lead);
+                cityContractRecoveryBoardReceipt.text = TranslateHomePressureTitle(FormatCityContractRecoveryReceipt(board, lead));
             }
 
             if (cityContractRecoveryBoardGuardrails != null)
             {
-                cityContractRecoveryBoardGuardrails.text = FormatPostureList(board.Guardrails, "Read-only board: no fake rewards, item grants, levels, taxes, queue timers, protection, exposure, Rogue Director, TOMS, Crucible, or autonomous Mother Brain behavior.");
+                cityContractRecoveryBoardGuardrails.text = TranslateHomePressureTitle(FormatPostureList(board.Guardrails, "Read-only card: no fake rewards, item grants, levels, taxes, queue timers, protection, exposure, Rogue Director, TOMS, Crucible, or autonomous Mother Brain behavior."));
             }
 
             if (cityContractRecoveryBoardButton != null)
@@ -1068,57 +1068,57 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (cityMudConsequenceBridgeBadge != null)
             {
-                cityMudConsequenceBridgeBadge.text = $"City ↔ MUD • {HumanizeToken(FirstNonBlank(bridge.State, bridge.RecommendedFocus, "watch"))}";
+                cityMudConsequenceBridgeBadge.text = $"Regional support • {HumanizeToken(FirstNonBlank(bridge.State, bridge.RecommendedFocus, "watch"))}";
             }
 
             if (cityMudConsequenceBridgeHeadline != null)
             {
-                cityMudConsequenceBridgeHeadline.text = FirstNonBlank(bridge.Title, "City-to-MUD consequence bridge");
+                cityMudConsequenceBridgeHeadline.text = TranslateHomePressureTitle(FirstNonBlank(bridge.Title, "Regional support"));
             }
 
             if (cityMudConsequenceBridgeSummary != null)
             {
-                cityMudConsequenceBridgeSummary.text = FirstNonBlank(bridge.Summary, "City support and world-consequence truth will appear here when the live summary exposes the bridge.");
+                cityMudConsequenceBridgeSummary.text = TranslateHomePressureTitle(FirstNonBlank(bridge.Summary, "City support and regional consequence truth will appear here when the live summary exposes it."));
             }
 
             if (cityMudConsequenceBridgeRecommended != null)
             {
-                cityMudConsequenceBridgeRecommended.text = FirstNonBlank(bridge.RecommendedActionLabel, $"Open {BuildDeskNoun(recommendedScreen, summary)}");
+                cityMudConsequenceBridgeRecommended.text = TranslateHomePressureTitle(FirstNonBlank(bridge.RecommendedActionLabel, $"Open {BuildDeskNoun(recommendedScreen, summary)}"));
             }
 
             if (cityMudConsequenceBridgeReason != null)
             {
-                cityMudConsequenceBridgeReason.text = FirstNonBlank(bridge.WhyThisMatters, "This bridge reads city support, public backbone, regional consequence, and report truth only; it does not grant items, fake progression, taxes, queues, or mandatory city gates.");
+                cityMudConsequenceBridgeReason.text = TranslateHomePressureTitle(FirstNonBlank(bridge.WhyThisMatters, "This card reads city support, public services, regional consequence, and report truth only; it does not grant items, fake progression, taxes, queues, or mandatory city gates."));
             }
 
             if (cityMudConsequenceBridgeBridgeSignals != null)
             {
-                cityMudConsequenceBridgeBridgeSignals.text = FormatCityMudBridgeSignals(bridge);
+                cityMudConsequenceBridgeBridgeSignals.text = TranslateHomePressureTitle(FormatCityMudBridgeSignals(bridge));
             }
 
             if (cityMudConsequenceBridgeProgressionSignals != null)
             {
-                cityMudConsequenceBridgeProgressionSignals.text = FormatPostureList(bridge.MudProgressionSignals, "No MUD progression signals surfaced yet.");
+                cityMudConsequenceBridgeProgressionSignals.text = TranslateHomePressureTitle(FormatPostureList(bridge.MudProgressionSignals, "No MUD-side signals surfaced yet."));
             }
 
             if (cityMudConsequenceBridgeRegionalSignals != null)
             {
-                cityMudConsequenceBridgeRegionalSignals.text = FormatRegionalLifeSignals(bridge);
+                cityMudConsequenceBridgeRegionalSignals.text = TranslateHomePressureTitle(FormatRegionalLifeSignals(bridge));
             }
 
             if (cityMudConsequenceBridgeReceiptSignals != null)
             {
-                cityMudConsequenceBridgeReceiptSignals.text = FormatCityMudBridgeReceiptSignals(bridge);
+                cityMudConsequenceBridgeReceiptSignals.text = TranslateHomePressureTitle(FormatCityMudBridgeReceiptSignals(bridge));
             }
 
             if (cityMudConsequenceBridgeFollowThrough != null)
             {
-                cityMudConsequenceBridgeFollowThrough.text = FormatCityMudBridgeFollowThrough(bridge);
+                cityMudConsequenceBridgeFollowThrough.text = TranslateHomePressureTitle(FormatCityMudBridgeFollowThrough(bridge));
             }
 
             if (cityMudConsequenceBridgeGuardrails != null)
             {
-                cityMudConsequenceBridgeGuardrails.text = FormatPostureList(bridge.Guardrails, "Guardrails: no fake MUD progression, rewards, taxes, queue timers, or mandatory player-city gates.");
+                cityMudConsequenceBridgeGuardrails.text = TranslateHomePressureTitle(FormatPostureList(bridge.Guardrails, "Guardrails: no fake MUD progression, rewards, taxes, queue timers, or mandatory player-city gates."));
             }
 
             if (cityMudConsequenceBridgeButton != null)
@@ -1209,7 +1209,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (lines.Count == 0)
             {
-                return "No City ↔ MUD follow-through reports surfaced yet.";
+                return "No regional-support reports surfaced yet.";
             }
 
             return string.Join("\n", lines.Where(line => !string.IsNullOrWhiteSpace(line)));
@@ -1220,13 +1220,13 @@ namespace PlanarWar.Client.UI.Screens.Summary
             var followThrough = bridge?.FollowThrough;
             if (followThrough == null)
             {
-                return "City ↔ MUD bridge follow-through is waiting on live server state.";
+                return "Regional support follow-through is waiting on live server state.";
             }
 
             var lines = new List<string>
             {
                 $"Follow-through state: {HumanizeToken(followThrough.State)}.",
-                FirstNonBlank(followThrough.Title, "City ↔ MUD bridge follow-through"),
+                FirstNonBlank(followThrough.Title, "Regional support follow-through"),
                 FirstNonBlank(followThrough.Summary, string.Empty),
             };
 
@@ -1348,27 +1348,27 @@ namespace PlanarWar.Client.UI.Screens.Summary
             if (motherBrainActionPathBadge != null)
             {
                 var severity = FirstNonBlank(pressure.Severity, "watch");
-                motherBrainActionPathBadge.text = $"Mother Brain • {HumanizeToken(severity)}";
+                motherBrainActionPathBadge.text = $"Urgent pressure • {HumanizeToken(severity)}";
             }
 
             if (motherBrainActionPathHeadline != null)
             {
-                motherBrainActionPathHeadline.text = FirstNonBlank(actionPath.Title, pressure.Headline, "Mother Brain pressure action path");
+                motherBrainActionPathHeadline.text = TranslateHomePressureTitle(FirstNonBlank(actionPath.Title, pressure.Headline, "Urgent pressure"));
             }
 
             if (motherBrainActionPathDetail != null)
             {
-                motherBrainActionPathDetail.text = FirstNonBlank(actionPath.CurrentStep, pressure.Detail, "Mother Brain has not surfaced a current step yet.");
+                motherBrainActionPathDetail.text = TranslateHomePressureTitle(FirstNonBlank(actionPath.CurrentStep, pressure.Detail, "No urgent pressure step surfaced yet."));
             }
 
             if (motherBrainActionPathRecommended != null)
             {
-                motherBrainActionPathRecommended.text = FirstNonBlank(actionPath.RecommendedActionLabel, pressure.RecommendedAction, BuildPostureButtonLabel(recommendedScreen, summary));
+                motherBrainActionPathRecommended.text = TranslateHomePressureTitle(FirstNonBlank(actionPath.RecommendedActionLabel, pressure.RecommendedAction, BuildPostureButtonLabel(recommendedScreen, summary)));
             }
 
             if (motherBrainActionPathReason != null)
             {
-                motherBrainActionPathReason.text = FirstNonBlank(actionPath.WhyThisMatters, pressure.RecommendedAction, "This path is derived from live Mother Brain pressure status; it does not spawn events or complete objectives.");
+                motherBrainActionPathReason.text = TranslateHomePressureTitle(FirstNonBlank(actionPath.WhyThisMatters, pressure.RecommendedAction, "This pressure lead is derived from live server pressure status; it does not spawn events or complete objectives."));
             }
 
             if (motherBrainActionPathBlockers != null)
@@ -1376,17 +1376,17 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 var blockers = actionPath.Blockers != null && actionPath.Blockers.Count > 0
                     ? actionPath.Blockers
                     : pressure.IncidentBlockedBy;
-                motherBrainActionPathBlockers.text = FormatPostureList(blockers, pressure.IncidentReady ? "No follow-through blockers surfaced." : "No explicit blockers surfaced yet.");
+                motherBrainActionPathBlockers.text = TranslateHomePressureTitle(FormatPostureList(blockers, pressure.IncidentReady ? "No follow-through blockers surfaced." : "No explicit blockers surfaced yet."));
             }
 
             if (motherBrainActionPathProof != null)
             {
-                motherBrainActionPathProof.text = FormatPostureList(actionPath.LiveProofSignals, "No Mother Brain proof signals surfaced yet.");
+                motherBrainActionPathProof.text = TranslateHomePressureTitle(FormatPostureList(actionPath.LiveProofSignals, "No pressure proof signals surfaced yet."));
             }
 
             if (motherBrainActionPathReceipt != null)
             {
-                motherBrainActionPathReceipt.text = FormatMotherBrainReceiptFollowThrough(actionPath);
+                motherBrainActionPathReceipt.text = TranslateHomePressureTitle(FormatMotherBrainReceiptFollowThrough(actionPath));
             }
 
             if (motherBrainActionPathButton != null)
@@ -1414,53 +1414,53 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (motherBrainActionPathHeadline != null)
             {
-                motherBrainActionPathHeadline.text = FirstNonBlank(
+                motherBrainActionPathHeadline.text = TranslateHomePressureTitle(FirstNonBlank(
                     surface.QuickSessionSummary?.Headline,
                     surface.AttentionBadge?.Label,
                     surface.Title,
-                    "Pressure summary");
+                    "Pressure summary"));
             }
 
             if (motherBrainActionPathDetail != null)
             {
-                motherBrainActionPathDetail.text = FirstNonBlank(
+                motherBrainActionPathDetail.text = TranslateHomePressureTitle(FirstNonBlank(
                     surface.QuickSessionSummary?.Body,
                     surface.AttentionBadge?.Summary,
                     surface.Summary,
-                    "Client-safe pressure surface is present, but no summary copy was provided.");
+                    "Client-safe pressure surface is present, but no summary copy was provided."));
             }
 
             if (motherBrainActionPathRecommended != null)
             {
-                motherBrainActionPathRecommended.text = FirstNonBlank(
+                motherBrainActionPathRecommended.text = TranslateHomePressureTitle(FirstNonBlank(
                     primaryActionCard?.Label,
                     surface.NavigationIntent?.Label,
                     surface.CtaLabel,
-                    BuildPostureButtonLabel(recommendedScreen, summary));
+                    BuildPostureButtonLabel(recommendedScreen, summary)));
             }
 
             if (motherBrainActionPathReason != null)
             {
-                motherBrainActionPathReason.text = FirstNonBlank(
+                motherBrainActionPathReason.text = TranslateHomePressureTitle(FirstNonBlank(
                     primaryActionCard?.Summary,
                     surface.NavigationIntent?.Reason,
                     surface.WhyNow,
-                    "This card consumes the client pressure summary only; it does not execute missions, mutate state, create rewards, or start timers.");
+                    "This card consumes the client pressure summary only; it does not execute missions, mutate state, create rewards, or start timers."));
             }
 
             if (motherBrainActionPathBlockers != null)
             {
-                motherBrainActionPathBlockers.text = FormatClientPressureContract(surface);
+                motherBrainActionPathBlockers.text = TranslateHomePressureTitle(FormatClientPressureContract(surface));
             }
 
             if (motherBrainActionPathProof != null)
             {
-                motherBrainActionPathProof.text = FormatClientPressureProgress(surface);
+                motherBrainActionPathProof.text = TranslateHomePressureTitle(FormatClientPressureProgress(surface));
             }
 
             if (motherBrainActionPathReceipt != null)
             {
-                motherBrainActionPathReceipt.text = FormatClientPressureMissionLead(surface);
+                motherBrainActionPathReceipt.text = TranslateHomePressureTitle(FormatClientPressureMissionLead(surface));
             }
 
             if (motherBrainActionPathButton != null)
@@ -1614,7 +1614,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
         private static string BuildClientPressureBadge(ClientPressureSurfaceSnapshot surface)
         {
-            var badge = FirstNonBlank(surface?.AttentionBadge?.Label, "Client pressure");
+            var badge = TranslateHomePressureTitle(FirstNonBlank(surface?.AttentionBadge?.Label, "Pressure alert"));
             var state = FirstNonBlank(surface?.State, surface?.Severity, surface?.AttentionBadge?.Tone, "watch");
             return $"{badge} • {HumanizeToken(state)}";
         }
@@ -1884,6 +1884,51 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             var suffix = bits.Count > 0 ? $" ({string.Join(" • ", bits)})" : string.Empty;
             return $"• {CleanPlayerFacingText(entry.Title)}{suffix}.";
+        }
+
+        // Unity Home Pressure Header Translation v1: translate internal pressure-card nouns before they reach Home.
+        private static string TranslateHomePressureTitle(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            return CleanPlayerFacingText(value)
+                .Replace("Public infrastructure economy spine", "Public services")
+                .Replace("Public Infrastructure Economy Spine", "Public services")
+                .Replace("Public economy spine", "Public services")
+                .Replace("public economy spine", "public services")
+                .Replace("public infrastructure economy spine", "public services")
+                .Replace("Public spine", "Public services")
+                .Replace("public spine", "public services")
+                .Replace("Public backbone", "Public services")
+                .Replace("public backbone", "public services")
+                .Replace("City-to-MUD consequence bridge", "Regional support")
+                .Replace("city-to-MUD consequence bridge", "regional support")
+                .Replace("City to MUD consequence bridge", "Regional support")
+                .Replace("city to MUD consequence bridge", "regional support")
+                .Replace("City-to-world support", "Regional support")
+                .Replace("City to world support", "Regional support")
+                .Replace("City ↔ MUD world-consequence bridge", "Regional support")
+                .Replace("City ↔ MUD bridge", "Regional support")
+                .Replace("City to MUD bridge", "Regional support")
+                .Replace("city-to-MUD bridge", "regional support")
+                .Replace("city to MUD bridge", "regional support")
+                .Replace("bridge truth", "support truth")
+                .Replace("bridge follow-through", "support follow-through")
+                .Replace("Bridge follow-through", "Support follow-through")
+                .Replace("City contract recovery board", "Recovery opportunities")
+                .Replace("city contract recovery board", "recovery opportunities")
+                .Replace("Recovery board", "Recovery opportunities")
+                .Replace("recovery board", "recovery opportunities")
+                .Replace("Mother Brain pressure path", "Urgent pressure")
+                .Replace("Mother Brain pressure action path", "Urgent pressure")
+                .Replace("Mother Brain pressure", "Urgent pressure")
+                .Replace("Mother Brain has", "The world has")
+                .Replace("Mother Brain says", "Pressure report says")
+                .Replace("backend", "server")
+                .Replace("Backend", "Server");
         }
 
         // Unity Player-Facing Copy Sanitization v1: keep pressure/report copy readable without hiding server truth.

@@ -70,85 +70,85 @@ Home should not be treated as the place where every action happens. If a button 
 
 ### Lane posture and first-hour action path
 
-Home also shows a **Lane posture** card after the backend provides it. This card explains how the current City or Black Market opening is behaving right now.
+Home also shows a **Lane posture** card after the server provides it. This card explains how the current City or Black Market opening is behaving right now.
 
-The **First-hour action path** section is guidance from live `/api/me.earlyLanePosture.actionPath` truth. Use it to decide which desk to test next, especially when a workshop pickup, active build, active research, or lane-specific route is already live.
+The **First-hour action path** section is guidance from live server action-path truth. Use it to decide which desk to test next, especially when a workshop pickup, active build, active research, or lane-specific route is already live.
 
-Important: the action path is not a tutorial tracker. It does not complete objectives, grant rewards, start timers, or fake progress. It only points testers toward the next live desk or receipt family that should already exist.
+Important: the action path is not a tutorial tracker. It does not complete objectives, grant rewards, start timers, or fake progress. It only points testers toward the next live desk or report type that should already exist.
 
-### Mother Brain pressure path
+### Urgent pressure
 
-Home can also show a **Mother Brain pressure path** card when live `/api/me.motherBrainPressureStatus.actionPath` truth exists. This card translates the current pressure substrate into a suggested response lane.
+Home can also show an **Urgent pressure** card when live server pressure truth exists. This card translates the current pressure substrate into a suggested response lane without asking testers to read internal system names.
 
 Use it to read:
 
-- the current Mother Brain pressure step
+- the current pressure step
 - the recommended response desk
 - why the response matters
 - blockers that currently prevent clean follow-through
 - proof signals that explain which pressure seam produced the recommendation
-- the next report family testers should expect if the response is acted on
+- the next report type testers should expect if the response is acted on
 - report follow-through state, latest report, outcome, server response, and source-region proof
 
-Report follow-through is report/ledger truth only: it explains whether a response is waiting, ready, blocked, engaged, answered, cooling, or backsliding without starting a new action. When a response is blocked, the **blocker recovery** lines explain what should clear the blocker, what desk to monitor, and which report/replay signals prove the lane is cooling or still waiting. The **response history** lines list the most recent bounded Mother Brain response reports so testers can see what happened before the current blocked, cooling, or backsliding state. The Mother Brain pressure path button is route-only. It opens the recommended desk and does not launch events, complete objectives, spawn rewards, bypass blockers, start timers, or make Mother Brain autonomous. Rogue Director, TOMS, Crucible, and full world-director behavior remain future work.
+Report follow-through is report/ledger truth only: it explains whether a response is waiting, ready, blocked, engaged, answered, cooling, or backsliding without starting a new action. When a response is blocked, the **blocker recovery** lines explain what should clear the blocker, what desk to monitor, and which report/replay signals prove the lane is cooling or still waiting. The **response history** lines list the most recent bounded Mother Brain response reports so testers can see what happened before the current blocked, cooling, or backsliding state. The urgent pressure button is route-only. It opens the recommended desk and does not launch events, complete objectives, spawn rewards, bypass blockers, start timers, or make Mother Brain autonomous. Rogue Director, TOMS, Crucible, and full world-director behavior remain future work.
 
-Report the card if it is missing when backend pressure truth is visible elsewhere, recommends the wrong desk, hides blockers, blocker recovery, or response history, displays raw object/JSON text, or implies fake Mother Brain event spawning.
+Report the card if it is missing when server pressure truth is visible elsewhere, recommends the wrong desk, hides blockers, blocker recovery, or response history, displays raw object/JSON text, or implies fake Mother Brain event spawning.
 
-### Public infrastructure economy spine
+### Public services
 
-Home can also show a **Public infrastructure economy spine** card when live `/api/me.publicInfrastructureSummary.economySpine` truth exists. This card explains how NPC public services and player-city infrastructure are behaving as the public economic backbone.
+Home can also show a **Public services** card when live server public-service truth exists. This card explains whether NPC services are stable, strained, overloaded, or being helped by player-city infrastructure.
 
 Use it to read:
 
-- whether the public spine is stable, strained, overloaded, or shadow-exposed
+- whether public services are stable, strained, overloaded, or shadow-exposed
 - the recommended mode and service to test next
 - why NPC public services remain baseline infrastructure instead of being replaced by player cities
-- public-backbone, city-economy, and shadow-risk proof signals
-- the next receipt family testers should expect from public-service usage
-- public infrastructure receipt follow-through, including latest receipt, service mode, queue/strain values, runway context, receipt count, and proof signals when the backend provides them
+- public-service, city-support, and shadow-risk proof signals
+- the next report type testers should expect from public-service usage
+- recent service reports, including latest report, service mode, queue/strain values, runway context, report count, and proof signals when the server provides them
 
-Important: this surface is guidance and receipt follow-through only. It reads existing public-infrastructure receipts; it does not apply fake taxes, queue timers, service outcomes, rewards, public-service protection, shadow exposure, Rogue Director, TOMS, Crucible, or autonomous Mother Brain behavior.
+Important: this surface is guidance and public-service report follow-through only. It reads existing public-service reports; it does not apply fake taxes, queue timers, service outcomes, rewards, public-service protection, shadow exposure, Rogue Director, TOMS, Crucible, or autonomous Mother Brain behavior.
 
-Report the card if it is missing when backend public infrastructure truth is visible elsewhere, recommends the wrong desk, shows raw object/JSON text, or implies fake public-service mechanics.
+Report the card if it is missing when server public-service truth is visible elsewhere, recommends the wrong desk, shows raw object/JSON text, or implies fake public-service mechanics.
 
 
-### City ↔ MUD world-consequence bridge
+### Regional support
 
-Home can also show a **City ↔ MUD world-consequence bridge** card when live `/api/me.cityMudWorldConsequenceBridge` truth exists. This card explains how city support, public backbone posture, regional world consequences, and receipt truth are currently touching MUD-facing play.
+Home can also show a **Regional support** card when live server support truth exists. This card explains how city support, public services, regional world consequences, and report truth are currently touching MUD-facing play.
 
 Use it to read:
 
-- whether the city-to-MUD bridge is quiet, supporting, pressured, or restricted
-- the recommended bridge focus and route-only action label
-- city support signals such as bridge band, recommended posture, support capacity, and exportable city resources
+- whether regional support is quiet, supporting, pressured, or restricted
+- the recommended support focus and route-only action label
+- city support signals such as support band, recommended posture, support capacity, and exportable city resources
 - MUD progression signals for vendor supply, mission board posture, and civic services
 - regional life signals such as affected regions, severe consequence counts, and destabilization pressure
-- receipt and consequence signals, including latest runtime response and latest world-consequence receipts when present
-- bridge follow-through, including state, clear-when guidance, watch-next signals, latest bridge/runtime/world receipt titles, and next receipt family
+- recent report and consequence signals, including latest server response and latest world-consequence reports when present
+- support follow-through, including state, clear-when guidance, watch-next signals, latest support/server/world report titles, and next report type
 - guardrails that confirm player cities support/optimize public play without becoming mandatory
 
-Important: this surface is guidance, receipt truth, and follow-through explanation only. Follow-through can say whether the bridge is waiting, ready, restricted, strained, or represented by receipts, but it does not grant items, rewards, levels, fake MUD progression, taxes, queue timers, public-service protection, shadow exposure, Rogue Director, TOMS, Crucible, autonomous Mother Brain behavior, or fabricated player identity/action truth.
+Important: this surface is guidance, report truth, and follow-through explanation only. Follow-through can say whether the bridge is waiting, ready, restricted, strained, or represented by receipts, but it does not grant items, rewards, levels, fake MUD progression, taxes, queue timers, public-service protection, shadow exposure, Rogue Director, TOMS, Crucible, autonomous Mother Brain behavior, or fabricated player identity/action truth.
 
-Report the card if it is missing when backend city-to-MUD bridge truth is visible elsewhere, recommends the wrong desk, shows raw object/JSON text, hides follow-through guidance or guardrails, or implies player cities are mandatory for baseline MUD progression.
+Report the card if it is missing when server regional-support truth is visible elsewhere, recommends the wrong desk, shows raw object/JSON text, hides follow-through guidance or guardrails, or implies player cities are mandatory for baseline MUD progression.
 
-### Regional recovery board
+### Recovery opportunities
 
-Home can also show a **Regional recovery board** card when live `/api/me.cityContractRecoveryBoard` truth exists. This card summarizes existing city-backed regional recovery candidate truth for the full-session Unity client.
+Home can also show a **Recovery opportunities** card when live server recovery truth exists. This card summarizes existing city-backed regional recovery candidates for the full-session Unity client.
 
 Use it to read:
 
-- the current recovery-board state
+- the current recovery-opportunity state
 - the recommended city desk/action
 - eligible region IDs
 - the top recovery candidate
-- runtime resource requirements when the backend already knows them
-- the next receipt family
-- the latest relevant receipt or consequence summary
+- runtime resource requirements when the server already knows them
+- the next report type
+- the latest relevant report or consequence summary
 - guardrails that keep this board read-only
 
 Important: this surface is guidance only. It does not execute contracts, start queues, grant rewards, grant items, grant levels, fake MUD progression, create taxes, create public-service protection, create shadow exposure, activate Rogue Director, activate TOMS/Crucible, make Mother Brain autonomous, or fabricate player identity/action truth.
 
-Report the card if it is missing when backend recovery-board truth is visible elsewhere, recommends the wrong desk, shows raw object/JSON text, hides resource/receipt/guardrail details, or implies player cities are mandatory for baseline MUD progression.
+Report the card if it is missing when server recovery truth is visible elsewhere, recommends the wrong desk, shows raw object/JSON text, hides resource/report/guardrail details, or implies player cities are mandatory for baseline MUD progression.
 
 ## Development desk
 
@@ -194,7 +194,7 @@ Routing labels currently mean:
 | Reserve | protected stock |
 | Exchange | trade flow |
 
-Important: these labels are intentionally thin. Do not assume live NPC attack percentages, raid-protection percentages, or disruption/exposure math exists until backend truth explicitly surfaces those mechanics.
+Important: these labels are intentionally thin. Do not assume live NPC attack percentages, raid-protection percentages, or disruption/exposure math exists until server truth explicitly surfaces those mechanics.
 
 ## Operations desk
 
@@ -232,7 +232,7 @@ Use it to:
 - equip compatible gear
 - unequip gear
 
-Gear compatibility should follow backend slot truth. Do not report “my favorite item cannot equip in the wrong slot” as a bug unless the item data says it should fit.
+Gear compatibility should follow server slot truth. Do not report “my favorite item cannot equip in the wrong slot” as a bug unless the item data says it should fit.
 
 ## Social / Comms desk
 
@@ -260,7 +260,7 @@ Please report:
 - raw JSON or object text
 - invisible action results
 - stale timers
-- missing or wrong Mother Brain pressure path, blockers, blocker recovery, response history, proof signals, report follow-through, or report family, or City ↔ MUD bridge signals or follow-through
+- missing or wrong urgent pressure card, blockers, blocker recovery, response history, proof signals, report follow-through, or report family, or regional support signals or follow-through
 - collect buttons that do not collect
 - gear that vanishes after craft/collect/equip/release
 - navigation dead ends
@@ -292,8 +292,8 @@ For a quick tester pass, run this loop:
 2. Create City or Black Market if needed.
 3. Open Home and refresh summary.
 4. Read the Lane posture and First-hour action path if they are present.
-5. Read the Mother Brain pressure path if it is present; note blockers, blocker recovery, and proof signals before clicking its route-only button.
-6. Read the City ↔ MUD bridge if it is present; note whether it frames city support as optimization rather than mandatory MUD progression.
+5. Read the urgent pressure card if it is present; note blockers, blocker recovery, and proof signals before clicking its route-only button.
+6. Read the regional support if it is present; note whether it frames city support as optimization rather than mandatory MUD progression.
 7. Use recommended route buttons only to move to suggested live desks.
 8. Open Development.
 9. Start research if available.

@@ -278,8 +278,8 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(uxml, Does.Contain("city-contract-recovery-board-receipt-value"));
             Assert.That(summary, Does.Contain("RenderCityContractRecoveryBoard"));
             Assert.That(summary, Does.Contain("CityContractRecoveryBoard"));
-            Assert.That(guide, Does.Contain("Regional recovery board"));
-            Assert.That(guide, Does.Contain("/api/me.cityContractRecoveryBoard"));
+            Assert.That(guide, Does.Contain("Recovery opportunities"));
+            Assert.That(guide, Does.Contain("live server recovery truth"));
             Assert.That(guide, Does.Contain("does not execute contracts"));
             Assert.That(guide, Does.Not.Contain("recovery reward button"));
         }
@@ -4108,10 +4108,10 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(guide, Does.Contain("Founder mode"));
             Assert.That(guide, Does.Contain("Workshop crafting"));
             Assert.That(guide, Does.Contain("Lane posture and first-hour action path"));
-            Assert.That(guide, Does.Contain("/api/me.earlyLanePosture.actionPath"));
-            Assert.That(guide, Does.Contain("Mother Brain pressure path"));
-            Assert.That(guide, Does.Contain("/api/me.motherBrainPressureStatus.actionPath"));
-            Assert.That(guide, Does.Contain("The Mother Brain pressure path button is route-only"));
+            Assert.That(guide, Does.Contain("live server action-path truth"));
+            Assert.That(guide, Does.Contain("Urgent pressure"));
+            Assert.That(guide, Does.Contain("live server pressure truth"));
+            Assert.That(guide, Does.Contain("The urgent pressure button is route-only"));
             Assert.That(guide, Does.Contain("It does not complete objectives, grant rewards, start timers, or fake progress"));
             Assert.That(guide, Does.Contain("Operations desk"));
             Assert.That(guide, Does.Contain("Heroes / Operatives desk"));
@@ -4138,11 +4138,11 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(uxml, Does.Contain("Workshop"));
             Assert.That(uxml, Does.Contain("Lane posture"));
             Assert.That(uxml, Does.Contain("First-hour action path"));
-            Assert.That(uxml, Does.Contain("Mother Brain pressure"));
-            Assert.That(uxml, Does.Contain("Pressure action path"));
+            Assert.That(uxml, Does.Contain("Urgent pressure"));
+            Assert.That(uxml, Does.Contain("Pressure lead"));
             Assert.That(uxml, Does.Contain("does not spawn events, rewards, timers, Rogue Director, TOMS, or Crucible behavior"));
             Assert.That(uxml, Does.Contain("wrong first-hour action path"));
-            Assert.That(uxml, Does.Contain("wrong Mother Brain pressure path"));
+            Assert.That(uxml, Does.Contain("wrong urgent pressure card"));
             Assert.That(uxml, Does.Not.Contain("tutorial complete"));
         }
 
@@ -4185,12 +4185,12 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(guide, Does.Contain("Lane posture and first-hour action path"));
             Assert.That(guide, Does.Contain("It does not complete objectives, grant rewards, start timers, or fake progress"));
             Assert.That(guide, Does.Contain("Use recommended route buttons only to move to suggested live desks"));
-            Assert.That(guide, Does.Contain("Mother Brain pressure path"));
+            Assert.That(guide, Does.Contain("Urgent pressure"));
             Assert.That(guide, Does.Contain("does not launch events, complete objectives, spawn rewards, bypass blockers, start timers, or make Mother Brain autonomous"));
             Assert.That(guide, Does.Contain("Rogue Director, TOMS, Crucible, and full world-director behavior remain future work"));
             Assert.That(uxml, Does.Contain("This guide does not complete objectives, grant rewards, start timers, or fake tutorial progress"));
             Assert.That(uxml, Does.Contain("missing lane posture, wrong first-hour action path"));
-            Assert.That(uxml, Does.Contain("Mother Brain pressure path"));
+            Assert.That(uxml, Does.Contain("urgent pressure card"));
         }
 
         private static VisualElement BuildMinimalHeroControllerRoot()
@@ -4328,7 +4328,7 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(uxml, Does.Contain("early-lane-posture-action-path-step-value"));
             Assert.That(uxml, Does.Contain("early-lane-posture-action-path-why-value"));
             Assert.That(uxml, Does.Contain("early-lane-posture-action-path-receipt-value"));
-            Assert.That(uxml, Does.Contain("This card consumes /api/me earlyLanePosture and actionPath"));
+            Assert.That(uxml, Does.Contain("This card shows live lane posture and action-path guidance when the server provides it."));
             Assert.That(uxml, Does.Not.Contain("early-lane-posture-bootstrap"));
         }
 
@@ -4345,25 +4345,25 @@ namespace PlanarWar.Client.Tests.EditMode
             var guide = File.ReadAllText(guidePath);
             var uxml = File.ReadAllText(appShellPath);
 
-            Assert.That(guide, Does.Contain("Mother Brain pressure path"));
-            Assert.That(guide, Does.Contain("/api/me.motherBrainPressureStatus.actionPath"));
+            Assert.That(guide, Does.Contain("Urgent pressure"));
+            Assert.That(guide, Does.Contain("live server pressure truth"));
             Assert.That(guide, Does.Contain("blockers that currently prevent clean follow-through"));
             Assert.That(guide, Does.Contain("proof signals that explain which pressure seam produced the recommendation"));
-            Assert.That(guide, Does.Contain("next report family testers should expect"));
+            Assert.That(guide, Does.Contain("next report type testers should expect"));
             Assert.That(guide, Does.Contain("report follow-through state, latest report, outcome, server response, and source-region proof"));
             Assert.That(guide, Does.Contain("blocker recovery"));
             Assert.That(guide, Does.Contain("Report follow-through is report/ledger truth only"));
             Assert.That(guide, Does.Contain("response history"));
             Assert.That(guide, Does.Contain("does not launch events, complete objectives, spawn rewards, bypass blockers, start timers, or make Mother Brain autonomous"));
             Assert.That(guide, Does.Contain("Rogue Director, TOMS, Crucible, and full world-director behavior remain future work"));
-            Assert.That(guide, Does.Contain("missing or wrong Mother Brain pressure path, blockers, blocker recovery, response history, proof signals, report follow-through, or report family"));
-            Assert.That(uxml, Does.Contain("Mother Brain pressure"));
-            Assert.That(uxml, Does.Contain("Pressure action path"));
-            Assert.That(uxml, Does.Contain("blockers, proof signals, report follow-through, and next report family"));
-            Assert.That(uxml, Does.Contain("blocker recovery"));
+            Assert.That(guide, Does.Contain("missing or wrong urgent pressure card, blockers, blocker recovery, response history, proof signals, report follow-through, or report family"));
+            Assert.That(uxml, Does.Contain("Urgent pressure"));
+            Assert.That(uxml, Does.Contain("Pressure lead"));
+            Assert.That(uxml, Does.Contain("blockers, proof signals, recent reports, and next report type"));
+            Assert.That(uxml, Does.Contain("blocker-recovery"));
             Assert.That(uxml, Does.Contain("response history"));
             Assert.That(uxml, Does.Contain("does not spawn events, rewards, timers, Rogue Director, TOMS, or Crucible behavior"));
-            Assert.That(uxml, Does.Contain("missing or wrong Mother Brain pressure path"));
+            Assert.That(uxml, Does.Contain("missing or wrong urgent pressure card"));
         }
 
 
@@ -4497,11 +4497,11 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(uxml, Does.Contain("mother-brain-action-path-blockers-value"));
             Assert.That(uxml, Does.Contain("mother-brain-action-path-proof-value"));
             Assert.That(uxml, Does.Contain("mother-brain-action-path-receipt-value"));
-            Assert.That(uxml, Does.Contain("Report follow-through"));
-            Assert.That(uxml, Does.Contain("blocker recovery"));
+            Assert.That(uxml, Does.Contain("Recent pressure reports"));
+            Assert.That(uxml, Does.Contain("blocker-recovery"));
             Assert.That(uxml, Does.Contain("response history"));
             Assert.That(uxml, Does.Contain("Report, blocker-recovery, and response history truth is waiting on server state."));
-            Assert.That(uxml, Does.Contain("This card consumes /api/me motherBrainPressureStatus.actionPath"));
+            Assert.That(uxml, Does.Contain("This card shows live pressure guidance when the server provides it."));
             Assert.That(uxml, Does.Not.Contain("Mother Brain starts events"));
             Assert.That(uxml, Does.Not.Contain("Mother Brain completes objectives"));
         }
@@ -4612,9 +4612,10 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(uxml, Does.Contain("public-infrastructure-economy-spine-city-signals-value"));
             Assert.That(uxml, Does.Contain("public-infrastructure-economy-spine-shadow-signals-value"));
             Assert.That(uxml, Does.Contain("public-infrastructure-economy-spine-receipt-value"));
-            Assert.That(uxml, Does.Contain("Public service receipt follow-through"));
-            Assert.That(uxml, Does.Contain("Public infrastructure receipt follow-through is waiting on backend state."));
-            Assert.That(uxml, Does.Contain("publicInfrastructureSummary.economySpine"));
+            Assert.That(uxml, Does.Contain("Recent service reports"));
+            Assert.That(uxml, Does.Contain("Recent service reports are waiting on live server state."));
+            Assert.That(uxml, Does.Contain("Public services"));
+            Assert.That(uxml, Does.Not.Contain("publicInfrastructureSummary.economySpine"));
             Assert.That(uxml, Does.Not.Contain("public service taxes are live"));
             Assert.That(uxml, Does.Not.Contain("public queue timers are live"));
             Assert.That(uxml, Does.Not.Contain("public services grant rewards"));
@@ -4628,12 +4629,12 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(File.Exists(guidePath), Is.True, "PLAYER_TESTER_GUIDE_V1.md should ship with the Unity client.");
 
             var guide = File.ReadAllText(guidePath);
-            Assert.That(guide, Does.Contain("Public infrastructure economy spine"));
-            Assert.That(guide, Does.Contain("/api/me.publicInfrastructureSummary.economySpine"));
+            Assert.That(guide, Does.Contain("Public services"));
+            Assert.That(guide, Does.Contain("live server public-service truth"));
             Assert.That(guide, Does.Contain("NPC public services"));
             Assert.That(guide, Does.Contain("player-city infrastructure"));
-            Assert.That(guide, Does.Contain("public infrastructure receipt follow-through"));
-            Assert.That(guide, Does.Contain("latest receipt"));
+            Assert.That(guide, Does.Contain("public-service report follow-through"));
+            Assert.That(guide, Does.Contain("latest report"));
             Assert.That(guide, Does.Contain("runway context"));
             Assert.That(guide, Does.Contain("does not apply fake taxes"));
             Assert.That(guide, Does.Contain("queue timers"));
@@ -4776,10 +4777,11 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(uxml, Does.Contain("city-mud-consequence-bridge-regional-signals-value"));
             Assert.That(uxml, Does.Contain("city-mud-consequence-bridge-receipt-signals-value"));
             Assert.That(uxml, Does.Contain("city-mud-consequence-bridge-follow-through-value"));
-            Assert.That(uxml, Does.Contain("Bridge follow-through"));
+            Assert.That(uxml, Does.Contain("Support follow-through"));
             Assert.That(uxml, Does.Contain("city-mud-consequence-bridge-guardrails-value"));
-            Assert.That(uxml, Does.Contain("City ↔ MUD world-consequence bridge"));
-            Assert.That(uxml, Does.Contain("cityMudWorldConsequenceBridge"));
+            Assert.That(uxml, Does.Contain("Regional support"));
+            Assert.That(uxml, Does.Contain("Waiting on regional support truth"));
+            Assert.That(uxml, Does.Not.Contain("cityMudWorldConsequenceBridge"));
             Assert.That(uxml, Does.Not.Contain("cities grant item rewards"));
             Assert.That(uxml, Does.Not.Contain("player cities are mandatory"));
             Assert.That(uxml, Does.Not.Contain("fake MUD levels"));
@@ -4792,13 +4794,13 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(File.Exists(guidePath), Is.True, "PLAYER_TESTER_GUIDE_V1.md should ship with the Unity client.");
 
             var guide = File.ReadAllText(guidePath);
-            Assert.That(guide, Does.Contain("City ↔ MUD world-consequence bridge"));
-            Assert.That(guide, Does.Contain("/api/me.cityMudWorldConsequenceBridge"));
+            Assert.That(guide, Does.Contain("Regional support"));
+            Assert.That(guide, Does.Contain("live server support truth"));
             Assert.That(guide, Does.Contain("city support"));
             Assert.That(guide, Does.Contain("MUD progression signals"));
             Assert.That(guide, Does.Contain("regional life signals"));
-            Assert.That(guide, Does.Contain("receipt and consequence signals"));
-            Assert.That(guide, Does.Contain("bridge follow-through"));
+            Assert.That(guide, Does.Contain("recent report and consequence signals"));
+            Assert.That(guide, Does.Contain("support follow-through"));
             Assert.That(guide, Does.Contain("clear-when guidance"));
             Assert.That(guide, Does.Contain("watch-next signals"));
             Assert.That(guide, Does.Contain("waiting, ready, restricted, strained, or represented"));
@@ -4966,7 +4968,7 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(uxml, Does.Contain("home-lane-posture__headline"));
             Assert.That(uxml, Does.Contain("home-lane-posture__summary"));
             Assert.That(uxml, Does.Contain("home-lane-posture__grid"));
-            Assert.That(uxml, Does.Contain("This card consumes /api/me earlyLanePosture and actionPath"), "Backend posture truth should remain the source instead of introducing client-side fake state.");
+            Assert.That(uxml, Does.Contain("This card shows live lane posture and action-path guidance when the server provides it."), "Server posture truth should remain the source instead of introducing client-side fake state.");
             Assert.That(uxml, Does.Contain("early-lane-posture-action-button"), "Existing client navigation affordance should remain wired.");
             Assert.That(uss, Does.Contain("Home lane posture spacing cleanup v1"));
             Assert.That(uss, Does.Contain(".home-lane-posture-card"));
@@ -5468,6 +5470,40 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(controller, Does.Not.Contain("Latest report: {FirstNonBlank(followThrough.LatestReceiptId"), "Home public-service detail copy must not print raw report ids.");
             Assert.That(controller, Does.Not.Contain("lines.Add(followThrough.Title);"), "Follow-through titles should pass through player-facing cleanup.");
             Assert.That(controller, Does.Not.Contain("lines.Add(followThrough.Summary);"), "Follow-through summaries should pass through player-facing cleanup.");
+        }
+
+        [Test]
+        public void Home_pressure_headers_translate_backend_system_names_to_player_facing_labels()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs");
+            var guidePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Docs/PLAYER_TESTER_GUIDE_V1.md");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(controllerPath), Is.True, "SummaryScreenController.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(guidePath), Is.True, "PLAYER_TESTER_GUIDE_V1.md should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var controller = File.ReadAllText(controllerPath);
+            var guide = File.ReadAllText(guidePath);
+
+            Assert.That(controller, Does.Contain("Unity Home Pressure Header Translation v1"), "The Home pressure label pass should be explicitly guarded.");
+            Assert.That(controller, Does.Contain("TranslateHomePressureTitle"), "Dynamic server titles should route through player-facing pressure label translation.");
+            Assert.That(uxml, Does.Contain("text=\"Urgent pressure\""));
+            Assert.That(uxml, Does.Contain("text=\"Public services\""));
+            Assert.That(uxml, Does.Contain("text=\"Regional support\""));
+            Assert.That(uxml, Does.Contain("text=\"Recovery opportunities\""));
+            Assert.That(guide, Does.Contain("Urgent pressure"));
+            Assert.That(guide, Does.Contain("Public services"));
+            Assert.That(guide, Does.Contain("Regional support"));
+            Assert.That(guide, Does.Contain("Recovery opportunities"));
+            Assert.That(uxml, Does.Not.Contain("text=\"Mother Brain pressure path\""));
+            Assert.That(uxml, Does.Not.Contain("text=\"Public infrastructure economy spine\""));
+            Assert.That(uxml, Does.Not.Contain("text=\"City ↔ MUD world-consequence bridge\""));
+            Assert.That(uxml, Does.Not.Contain("text=\"Regional recovery board\""));
+            Assert.That(guide, Does.Not.Contain("### Mother Brain pressure path"));
+            Assert.That(guide, Does.Not.Contain("### Public infrastructure economy spine"));
+            Assert.That(guide, Does.Not.Contain("### City ↔ MUD world-consequence bridge"));
+            Assert.That(guide, Does.Not.Contain("### Regional recovery board"));
         }
 
 
