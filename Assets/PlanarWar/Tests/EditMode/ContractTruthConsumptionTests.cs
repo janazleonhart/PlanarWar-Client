@@ -4501,7 +4501,7 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(uxml, Does.Contain("blocker-recovery"));
             Assert.That(uxml, Does.Contain("response history"));
             Assert.That(uxml, Does.Contain("Report, blocker-recovery, and response history truth is waiting on server state."));
-            Assert.That(uxml, Does.Contain("This card shows live pressure guidance when the server provides it."));
+            Assert.That(uxml, Does.Contain("What it means: live pressure guidance will appear here when the server provides it."));
             Assert.That(uxml, Does.Not.Contain("Mother Brain starts events"));
             Assert.That(uxml, Does.Not.Contain("Mother Brain completes objectives"));
         }
@@ -5570,6 +5570,27 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(controller, Does.Not.Contain("StartMission"), "Summary chips should not start mission actions from Home.");
         }
 
+
+        [Test]
+        public void Home_pressure_detail_cards_use_simple_what_why_next_copy_without_backend_architecture()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(controllerPath), Is.True, "SummaryScreenController.cs should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var controller = File.ReadAllText(controllerPath);
+
+            Assert.That(controller, Does.Contain("Unity Home Pressure Detail Simplification v1"), "Pressure detail simplification should be explicitly guarded.");
+            Assert.That(controller, Does.Contain("BuildHomePressureWhatLine"), "Detailed pressure cards should lead with a short meaning line.");
+            Assert.That(controller, Does.Contain("BuildHomePressureWhyLine"), "Detailed pressure cards should explain why the state matters.");
+            Assert.That(controller, Does.Contain("BuildHomePressureNextLine"), "Detailed pressure cards should keep the next step obvious.");
+            Assert.That(controller, Does.Contain("FormatCompactPostureList"), "Detailed cards should avoid dumping every signal into Home.");
+            Assert.That(uxml, Does.Contain("What it means:"));
+            Assert.That(uxml, Does.Contain("Why it matters:"));
+            Assert.That(uxml, Does.Contain("Best next step"));
+        }
 
         [Test]
         public void Home_pressure_headers_translate_backend_system_names_to_player_facing_labels()
