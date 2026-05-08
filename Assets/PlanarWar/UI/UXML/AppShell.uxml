@@ -293,6 +293,20 @@
                     </ui:VisualElement>
                 </ui:VisualElement>
 
+                <ui:VisualElement name="home-recommended-actions-card" class="summary-card summary-card--full summary-card--action home-recommended-actions-card">
+                    <ui:VisualElement class="development-actions-head home-recommended-actions__head">
+                        <ui:Label text="Recommended actions" class="eyebrow" />
+                        <ui:Label name="home-recommended-actions-badge-value" text="Live guidance" class="chapter-row__badge" />
+                    </ui:VisualElement>
+                    <ui:Label name="home-recommended-actions-headline-value" text="No recommended action surfaced yet." class="rail-note-title home-recommended-actions__headline" />
+                    <ui:Label name="home-recommended-actions-summary-value" text="Home will surface the safest live lead here without hiding the city output snapshot." class="summary-value summary-value--glance home-recommended-actions__summary" />
+                    <ui:Label name="home-recommended-actions-reason-value" text="Buttons only open existing client desks or scroll to existing pressure details; they do not execute actions, create rewards, start timers, or mutate state." class="metric-subvalue metric-subvalue--wrap home-recommended-actions__reason" />
+                    <ui:VisualElement class="button-row home-recommended-actions__row">
+                        <ui:Button name="home-recommended-actions-primary-button" text="Open recommended desk" class="action-button action-button--primary home-recommended-actions__button" />
+                        <ui:Button name="home-recommended-actions-details-button" text="Review pressure details" class="action-button home-recommended-actions__button" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
                 <ui:VisualElement name="post-founder-handoff-card" class="summary-card summary-card--full summary-card--action post-founder-handoff-card">
                     <ui:VisualElement class="development-actions-head">
                         <ui:Label text="Next desks" class="eyebrow" />

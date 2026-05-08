@@ -2534,6 +2534,54 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
         [Test]
+        public void Home_recommended_actions_card_keeps_pressure_details_clickable_below_snapshot_reads()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var appStylePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(appStylePath), Is.True, "AppShell.uss should be available from the Unity project root.");
+            Assert.That(File.Exists(controllerPath), Is.True, "SummaryScreenController.cs should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(appStylePath);
+            var controller = File.ReadAllText(controllerPath);
+
+            var statusSnapshotIndex = uxml.IndexOf("home-snapshot-grid--status", StringComparison.Ordinal);
+            var recommendedIndex = uxml.IndexOf("home-recommended-actions-card", StringComparison.Ordinal);
+            var postureIndex = uxml.IndexOf("post-founder-handoff-card", StringComparison.Ordinal);
+            var pressureIndex = uxml.IndexOf("mother-brain-action-path-card", StringComparison.Ordinal);
+
+            Assert.That(statusSnapshotIndex, Is.GreaterThanOrEqualTo(0));
+            Assert.That(recommendedIndex, Is.GreaterThan(statusSnapshotIndex), "Recommended actions should appear below the quick city output snapshot, not above resource reads.");
+            Assert.That(postureIndex, Is.GreaterThan(recommendedIndex), "Deep posture cards should stay below the compact recommended actions drawer.");
+            Assert.That(pressureIndex, Is.GreaterThan(recommendedIndex), "Pressure details should remain reachable below the compact Home drawer.");
+
+            foreach (var marker in new[]
+            {
+                "home-recommended-actions-card",
+                "home-recommended-actions-primary-button",
+                "home-recommended-actions-details-button",
+                "Recommended actions",
+                "Review pressure details"
+            })
+            {
+                Assert.That(uxml, Does.Contain(marker), $"Home recommended actions marker {marker} should stay wired.");
+            }
+
+            Assert.That(uss, Does.Contain("Home recommended actions drawer v1"));
+            Assert.That(uss, Does.Contain(".home-recommended-actions-card"));
+            Assert.That(uss, Does.Contain(".home-recommended-actions__button"));
+
+            Assert.That(controller, Does.Contain("BuildHomeRecommendedAction"));
+            Assert.That(controller, Does.Contain("SelectPrimaryClientPressureActionCard"));
+            Assert.That(controller, Does.Contain("ResolveClientPressureScreen"));
+            Assert.That(controller, Does.Contain("ScrollToPressureDetails"));
+            Assert.That(controller, Does.Contain("does not create setup progress, rewards, timers, inventory, or town layout state"));
+        }
+
+
+        [Test]
         public void Development_surface_uses_compact_action_boards_and_hides_duplicate_support_grid()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");

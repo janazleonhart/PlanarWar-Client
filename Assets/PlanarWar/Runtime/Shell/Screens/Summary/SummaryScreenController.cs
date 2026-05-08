@@ -23,12 +23,21 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private readonly Label workshopTimer;
         private readonly Label missionTimer;
         private readonly Label resourceTick;
+        private readonly ScrollView summaryScroll;
         private readonly Label timerDiagNow;
         private readonly Label timerDiagHeartbeat;
         private readonly Label timerDiagRaw;
         private readonly Label timerDiagComputed;
         private readonly VisualElement timerDiagnosticCard;
         private readonly Button timerDiagnosticsButton;
+        private readonly VisualElement homeRecommendedActionsCard;
+        private readonly Label homeRecommendedActionsBadge;
+        private readonly Label homeRecommendedActionsHeadline;
+        private readonly Label homeRecommendedActionsSummary;
+        private readonly Label homeRecommendedActionsReason;
+        private readonly Button homeRecommendedActionsPrimaryButton;
+        private readonly Button homeRecommendedActionsDetailsButton;
+        private ShellScreen homeRecommendedActionsScreen = ShellScreen.City;
         private readonly Label pressureDeskBadge;
         private readonly Label pressureDeskHeadline;
         private readonly Label pressureDeskDetail;
@@ -156,12 +165,20 @@ namespace PlanarWar.Client.UI.Screens.Summary
             workshopTimer = root.Q<Label>("workshop-timer-value");
             missionTimer = root.Q<Label>("mission-timer-value");
             resourceTick = root.Q<Label>("resource-tick-value");
+            summaryScroll = root.Q<ScrollView>("summary-screen");
             timerDiagNow = root.Q<Label>("timer-diag-now-value");
             timerDiagHeartbeat = root.Q<Label>("timer-diag-heartbeat-value");
             timerDiagRaw = root.Q<Label>("timer-diag-raw-value");
             timerDiagComputed = root.Q<Label>("timer-diag-computed-value");
             timerDiagnosticCard = root.Q<VisualElement>("timer-diagnostic-card");
             timerDiagnosticsButton = root.Q<Button>("toggle-timer-diagnostics-button");
+            homeRecommendedActionsCard = root.Q<VisualElement>("home-recommended-actions-card");
+            homeRecommendedActionsBadge = root.Q<Label>("home-recommended-actions-badge-value");
+            homeRecommendedActionsHeadline = root.Q<Label>("home-recommended-actions-headline-value");
+            homeRecommendedActionsSummary = root.Q<Label>("home-recommended-actions-summary-value");
+            homeRecommendedActionsReason = root.Q<Label>("home-recommended-actions-reason-value");
+            homeRecommendedActionsPrimaryButton = root.Q<Button>("home-recommended-actions-primary-button");
+            homeRecommendedActionsDetailsButton = root.Q<Button>("home-recommended-actions-details-button");
             pressureDeskBadge = root.Q<Label>("pressure-desk-badge-value");
             pressureDeskHeadline = root.Q<Label>("pressure-desk-headline-value");
             pressureDeskDetail = root.Q<Label>("pressure-desk-detail-value");
@@ -280,6 +297,8 @@ namespace PlanarWar.Client.UI.Screens.Summary
             publicInfrastructureEconomySpineButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(publicInfrastructureEconomySpineRecommendedScreen, onNavigateRequested));
             cityMudConsequenceBridgeButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(cityMudConsequenceBridgeRecommendedScreen, onNavigateRequested));
             cityContractRecoveryBoardButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(cityContractRecoveryBoardRecommendedScreen, onNavigateRequested));
+            homeRecommendedActionsPrimaryButton?.RegisterCallback<ClickEvent>(_ => RequestPostFounderNavigation(homeRecommendedActionsScreen, onNavigateRequested));
+            homeRecommendedActionsDetailsButton?.RegisterCallback<ClickEvent>(_ => ScrollToPressureDetails());
         }
 
         public void Render(ShellSummarySnapshot s, bool isSummaryLoaded, bool isActionBusy = false, string actionStatus = null, bool actionFailed = false)
@@ -308,6 +327,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             RenderPublicInfrastructureEconomySpine(s, isSummaryLoaded);
             RenderCityMudConsequenceBridge(s, isSummaryLoaded);
             RenderCityContractRecoveryBoard(s, isSummaryLoaded);
+            RenderHomeRecommendedActions(s, isSummaryLoaded);
 
             RenderPressureDesk(s);
         }
@@ -326,6 +346,149 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private static void RequestPostFounderNavigation(ShellScreen screen, Action<ShellScreen> onNavigateRequested)
         {
             onNavigateRequested?.Invoke(screen);
+        }
+
+
+        private void ScrollToPressureDetails()
+        {
+            var target = SelectFirstVisiblePressureDetailCard();
+            if (summaryScroll != null && target != null)
+            {
+                summaryScroll.ScrollTo(target);
+            }
+        }
+
+        private VisualElement SelectFirstVisiblePressureDetailCard()
+        {
+            foreach (var card in new[]
+            {
+                motherBrainActionPathCard,
+                earlyLanePostureCard,
+                publicInfrastructureEconomySpineCard,
+                cityMudConsequenceBridgeCard,
+                cityContractRecoveryBoardCard,
+                postFounderHandoffCard
+            })
+            {
+                if (card != null && card.resolvedStyle.display != DisplayStyle.None)
+                {
+                    return card;
+                }
+            }
+
+            return motherBrainActionPathCard ?? earlyLanePostureCard ?? postFounderHandoffCard;
+        }
+
+        private void RenderHomeRecommendedActions(ShellSummarySnapshot summary, bool isSummaryLoaded)
+        {
+            var shouldShow = isSummaryLoaded && summary != null && summary.HasCity;
+            if (homeRecommendedActionsCard != null)
+            {
+                homeRecommendedActionsCard.style.display = shouldShow ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            if (!shouldShow)
+            {
+                return;
+            }
+
+            var action = BuildHomeRecommendedAction(summary);
+            homeRecommendedActionsScreen = action.TargetScreen;
+
+            if (homeRecommendedActionsBadge != null)
+            {
+                homeRecommendedActionsBadge.text = action.Badge;
+            }
+
+            if (homeRecommendedActionsHeadline != null)
+            {
+                homeRecommendedActionsHeadline.text = action.Headline;
+            }
+
+            if (homeRecommendedActionsSummary != null)
+            {
+                homeRecommendedActionsSummary.text = action.Summary;
+            }
+
+            if (homeRecommendedActionsReason != null)
+            {
+                homeRecommendedActionsReason.text = action.Reason;
+            }
+
+            if (homeRecommendedActionsPrimaryButton != null)
+            {
+                homeRecommendedActionsPrimaryButton.text = action.PrimaryButtonLabel;
+                homeRecommendedActionsPrimaryButton.SetEnabled(true);
+            }
+
+            if (homeRecommendedActionsDetailsButton != null)
+            {
+                homeRecommendedActionsDetailsButton.SetEnabled(action.HasPressureDetails);
+            }
+        }
+
+        private HomeRecommendedActionView BuildHomeRecommendedAction(ShellSummarySnapshot summary)
+        {
+            var pressure = summary?.ClientPressureSurface;
+            if (pressure != null)
+            {
+                var primaryActionCard = SelectPrimaryClientPressureActionCard(pressure);
+                var target = ResolveClientPressureScreen(pressure, summary);
+                return new HomeRecommendedActionView
+                {
+                    Badge = BuildClientPressureBadge(pressure),
+                    Headline = FirstNonBlank(primaryActionCard?.Label, pressure.NavigationIntent?.Label, pressure.CtaLabel, pressure.Title, "Review live pressure lead"),
+                    Summary = FirstNonBlank(primaryActionCard?.Summary, pressure.WhyNow, pressure.QuickSessionSummary?.Body, pressure.Summary, "A live pressure lead is available from the account summary."),
+                    Reason = "Uses the current pressure surface only; this opens the existing desk and never starts missions, rewards, timers, or state changes.",
+                    PrimaryButtonLabel = FirstNonBlank(primaryActionCard?.Label, pressure.NavigationIntent?.Label, BuildPostureButtonLabel(target, summary)),
+                    TargetScreen = target,
+                    HasPressureDetails = true
+                };
+            }
+
+            var lane = NormalizeLane(summary?.City?.SettlementLane);
+            var primaryOp = SelectPrimaryOperation(summary?.OpeningOperations);
+            if (primaryOp != null)
+            {
+                return new HomeRecommendedActionView
+                {
+                    Badge = $"Operations • {HumanizeOperationReadiness(primaryOp.Readiness)}",
+                    Headline = FirstNonBlank(primaryOp.Title, primaryOp.FocusLabel, "Review the leading operation"),
+                    Summary = FirstNonBlank(primaryOp.Summary, primaryOp.Detail, BuildHomeOperationSummary(primaryOp, summary, lane), "An existing operation is ready for review."),
+                    Reason = FirstNonBlank(primaryOp.WhyNow, BuildOperationHandoff(primaryOp, isLead: true), "This follows the current mission-board payload without creating a new action."),
+                    PrimaryButtonLabel = "Open Operations",
+                    TargetScreen = ShellScreen.BlackMarket,
+                    HasPressureDetails = true
+                };
+            }
+
+            var posture = summary?.EarlyLanePosture;
+            if (posture != null)
+            {
+                var actionPath = posture.ActionPath;
+                var target = ResolvePostureScreen(FirstNonBlank(actionPath?.RecommendedDesk, posture.RecommendedDesk), summary);
+                return new HomeRecommendedActionView
+                {
+                    Badge = $"{FirstNonBlank(posture.Label, ResolveLaneLabel(posture.Lane, summary?.City?.SettlementLaneLabel))} • live posture",
+                    Headline = FirstNonBlank(actionPath?.RecommendedActionLabel, posture.RecommendedActionLabel, actionPath?.Title, posture.Headline, "Review the lane posture"),
+                    Summary = FirstNonBlank(actionPath?.CurrentStep, posture.NextStepReason, posture.Summary, "The lane posture has a safe next desk."),
+                    Reason = FirstNonBlank(actionPath?.WhyThisMatters, posture.NextStepReason, "This recommendation only opens an existing client desk."),
+                    PrimaryButtonLabel = BuildPostureButtonLabel(target, summary),
+                    TargetScreen = target,
+                    HasPressureDetails = true
+                };
+            }
+
+            return new HomeRecommendedActionView
+            {
+                Badge = "Setup • safe fallback",
+                Headline = "Open Development and keep the core loop moving",
+                Summary = "No pressure lead is currently surfaced, so Development is the safest non-mutating desk to review buildings, workshop, and research.",
+                Reason = "This is a route-only fallback; it does not create setup progress, rewards, timers, inventory, or town layout state.",
+                PrimaryButtonLabel = "Open Development",
+                TargetScreen = ShellScreen.City,
+                HasPressureDetails = false
+            };
         }
 
         private void RenderPostFounderHandoff(ShellSummarySnapshot summary, bool isSummaryLoaded)
@@ -3542,6 +3705,18 @@ namespace PlanarWar.Client.UI.Screens.Summary
             var elapsed = nowUtc - anchor.Value;
             var skippedTicks = Math.Floor(elapsed.TotalMilliseconds / cadence.Value.TotalMilliseconds) + 1;
             return anchor.Value.AddMilliseconds(skippedTicks * cadence.Value.TotalMilliseconds);
+        }
+
+
+        private sealed class HomeRecommendedActionView
+        {
+            public string Badge { get; set; } = "Live guidance";
+            public string Headline { get; set; } = "No recommended action surfaced yet.";
+            public string Summary { get; set; } = "Home will surface the safest live lead here.";
+            public string Reason { get; set; } = "Buttons only open existing client desks or scroll to existing pressure details.";
+            public string PrimaryButtonLabel { get; set; } = "Open recommended desk";
+            public ShellScreen TargetScreen { get; set; } = ShellScreen.City;
+            public bool HasPressureDetails { get; set; }
         }
 
         private static string DescribeTimingState(bool hasAnchor, bool hasCadence)
