@@ -1331,9 +1331,33 @@
                             <ui:Label text="Use this guide to find the live gameplay desks and report real blockers. No fake tutorial progress, rewards, timers, inventory, or town layout state is recorded here." class="headline-subtext" />
                         </ui:VisualElement>
 
-                        <ui:VisualElement class="summary-card summary-card--full summary-card--action guide-overview-card">
-                            <ui:Label text="First-run path" class="eyebrow" />
-                            <ui:Label text="Register or sign in, choose City or Black Market from the setup card, then use Home to jump into the active desks." class="summary-value summary-value--glance" />
+                        <ui:VisualElement class="summary-card summary-card--full summary-card--action guide-overview-card guide-help-surface-card">
+                            <ui:Label text="Unity Help Surface v1" class="eyebrow" />
+                            <ui:Label text="How to read the current client" class="rail-note-title" />
+                            <ui:Label text="This help surface explains known UI truth in plain language. It does not reveal hidden formulas, invent pressure causes, complete objectives, start timers, grant rewards, or make City/Black Market morality claims." class="summary-value summary-value--glance" />
+                        </ui:VisualElement>
+
+                        <ui:VisualElement class="summary-grid guide-grid guide-help-grid">
+                            <ui:VisualElement class="summary-card glance-card guide-card guide-help-card">
+                                <ui:Label text="Pressure summary" class="eyebrow" />
+                                <ui:Label text="Read the chips first" class="rail-note-title" />
+                                <ui:Label text="Public services, Regional support, Recovery opportunities, and Best next action are the fast read. Click one chip to open only that detail card; use Review pressure details when you want the longer report stack." class="summary-value summary-value--glance" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="summary-card glance-card guide-card guide-help-card">
+                                <ui:Label text="Visible drivers" class="eyebrow" />
+                                <ui:Label text="Why this is happening" class="rail-note-title" />
+                                <ui:Label text="Visible drivers name broad causes the server is willing to show, such as supply route pressure, counterfeit trust pressure, public-service strain, regional instability, bandit raids, weather loss, or war buildup. Exact hidden scoring stays hidden." class="summary-value summary-value--glance" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="summary-card glance-card guide-card guide-help-card">
+                                <ui:Label text="City / Black Market" class="eyebrow" />
+                                <ui:Label text="Motives, not good/evil rails" class="rail-note-title" />
+                                <ui:Label text="City and Black Market actions are contextual tools. A City can support messy pressure if it weakens a worse threat; a Black Market can suppress bandits if they hurt business. The UI should explain effects without moral-coloring the lane." class="summary-value summary-value--glance" />
+                            </ui:VisualElement>
+                            <ui:VisualElement class="summary-card glance-card guide-card guide-help-card">
+                                <ui:Label text="Safe action buttons" class="eyebrow" />
+                                <ui:Label text="Open desks before acting" class="rail-note-title" />
+                                <ui:Label text="Home buttons route to existing desks or reveal existing detail. They do not execute missions, create rewards, bypass blockers, start clocks, create taxes, or mutate world state unless the destination desk has a real server-backed action." class="summary-value summary-value--glance" />
+                            </ui:VisualElement>
                         </ui:VisualElement>
 
                         <ui:VisualElement class="summary-grid guide-grid">

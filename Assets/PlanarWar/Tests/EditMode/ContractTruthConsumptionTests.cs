@@ -5804,5 +5804,37 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
 
+        [Test]
+        public void Unity_help_surface_explains_pressure_drivers_and_safe_actions_without_hidden_formula_leaks()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var stylesheetPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            var guidePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Docs/PLAYER_TESTER_GUIDE_V1.md");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(stylesheetPath), Is.True, "AppShell.uss should be available from the Unity project root.");
+            Assert.That(File.Exists(guidePath), Is.True, "PLAYER_TESTER_GUIDE_V1.md should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(stylesheetPath);
+            var guide = File.ReadAllText(guidePath);
+
+            Assert.That(uxml, Does.Contain("Unity Help Surface v1"));
+            Assert.That(uxml, Does.Contain("Pressure summary"));
+            Assert.That(uxml, Does.Contain("Visible drivers"));
+            Assert.That(uxml, Does.Contain("Motives, not good/evil rails"));
+            Assert.That(uxml, Does.Contain("Home buttons route to existing desks or reveal existing detail"));
+            Assert.That(uss, Does.Contain("Unity Help Surface v1"));
+            Assert.That(uss, Does.Contain(".guide-help-card"));
+            Assert.That(guide, Does.Contain("Unity Help Surface v1"));
+            Assert.That(guide, Does.Contain("bandit raids, weather loss, or war buildup"));
+            Assert.That(guide, Does.Contain("not good/evil rails"));
+            Assert.That(guide, Does.Contain("Exact hidden scoring stays hidden"));
+            Assert.That(guide, Does.Contain("They do not execute missions, create rewards, bypass blockers, start clocks, create taxes, or mutate world state"));
+            Assert.That(guide, Does.Not.Contain("City = Good"));
+            Assert.That(guide, Does.Not.Contain("Black Market = Bad"));
+        }
+
+
+
     }
 }

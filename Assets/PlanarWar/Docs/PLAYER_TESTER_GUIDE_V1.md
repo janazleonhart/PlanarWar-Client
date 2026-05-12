@@ -68,6 +68,19 @@ Use it to:
 
 Home should not be treated as the place where every action happens. If a button opens a desk, that is intentional.
 
+### Unity Help Surface v1
+
+The in-client Help / Tester Guide is a player-facing explanation layer for the current Unity client. It explains what the player can safely read, what a button is allowed to do, and what should be reported without exposing hidden formulas or pretending future systems are live.
+
+Use the help cards to understand:
+
+- **Pressure summary**: the four quick chips on Home are the fast read. Click one chip to open only that detail card; use **Review pressure details** when you want the longer report stack.
+- **Visible drivers**: the **Why this is happening** line names broad server-visible causes such as supply route pressure, counterfeit trust pressure, public-service strain, regional instability, bandit raids, weather loss, or war buildup. Exact hidden scoring stays hidden.
+- **City / Black Market**: these lanes are contextual tools, not good/evil rails. A City can support ugly pressure if it weakens a worse threat; a Black Market can suppress bandits if instability hurts business.
+- **Safe action buttons**: Home buttons route to existing desks or reveal existing detail. They do not execute missions, create rewards, bypass blockers, start clocks, create taxes, or mutate world state unless the destination desk has a real server-backed action.
+
+Report Help text if it claims fake execution, exposes raw backend IDs, shows raw JSON/object text, treats City as automatically good or Black Market as automatically evil, or describes Mother Brain, Rogue Director, Market Cartel Daemon, TOMS, or Crucible behavior as live before those systems are actually surfaced.
+
 ### Lane posture and first-hour action path
 
 Home also shows a **Lane posture** card after the server provides it. This card explains how the current City or Black Market opening is behaving right now.
