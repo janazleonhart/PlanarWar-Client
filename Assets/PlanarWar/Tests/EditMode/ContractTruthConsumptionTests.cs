@@ -5697,6 +5697,29 @@ namespace PlanarWar.Client.Tests.EditMode
 
 
         [Test]
+        public void Home_pressure_cause_source_labels_name_visible_drivers_without_good_bad_rails()
+        {
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs");
+            Assert.That(File.Exists(controllerPath), Is.True, "SummaryScreenController.cs should be available from the Unity project root.");
+
+            var controller = File.ReadAllText(controllerPath);
+
+            Assert.That(controller, Does.Contain("Unity Home Pressure Cause Source Labels v1"), "Cause hints should keep a guard marker for visible driver labels.");
+            Assert.That(controller, Does.Contain("ResolveVisibleWorldPressureDriver"), "Cause hints should derive bounded player-facing drivers from visible server truth.");
+            Assert.That(controller, Does.Contain("bandit raids or road attacks"), "Visible cause labels should be able to explain bandit/raid pressure when the server exposes that wording.");
+            Assert.That(controller, Does.Contain("nearby conflict pressure"), "Visible cause labels should explain war/frontier pressure without exposing formulas.");
+            Assert.That(controller, Does.Contain("counterfeit paperwork and trust pressure"), "Visible cause labels should explain shadow/evidence pressure without declaring a morality lane.");
+            Assert.That(controller, Does.Contain("supply route pressure"), "Visible cause labels should explain route/supply pressure when that is the visible driver.");
+            Assert.That(controller, Does.Contain("public-service strain"), "Visible cause labels should explain civic service strain for public-service pressure.");
+            Assert.That(controller, Does.Contain("shadow trade pressure"), "Visible cause labels should allow Black Market pressure to be business/disruption oriented instead of simple evil-copy.");
+            Assert.That(controller, Does.Contain("Visible driver:"), "Home cause copy should lead with a small readable driver label.");
+            Assert.That(controller, Does.Not.Contain("City = Good"), "The client must not encode a simple City-good moral rail.");
+            Assert.That(controller, Does.Not.Contain("Black Market = Bad"), "The client must not encode a simple Black-Market-bad moral rail.");
+            Assert.That(controller, Does.Not.Contain("exact hidden scoring"), "Player-facing cause labels must not explain exact hidden scoring.");
+        }
+
+
+        [Test]
         public void Home_pressure_chip_focus_hides_supporting_fact_cards_until_full_detail_review()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");

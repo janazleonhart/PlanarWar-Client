@@ -633,6 +633,66 @@ namespace PlanarWar.Client.UI.Screens.Summary
             return Truncate(clean, 150);
         }
 
+        private static string BuildHomePressureCauseHintLine(string visibleDriver, string value, string fallback)
+        {
+            // Unity Home Pressure Cause Source Labels v1: name the visible pressure driver without exposing hidden formulas or morality rails.
+            var clean = StripPressureDetailPrefix(TranslateHomePressureTitle(FirstNonBlank(value, fallback)), "Why this is happening");
+            var driver = CleanPlayerFacingText(FirstNonBlank(visibleDriver, "visible world pressure")).TrimEnd('.', ':', ';');
+            if (string.IsNullOrWhiteSpace(clean))
+            {
+                return Truncate($"Visible driver: {driver}.", 150);
+            }
+
+            return Truncate($"Visible driver: {driver}. {clean}", 150);
+        }
+
+        private static string ResolveVisibleWorldPressureDriver(params object[] sourceGroups)
+        {
+            // Keep these as broad, visible-cause labels. They explain why pressure exists without revealing exact scoring.
+            var text = CompactSingleLine(string.Join(" ", FlattenVisibleCauseSources(sourceGroups))).ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(text)) return "visible world pressure";
+            if (ContainsAny(text, "bandit", "bandits", "raid", "raids", "raider", "raiders")) return "bandit raids or road attacks";
+            if (ContainsAny(text, "counterfeit", "forgery", "forged", "paper", "permit", "ledger", "script", "evidence")) return "counterfeit paperwork and trust pressure";
+            if (ContainsAny(text, "war", "warfront", "army", "armies", "frontier", "hostile", "battle", "assault")) return "nearby conflict pressure";
+            if (ContainsAny(text, "caravan", "route", "routes", "supply", "scarcity", "shortage", "friction", "relief", "resupply")) return "supply route pressure";
+            if (ContainsAny(text, "desperate", "unrest", "riot", "destabilization", "destabilized", "instability", "severe")) return "regional instability";
+            if (ContainsAny(text, "queue", "service", "services", "permit", "civic", "public", "stress", "strain")) return "public-service strain";
+            if (ContainsAny(text, "shadow", "black market", "covert", "smuggle", "smuggling", "bribe", "heat", "illicit")) return "shadow trade pressure";
+            if (ContainsAny(text, "trade", "vendor", "economy", "market")) return "trade disruption";
+            if (ContainsAny(text, "threat", "pressure", "burden")) return "regional threat pressure";
+            return "visible world pressure";
+        }
+
+        private static IEnumerable<string> FlattenVisibleCauseSources(params object[] sourceGroups)
+        {
+            if (sourceGroups == null)
+            {
+                yield break;
+            }
+
+            foreach (var source in sourceGroups)
+            {
+                if (source == null)
+                {
+                    continue;
+                }
+
+                if (source is string value)
+                {
+                    if (!string.IsNullOrWhiteSpace(value)) yield return value;
+                    continue;
+                }
+
+                if (source is IEnumerable<string> values)
+                {
+                    foreach (var item in values)
+                    {
+                        if (!string.IsNullOrWhiteSpace(item)) yield return item;
+                    }
+                }
+            }
+        }
+
         private static string BuildHomePressureNextLine(string value)
         {
             return BuildHomePressureExplainerLine("Best next step", value, "Review the recommended desk.", 132);
@@ -1077,8 +1137,20 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 parts.Add($"city stress is {HumanizeToken(infrastructure.CityStressStage)}");
             }
 
+            var driver = ResolveVisibleWorldPressureDriver(
+                infrastructure?.StrainBand,
+                infrastructure?.CityStressStage,
+                infrastructure?.RecommendedMode,
+                spine?.Title,
+                spine?.Summary,
+                spine?.WhyThisMatters,
+                spine?.PublicBackboneSignals,
+                spine?.CityEconomySignals,
+                spine?.ShadowRiskSignals,
+                spine?.ReceiptFollowThrough?.Signals);
             var signal = FirstNonBlank(spine?.PublicBackboneSignals?.FirstOrDefault(), spine?.CityEconomySignals?.FirstOrDefault(), spine?.ShadowRiskSignals?.FirstOrDefault());
             return BuildHomePressureCauseHintLine(
+                driver,
                 parts.Count > 0 ? $"{string.Join("; ", parts.Take(2))}." : signal,
                 "Public-service pressure is rising from visible civic strain, not a hidden client-side calculation.");
         }
@@ -1101,8 +1173,25 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 parts.Add($"affected region: {FormatRegionList(bridge.AffectedRegionIds)}");
             }
 
+            var driver = ResolveVisibleWorldPressureDriver(
+                bridge?.BridgeBand,
+                bridge?.RecommendedPosture,
+                bridge?.RecommendedFocus,
+                bridge?.Title,
+                bridge?.Summary,
+                bridge?.WhyThisMatters,
+                bridge?.CityMudSignals,
+                bridge?.RegionalLifeSignals,
+                bridge?.MudProgressionSignals,
+                bridge?.ReceiptSignals,
+                bridge?.FollowThrough?.Signals,
+                bridge?.LatestWorldConsequence?.Title,
+                bridge?.LatestWorldConsequence?.Summary,
+                bridge?.LatestWorldConsequence?.Outcome,
+                bridge?.LatestWorldConsequence?.Severity);
             var signal = FirstNonBlank(bridge?.CityMudSignals?.FirstOrDefault(), bridge?.RegionalLifeSignals?.FirstOrDefault(), bridge?.MudProgressionSignals?.FirstOrDefault());
             return BuildHomePressureCauseHintLine(
+                driver,
                 parts.Count > 0 ? $"{string.Join("; ", parts.Take(2))}." : signal,
                 "Regional support changes when city pressure and nearby world pressure overlap.");
         }
@@ -1129,7 +1218,27 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 parts.Add($"latest pressure is {HumanizeToken(report.Severity)}");
             }
 
+            var driver = ResolveVisibleWorldPressureDriver(
+                board?.Title,
+                board?.Summary,
+                board?.RecommendedFocus,
+                board?.RecommendedCityDeskAction,
+                board?.SourceSurfaces,
+                lead?.Title,
+                lead?.Summary,
+                lead?.Priority,
+                lead?.RecommendedCityDeskAction,
+                lead?.RecommendedMoves,
+                lead?.SourcePressureConsequence?.SourceHook,
+                lead?.SourcePressureConsequence?.ActionTitle,
+                lead?.SourcePressureConsequence?.ActionSummary,
+                report?.Title,
+                report?.Summary,
+                report?.Detail,
+                report?.Severity,
+                report?.Outcome);
             return BuildHomePressureCauseHintLine(
+                driver,
                 parts.Count > 0 ? $"{string.Join("; ", parts.Take(2))}." : lead?.Summary,
                 "Recovery opportunities appear when visible regional pressure has a bounded support response.");
         }
@@ -1152,7 +1261,23 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 parts.Add(CleanPlayerFacingText(actionPath.LiveProofSignals[0]));
             }
 
+            var driver = ResolveVisibleWorldPressureDriver(
+                pressure?.Severity,
+                pressure?.TopThreatFamily,
+                pressure?.Headline,
+                pressure?.Detail,
+                pressure?.RecommendedAction,
+                actionPath?.Title,
+                actionPath?.CurrentStep,
+                actionPath?.WhyThisMatters,
+                actionPath?.LiveProofSignals,
+                actionPath?.ReceiptFollowThrough?.Signals,
+                actionPath?.ReceiptFollowThrough?.LatestReceiptOutcome,
+                actionPath?.ReceiptFollowThrough?.ResponseHistory?.Select(entry => entry.ThreatFamily),
+                actionPath?.ReceiptFollowThrough?.ResponseHistory?.Select(entry => entry.Title),
+                actionPath?.ReceiptFollowThrough?.ResponseHistory?.Select(entry => entry.Summary));
             return BuildHomePressureCauseHintLine(
+                driver,
                 parts.Count > 0 ? $"{string.Join("; ", parts.Take(2))}." : pressure?.Detail,
                 "Urgent pressure appears when the server has enough visible pressure proof to point at an existing response desk.");
         }
@@ -1175,7 +1300,28 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 parts.Add(CleanPlayerFacingText(surface.Signals[0]));
             }
 
+            var driver = ResolveVisibleWorldPressureDriver(
+                surface?.Title,
+                surface?.Summary,
+                surface?.PrimaryFocus,
+                surface?.WhyNow,
+                surface?.Severity,
+                surface?.Signals,
+                surface?.ProgressTrail?.Select(entry => entry.Label),
+                surface?.ProgressTrail?.Select(entry => entry.Summary),
+                surface?.ActionCards?.Select(card => card.Kind),
+                surface?.ActionCards?.Select(card => card.Summary),
+                primaryActionCard?.Kind,
+                primaryActionCard?.Summary,
+                primaryActionCard?.Source,
+                surface?.MissionLead?.Title,
+                surface?.MissionLead?.Summary,
+                surface?.MissionLead?.Kind,
+                surface?.MissionLead?.Priority,
+                surface?.MissionLead?.Difficulty,
+                surface?.MissionLead?.ResponseTags);
             return BuildHomePressureCauseHintLine(
+                driver,
                 parts.Count > 0 ? $"{string.Join("; ", parts.Take(2))}." : FirstNonBlank(primaryActionCard?.Source, surface?.WhyNow),
                 "The server surfaced this lead from visible pressure summary data; Home only explains and routes it.");
         }
