@@ -5626,6 +5626,34 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
 
+
+        [Test]
+        public void Home_pressure_detail_decision_cards_explain_why_before_next_step()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            Assert.That(uxml, Does.Contain("home-pressure-detail-decision-card"), "Focused pressure detail cards should use the guarded decision-card layout.");
+            Assert.That(uxml, Does.Contain("home-pressure-detail-next-step-eyebrow"), "The next-step label should stay visible after the why line.");
+            Assert.That(uxml, Does.Contain("home-pressure-detail-reason"), "The why line should remain visible in the focused pressure detail card.");
+
+            foreach (var prefix in new[]
+            {
+                "mother-brain-action-path",
+                "public-infrastructure-economy-spine",
+                "city-mud-consequence-bridge",
+                "city-contract-recovery-board"
+            })
+            {
+                var reasonIndex = uxml.IndexOf($"name=\"{prefix}-reason-value\"", StringComparison.Ordinal);
+                var nextStepIndex = uxml.IndexOf($"name=\"{prefix}-recommended-value\"", StringComparison.Ordinal);
+                Assert.That(reasonIndex, Is.GreaterThanOrEqualTo(0), $"{prefix} should keep a why-it-matters label.");
+                Assert.That(nextStepIndex, Is.GreaterThan(reasonIndex), $"{prefix} should explain why the pressure matters before showing the next step.");
+            }
+        }
+
+
         [Test]
         public void Home_pressure_chip_focus_hides_supporting_fact_cards_until_full_detail_review()
         {
