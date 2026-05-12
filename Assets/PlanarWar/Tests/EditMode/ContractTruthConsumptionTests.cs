@@ -5655,6 +5655,48 @@ namespace PlanarWar.Client.Tests.EditMode
 
 
         [Test]
+        public void Home_pressure_detail_cause_hints_explain_visible_world_drivers_without_formula_leaks()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(controllerPath), Is.True, "SummaryScreenController.cs should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var controller = File.ReadAllText(controllerPath);
+
+            Assert.That(controller, Does.Contain("Unity Home Pressure Cause Hint v1"), "Cause hints should keep a source guard marker.");
+            Assert.That(controller, Does.Contain("BuildHomePressureCauseHintLine"), "Cause hints should use bounded player-facing formatting.");
+            Assert.That(controller, Does.Contain("BuildPublicServiceCauseHint"), "Public-service pressure should explain its visible cause lane.");
+            Assert.That(controller, Does.Contain("BuildRegionalSupportCauseHint"), "Regional support should explain its visible cause lane.");
+            Assert.That(controller, Does.Contain("BuildRecoveryOpportunityCauseHint"), "Recovery opportunities should explain their visible cause lane.");
+            Assert.That(controller, Does.Contain("BuildClientPressureCauseHint"), "Urgent pressure should explain its visible pressure source.");
+            Assert.That(controller, Does.Contain("without exposing hidden formulas"), "The cause hint should stay bounded instead of teaching exact hidden scoring.");
+            Assert.That(controller, Does.Not.Contain("server-side formula"), "Cause hints should not advertise exact hidden formulas.");
+            Assert.That(controller, Does.Not.Contain("Rogue Director"), "Cause hints should not imply future directors are live.");
+            Assert.That(controller, Does.Not.Contain("Market Cartel Daemon"), "Cause hints should not imply future market daemons are live.");
+
+            foreach (var prefix in new[]
+            {
+                "mother-brain-action-path",
+                "public-infrastructure-economy-spine",
+                "city-mud-consequence-bridge",
+                "city-contract-recovery-board"
+            })
+            {
+                var reasonIndex = uxml.IndexOf($"name=\"{prefix}-reason-value\"", StringComparison.Ordinal);
+                var causeIndex = uxml.IndexOf($"name=\"{prefix}-cause-value\"", StringComparison.Ordinal);
+                var nextStepIndex = uxml.IndexOf($"name=\"{prefix}-recommended-value\"", StringComparison.Ordinal);
+                Assert.That(causeIndex, Is.GreaterThan(reasonIndex), $"{prefix} should explain visible cause after why-it-matters.");
+                Assert.That(nextStepIndex, Is.GreaterThan(causeIndex), $"{prefix} should show the next step after the bounded cause hint.");
+            }
+
+            Assert.That(uxml, Does.Contain("Why this is happening"));
+            Assert.That(uxml, Does.Contain("home-pressure-detail-cause"));
+        }
+
+
+        [Test]
         public void Home_pressure_chip_focus_hides_supporting_fact_cards_until_full_detail_review()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
