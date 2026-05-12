@@ -5720,6 +5720,34 @@ namespace PlanarWar.Client.Tests.EditMode
 
 
         [Test]
+        public void Home_pressure_cause_hints_prefer_server_visible_causes_before_local_label_inference()
+        {
+            var contractPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Core/Contracts/ShellSummarySnapshot.cs");
+            var mapperPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Core/Mapping/ShellSummarySnapshotMapper.cs");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs");
+            var clientPressureTestPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Tests/EditMode/ClientPressureSurfaceConsumptionTests.cs");
+            Assert.That(File.Exists(contractPath), Is.True, "ShellSummarySnapshot.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(mapperPath), Is.True, "ShellSummarySnapshotMapper.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(controllerPath), Is.True, "SummaryScreenController.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(clientPressureTestPath), Is.True, "ClientPressureSurfaceConsumptionTests.cs should be available from the Unity project root.");
+
+            var contract = File.ReadAllText(contractPath);
+            var mapper = File.ReadAllText(mapperPath);
+            var controller = File.ReadAllText(controllerPath);
+            var clientPressureTest = File.ReadAllText(clientPressureTestPath);
+
+            Assert.That(contract, Does.Contain("ClientPressureVisibleCauseSnapshot"), "Unity should model backend clientPressureSurface.visibleCauses directly.");
+            Assert.That(contract, Does.Contain("VisibleCauses"), "Client pressure surfaces should carry visible cause hints from the server.");
+            Assert.That(mapper, Does.Contain("MapClientPressureVisibleCause"), "The /api/me mapper should consume visible cause objects instead of forcing local inference only.");
+            Assert.That(mapper, Does.Contain("visibleCauses"));
+            Assert.That(controller, Does.Contain("Unity Home Visible Pressure Causes Consumption v1"), "Home cause hints should prefer server-authored visible cause labels when available.");
+            Assert.That(controller, Does.Contain("SelectClientPressureVisibleCause"));
+            Assert.That(controller, Does.Contain("FirstNonBlank(visibleCause?.Label, fallbackDriver)"));
+            Assert.That(clientPressureTest, Does.Contain("visibleCauses"), "Mapper coverage should include backend-visible cause hints.");
+            Assert.That(clientPressureTest, Does.Contain("Cartel or shadow-trade conflict"), "The test payload should prove Unity can preserve a morally neutral visible cause label.");
+        }
+
+        [Test]
         public void Home_pressure_chip_focus_hides_supporting_fact_cards_until_full_detail_review()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");

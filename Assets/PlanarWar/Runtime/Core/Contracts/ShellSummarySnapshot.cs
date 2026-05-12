@@ -186,8 +186,19 @@ namespace PlanarWar.Client.Core.Contracts
         public string LatestProofAt { get; set; } = string.Empty;
         public string LatestProofOutcome { get; set; } = string.Empty;
         public ClientPressureMissionLeadSnapshot MissionLead { get; set; }
+        public List<ClientPressureVisibleCauseSnapshot> VisibleCauses { get; set; } = new();
         public List<string> Signals { get; set; } = new();
         public List<string> Guardrails { get; set; } = new();
+    }
+
+    [Serializable]
+    public sealed class ClientPressureVisibleCauseSnapshot
+    {
+        public string Family { get; set; } = string.Empty;
+        public string Label { get; set; } = string.Empty;
+        public string Summary { get; set; } = string.Empty;
+        public string Confidence { get; set; } = string.Empty;
+        public string Source { get; set; } = string.Empty;
     }
 
     [Serializable]

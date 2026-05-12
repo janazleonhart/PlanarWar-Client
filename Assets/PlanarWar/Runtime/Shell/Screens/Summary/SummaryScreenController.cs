@@ -1295,12 +1295,18 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 parts.Add($"focus: {HumanizeToken(surface.PrimaryFocus)}");
             }
 
-            if (surface?.Signals != null && surface.Signals.Count > 0)
+            var visibleCause = SelectClientPressureVisibleCause(surface);
+            if (!string.IsNullOrWhiteSpace(visibleCause?.Summary))
+            {
+                parts.Add(CleanPlayerFacingText(visibleCause.Summary));
+            }
+            else if (surface?.Signals != null && surface.Signals.Count > 0)
             {
                 parts.Add(CleanPlayerFacingText(surface.Signals[0]));
             }
 
-            var driver = ResolveVisibleWorldPressureDriver(
+            // Unity Home Visible Pressure Causes Consumption v1: prefer server-authored visibleCauses when present, then fall back to local bounded label inference.
+            var fallbackDriver = ResolveVisibleWorldPressureDriver(
                 surface?.Title,
                 surface?.Summary,
                 surface?.PrimaryFocus,
@@ -1320,10 +1326,24 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 surface?.MissionLead?.Priority,
                 surface?.MissionLead?.Difficulty,
                 surface?.MissionLead?.ResponseTags);
+            var driver = CleanPlayerFacingText(FirstNonBlank(visibleCause?.Label, fallbackDriver));
+            var hint = FirstNonBlank(
+                visibleCause?.Summary,
+                parts.Count > 0 ? $"{string.Join("; ", parts.Take(2))}." : FirstNonBlank(primaryActionCard?.Source, surface?.WhyNow));
             return BuildHomePressureCauseHintLine(
                 driver,
-                parts.Count > 0 ? $"{string.Join("; ", parts.Take(2))}." : FirstNonBlank(primaryActionCard?.Source, surface?.WhyNow),
+                hint,
                 "The server surfaced this lead from visible pressure summary data; Home only explains and routes it.");
+        }
+
+        private static ClientPressureVisibleCauseSnapshot SelectClientPressureVisibleCause(ClientPressureSurfaceSnapshot surface)
+        {
+            if (surface?.VisibleCauses == null || surface.VisibleCauses.Count == 0)
+            {
+                return null;
+            }
+
+            return surface.VisibleCauses.FirstOrDefault(cause => !string.IsNullOrWhiteSpace(cause?.Label) || !string.IsNullOrWhiteSpace(cause?.Summary));
         }
 
         private void RenderPublicInfrastructureEconomySpine(ShellSummarySnapshot summary, bool isSummaryLoaded)

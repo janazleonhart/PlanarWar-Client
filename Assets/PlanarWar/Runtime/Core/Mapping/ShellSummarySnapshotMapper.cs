@@ -651,8 +651,23 @@ namespace PlanarWar.Client.Core.Mapping
                 LatestProofAt = FirstNonBlank(ReadClientPressureText(obj["latestProofAt"]), ReadClientPressureText(obj["latest_proof_at"])),
                 LatestProofOutcome = FirstNonBlank(ReadClientPressureText(obj["latestProofOutcome"]), ReadClientPressureText(obj["latest_proof_outcome"])),
                 MissionLead = MapClientPressureMissionLead(FirstObject(obj["missionLead"], obj["mission_lead"])),
+                VisibleCauses = FirstArray(obj["visibleCauses"], obj["visible_causes"])?.OfType<JObject>().Select(MapClientPressureVisibleCause).Where(cause => cause != null).ToList() ?? new List<ClientPressureVisibleCauseSnapshot>(),
                 Signals = MapClientPressureStringArray(FirstArray(obj["signals"])),
                 Guardrails = MapClientPressureStringArray(FirstArray(obj["guardrails"])),
+            };
+        }
+
+        private static ClientPressureVisibleCauseSnapshot MapClientPressureVisibleCause(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new ClientPressureVisibleCauseSnapshot
+            {
+                Family = FirstNonBlank(ReadClientPressureText(obj["family"]), ReadClientPressureText(obj["causeFamily"]), ReadClientPressureText(obj["cause_family"])),
+                Label = FirstNonBlank(ReadClientPressureText(obj["label"]), ReadClientPressureText(obj["title"])),
+                Summary = FirstNonBlank(ReadClientPressureText(obj["summary"]), ReadClientPressureText(obj["description"])),
+                Confidence = ReadClientPressureText(obj["confidence"]),
+                Source = ReadClientPressureText(obj["source"]),
             };
         }
 
