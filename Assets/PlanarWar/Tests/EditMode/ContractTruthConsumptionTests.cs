@@ -5592,6 +5592,25 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(uxml, Does.Contain("Best next step"));
         }
 
+
+        [Test]
+        public void Home_pressure_detail_digest_keeps_expanded_cards_short_and_player_readable()
+        {
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs");
+            Assert.That(File.Exists(controllerPath), Is.True, "SummaryScreenController.cs should be available from the Unity project root.");
+
+            var controller = File.ReadAllText(controllerPath);
+
+            Assert.That(controller, Does.Contain("Unity Home Pressure Detail Digest v1"), "The pressure detail digest pass should be explicitly guarded.");
+            Assert.That(controller, Does.Contain("StripPressureDetailPrefix"), "Detail copy should avoid doubled labels like 'Best next step: Best next step'.");
+            Assert.That(controller, Does.Contain("Current state:"), "Report panels should present concise current state lines.");
+            Assert.That(controller, Does.Contain("Latest report:"), "Report panels should summarize the latest report instead of dumping raw backend notes.");
+            Assert.That(controller, Does.Contain("Pressure mix: logistics"), "Regional support should expose a readable pressure mix instead of slash-packed metrics.");
+            Assert.That(controller, Does.Contain("Support capacity:"), "Regional support should keep the useful support number visible.");
+            Assert.That(controller, Does.Not.Contain("Support/logistics/frontier/stability"), "Do not show slash-packed backend metric names in player-facing Home details.");
+            Assert.That(controller, Does.Not.Contain("Recommended follow-through:"), "Follow-through details should use player-facing next-move wording.");
+        }
+
         [Test]
         public void Home_pressure_headers_translate_backend_system_names_to_player_facing_labels()
         {

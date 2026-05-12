@@ -615,8 +615,43 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
         private static string BuildHomePressureExplainerLine(string label, string value, string fallback, int maxLength)
         {
-            var clean = TranslateHomePressureTitle(FirstNonBlank(value, fallback));
+            // Unity Home Pressure Detail Digest v1: keep expanded pressure cards short and avoid doubled player-facing prefixes.
+            var clean = StripPressureDetailPrefix(TranslateHomePressureTitle(FirstNonBlank(value, fallback)), label);
             return $"{label}: {Truncate(clean, maxLength)}";
+        }
+
+        private static string StripPressureDetailPrefix(string value, string label)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            var clean = value.Trim();
+            foreach (var prefix in new[]
+            {
+                label,
+                "What it means",
+                "Why it matters",
+                "Best next step",
+                "Recommended action",
+                "Recommended response",
+                "Recommended desk action"
+            })
+            {
+                if (string.IsNullOrWhiteSpace(prefix))
+                {
+                    continue;
+                }
+
+                var marker = prefix.Trim();
+                if (clean.StartsWith(marker + ":", StringComparison.OrdinalIgnoreCase))
+                {
+                    clean = clean.Substring(marker.Length + 1).Trim();
+                }
+            }
+
+            return clean;
         }
 
         private static string FormatCompactPostureList(IEnumerable<string> entries, string emptyText)
@@ -1084,62 +1119,28 @@ namespace PlanarWar.Client.UI.Screens.Summary
             {
                 if (!string.IsNullOrWhiteSpace(followThrough.State))
                 {
-                    lines.Add($"Follow-through state: {HumanizeToken(followThrough.State)}.");
+                    lines.Add($"Current state: {HumanizeToken(followThrough.State)}.");
                 }
 
-                if (!string.IsNullOrWhiteSpace(followThrough.Title))
+                var reportLine = FirstNonBlank(followThrough.Title, followThrough.Summary);
+                if (!string.IsNullOrWhiteSpace(reportLine))
                 {
-                    lines.Add(CleanPlayerFacingText(followThrough.Title));
-                }
-
-                if (!string.IsNullOrWhiteSpace(followThrough.Summary))
-                {
-                    lines.Add(CleanPlayerFacingText(followThrough.Summary));
-                }
-
-                if (!string.IsNullOrWhiteSpace(followThrough.LatestReceiptId) || !string.IsNullOrWhiteSpace(followThrough.LatestReceiptAt))
-                {
-                    lines.Add(FormatLoggedReportLine(followThrough.LatestReceiptAt));
-                }
-
-                if (!string.IsNullOrWhiteSpace(followThrough.LatestService) || !string.IsNullOrWhiteSpace(followThrough.LatestMode))
-                {
-                    lines.Add($"Latest service/mode: {HumanizeToken(followThrough.LatestService)} / {HumanizeToken(followThrough.LatestMode)}.");
-                }
-
-                if (!string.IsNullOrWhiteSpace(followThrough.LatestPermitTier))
-                {
-                    lines.Add($"Latest permit tier: {HumanizeToken(followThrough.LatestPermitTier)}.");
-                }
-
-                if (followThrough.LatestQueueMinutes.HasValue || followThrough.LatestStrainScore.HasValue)
-                {
-                    lines.Add($"Latest queue/strain: {followThrough.LatestQueueMinutes ?? 0}m / {followThrough.LatestStrainScore ?? 0}/100.");
-                }
-
-                if (!string.IsNullOrWhiteSpace(followThrough.LatestRunwayDoctrine) || !string.IsNullOrWhiteSpace(followThrough.LatestRunwayStatus))
-                {
-                    lines.Add($"Runway context: {HumanizeToken(followThrough.LatestRunwayDoctrine)} / {HumanizeToken(followThrough.LatestRunwayStatus)}.");
-                }
-
-                if (followThrough.ReceiptCount.HasValue)
-                {
-                    lines.Add($"Report count: {followThrough.ReceiptCount.Value}.");
+                    lines.Add($"Latest report: {Truncate(CleanPlayerFacingText(reportLine), 132)}");
                 }
 
                 if (!string.IsNullOrWhiteSpace(followThrough.RecommendedMode) || !string.IsNullOrWhiteSpace(followThrough.RecommendedService))
                 {
-                    lines.Add($"Recommended report path: {HumanizeToken(followThrough.RecommendedMode)} / {HumanizeToken(followThrough.RecommendedService)}.");
+                    lines.Add($"Recommended path: {HumanizeToken(followThrough.RecommendedMode)} / {HumanizeToken(followThrough.RecommendedService)}.");
                 }
 
                 if (!string.IsNullOrWhiteSpace(followThrough.NextReceiptFamily))
                 {
-                    lines.Add($"Next report type: {HumanizeToken(followThrough.NextReceiptFamily)}.");
+                    lines.Add($"Next report: {HumanizeToken(followThrough.NextReceiptFamily)}.");
                 }
 
                 if (followThrough.Signals != null && followThrough.Signals.Count > 0)
                 {
-                    lines.Add(FormatPostureList(followThrough.Signals, string.Empty));
+                    lines.Add(FormatCompactPostureList(followThrough.Signals, string.Empty));
                 }
             }
             else
@@ -1149,11 +1150,6 @@ namespace PlanarWar.Client.UI.Screens.Summary
                     lines.Add($"Permit tier: {HumanizeToken(infrastructure.PermitTier)}.");
                 }
 
-                if (!string.IsNullOrWhiteSpace(infrastructure?.RecommendedMode))
-                {
-                    lines.Add($"Recommended mode: {HumanizeToken(infrastructure.RecommendedMode)}.");
-                }
-
                 if (!string.IsNullOrWhiteSpace(spine?.RecommendedService))
                 {
                     lines.Add($"Recommended service: {HumanizeToken(spine.RecommendedService)}.");
@@ -1161,26 +1157,26 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
                 if (!string.IsNullOrWhiteSpace(spine?.NextReceiptFamily))
                 {
-                    lines.Add($"Next report type: {HumanizeToken(spine.NextReceiptFamily)}.");
+                    lines.Add($"Next report: {HumanizeToken(spine.NextReceiptFamily)}.");
                 }
 
-                if (infrastructure?.ServiceHeat.HasValue == true || infrastructure?.QueuePressure.HasValue == true || infrastructure?.PressureScore.HasValue == true)
+                if (infrastructure?.QueuePressure.HasValue == true || infrastructure?.PressureScore.HasValue == true)
                 {
-                    lines.Add($"Heat/queue/pressure: {infrastructure.ServiceHeat ?? 0}/{infrastructure.QueuePressure ?? 0}/{infrastructure.PressureScore ?? 0}.");
+                    lines.Add($"Pressure: queue {infrastructure.QueuePressure ?? 0}; civic {infrastructure.PressureScore ?? 0}/100.");
                 }
 
                 if (!string.IsNullOrWhiteSpace(infrastructure?.CityStressStage) || infrastructure?.CityStressTotal.HasValue == true)
                 {
-                    lines.Add($"City stress: {HumanizeToken(infrastructure.CityStressStage)} {infrastructure.CityStressTotal ?? 0}.");
+                    lines.Add($"City stress: {HumanizeToken(infrastructure.CityStressStage)} {infrastructure.CityStressTotal ?? 0}/100.");
                 }
             }
 
             if (lines.Count > 0)
             {
-                return string.Join("\n", lines.Where(line => !string.IsNullOrWhiteSpace(line)));
+                return string.Join("\n", lines.Where(line => !string.IsNullOrWhiteSpace(line)).Take(5));
             }
 
-            return "Public infrastructure follow-through is waiting on live server state.";
+            return "Public-service reports are waiting on live server state.";
         }
 
 
@@ -1412,41 +1408,55 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
         private static string FormatCityMudBridgeSignals(CityMudWorldConsequenceBridgeSnapshot bridge)
         {
-            var lines = new List<string>
+            var lines = new List<string>();
+            var bridgeBand = HumanizeToken(bridge?.BridgeBand);
+            var posture = HumanizeToken(bridge?.RecommendedPosture);
+            if (!string.IsNullOrWhiteSpace(bridgeBand) || !string.IsNullOrWhiteSpace(posture))
             {
-                $"Bridge band: {HumanizeToken(bridge?.BridgeBand)}.",
-                $"Recommended posture: {HumanizeToken(bridge?.RecommendedPosture)}.",
-                $"Support/logistics/frontier/stability: {bridge?.SupportCapacity ?? 0}/{bridge?.LogisticsPressure ?? 0}/{bridge?.FrontierPressure ?? 0}/{bridge?.StabilityPressure ?? 0}.",
-            };
+                lines.Add($"Status: {FirstNonBlank(bridgeBand, "watch")}; posture {FirstNonBlank(posture, "monitor")}.");
+            }
 
-            var exportable = FormatResource(bridge?.ExportableResources ?? new ResourceSnapshot(), new ResourcePresentationSnapshot(), "No exportable city support surfaced.");
+            if (bridge?.SupportCapacity.HasValue == true)
+            {
+                lines.Add($"Support capacity: {bridge.SupportCapacity.Value}/100.");
+            }
+
+            if (bridge?.LogisticsPressure.HasValue == true || bridge?.FrontierPressure.HasValue == true || bridge?.StabilityPressure.HasValue == true)
+            {
+                lines.Add($"Pressure mix: logistics {bridge?.LogisticsPressure ?? 0}, frontier {bridge?.FrontierPressure ?? 0}, stability {bridge?.StabilityPressure ?? 0}.");
+            }
+
+            var exportable = FormatResource(bridge?.ExportableResources ?? new ResourceSnapshot(), new ResourcePresentationSnapshot(), string.Empty);
             if (!string.IsNullOrWhiteSpace(exportable))
             {
-                lines.Add($"Exportable support: {exportable}.");
+                lines.Add($"Available support: {exportable}.");
             }
 
             if (bridge?.CityMudSignals != null && bridge.CityMudSignals.Count > 0)
             {
-                lines.Add(FormatPostureList(bridge.CityMudSignals, string.Empty));
+                lines.Add(FormatCompactPostureList(bridge.CityMudSignals, string.Empty));
             }
 
-            return string.Join("\n", lines.Where(line => !string.IsNullOrWhiteSpace(line)));
+            return lines.Count > 0
+                ? string.Join("\n", lines.Where(line => !string.IsNullOrWhiteSpace(line)).Take(5))
+                : "No city-support signals surfaced yet.";
         }
 
         private static string FormatRegionalLifeSignals(CityMudWorldConsequenceBridgeSnapshot bridge)
         {
             var lines = new List<string>
             {
-                $"Affected regions: {FormatRegionList(bridge?.AffectedRegionIds)}.",
-                $"World consequences: {bridge?.WorldConsequenceTotal ?? 0}; severe {bridge?.SevereConsequenceCount ?? 0}; destabilization {bridge?.DestabilizationScore ?? 0}.",
+                $"Affected region: {FormatRegionList(bridge?.AffectedRegionIds)}.",
+                $"Severity: {bridge?.WorldConsequenceTotal ?? 0} reports; {bridge?.SevereConsequenceCount ?? 0} severe.",
+                $"Destabilization: {bridge?.DestabilizationScore ?? 0}.",
             };
 
             if (bridge?.RegionalLifeSignals != null && bridge.RegionalLifeSignals.Count > 0)
             {
-                lines.Add(FormatPostureList(bridge.RegionalLifeSignals, string.Empty));
+                lines.Add(FormatCompactPostureList(bridge.RegionalLifeSignals, string.Empty));
             }
 
-            return string.Join("\n", lines.Where(line => !string.IsNullOrWhiteSpace(line)));
+            return string.Join("\n", lines.Where(line => !string.IsNullOrWhiteSpace(line)).Take(5));
         }
 
         private static string FormatCityMudBridgeReceiptSignals(CityMudWorldConsequenceBridgeSnapshot bridge)
@@ -1455,22 +1465,18 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (!string.IsNullOrWhiteSpace(bridge?.NextReceiptFamily))
             {
-                lines.Add($"Next report type: {HumanizeToken(bridge.NextReceiptFamily)}.");
+                lines.Add($"Next report: {HumanizeToken(bridge.NextReceiptFamily)}.");
             }
 
-            if (bridge?.LatestRuntimeResponse != null)
+            var latest = bridge?.LatestRuntimeResponse ?? bridge?.LatestWorldConsequence;
+            if (latest != null)
             {
-                lines.Add($"Latest server response: {FormatCityMudBridgeReceipt(bridge.LatestRuntimeResponse)}");
-            }
-
-            if (bridge?.LatestWorldConsequence != null)
-            {
-                lines.Add($"Latest world consequence: {FormatCityMudBridgeReceipt(bridge.LatestWorldConsequence)}");
+                lines.Add($"Latest report: {FormatCityMudBridgeReceipt(latest)}");
             }
 
             if (bridge?.ReceiptSignals != null && bridge.ReceiptSignals.Count > 0)
             {
-                lines.Add(FormatPostureList(bridge.ReceiptSignals, string.Empty));
+                lines.Add(FormatCompactPostureList(bridge.ReceiptSignals, string.Empty));
             }
 
             if (lines.Count == 0)
@@ -1478,7 +1484,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 return "No regional-support reports surfaced yet.";
             }
 
-            return string.Join("\n", lines.Where(line => !string.IsNullOrWhiteSpace(line)));
+            return string.Join("\n", lines.Where(line => !string.IsNullOrWhiteSpace(line)).Take(4));
         }
 
         private static string FormatCityMudBridgeFollowThrough(CityMudWorldConsequenceBridgeSnapshot bridge)
@@ -1489,59 +1495,45 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 return "Regional support follow-through is waiting on live server state.";
             }
 
-            var lines = new List<string>
+            var lines = new List<string>();
+            if (!string.IsNullOrWhiteSpace(followThrough.State))
             {
-                $"Follow-through state: {HumanizeToken(followThrough.State)}.",
-                FirstNonBlank(followThrough.Title, "Regional support follow-through"),
-                FirstNonBlank(followThrough.Summary, string.Empty),
-            };
+                lines.Add($"Current state: {HumanizeToken(followThrough.State)}.");
+            }
+
+            var reportLine = FirstNonBlank(followThrough.Title, followThrough.Summary);
+            if (!string.IsNullOrWhiteSpace(reportLine))
+            {
+                lines.Add($"Latest report: {Truncate(CleanPlayerFacingText(reportLine), 132)}");
+            }
 
             if (!string.IsNullOrWhiteSpace(followThrough.RecommendedActionLabel))
             {
-                lines.Add($"Recommended follow-through: {followThrough.RecommendedActionLabel}");
+                lines.Add($"Next move: {CleanPlayerFacingText(followThrough.RecommendedActionLabel)}");
             }
-
-            if (!string.IsNullOrWhiteSpace(followThrough.RecommendedFocus))
+            else if (!string.IsNullOrWhiteSpace(followThrough.RecommendedFocus))
             {
-                lines.Add($"Recommended focus: {HumanizeToken(followThrough.RecommendedFocus)}.");
+                lines.Add($"Next focus: {HumanizeToken(followThrough.RecommendedFocus)}.");
             }
 
             if (!string.IsNullOrWhiteSpace(followThrough.NextReceiptFamily))
             {
-                lines.Add($"Next report type: {HumanizeToken(followThrough.NextReceiptFamily)}.");
-            }
-
-            if (!string.IsNullOrWhiteSpace(followThrough.LatestRuntimeResponseTitle))
-            {
-                lines.Add($"Latest server response: {CleanPlayerFacingText(followThrough.LatestRuntimeResponseTitle)}{FormatOptionalTokenSuffix(followThrough.LatestRuntimeResponseOutcome, string.Empty)}.");
-            }
-
-            if (!string.IsNullOrWhiteSpace(followThrough.LatestWorldConsequenceTitle))
-            {
-                lines.Add($"Latest world consequence: {CleanPlayerFacingText(followThrough.LatestWorldConsequenceTitle)}{FormatOptionalTokenSuffix(string.Empty, followThrough.LatestWorldConsequenceAt)}.");
-            }
-
-            if (!string.IsNullOrWhiteSpace(followThrough.LatestBridgeReceiptTitle))
-            {
-                lines.Add($"Latest bridge report: {CleanPlayerFacingText(followThrough.LatestBridgeReceiptTitle)}{FormatOptionalTokenSuffix(string.Empty, followThrough.LatestBridgeReceiptAt)}.");
-            }
-
-            if (followThrough.ClearWhen != null && followThrough.ClearWhen.Count > 0)
-            {
-                lines.Add("Clear when: " + string.Join(" ", followThrough.ClearWhen.Where(line => !string.IsNullOrWhiteSpace(line)).Select(CleanPlayerFacingText)));
+                lines.Add($"Next report: {HumanizeToken(followThrough.NextReceiptFamily)}.");
             }
 
             if (followThrough.WatchNext != null && followThrough.WatchNext.Count > 0)
             {
-                lines.Add("Watch next: " + string.Join(" ", followThrough.WatchNext.Where(line => !string.IsNullOrWhiteSpace(line)).Select(CleanPlayerFacingText)));
+                lines.Add("Watch next: " + Truncate(string.Join(" ", followThrough.WatchNext.Where(line => !string.IsNullOrWhiteSpace(line)).Select(CleanPlayerFacingText)), 132));
             }
 
             if (followThrough.Signals != null && followThrough.Signals.Count > 0)
             {
-                lines.Add(FormatPostureList(followThrough.Signals, string.Empty));
+                lines.Add(FormatCompactPostureList(followThrough.Signals, string.Empty));
             }
 
-            return string.Join("\n", lines.Where(line => !string.IsNullOrWhiteSpace(line)).Select(CleanPlayerFacingText));
+            return lines.Count > 0
+                ? string.Join("\n", lines.Where(line => !string.IsNullOrWhiteSpace(line)).Take(5))
+                : "Regional support follow-through is waiting on live server state.";
         }
 
         private static string FormatOptionalTokenSuffix(string first, string second)
