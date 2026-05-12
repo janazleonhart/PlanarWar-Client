@@ -517,7 +517,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             chip.EnableInClassList("home-pressure-summary-chip--selected", selected);
         }
 
-        private static void SetHomePressureDetailCardVisible(VisualElement card, bool visible)
+        private void SetHomePressureDetailCardVisible(VisualElement card, bool visible)
         {
             if (card == null)
             {
@@ -525,7 +525,17 @@ namespace PlanarWar.Client.UI.Screens.Summary
             }
 
             card.EnableInClassList("home-pressure-detail-card--collapsed", !visible);
+            card.EnableInClassList("home-pressure-detail-card--focused-summary", visible && IsFocusedHomePressureDetailCard(card));
             card.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        private bool IsFocusedHomePressureDetailCard(VisualElement card)
+        {
+            // Unity Home Pressure Detail Supporting Facts Fold v1: chip-focused detail views stay short by hiding supporting fact cards.
+            return card != null
+                && homePressureDetailsExpanded
+                && homePressureFocusedDetailCard != null
+                && ReferenceEquals(homePressureFocusedDetailCard, card);
         }
 
         private void ScrollToPressureDetails()

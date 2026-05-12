@@ -5625,6 +5625,29 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(controller, Does.Contain("return $\"{label}: {Truncate(clean, maxLength)}\";"), "What/why values should keep their explicit reader prompts.");
         }
 
+
+        [Test]
+        public void Home_pressure_chip_focus_hides_supporting_fact_cards_until_full_detail_review()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var stylesheetPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(stylesheetPath), Is.True, "AppShell.uss should be available from the Unity project root.");
+            Assert.That(File.Exists(controllerPath), Is.True, "SummaryScreenController.cs should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var uss = File.ReadAllText(stylesheetPath);
+            var controller = File.ReadAllText(controllerPath);
+
+            Assert.That(controller, Does.Contain("Unity Home Pressure Detail Supporting Facts Fold v1"), "Focused chip details should keep a guard marker for the supporting-facts fold.");
+            Assert.That(controller, Does.Contain("IsFocusedHomePressureDetailCard"));
+            Assert.That(controller, Does.Contain("home-pressure-detail-card--focused-summary"));
+            Assert.That(uxml, Does.Contain("home-pressure-detail-supporting-facts"), "Verbose support/report cards should be marked so focused chip views can hide them.");
+            Assert.That(uss, Does.Contain(".home-pressure-detail-card--focused-summary .home-pressure-detail-supporting-facts"));
+            Assert.That(controller, Does.Not.Contain("StartMission"), "Focused detail folding must not add fake execution from Home.");
+        }
+
         [Test]
         public void Home_pressure_headers_translate_backend_system_names_to_player_facing_labels()
         {
