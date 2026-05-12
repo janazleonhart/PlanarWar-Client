@@ -616,7 +616,13 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private static string BuildHomePressureExplainerLine(string label, string value, string fallback, int maxLength)
         {
             // Unity Home Pressure Detail Digest v1: keep expanded pressure cards short and avoid doubled player-facing prefixes.
+            // Unity Home Pressure Detail Next-Step De-Dupe v1: the Best next step section already has a visible header, so its value should not repeat the label.
             var clean = StripPressureDetailPrefix(TranslateHomePressureTitle(FirstNonBlank(value, fallback)), label);
+            if (string.Equals(label, "Best next step", StringComparison.OrdinalIgnoreCase))
+            {
+                return Truncate(clean, maxLength);
+            }
+
             return $"{label}: {Truncate(clean, maxLength)}";
         }
 

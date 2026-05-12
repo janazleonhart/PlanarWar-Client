@@ -5612,6 +5612,20 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
         [Test]
+        public void Home_pressure_detail_next_step_values_do_not_repeat_the_section_header()
+        {
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs");
+            Assert.That(File.Exists(controllerPath), Is.True, "SummaryScreenController.cs should be available from the Unity project root.");
+
+            var controller = File.ReadAllText(controllerPath);
+
+            Assert.That(controller, Does.Contain("Unity Home Pressure Detail Next-Step De-Dupe v1"), "The next-step value de-dupe pass should be explicitly guarded.");
+            Assert.That(controller, Does.Contain("string.Equals(label, \"Best next step\", StringComparison.OrdinalIgnoreCase)"));
+            Assert.That(controller, Does.Contain("return Truncate(clean, maxLength);"), "Best next step values should rely on the visible section heading instead of repeating the label.");
+            Assert.That(controller, Does.Contain("return $\"{label}: {Truncate(clean, maxLength)}\";"), "What/why values should keep their explicit reader prompts.");
+        }
+
+        [Test]
         public void Home_pressure_headers_translate_backend_system_names_to_player_facing_labels()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
