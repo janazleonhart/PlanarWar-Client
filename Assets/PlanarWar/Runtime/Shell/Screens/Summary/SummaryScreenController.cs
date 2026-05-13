@@ -110,6 +110,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private readonly Label motherBrainActionPathRecommended;
         private readonly Label motherBrainActionPathReason;
         private readonly Label motherBrainActionPathCause;
+        private readonly Label motherBrainActionPathResponse;
         private readonly Label motherBrainActionPathBlockers;
         private readonly Label motherBrainActionPathProof;
         private readonly Label motherBrainActionPathReceipt;
@@ -122,6 +123,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private readonly Label publicInfrastructureEconomySpineRecommended;
         private readonly Label publicInfrastructureEconomySpineReason;
         private readonly Label publicInfrastructureEconomySpineCause;
+        private readonly Label publicInfrastructureEconomySpineResponse;
         private readonly Label publicInfrastructureEconomySpinePublicSignals;
         private readonly Label publicInfrastructureEconomySpineCitySignals;
         private readonly Label publicInfrastructureEconomySpineShadowSignals;
@@ -135,6 +137,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private readonly Label cityMudConsequenceBridgeRecommended;
         private readonly Label cityMudConsequenceBridgeReason;
         private readonly Label cityMudConsequenceBridgeCause;
+        private readonly Label cityMudConsequenceBridgeResponse;
         private readonly Label cityMudConsequenceBridgeBridgeSignals;
         private readonly Label cityMudConsequenceBridgeProgressionSignals;
         private readonly Label cityMudConsequenceBridgeRegionalSignals;
@@ -150,6 +153,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private readonly Label cityContractRecoveryBoardRecommended;
         private readonly Label cityContractRecoveryBoardReason;
         private readonly Label cityContractRecoveryBoardCause;
+        private readonly Label cityContractRecoveryBoardResponse;
         private readonly Label cityContractRecoveryBoardRegions;
         private readonly Label cityContractRecoveryBoardCandidate;
         private readonly Label cityContractRecoveryBoardResources;
@@ -268,6 +272,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             motherBrainActionPathRecommended = root.Q<Label>("mother-brain-action-path-recommended-value");
             motherBrainActionPathReason = root.Q<Label>("mother-brain-action-path-reason-value");
             motherBrainActionPathCause = root.Q<Label>("mother-brain-action-path-cause-value");
+            motherBrainActionPathResponse = root.Q<Label>("mother-brain-action-path-response-value");
             motherBrainActionPathBlockers = root.Q<Label>("mother-brain-action-path-blockers-value");
             motherBrainActionPathProof = root.Q<Label>("mother-brain-action-path-proof-value");
             motherBrainActionPathReceipt = root.Q<Label>("mother-brain-action-path-receipt-value");
@@ -279,6 +284,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             publicInfrastructureEconomySpineRecommended = root.Q<Label>("public-infrastructure-economy-spine-recommended-value");
             publicInfrastructureEconomySpineReason = root.Q<Label>("public-infrastructure-economy-spine-reason-value");
             publicInfrastructureEconomySpineCause = root.Q<Label>("public-infrastructure-economy-spine-cause-value");
+            publicInfrastructureEconomySpineResponse = root.Q<Label>("public-infrastructure-economy-spine-response-value");
             publicInfrastructureEconomySpinePublicSignals = root.Q<Label>("public-infrastructure-economy-spine-public-signals-value");
             publicInfrastructureEconomySpineCitySignals = root.Q<Label>("public-infrastructure-economy-spine-city-signals-value");
             publicInfrastructureEconomySpineShadowSignals = root.Q<Label>("public-infrastructure-economy-spine-shadow-signals-value");
@@ -291,6 +297,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             cityMudConsequenceBridgeRecommended = root.Q<Label>("city-mud-consequence-bridge-recommended-value");
             cityMudConsequenceBridgeReason = root.Q<Label>("city-mud-consequence-bridge-reason-value");
             cityMudConsequenceBridgeCause = root.Q<Label>("city-mud-consequence-bridge-cause-value");
+            cityMudConsequenceBridgeResponse = root.Q<Label>("city-mud-consequence-bridge-response-value");
             cityMudConsequenceBridgeBridgeSignals = root.Q<Label>("city-mud-consequence-bridge-bridge-signals-value");
             cityMudConsequenceBridgeProgressionSignals = root.Q<Label>("city-mud-consequence-bridge-progression-signals-value");
             cityMudConsequenceBridgeRegionalSignals = root.Q<Label>("city-mud-consequence-bridge-regional-signals-value");
@@ -305,6 +312,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
             cityContractRecoveryBoardRecommended = root.Q<Label>("city-contract-recovery-board-recommended-value");
             cityContractRecoveryBoardReason = root.Q<Label>("city-contract-recovery-board-reason-value");
             cityContractRecoveryBoardCause = root.Q<Label>("city-contract-recovery-board-cause-value");
+            cityContractRecoveryBoardResponse = root.Q<Label>("city-contract-recovery-board-response-value");
             cityContractRecoveryBoardRegions = root.Q<Label>("city-contract-recovery-board-regions-value");
             cityContractRecoveryBoardCandidate = root.Q<Label>("city-contract-recovery-board-candidate-value");
             cityContractRecoveryBoardResources = root.Q<Label>("city-contract-recovery-board-resources-value");
@@ -644,6 +652,71 @@ namespace PlanarWar.Client.UI.Screens.Summary
             }
 
             return Truncate($"Visible driver: {driver}. {clean}", 150);
+        }
+
+        private static string BuildHomePressureResponseLine(string causeHint, ShellScreen targetScreen, ShellSummarySnapshot summary)
+        {
+            // Unity Home Pressure Cause Response Guidance v1: connect cause -> response desk without executing or inventing actions.
+            var driver = ExtractVisibleDriver(causeHint).ToLowerInvariant();
+            var desk = BuildDeskNoun(targetScreen, summary);
+
+            if (ContainsAny(driver, "bandit", "raid", "road attack"))
+            {
+                return Truncate($"Use {desk} to inspect the current road-security or suppression lead; outcomes come from real server reports.", 156);
+            }
+
+            if (ContainsAny(driver, "counterfeit", "paperwork", "trust", "forg"))
+            {
+                return Truncate($"Use {desk} to inspect record-audit, tracing, or trust-repair actions; Home only routes to server-authored responses.", 156);
+            }
+
+            if (ContainsAny(driver, "supply", "route", "caravan", "shortage", "harvest", "weather"))
+            {
+                return Truncate($"Use {desk} to inspect convoy, supply, or route-stabilization actions tied to this visible driver.", 156);
+            }
+
+            if (ContainsAny(driver, "war", "conflict", "frontier", "rival"))
+            {
+                return Truncate($"Use {desk} to inspect defensive, recovery, or regional-support actions before pressure spreads further.", 156);
+            }
+
+            if (ContainsAny(driver, "public-service", "service", "queue", "civic"))
+            {
+                return Truncate($"Use {desk} to inspect service, queue, or infrastructure support actions; the server decides the real outcome.", 156);
+            }
+
+            if (ContainsAny(driver, "shadow", "cartel", "black market", "smuggling", "bribe", "trade disruption"))
+            {
+                return Truncate($"Use {desk} to inspect deniable containment, leverage, or route-control actions without assuming good/evil rails.", 156);
+            }
+
+            if (ContainsAny(driver, "instability", "threat", "pressure", "disease", "strain"))
+            {
+                return Truncate($"Use {desk} to inspect stabilization or recovery actions that answer the visible pressure source.", 156);
+            }
+
+            return Truncate($"Use {desk} to inspect the current server-authored response; Home explains and routes, but does not execute it.", 156);
+        }
+
+        private static string ExtractVisibleDriver(string causeHint)
+        {
+            if (string.IsNullOrWhiteSpace(causeHint))
+            {
+                return "visible world pressure";
+            }
+
+            var clean = CleanPlayerFacingText(causeHint).Trim();
+            const string marker = "Visible driver:";
+            if (!clean.StartsWith(marker, StringComparison.OrdinalIgnoreCase))
+            {
+                return clean;
+            }
+
+            var afterMarker = clean.Substring(marker.Length).Trim();
+            var sentenceEnd = afterMarker.IndexOf('.');
+            return sentenceEnd >= 0
+                ? afterMarker.Substring(0, sentenceEnd).Trim()
+                : afterMarker.Trim();
         }
 
         private static string ResolveVisibleWorldPressureDriver(params object[] sourceGroups)
@@ -1390,9 +1463,15 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 publicInfrastructureEconomySpineReason.text = BuildHomePressureWhyLine(spine.WhyThisMatters, "Public-service strain can make civic support and development choices more important.");
             }
 
+            var publicServiceCauseHint = BuildPublicServiceCauseHint(infrastructure, spine);
             if (publicInfrastructureEconomySpineCause != null)
             {
-                publicInfrastructureEconomySpineCause.text = BuildPublicServiceCauseHint(infrastructure, spine);
+                publicInfrastructureEconomySpineCause.text = publicServiceCauseHint;
+            }
+
+            if (publicInfrastructureEconomySpineResponse != null)
+            {
+                publicInfrastructureEconomySpineResponse.text = BuildHomePressureResponseLine(publicServiceCauseHint, recommendedScreen, summary);
             }
 
             if (publicInfrastructureEconomySpinePublicSignals != null)
@@ -1547,9 +1626,15 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 cityContractRecoveryBoardReason.text = BuildHomePressureWhyLine(ContractTruthText.BuildCityContractRecoveryBoardNote(board, "Recovery leads point to existing regional trouble without starting a contract from Home."), "Recovery work helps players find the next real support lead without fake action.");
             }
 
+            var recoveryCauseHint = BuildRecoveryOpportunityCauseHint(board, lead);
             if (cityContractRecoveryBoardCause != null)
             {
-                cityContractRecoveryBoardCause.text = BuildRecoveryOpportunityCauseHint(board, lead);
+                cityContractRecoveryBoardCause.text = recoveryCauseHint;
+            }
+
+            if (cityContractRecoveryBoardResponse != null)
+            {
+                cityContractRecoveryBoardResponse.text = BuildHomePressureResponseLine(recoveryCauseHint, recommendedScreen, summary);
             }
 
             if (cityContractRecoveryBoardRegions != null)
@@ -1681,9 +1766,15 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 cityMudConsequenceBridgeReason.text = BuildHomePressureWhyLine(bridge.WhyThisMatters, "Regional support can affect where civic work, recovery, and MUD-facing support matter next.");
             }
 
+            var regionalSupportCauseHint = BuildRegionalSupportCauseHint(bridge);
             if (cityMudConsequenceBridgeCause != null)
             {
-                cityMudConsequenceBridgeCause.text = BuildRegionalSupportCauseHint(bridge);
+                cityMudConsequenceBridgeCause.text = regionalSupportCauseHint;
+            }
+
+            if (cityMudConsequenceBridgeResponse != null)
+            {
+                cityMudConsequenceBridgeResponse.text = BuildHomePressureResponseLine(regionalSupportCauseHint, recommendedScreen, summary);
             }
 
             if (cityMudConsequenceBridgeBridgeSignals != null)
@@ -1962,9 +2053,15 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 motherBrainActionPathReason.text = BuildHomePressureWhyLine(FirstNonBlank(actionPath.WhyThisMatters, pressure.RecommendedAction), "This lead comes from live pressure status and does not spawn events or complete objectives from Home.");
             }
 
+            var urgentPressureCauseHint = BuildUrgentPressureCauseHint(pressure, actionPath);
             if (motherBrainActionPathCause != null)
             {
-                motherBrainActionPathCause.text = BuildUrgentPressureCauseHint(pressure, actionPath);
+                motherBrainActionPathCause.text = urgentPressureCauseHint;
+            }
+
+            if (motherBrainActionPathResponse != null)
+            {
+                motherBrainActionPathResponse.text = BuildHomePressureResponseLine(urgentPressureCauseHint, recommendedScreen, summary);
             }
 
             if (motherBrainActionPathBlockers != null)
@@ -2044,9 +2141,15 @@ namespace PlanarWar.Client.UI.Screens.Summary
                     "This reads the pressure summary only; it does not execute missions, change state, create rewards, or start timers.");
             }
 
+            var clientPressureCauseHint = BuildClientPressureCauseHint(surface, primaryActionCard);
             if (motherBrainActionPathCause != null)
             {
-                motherBrainActionPathCause.text = BuildClientPressureCauseHint(surface, primaryActionCard);
+                motherBrainActionPathCause.text = clientPressureCauseHint;
+            }
+
+            if (motherBrainActionPathResponse != null)
+            {
+                motherBrainActionPathResponse.text = BuildHomePressureResponseLine(clientPressureCauseHint, recommendedScreen, summary);
             }
 
             if (motherBrainActionPathBlockers != null)

@@ -5770,6 +5770,43 @@ namespace PlanarWar.Client.Tests.EditMode
 
 
         [Test]
+        public void Home_pressure_cause_response_guidance_connects_visible_drivers_to_safe_desks_without_execution()
+        {
+            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs");
+            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
+            Assert.That(File.Exists(controllerPath), Is.True, "SummaryScreenController.cs should be available from the Unity project root.");
+
+            var uxml = File.ReadAllText(appShellPath);
+            var controller = File.ReadAllText(controllerPath);
+
+            Assert.That(uxml, Does.Contain("How to respond"), "Focused pressure details should bridge visible cause -> response path for testers.");
+            foreach (var prefix in new[]
+            {
+                "mother-brain-action-path",
+                "public-infrastructure-economy-spine",
+                "city-mud-consequence-bridge",
+                "city-contract-recovery-board"
+            })
+            {
+                var causeIndex = uxml.IndexOf($"name=\"{prefix}-cause-value\"", StringComparison.Ordinal);
+                var responseIndex = uxml.IndexOf($"name=\"{prefix}-response-value\"", StringComparison.Ordinal);
+                var nextStepIndex = uxml.IndexOf($"name=\"{prefix}-recommended-value\"", StringComparison.Ordinal);
+                Assert.That(responseIndex, Is.GreaterThan(causeIndex), $"{prefix} should show response guidance after the visible cause.");
+                Assert.That(nextStepIndex, Is.GreaterThan(responseIndex), $"{prefix} should keep the actual next step after the response guidance.");
+            }
+
+            Assert.That(controller, Does.Contain("Unity Home Pressure Cause Response Guidance v1"), "Response guidance should keep a guard marker.");
+            Assert.That(controller, Does.Contain("BuildHomePressureResponseLine"), "Response guidance should be generated from visible driver + existing desk truth.");
+            Assert.That(controller, Does.Contain("road-security or suppression lead"), "Bandit/raid drivers should explain the suppression-style response path when server truth exposes them.");
+            Assert.That(controller, Does.Contain("server-authored responses"), "Response guidance should not invent client-side actions.");
+            Assert.That(controller, Does.Not.Contain("StartMission"), "Home response guidance must not execute missions.");
+            Assert.That(controller, Does.Not.Contain("City = Good"), "Response guidance must not moral-color the City lane.");
+            Assert.That(controller, Does.Not.Contain("Black Market = Bad"), "Response guidance must not moral-color the Black Market lane.");
+        }
+
+
+        [Test]
         public void Home_pressure_cause_hints_prefer_server_visible_causes_before_local_label_inference()
         {
             var contractPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Core/Contracts/ShellSummarySnapshot.cs");
