@@ -962,6 +962,15 @@ namespace PlanarWar.Client.Core
                     parts.Add($"Effects: {effectText}");
                 }
 
+                var visibleCauseText = FormatVisibleCauseBundle(FirstDirectToken(
+                    new[] { receipt, result, root },
+                    "visibleCauses",
+                    "visible_causes"));
+                if (!string.IsNullOrWhiteSpace(visibleCauseText))
+                {
+                    parts.Add($"Visible drivers: {visibleCauseText}");
+                }
+
                 var summary = FirstReceiptText(
                     Child(receipt, "summary"),
                     Child(result, "summary"),
@@ -1337,6 +1346,65 @@ namespace PlanarWar.Client.Core
             }
 
             return FirstReceiptText(Child(token, "title"), Child(token, "name"), Child(token, "summary"), token);
+        }
+
+        private static string FormatVisibleCauseBundle(JToken token)
+        {
+            if (!IsMeaningfulToken(token))
+            {
+                return string.Empty;
+            }
+
+            var causes = new List<string>();
+            IEnumerable<JToken> items = token.Type == JTokenType.Array
+                ? token.Children()
+                : new[] { token }.AsEnumerable();
+            foreach (var item in items)
+            {
+                if (!IsMeaningfulToken(item))
+                {
+                    continue;
+                }
+
+                var label = FirstReceiptText(
+                    Child(item, "label"),
+                    Child(item, "title"),
+                    Child(item, "family"),
+                    Child(item, "causeFamily"),
+                    Child(item, "cause_family"));
+                var summary = FirstReceiptText(
+                    Child(item, "summary"),
+                    Child(item, "description"),
+                    Child(item, "detail"));
+
+                label = HumanizeReceiptPhrase(label);
+                summary = summary?.Trim() ?? string.Empty;
+
+                if (string.IsNullOrWhiteSpace(label) && string.IsNullOrWhiteSpace(summary))
+                {
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(label))
+                {
+                    causes.Add(summary);
+                    continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(summary) && !string.Equals(label, summary, StringComparison.OrdinalIgnoreCase))
+                {
+                    causes.Add($"{label} — {summary}");
+                    continue;
+                }
+
+                causes.Add(label);
+            }
+
+            return string.Join("; ", causes
+                .Where(cause => !string.IsNullOrWhiteSpace(cause))
+                .Select(cause => cause.Trim())
+                .Distinct()
+                .Take(3));
         }
 
         private static string NormalizeCompletionStatus(string status, JToken okToken)

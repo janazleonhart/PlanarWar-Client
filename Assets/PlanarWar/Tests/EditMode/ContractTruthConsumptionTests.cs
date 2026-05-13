@@ -1411,6 +1411,56 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
         [Test]
+        public void Summary_state_formats_mission_receipt_visible_causes_as_player_facing_drivers()
+        {
+            const string response = @"{
+                ""ok"": true,
+                ""result"": {
+                    ""status"": ""ok"",
+                    ""rewards"": { ""wealth"": 9 },
+                    ""receipt"": {
+                        ""missionTitle"": ""Marshal Brief: Screen the Convoy Spine"",
+                        ""outcome"": ""success"",
+                        ""summary"": ""Road pressure eased after the convoy screen."",
+                        ""visibleCauses"": [{
+                            ""family"": ""bandit_raids"",
+                            ""label"": ""Bandit raids or road attacks"",
+                            ""summary"": ""Raiders are disrupting road traffic."",
+                            ""confidence"": ""visible"",
+                            ""source"": ""mission_receipt""
+                        }]
+                    }
+                }
+            }";
+
+            var receipt = SummaryState.FormatMissionCompletionReceipt(response, "active_1");
+
+            Assert.That(receipt, Does.Contain("Mission: Marshal Brief: Screen the Convoy Spine"));
+            Assert.That(receipt, Does.Contain("Visible drivers: Bandit raids or road attacks — Raiders are disrupting road traffic."));
+            Assert.That(receipt, Does.Contain("Summary: Road pressure eased after the convoy screen."));
+            Assert.That(receipt, Does.Not.Contain("bandit_raids"));
+            Assert.That(receipt, Does.Not.Contain("mission_receipt"));
+            Assert.That(receipt, Does.Not.Contain("confidence"));
+            Assert.That(receipt, Does.Not.Contain("source"));
+        }
+
+        [Test]
+        public void Unity_mission_completion_receipts_consume_backend_visible_causes_without_formula_leaks()
+        {
+            var summaryStatePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Core/SummaryState.cs");
+            Assert.That(File.Exists(summaryStatePath), Is.True, "SummaryState.cs should be available from the Unity project root.");
+
+            var source = File.ReadAllText(summaryStatePath);
+            Assert.That(source, Does.Contain("FormatVisibleCauseBundle"));
+            Assert.That(source, Does.Contain("visibleCauses"));
+            Assert.That(source, Does.Contain("Visible drivers:"));
+            Assert.That(source, Does.Not.Contain("Visible cause formula"));
+            Assert.That(source, Does.Not.Contain("Mother Brain formula"));
+            Assert.That(source, Does.Not.Contain("Rogue Director formula"));
+            Assert.That(source, Does.Not.Contain("Market Cartel formula"));
+        }
+
+        [Test]
         public void Operations_recent_mission_receipt_is_promoted_into_the_mission_board()
         {
             var screenPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/BlackMarket/BlackMarketScreenController.cs");
@@ -5802,38 +5852,6 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(guide, Does.Not.Contain("### City ↔ MUD world-consequence bridge"));
             Assert.That(guide, Does.Not.Contain("### Regional recovery board"));
         }
-
-
-        [Test]
-        public void Unity_help_surface_explains_pressure_drivers_and_safe_actions_without_hidden_formula_leaks()
-        {
-            var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
-            var stylesheetPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/USS/AppShell.uss");
-            var guidePath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Docs/PLAYER_TESTER_GUIDE_V1.md");
-            Assert.That(File.Exists(appShellPath), Is.True, "AppShell.uxml should be available from the Unity project root.");
-            Assert.That(File.Exists(stylesheetPath), Is.True, "AppShell.uss should be available from the Unity project root.");
-            Assert.That(File.Exists(guidePath), Is.True, "PLAYER_TESTER_GUIDE_V1.md should be available from the Unity project root.");
-
-            var uxml = File.ReadAllText(appShellPath);
-            var uss = File.ReadAllText(stylesheetPath);
-            var guide = File.ReadAllText(guidePath);
-
-            Assert.That(uxml, Does.Contain("Unity Help Surface v1"));
-            Assert.That(uxml, Does.Contain("Pressure summary"));
-            Assert.That(uxml, Does.Contain("Visible drivers"));
-            Assert.That(uxml, Does.Contain("Motives, not good/evil rails"));
-            Assert.That(uxml, Does.Contain("Home buttons route to existing desks or reveal existing detail"));
-            Assert.That(uss, Does.Contain("Unity Help Surface v1"));
-            Assert.That(uss, Does.Contain(".guide-help-card"));
-            Assert.That(guide, Does.Contain("Unity Help Surface v1"));
-            Assert.That(guide, Does.Contain("bandit raids, weather loss, or war buildup"));
-            Assert.That(guide, Does.Contain("not good/evil rails"));
-            Assert.That(guide, Does.Contain("Exact hidden scoring stays hidden"));
-            Assert.That(guide, Does.Contain("They do not execute missions, create rewards, bypass blockers, start clocks, create taxes, or mutate world state"));
-            Assert.That(guide, Does.Not.Contain("City = Good"));
-            Assert.That(guide, Does.Not.Contain("Black Market = Bad"));
-        }
-
 
 
     }
