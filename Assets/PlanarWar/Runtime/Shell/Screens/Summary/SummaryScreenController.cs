@@ -657,45 +657,67 @@ namespace PlanarWar.Client.UI.Screens.Summary
         private static string BuildHomePressureResponseLine(string causeHint, ShellScreen targetScreen, ShellSummarySnapshot summary)
         {
             // Unity Home Pressure Cause Response Guidance v1: connect cause -> response desk without executing or inventing actions.
+            // Unity Home Pressure Response Path Clarity v1: explain the response style first, then route to the existing safe desk.
             var driver = ExtractVisibleDriver(causeHint).ToLowerInvariant();
-            var desk = BuildDeskNoun(targetScreen, summary);
+            var action = BuildHomePressureCauseResponseAction(driver);
+            var route = BuildHomePressureSafeRoutePhrase(targetScreen, summary);
+            return Truncate($"{action} {route}", 220);
+        }
 
+        private static string BuildHomePressureCauseResponseAction(string driver)
+        {
             if (ContainsAny(driver, "bandit", "raid", "road attack"))
             {
-                return Truncate($"Use {desk} to inspect the current road-security or suppression lead; outcomes come from real server reports.", 156);
+                return "Deal with the cause by suppressing road attacks, escorting routes, or cutting bandit support.";
             }
 
             if (ContainsAny(driver, "counterfeit", "paperwork", "trust", "forg"))
             {
-                return Truncate($"Use {desk} to inspect record-audit, tracing, or trust-repair actions; Home only routes to server-authored responses.", 156);
+                return "Deal with the cause by auditing records, tracing forged papers, or repairing trust.";
             }
 
             if (ContainsAny(driver, "supply", "route", "caravan", "shortage", "harvest", "weather"))
             {
-                return Truncate($"Use {desk} to inspect convoy, supply, or route-stabilization actions tied to this visible driver.", 156);
+                return "Deal with the cause by stabilizing routes, escorting convoys, or replacing lost supplies.";
             }
 
             if (ContainsAny(driver, "war", "conflict", "frontier", "rival"))
             {
-                return Truncate($"Use {desk} to inspect defensive, recovery, or regional-support actions before pressure spreads further.", 156);
+                return "Deal with the cause by reinforcing defenses, disrupting buildup, or backing recovery.";
             }
 
             if (ContainsAny(driver, "public-service", "service", "queue", "civic"))
             {
-                return Truncate($"Use {desk} to inspect service, queue, or infrastructure support actions; the server decides the real outcome.", 156);
+                return "Deal with the cause by reducing queues, improving service capacity, or routing civic support.";
             }
 
             if (ContainsAny(driver, "shadow", "cartel", "black market", "smuggling", "bribe", "trade disruption"))
             {
-                return Truncate($"Use {desk} to inspect deniable containment, leverage, or route-control actions without assuming good/evil rails.", 156);
+                return "Deal with the cause by containing heat, settling disruption, or controlling routes without good/evil rails.";
             }
 
             if (ContainsAny(driver, "instability", "threat", "pressure", "disease", "strain"))
             {
-                return Truncate($"Use {desk} to inspect stabilization or recovery actions that answer the visible pressure source.", 156);
+                return "Deal with the cause by stabilizing the affected area or backing recovery.";
             }
 
-            return Truncate($"Use {desk} to inspect the current server-authored response; Home explains and routes, but does not execute it.", 156);
+            return "Deal with the cause by reviewing the server-authored response for this pressure.";
+        }
+
+        private static string BuildHomePressureSafeRoutePhrase(ShellScreen targetScreen, ShellSummarySnapshot summary)
+        {
+            var desk = BuildDeskNoun(targetScreen, summary);
+            if (targetScreen == ShellScreen.Heroes)
+            {
+                return $"Open {desk} for the recruit or assignment step; Home only routes to server-authored responses.";
+            }
+
+            if (targetScreen == ShellScreen.BlackMarket)
+            {
+                return $"Open {desk} for the matching mission or operation; Home only routes to server-authored responses.";
+            }
+
+            return $"Open {desk} for building, research, or support options; Home only routes to server-authored responses.";
         }
 
         private static string ExtractVisibleDriver(string causeHint)

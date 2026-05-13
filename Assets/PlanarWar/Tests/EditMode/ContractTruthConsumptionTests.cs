@@ -5798,11 +5798,32 @@ namespace PlanarWar.Client.Tests.EditMode
 
             Assert.That(controller, Does.Contain("Unity Home Pressure Cause Response Guidance v1"), "Response guidance should keep a guard marker.");
             Assert.That(controller, Does.Contain("BuildHomePressureResponseLine"), "Response guidance should be generated from visible driver + existing desk truth.");
-            Assert.That(controller, Does.Contain("road-security or suppression lead"), "Bandit/raid drivers should explain the suppression-style response path when server truth exposes them.");
+            Assert.That(controller, Does.Contain("suppressing road attacks"), "Bandit/raid drivers should explain the suppression-style response path when server truth exposes them.");
+            Assert.That(controller, Does.Contain("BuildHomePressureCauseResponseAction"), "Response guidance should describe how to deal with the visible cause before routing desks.");
+            Assert.That(controller, Does.Contain("BuildHomePressureSafeRoutePhrase"), "Response guidance should use existing desks without inventing execution.");
             Assert.That(controller, Does.Contain("server-authored responses"), "Response guidance should not invent client-side actions.");
             Assert.That(controller, Does.Not.Contain("StartMission"), "Home response guidance must not execute missions.");
             Assert.That(controller, Does.Not.Contain("City = Good"), "Response guidance must not moral-color the City lane.");
             Assert.That(controller, Does.Not.Contain("Black Market = Bad"), "Response guidance must not moral-color the Black Market lane.");
+        }
+
+
+        [Test]
+        public void Home_pressure_response_guidance_names_cause_counterplay_before_routing_to_desks()
+        {
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs");
+            Assert.That(File.Exists(controllerPath), Is.True, "SummaryScreenController.cs should be available from the Unity project root.");
+
+            var controller = File.ReadAllText(controllerPath);
+
+            Assert.That(controller, Does.Contain("Unity Home Pressure Response Path Clarity v1"), "Response guidance should keep the clarity pass marker.");
+            Assert.That(controller, Does.Contain("Deal with the cause by suppressing road attacks"), "Bandit pressure should explain the suppression/escort response before desk routing.");
+            Assert.That(controller, Does.Contain("Deal with the cause by auditing records"), "Counterfeit pressure should explain audit/tracing/trust repair before desk routing.");
+            Assert.That(controller, Does.Contain("Deal with the cause by stabilizing routes"), "Route pressure should explain route/convoy/supply response before desk routing.");
+            Assert.That(controller, Does.Contain("matching mission or operation"), "Operations routing should remain explicit and non-executing.");
+            Assert.That(controller, Does.Contain("building, research, or support options"), "Development routing should remain explicit and non-executing.");
+            Assert.That(controller, Does.Contain("Open {desk} for the recruit or assignment step"), "Hero/operative routing should explain recruit or assignment instead of pretending every cause is a hero action.");
+            Assert.That(controller, Does.Not.Contain("StartMission"), "Home response guidance must not execute missions.");
         }
 
 
