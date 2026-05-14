@@ -656,7 +656,13 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
         private static string BuildHomePressureResponseLine(string causeHint, ShellScreen targetScreen, ShellSummarySnapshot summary)
         {
-            return BuildHomePressureResponseLine(causeHint, targetScreen, summary, null);
+            return BuildHomePressureResponseLine(causeHint, targetScreen, summary, (ClientPressureCauseResponseThreadSnapshot)null);
+        }
+
+        private static string BuildHomePressureResponseLine(string causeHint, ShellScreen targetScreen, ShellSummarySnapshot summary, ClientPressureSurfaceSnapshot surface)
+        {
+            // Unity Home Focused Response Thread Matching v1: focused detail cards use matching backend responseThreads when available.
+            return BuildHomePressureResponseLine(causeHint, targetScreen, summary, SelectClientPressureResponseThread(surface, causeHint, targetScreen, summary));
         }
 
         private static string BuildHomePressureResponseLine(string causeHint, ShellScreen targetScreen, ShellSummarySnapshot summary, ClientPressureCauseResponseThreadSnapshot responseThread)
@@ -1508,7 +1514,113 @@ namespace PlanarWar.Client.UI.Screens.Summary
                 return null;
             }
 
-            return surface.ResponseThreads.FirstOrDefault(thread => !string.IsNullOrWhiteSpace(thread?.ResponseSummary) || !string.IsNullOrWhiteSpace(thread?.CounterplaySummary) || !string.IsNullOrWhiteSpace(thread?.ExpectedOutcomeHint));
+            return surface.ResponseThreads.FirstOrDefault(HasUsableClientPressureResponseThread);
+        }
+
+        private static ClientPressureCauseResponseThreadSnapshot SelectClientPressureResponseThread(ClientPressureSurfaceSnapshot surface, string causeHint, ShellScreen targetScreen, ShellSummarySnapshot summary)
+        {
+            if (surface?.ResponseThreads == null || surface.ResponseThreads.Count == 0)
+            {
+                return null;
+            }
+
+            var usableThreads = surface.ResponseThreads.Where(HasUsableClientPressureResponseThread).ToList();
+            if (usableThreads.Count == 0)
+            {
+                return null;
+            }
+
+            var routeMatches = usableThreads.Where(thread => ClientPressureResponseThreadMatchesScreen(thread, targetScreen, summary)).ToList();
+            var routeAndCauseMatch = routeMatches.FirstOrDefault(thread => ClientPressureResponseThreadMatchesCause(thread, causeHint));
+            if (routeAndCauseMatch != null)
+            {
+                return routeAndCauseMatch;
+            }
+
+            if (routeMatches.Count == 1)
+            {
+                return routeMatches[0];
+            }
+
+            var causeMatch = usableThreads.FirstOrDefault(thread => ClientPressureResponseThreadMatchesCause(thread, causeHint));
+            if (causeMatch != null)
+            {
+                return causeMatch;
+            }
+
+            return null;
+        }
+
+        private static bool HasUsableClientPressureResponseThread(ClientPressureCauseResponseThreadSnapshot thread)
+        {
+            return thread != null
+                && (!string.IsNullOrWhiteSpace(thread.ResponseSummary)
+                    || !string.IsNullOrWhiteSpace(thread.CounterplaySummary)
+                    || !string.IsNullOrWhiteSpace(thread.ExpectedOutcomeHint)
+                    || !string.IsNullOrWhiteSpace(thread.LatestReceiptSummary));
+        }
+
+        private static bool ClientPressureResponseThreadMatchesScreen(ClientPressureCauseResponseThreadSnapshot thread, ShellScreen targetScreen, ShellSummarySnapshot summary)
+        {
+            if (thread == null)
+            {
+                return false;
+            }
+
+            var workspace = NormalizeClientPressureRouteToken(FirstNonBlank(thread.Workspace, thread.Section, thread.Source));
+            var section = NormalizeClientPressureRouteToken(thread.Section);
+            var label = NormalizeClientPressureRouteToken(FirstNonBlank(thread.ResponseLabel, thread.ResponseSummary, thread.MissionTitle));
+
+            if (targetScreen == ShellScreen.Heroes)
+            {
+                return IsClientPressureHeroRoute(workspace, section, label, label, label);
+            }
+
+            if (targetScreen == ShellScreen.BlackMarket)
+            {
+                return IsClientPressureOperationsRoute(workspace, section, label, label)
+                    || workspace == "black_market"
+                    || section == "black_market";
+            }
+
+            if (targetScreen == ShellScreen.City)
+            {
+                return IsClientPressureDevelopmentRoute(workspace, section, label, label)
+                    || workspace == "city"
+                    || section == "city"
+                    || ContainsAny(label, "city", "civic", "public", "support", "recovery");
+            }
+
+            return workspace == "summary"
+                || workspace == "home"
+                || workspace == "status"
+                || section == "summary"
+                || section == "home"
+                || section == "status";
+        }
+
+        private static bool ClientPressureResponseThreadMatchesCause(ClientPressureCauseResponseThreadSnapshot thread, string causeHint)
+        {
+            if (thread == null || string.IsNullOrWhiteSpace(causeHint))
+            {
+                return false;
+            }
+
+            var driver = ExtractVisibleDriver(causeHint).ToLowerInvariant();
+            var threadText = $"{thread.CauseFamily} {thread.CauseLabel} {thread.CauseSummary} {thread.ResponseLabel} {thread.ResponseSummary} {thread.CounterplaySummary} {thread.ExpectedOutcomeHint} {thread.MissionTitle}".ToLowerInvariant();
+
+            return MatchesResponseThreadCauseFamily(driver, threadText, "bandit", "raid", "raider", "road attack", "suppression")
+                || MatchesResponseThreadCauseFamily(driver, threadText, "counterfeit", "forged", "paperwork", "trust", "record", "audit")
+                || MatchesResponseThreadCauseFamily(driver, threadText, "supply", "route", "caravan", "convoy", "transport", "weather", "harvest")
+                || MatchesResponseThreadCauseFamily(driver, threadText, "war", "rival", "buildup", "conflict", "frontier")
+                || MatchesResponseThreadCauseFamily(driver, threadText, "service", "queue", "public", "civic", "strain")
+                || MatchesResponseThreadCauseFamily(driver, threadText, "shadow", "cartel", "black market", "smuggling", "heat", "bribe")
+                || MatchesResponseThreadCauseFamily(driver, threadText, "disease", "unrest", "instability", "recovery");
+        }
+
+        private static bool MatchesResponseThreadCauseFamily(string driver, string threadText, params string[] terms)
+        {
+            return ContainsAny(driver, terms) && ContainsAny(threadText, terms);
         }
 
         private void RenderPublicInfrastructureEconomySpine(ShellSummarySnapshot summary, bool isSummaryLoaded)
@@ -1563,7 +1675,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (publicInfrastructureEconomySpineResponse != null)
             {
-                publicInfrastructureEconomySpineResponse.text = BuildHomePressureResponseLine(publicServiceCauseHint, recommendedScreen, summary);
+                publicInfrastructureEconomySpineResponse.text = BuildHomePressureResponseLine(publicServiceCauseHint, recommendedScreen, summary, summary?.ClientPressureSurface);
             }
 
             if (publicInfrastructureEconomySpinePublicSignals != null)
@@ -1726,7 +1838,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (cityContractRecoveryBoardResponse != null)
             {
-                cityContractRecoveryBoardResponse.text = BuildHomePressureResponseLine(recoveryCauseHint, recommendedScreen, summary);
+                cityContractRecoveryBoardResponse.text = BuildHomePressureResponseLine(recoveryCauseHint, recommendedScreen, summary, summary?.ClientPressureSurface);
             }
 
             if (cityContractRecoveryBoardRegions != null)
@@ -1866,7 +1978,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (cityMudConsequenceBridgeResponse != null)
             {
-                cityMudConsequenceBridgeResponse.text = BuildHomePressureResponseLine(regionalSupportCauseHint, recommendedScreen, summary);
+                cityMudConsequenceBridgeResponse.text = BuildHomePressureResponseLine(regionalSupportCauseHint, recommendedScreen, summary, summary?.ClientPressureSurface);
             }
 
             if (cityMudConsequenceBridgeBridgeSignals != null)

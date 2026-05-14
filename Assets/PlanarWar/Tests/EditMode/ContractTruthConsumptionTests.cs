@@ -5887,6 +5887,23 @@ namespace PlanarWar.Client.Tests.EditMode
 
 
         [Test]
+        public void Home_focused_pressure_cards_match_backend_response_threads_by_cause_and_desk()
+        {
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs");
+            Assert.That(File.Exists(controllerPath), Is.True, "SummaryScreenController.cs should be available from the Unity project root.");
+
+            var controller = File.ReadAllText(controllerPath);
+
+            Assert.That(controller, Does.Contain("Unity Home Focused Response Thread Matching v1"), "Focused pressure detail cards should prefer matching backend response threads instead of unrelated global threads.");
+            Assert.That(controller, Does.Contain("SelectClientPressureResponseThread(surface, causeHint, targetScreen, summary)"));
+            Assert.That(controller, Does.Contain("ClientPressureResponseThreadMatchesScreen"), "Response threads should match the focused card's safe local desk before being shown.");
+            Assert.That(controller, Does.Contain("ClientPressureResponseThreadMatchesCause"), "Response threads should match the focused card's visible cause before being shown.");
+            Assert.That(controller, Does.Contain("summary?.ClientPressureSurface"), "Public, regional, and recovery focus cards should be allowed to consume backend response thread truth.");
+            Assert.That(controller, Does.Not.Contain("StartMission"), "Focused response-thread matching must not execute missions from Home.");
+        }
+
+
+        [Test]
         public void Home_pressure_chip_focus_hides_supporting_fact_cards_until_full_detail_review()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
