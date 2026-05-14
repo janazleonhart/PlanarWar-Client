@@ -679,7 +679,65 @@ namespace PlanarWar.Client.UI.Screens.Summary
             var driver = ExtractVisibleDriver(causeHint).ToLowerInvariant();
             var action = BuildHomePressureCauseResponseAction(driver);
             var route = BuildHomePressureSafeRoutePhrase(targetScreen, summary);
-            return Truncate($"{action} {route}", 220);
+            return BuildHomePressureResponseChainLine(action, route, "Outcomes come from server-authored reports.");
+        }
+
+        private static string BuildHomePressureResponseChainLine(string counterplayText, string routeText, string reportText)
+        {
+            // Unity Home Pressure Response Chain Copy v1: show cause -> counterplay -> route -> report as a compact player-facing chain.
+            var counterplay = CleanResponseChainCounterplay(counterplayText);
+            var route = CleanResponseChainRoute(routeText);
+            var report = CleanPlayerFacingText(reportText).Trim().TrimEnd('.', ';');
+            var parts = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(counterplay))
+            {
+                parts.Add($"Counterplay: {counterplay.TrimEnd('.', ';')}.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(route))
+            {
+                parts.Add($"Open: {route.TrimEnd('.', ';')}.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(report))
+            {
+                parts.Add($"Report: {report}.");
+            }
+
+            return Truncate(CompactSingleLine(string.Join(" ", parts)), 300);
+        }
+
+        private static string CleanResponseChainCounterplay(string value)
+        {
+            var clean = CleanPlayerFacingText(value).Trim();
+            if (clean.StartsWith("Deal with the cause by ", StringComparison.OrdinalIgnoreCase))
+            {
+                clean = clean.Substring("Deal with the cause by ".Length).Trim();
+            }
+            else if (clean.StartsWith("Deal with the cause ", StringComparison.OrdinalIgnoreCase))
+            {
+                clean = clean.Substring("Deal with the cause ".Length).Trim();
+            }
+
+            return clean;
+        }
+
+        private static string CleanResponseChainRoute(string value)
+        {
+            var clean = CleanPlayerFacingText(value).Trim();
+            var semicolon = clean.IndexOf(';');
+            if (semicolon >= 0)
+            {
+                clean = clean.Substring(0, semicolon).Trim();
+            }
+
+            if (clean.StartsWith("Open ", StringComparison.OrdinalIgnoreCase))
+            {
+                clean = clean.Substring("Open ".Length).Trim();
+            }
+
+            return clean;
         }
 
         private static string BuildClientPressureResponseThreadLine(ClientPressureCauseResponseThreadSnapshot responseThread)

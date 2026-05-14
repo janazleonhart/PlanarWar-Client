@@ -5904,6 +5904,25 @@ namespace PlanarWar.Client.Tests.EditMode
 
 
         [Test]
+        public void Home_pressure_response_chain_copy_keeps_counterplay_route_and_report_leg_readable()
+        {
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs");
+            Assert.That(File.Exists(controllerPath), Is.True, "SummaryScreenController.cs should be available from the Unity project root.");
+
+            var controller = File.ReadAllText(controllerPath);
+
+            Assert.That(controller, Does.Contain("Unity Home Pressure Response Chain Copy v1"), "How-to-respond copy should show cause counterplay, desk routing, and report/outcome continuity as a compact chain.");
+            Assert.That(controller, Does.Contain("BuildHomePressureResponseChainLine"));
+            Assert.That(controller, Does.Contain("Counterplay:"), "The focused card should name the response style before desk routing.");
+            Assert.That(controller, Does.Contain("Open:"), "The focused card should name where to inspect the server-authored response.");
+            Assert.That(controller, Does.Contain("Report:"), "The focused card should make the outcome/report leg explicit without faking execution.");
+            Assert.That(controller, Does.Contain("CleanResponseChainCounterplay"), "The chain copy should avoid repeating the old long-form 'deal with the cause' wrapper.");
+            Assert.That(controller, Does.Contain("Outcomes come from server-authored reports."), "The fallback chain must not imply Home executes or resolves pressure directly.");
+            Assert.That(controller, Does.Not.Contain("StartMission"), "Readable chain copy must not add fake execution from Home.");
+        }
+
+
+        [Test]
         public void Home_pressure_chip_focus_hides_supporting_fact_cards_until_full_detail_review()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");
