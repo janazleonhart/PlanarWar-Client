@@ -652,6 +652,7 @@ namespace PlanarWar.Client.Core.Mapping
                 LatestProofOutcome = FirstNonBlank(ReadClientPressureText(obj["latestProofOutcome"]), ReadClientPressureText(obj["latest_proof_outcome"])),
                 MissionLead = MapClientPressureMissionLead(FirstObject(obj["missionLead"], obj["mission_lead"])),
                 VisibleCauses = FirstArray(obj["visibleCauses"], obj["visible_causes"])?.OfType<JObject>().Select(MapClientPressureVisibleCause).Where(cause => cause != null).ToList() ?? new List<ClientPressureVisibleCauseSnapshot>(),
+                ResponseThreads = FirstArray(obj["responseThreads"], obj["response_threads"])?.OfType<JObject>().Select(MapClientPressureCauseResponseThread).Where(thread => thread != null).ToList() ?? new List<ClientPressureCauseResponseThreadSnapshot>(),
                 Signals = MapClientPressureStringArray(FirstArray(obj["signals"])),
                 Guardrails = MapClientPressureStringArray(FirstArray(obj["guardrails"])),
             };
@@ -668,6 +669,33 @@ namespace PlanarWar.Client.Core.Mapping
                 Summary = FirstNonBlank(ReadClientPressureText(obj["summary"]), ReadClientPressureText(obj["description"])),
                 Confidence = ReadClientPressureText(obj["confidence"]),
                 Source = ReadClientPressureText(obj["source"]),
+            };
+        }
+
+
+        private static ClientPressureCauseResponseThreadSnapshot MapClientPressureCauseResponseThread(JObject obj)
+        {
+            if (obj == null) return null;
+
+            return new ClientPressureCauseResponseThreadSnapshot
+            {
+                CauseFamily = FirstNonBlank(ReadClientPressureText(obj["causeFamily"]), ReadClientPressureText(obj["cause_family"]), ReadClientPressureText(obj["family"])),
+                CauseLabel = FirstNonBlank(ReadClientPressureText(obj["causeLabel"]), ReadClientPressureText(obj["cause_label"]), ReadClientPressureText(obj["label"])),
+                CauseSummary = FirstNonBlank(ReadClientPressureText(obj["causeSummary"]), ReadClientPressureText(obj["cause_summary"]), ReadClientPressureText(obj["summary"])),
+                State = ReadClientPressureText(obj["state"]),
+                Source = ReadClientPressureText(obj["source"]),
+                ResponseLabel = FirstNonBlank(ReadClientPressureText(obj["responseLabel"]), ReadClientPressureText(obj["response_label"])),
+                ResponseSummary = FirstNonBlank(ReadClientPressureText(obj["responseSummary"]), ReadClientPressureText(obj["response_summary"])),
+                CounterplaySummary = FirstNonBlank(ReadClientPressureText(obj["counterplaySummary"]), ReadClientPressureText(obj["counterplay_summary"])),
+                ExpectedOutcomeHint = FirstNonBlank(ReadClientPressureText(obj["expectedOutcomeHint"]), ReadClientPressureText(obj["expected_outcome_hint"])),
+                Workspace = ReadClientPressureText(obj["workspace"]),
+                Section = ReadClientPressureText(obj["section"]),
+                MissionId = FirstNonBlank(ReadClientPressureText(obj["missionId"]), ReadClientPressureText(obj["mission_id"])),
+                MissionTitle = FirstNonBlank(ReadClientPressureText(obj["missionTitle"]), ReadClientPressureText(obj["mission_title"])),
+                LatestReceiptTitle = FirstNonBlank(ReadClientPressureText(obj["latestReceiptTitle"]), ReadClientPressureText(obj["latest_receipt_title"])),
+                LatestReceiptOutcome = FirstNonBlank(ReadClientPressureText(obj["latestReceiptOutcome"]), ReadClientPressureText(obj["latest_receipt_outcome"])),
+                LatestReceiptAt = FirstNonBlank(ReadClientPressureText(obj["latestReceiptAt"]), ReadClientPressureText(obj["latest_receipt_at"])),
+                LatestReceiptSummary = FirstNonBlank(ReadClientPressureText(obj["latestReceiptSummary"]), ReadClientPressureText(obj["latest_receipt_summary"])),
             };
         }
 

@@ -656,12 +656,72 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
         private static string BuildHomePressureResponseLine(string causeHint, ShellScreen targetScreen, ShellSummarySnapshot summary)
         {
+            return BuildHomePressureResponseLine(causeHint, targetScreen, summary, null);
+        }
+
+        private static string BuildHomePressureResponseLine(string causeHint, ShellScreen targetScreen, ShellSummarySnapshot summary, ClientPressureCauseResponseThreadSnapshot responseThread)
+        {
             // Unity Home Pressure Cause Response Guidance v1: connect cause -> response desk without executing or inventing actions.
             // Unity Home Pressure Response Path Clarity v1: explain the response style first, then route to the existing safe desk.
+            // Unity Home Backend Response Thread Consumption v1: prefer backend-authored responseThreads for cause -> response -> report continuity.
+            var backendThreadLine = BuildClientPressureResponseThreadLine(responseThread);
+            if (!string.IsNullOrWhiteSpace(backendThreadLine))
+            {
+                return backendThreadLine;
+            }
+
             var driver = ExtractVisibleDriver(causeHint).ToLowerInvariant();
             var action = BuildHomePressureCauseResponseAction(driver);
             var route = BuildHomePressureSafeRoutePhrase(targetScreen, summary);
             return Truncate($"{action} {route}", 220);
+        }
+
+        private static string BuildClientPressureResponseThreadLine(ClientPressureCauseResponseThreadSnapshot responseThread)
+        {
+            if (responseThread == null)
+            {
+                return string.Empty;
+            }
+
+            var parts = new List<string>();
+            var response = CleanPlayerFacingText(responseThread.ResponseSummary);
+            if (!string.IsNullOrWhiteSpace(response))
+            {
+                parts.Add(response.TrimEnd('.', ';') + ".");
+            }
+            else
+            {
+                var counterplay = CleanPlayerFacingText(responseThread.CounterplaySummary);
+                if (!string.IsNullOrWhiteSpace(counterplay))
+                {
+                    parts.Add(counterplay.TrimEnd('.', ';') + ".");
+                }
+
+                var responseLabel = CleanPlayerFacingText(responseThread.ResponseLabel);
+                if (!string.IsNullOrWhiteSpace(responseLabel))
+                {
+                    parts.Add(responseLabel.TrimEnd('.', ';') + ".");
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(responseThread.LatestReceiptSummary))
+            {
+                var outcome = CleanPlayerFacingText(FirstNonBlank(responseThread.LatestReceiptOutcome, "reported"));
+                var report = CleanPlayerFacingText(responseThread.LatestReceiptSummary);
+                parts.Add($"Latest report: {HumanizeToken(outcome)} — {report.TrimEnd('.', ';')}.");
+            }
+            else if (!string.IsNullOrWhiteSpace(responseThread.ExpectedOutcomeHint))
+            {
+                parts.Add(CleanPlayerFacingText(responseThread.ExpectedOutcomeHint).TrimEnd('.', ';') + ".");
+            }
+
+            var line = CompactSingleLine(TranslateHomePressureTitle(string.Join(" ", parts.Where(part => !string.IsNullOrWhiteSpace(part)))));
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                return string.Empty;
+            }
+
+            return Truncate(line, 240);
         }
 
         private static string BuildHomePressureCauseResponseAction(string driver)
@@ -1441,6 +1501,16 @@ namespace PlanarWar.Client.UI.Screens.Summary
             return surface.VisibleCauses.FirstOrDefault(cause => !string.IsNullOrWhiteSpace(cause?.Label) || !string.IsNullOrWhiteSpace(cause?.Summary));
         }
 
+        private static ClientPressureCauseResponseThreadSnapshot SelectClientPressureResponseThread(ClientPressureSurfaceSnapshot surface)
+        {
+            if (surface?.ResponseThreads == null || surface.ResponseThreads.Count == 0)
+            {
+                return null;
+            }
+
+            return surface.ResponseThreads.FirstOrDefault(thread => !string.IsNullOrWhiteSpace(thread?.ResponseSummary) || !string.IsNullOrWhiteSpace(thread?.CounterplaySummary) || !string.IsNullOrWhiteSpace(thread?.ExpectedOutcomeHint));
+        }
+
         private void RenderPublicInfrastructureEconomySpine(ShellSummarySnapshot summary, bool isSummaryLoaded)
         {
             var infrastructure = summary?.PublicInfrastructureSummary;
@@ -2171,7 +2241,7 @@ namespace PlanarWar.Client.UI.Screens.Summary
 
             if (motherBrainActionPathResponse != null)
             {
-                motherBrainActionPathResponse.text = BuildHomePressureResponseLine(clientPressureCauseHint, recommendedScreen, summary);
+                motherBrainActionPathResponse.text = BuildHomePressureResponseLine(clientPressureCauseHint, recommendedScreen, summary, SelectClientPressureResponseThread(surface));
             }
 
             if (motherBrainActionPathBlockers != null)

@@ -187,6 +187,7 @@ namespace PlanarWar.Client.Core.Contracts
         public string LatestProofOutcome { get; set; } = string.Empty;
         public ClientPressureMissionLeadSnapshot MissionLead { get; set; }
         public List<ClientPressureVisibleCauseSnapshot> VisibleCauses { get; set; } = new();
+        public List<ClientPressureCauseResponseThreadSnapshot> ResponseThreads { get; set; } = new();
         public List<string> Signals { get; set; } = new();
         public List<string> Guardrails { get; set; } = new();
     }
@@ -199,6 +200,29 @@ namespace PlanarWar.Client.Core.Contracts
         public string Summary { get; set; } = string.Empty;
         public string Confidence { get; set; } = string.Empty;
         public string Source { get; set; } = string.Empty;
+    }
+
+
+    [Serializable]
+    public sealed class ClientPressureCauseResponseThreadSnapshot
+    {
+        public string CauseFamily { get; set; } = string.Empty;
+        public string CauseLabel { get; set; } = string.Empty;
+        public string CauseSummary { get; set; } = string.Empty;
+        public string State { get; set; } = string.Empty;
+        public string Source { get; set; } = string.Empty;
+        public string ResponseLabel { get; set; } = string.Empty;
+        public string ResponseSummary { get; set; } = string.Empty;
+        public string CounterplaySummary { get; set; } = string.Empty;
+        public string ExpectedOutcomeHint { get; set; } = string.Empty;
+        public string Workspace { get; set; } = string.Empty;
+        public string Section { get; set; } = string.Empty;
+        public string MissionId { get; set; } = string.Empty;
+        public string MissionTitle { get; set; } = string.Empty;
+        public string LatestReceiptTitle { get; set; } = string.Empty;
+        public string LatestReceiptOutcome { get; set; } = string.Empty;
+        public string LatestReceiptAt { get; set; } = string.Empty;
+        public string LatestReceiptSummary { get; set; } = string.Empty;
     }
 
     [Serializable]

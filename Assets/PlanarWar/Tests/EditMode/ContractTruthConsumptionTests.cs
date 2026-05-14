@@ -5856,6 +5856,37 @@ namespace PlanarWar.Client.Tests.EditMode
         }
 
         [Test]
+        public void Home_pressure_response_guidance_prefers_backend_response_threads_for_cause_outcome_continuity()
+        {
+            var contractPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Core/Contracts/ShellSummarySnapshot.cs");
+            var mapperPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Core/Mapping/ShellSummarySnapshotMapper.cs");
+            var controllerPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Runtime/Shell/Screens/Summary/SummaryScreenController.cs");
+            var clientPressureTestPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/Tests/EditMode/ClientPressureSurfaceConsumptionTests.cs");
+            Assert.That(File.Exists(contractPath), Is.True, "ShellSummarySnapshot.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(mapperPath), Is.True, "ShellSummarySnapshotMapper.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(controllerPath), Is.True, "SummaryScreenController.cs should be available from the Unity project root.");
+            Assert.That(File.Exists(clientPressureTestPath), Is.True, "ClientPressureSurfaceConsumptionTests.cs should be available from the Unity project root.");
+
+            var contract = File.ReadAllText(contractPath);
+            var mapper = File.ReadAllText(mapperPath);
+            var controller = File.ReadAllText(controllerPath);
+            var clientPressureTest = File.ReadAllText(clientPressureTestPath);
+
+            Assert.That(contract, Does.Contain("ClientPressureCauseResponseThreadSnapshot"), "Unity should model backend clientPressureSurface.responseThreads directly.");
+            Assert.That(contract, Does.Contain("ResponseThreads"), "Client pressure surfaces should carry backend cause -> response -> report threads.");
+            Assert.That(mapper, Does.Contain("MapClientPressureCauseResponseThread"), "The /api/me mapper should consume backend response thread objects.");
+            Assert.That(mapper, Does.Contain("responseThreads"));
+            Assert.That(controller, Does.Contain("Unity Home Backend Response Thread Consumption v1"), "Home response guidance should prefer server-authored response threads when available.");
+            Assert.That(controller, Does.Contain("SelectClientPressureResponseThread"));
+            Assert.That(controller, Does.Contain("BuildClientPressureResponseThreadLine"));
+            Assert.That(controller, Does.Contain("Latest report:"), "Response threads should preserve the report/outcome leg without inventing execution.");
+            Assert.That(clientPressureTest, Does.Contain("responseThreads"), "Mapper coverage should include backend response threads.");
+            Assert.That(clientPressureTest, Does.Contain("Later reports can show route pressure cooling"), "Test payload should prove Unity preserves server-authored outcome hints.");
+            Assert.That(controller, Does.Not.Contain("StartMission"), "Home response thread consumption must not execute missions.");
+        }
+
+
+        [Test]
         public void Home_pressure_chip_focus_hides_supporting_fact_cards_until_full_detail_review()
         {
             var appShellPath = Path.Combine(Directory.GetCurrentDirectory(), "Assets/PlanarWar/UI/UXML/AppShell.uxml");

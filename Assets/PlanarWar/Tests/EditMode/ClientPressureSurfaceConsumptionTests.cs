@@ -44,6 +44,7 @@ namespace PlanarWar.Client.Tests.EditMode
                 "\"latestProofOutcome\":\"success\"," +
                 "\"missionLead\":{\"missionId\":\"mission_shadow_quick_followup\",\"title\":\"Follow-up Lead: Pressure the crooked handoff\",\"summary\":\"Deniable operators can reuse the current pressure seam.\",\"reason\":\"A recent guided receipt bent the mission board toward this follow-up.\",\"priority\":\"recommended\",\"kind\":\"army\",\"difficulty\":\"medium\",\"recommendedPower\":240,\"expectedRewards\":{\"wealth\":28,\"influence\":4},\"responseTags\":[\"recon\",\"command\"]}," +
                 "\"visibleCauses\":[{\"family\":\"cartel_conflict\",\"label\":\"Cartel or shadow-trade conflict\",\"summary\":\"Deniable trade pressure is disrupting clean routes or rival interests.\",\"confidence\":\"visible\",\"source\":\"pressure_window\"}]," +
+                "\"responseThreads\":[{\"causeFamily\":\"cartel_conflict\",\"causeLabel\":\"Cartel or shadow-trade conflict\",\"causeSummary\":\"Deniable trade pressure is disrupting clean routes or rival interests.\",\"state\":\"response_available\",\"source\":\"mission_lead\",\"responseLabel\":\"Response available: Patch the quiet route\",\"responseSummary\":\"Deal with the cause by containing heat and settling disruption. Open Operations to inspect Patch the quiet route; dispatch and outcome stay server-authored.\",\"counterplaySummary\":\"Deal with the cause by containing heat and settling disruption.\",\"expectedOutcomeHint\":\"Later reports can show route pressure cooling, partial containment, or setbacks.\",\"workspace\":\"operations\",\"section\":\"mission_board\",\"missionId\":\"mission_shadow_quick_followup\",\"missionTitle\":\"Patch the quiet route\",\"latestReceiptTitle\":null,\"latestReceiptOutcome\":null,\"latestReceiptAt\":null,\"latestReceiptSummary\":null}]," +
                 "\"signals\":[\"guided receipt proof\",\"/api/internal should not render\"]," +
                 "\"guardrails\":[\"Client summary only: this surface does not execute missions.\",\"runtimeActionId and action_hidden_leak should be sanitized\"]" +
                 "}" +
@@ -70,6 +71,15 @@ namespace PlanarWar.Client.Tests.EditMode
             Assert.That(surface.VisibleCauses[0].Summary, Does.Contain("Deniable trade pressure"));
             Assert.That(surface.VisibleCauses[0].Confidence, Is.EqualTo("visible"));
             Assert.That(surface.VisibleCauses[0].Source, Is.EqualTo("pressure_window"));
+            Assert.That(surface.ResponseThreads, Has.Count.EqualTo(1));
+            Assert.That(surface.ResponseThreads[0].CauseFamily, Is.EqualTo("cartel_conflict"));
+            Assert.That(surface.ResponseThreads[0].CauseLabel, Is.EqualTo("Cartel or shadow-trade conflict"));
+            Assert.That(surface.ResponseThreads[0].State, Is.EqualTo("response_available"));
+            Assert.That(surface.ResponseThreads[0].Source, Is.EqualTo("mission_lead"));
+            Assert.That(surface.ResponseThreads[0].ResponseSummary, Does.Contain("Open Operations"));
+            Assert.That(surface.ResponseThreads[0].CounterplaySummary, Does.Contain("containing heat"));
+            Assert.That(surface.ResponseThreads[0].ExpectedOutcomeHint, Does.Contain("Later reports"));
+            Assert.That(surface.ResponseThreads[0].MissionTitle, Is.EqualTo("Patch the quiet route"));
 
             var rendered = string.Join("\n", CollectSnapshotStrings(surface));
             Assert.That(rendered, Does.Not.Contain("/api"));
